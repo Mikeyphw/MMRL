@@ -1,5 +1,7 @@
 package com.dergoogler.mmrl.ui.screens.repositories
 
+import android.widget.Toast
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
@@ -64,6 +66,7 @@ import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.screens.repositories.items.BulkBottomSheet
+import com.dergoogler.mmrl.viewmodel.BulkDownloadException
 import com.dergoogler.mmrl.viewmodel.RepositoriesViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -136,10 +139,29 @@ fun RepositoriesScreen() =
                             context = context,
                             uri = it,
                         )
+                    } else {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.message_download_success),
+                            Toast.LENGTH_SHORT,
+                        ).show()
                     }
                 },
-                onFailure = {
-                    Timber.e(it)
+                onFailure = { error ->
+                    Timber.e(error)
+                    if (error is BulkDownloadException) {
+                        val successfulIds = error.successes.map { it.module.id }.toSet()
+                        bulkInstallViewModel.removeBulkModules(successfulIds)
+                        if (install && error.successes.isNotEmpty()) {
+                            bulkInstallBottomSheet = false
+                            InstallActivity.start(context = context, uri = error.successes.map { it.uri })
+                        }
+                    }
+                    Toast.makeText(
+                        context,
+                        error.message ?: context.getString(R.string.unknown_error),
+                        Toast.LENGTH_LONG,
+                    ).show()
                 },
             )
         }

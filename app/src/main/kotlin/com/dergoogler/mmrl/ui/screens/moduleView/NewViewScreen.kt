@@ -1,18 +1,16 @@
 package com.dergoogler.mmrl.ui.screens.moduleView
 
+import android.os.Build
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TopAppBarDefaults
@@ -20,11 +18,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -34,10 +34,10 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.ext.fadingEdge
-import com.dergoogler.mmrl.ext.ifNotEmpty
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.nullable
 import com.dergoogler.mmrl.ext.systemBarsPaddingEnd
+import com.dergoogler.mmrl.installer.ArchiveInspector
 import com.dergoogler.mmrl.model.local.BulkModule
 import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.VersionItem
@@ -57,23 +57,23 @@ import com.dergoogler.mmrl.ui.providable.LocalScrollBehavior
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.providable.LocalVersionItem
-import com.dergoogler.mmrl.ui.screens.moduleView.items.InstallConfirmDialog
+import com.dergoogler.mmrl.ui.screens.moduleView.items.InstallReviewBottomSheet
+import com.dergoogler.mmrl.ui.screens.moduleView.items.InstallReviewPhase
+import com.dergoogler.mmrl.ui.screens.moduleView.items.InstallReviewState
 import com.dergoogler.mmrl.ui.screens.moduleView.items.ViewTrackBottomSheet
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalModuleViewDownloader
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalModuleViewModel
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalRequireModules
-import com.dergoogler.mmrl.ui.screens.moduleView.sections.AboutModule
-import com.dergoogler.mmrl.ui.screens.moduleView.sections.Alerts
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.Header
-import com.dergoogler.mmrl.ui.screens.moduleView.sections.Information
-import com.dergoogler.mmrl.ui.screens.moduleView.sections.Information0
-import com.dergoogler.mmrl.ui.screens.moduleView.sections.Screenshots
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.Toolbar
 import com.dergoogler.mmrl.viewmodel.ModuleViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import dev.chrisbanes.haze.hazeSource
-import timber.log.Timber
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal val listItemContentPaddingValues = PaddingValues(vertical = 16.dp, horizontal = 16.dp)
 internal val subListItemContentPaddingValues = PaddingValues(vertical = 8.dp, horizontal = 16.dp)
@@ -106,21 +106,31 @@ fun NewViewScreen(
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    var installReviewState by remember { mutableStateOf(InstallReviewState()) }
+    var reviewVersionItem by remember { mutableStateOf<VersionItem?>(null) }
+
+    LaunchedEffect(viewModel.installConfirm) {
+        if (viewModel.installConfirm) {
+            installReviewState = InstallReviewState()
+            if (reviewVersionItem == null) reviewVersionItem = lastVersionItem
+        }
+    }
 
     val download: (VersionItem, Boolean) -> Unit = { item, install ->
-        viewModel.downloader(context, item) {
-            if (install) {
-                viewModel.installConfirm = false
-                InstallActivity.start(
-                    context = context,
-                    uri = it.toUri(),
-                    confirm = false,
-                )
-            }
+        if (install) {
+            reviewVersionItem = item
+            installReviewState = InstallReviewState()
+            viewModel.installConfirm = true
+        } else {
+            viewModel.downloader(context, item, onSuccess = {})
         }
     }
 
     val manager = module.manager(viewModel.platform)
+    val compatible =
+        manager.isCompatible(viewModel.versionCode) &&
+            (module.minApi == null || Build.VERSION.SDK_INT >= module.minApi) &&
+            (module.maxApi == null || Build.VERSION.SDK_INT <= module.maxApi)
     val requires =
         manager.require?.let {
             moduleAll
@@ -129,54 +139,114 @@ fun NewViewScreen(
                 }.map { it2 -> it2.second }
         } ?: emptyList()
 
-    if (viewModel.installConfirm) {
-        InstallConfirmDialog(
-            name = module.name,
-            requires = requires,
+    if (viewModel.installConfirm && (reviewVersionItem ?: lastVersionItem) != null) {
+        val reviewVersion = checkNotNull(reviewVersionItem ?: lastVersionItem)
+        InstallReviewBottomSheet(
+            module = module,
+            moduleName = module.name,
+            version = reviewVersion,
+            installedVersion = local?.version,
+            repositoryName = repo.name,
+            compatible = compatible,
+            requiresReboot = true,
+            requiresCount = requires.size,
+            progress = viewModel.getProgress(reviewVersion),
+            state = installReviewState,
             onClose = {
                 viewModel.installConfirm = false
+                installReviewState = InstallReviewState()
+                reviewVersionItem = null
             },
-            onConfirm = {
-                lastVersionItem?.let { download(it, true) }
-            },
-            onConfirmDeps = {
-                lastVersionItem?.let { item ->
-                    val bulkModules = mutableListOf<BulkModule>()
-                    bulkModules.add(
-                        BulkModule(
-                            id = module.id,
-                            name = module.name,
-                            versionItem = item,
-                        ),
-                    )
-                    bulkModules.addAll(
-                        requires.map { r ->
-                            BulkModule(
-                                id = r.id,
-                                name = r.name,
-                                versionItem = r.versions.first(),
+            onDownloadAndInspect = {
+                installReviewState = InstallReviewState(phase = InstallReviewPhase.DOWNLOADING)
+                viewModel.downloader(
+                    context = context,
+                    item = reviewVersion,
+                    onSuccess = { file ->
+                        scope.launch {
+                            installReviewState = InstallReviewState(
+                                phase = InstallReviewPhase.VERIFYING,
+                                file = file,
+                                operationId = installReviewState.operationId,
                             )
-                        },
-                    )
-
-                    bulkModules.ifNotEmpty {
-                        bulkInstallViewModel.downloadMultiple(
-                            items = bulkModules,
-                            onAllSuccess = { uris ->
-                                viewModel.installConfirm = false
-                                InstallActivity.start(
-                                    context = context,
-                                    uri = uris,
-                                    confirm = false,
-                                )
-                            },
-                            onFailure = { err ->
-                                viewModel.installConfirm = false
-                                Timber.e(err)
-                            },
+                            delay(120)
+                            installReviewState = installReviewState.copy(phase = InstallReviewPhase.INSPECTING)
+                            val inspected = runCatching {
+                                withContext(Dispatchers.IO) { ArchiveInspector.inspect(file) }
+                            }
+                            installReviewState = inspected.fold(
+                                onSuccess = { inspection ->
+                                    InstallReviewState(
+                                        phase = if (inspection.canInstall) InstallReviewPhase.READY else InstallReviewPhase.BLOCKED,
+                                        file = file,
+                                        inspection = inspection,
+                                        operationId = installReviewState.operationId,
+                                    )
+                                },
+                                onFailure = { error ->
+                                    InstallReviewState(
+                                        phase = InstallReviewPhase.FAILED,
+                                        file = file,
+                                        error = error.message,
+                                        operationId = installReviewState.operationId,
+                                    )
+                                },
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        installReviewState = InstallReviewState(
+                            phase = InstallReviewPhase.FAILED,
+                            error = error.message,
+                            operationId = installReviewState.operationId,
                         )
-                    }
+                    },
+                    onOperationStarted = { operationId ->
+                        installReviewState = installReviewState.copy(operationId = operationId)
+                    },
+                )
+            },
+            onInstall = {
+                installReviewState.file?.let { file ->
+                    viewModel.installConfirm = false
+                    val parentOperationId = installReviewState.operationId
+                    reviewVersionItem = null
+                    InstallActivity.start(
+                        context = context,
+                        uri = file.toUri(),
+                        confirm = false,
+                        parentOperationId = parentOperationId,
+                    )
                 }
+            },
+            onInstallWithDependencies = {
+                val bulkModules = mutableListOf<BulkModule>()
+                bulkModules += BulkModule(
+                    id = module.id,
+                    name = module.name,
+                    versionItem = reviewVersion,
+                )
+                bulkModules += requires.map { required ->
+                    BulkModule(
+                        id = required.id,
+                        name = required.name,
+                        versionItem = required.versions.first(),
+                    )
+                }
+                bulkInstallViewModel.downloadMultiple(
+                    items = bulkModules,
+                    onAllSuccess = { uris ->
+                        viewModel.installConfirm = false
+                        reviewVersionItem = null
+                        InstallActivity.start(context = context, uri = uris, confirm = false)
+                    },
+                    onFailure = { error ->
+                        installReviewState = InstallReviewState(
+                            phase = InstallReviewPhase.FAILED,
+                            error = error.message,
+                        )
+                    },
+                )
             },
         )
     }
@@ -264,46 +334,8 @@ fun NewViewScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Header()
-
-                        val progress =
-                            lastVersionItem?.let {
-                                viewModel.getProgress(it)
-                            } ?: 0f
-
-                        if (progress != 0f) {
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                strokeCap = StrokeCap.Round,
-                                modifier =
-                                    Modifier
-                                        .padding(vertical = 16.dp)
-                                        .height(0.9.dp)
-                                        .fillMaxWidth(),
-                            )
-                        } else {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 16.dp),
-                                thickness = 0.9.dp,
-                            )
-                        }
-
-                        Alerts()
-
-                        AboutModule()
-
-                        Screenshots()
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Information0()
-
-                        // Information section
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 16.dp),
-                            thickness = 0.9.dp,
-                        )
-
-                        Information()
+                        ModuleDecisionSummary()
+                        ModuleDetailsTabs()
 
                         Spacer(modifier = Modifier.navigationBarsPadding())
 

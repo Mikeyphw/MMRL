@@ -10,7 +10,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.service.ModuleService
-import com.dergoogler.mmrl.service.ProviderService
 import com.dergoogler.mmrl.service.RepositoryService
 import com.dergoogler.mmrl.ui.component.SettingsScaffold
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.ButtonItem
@@ -154,14 +153,13 @@ fun UpdatesScreen() {
             title = stringResource(id = R.string.page_modules),
         ) {
             SwitchItem(
-                checked = ModuleService.isActive,
-                enabled = viewModel.isProviderAlive && ProviderService.isActive,
+                checked = userPreferences.moduleServiceEnabled,
                 onChange = {
                     scope.launch {
                         if (it) {
                             ModuleService.start(
                                 context,
-                                userPreferences.autoUpdateReposInterval,
+                                userPreferences.checkModuleUpdatesInterval,
                             )
                             viewModel.setModuleServiceEnabled(true)
                             snackbarHost.showSnackbar(context.getString(R.string.module_service_started))
@@ -183,9 +181,12 @@ fun UpdatesScreen() {
             RadioDialogItem(
                 selection = userPreferences.checkModuleUpdatesInterval,
                 options = optionsOfHours,
-                enabled = viewModel.isProviderAlive && ModuleService.isActive && ProviderService.isActive,
+                enabled = userPreferences.moduleServiceEnabled,
                 onConfirm = {
                     viewModel.setCheckModuleUpdatesInterval(it.value)
+                    if (userPreferences.moduleServiceEnabled) {
+                        ModuleService.restart(context, it.value)
+                    }
                 },
             ) {
                 Title(R.string.settings_check_modules_update_interval)
@@ -193,6 +194,20 @@ fun UpdatesScreen() {
                     R.string.settings_check_modules_update_interval_desc,
                     userPreferences.checkModuleUpdatesInterval,
                 )
+            }
+
+
+            ButtonItem(
+                enabled = userPreferences.moduleServiceEnabled,
+                onClick = {
+                    ModuleService.checkNow(context, userPreferences.checkModuleUpdatesInterval)
+                    scope.launch {
+                        snackbarHost.showSnackbar(context.getString(R.string.settings_check_modules_update_started))
+                    }
+                },
+            ) {
+                Title(R.string.settings_check_modules_update_now)
+                Description(R.string.settings_check_modules_update_now_desc)
             }
         }
     }

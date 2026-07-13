@@ -17,6 +17,7 @@ import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.database.entity.Repo.Companion.UPDATE_JSON
 import com.dergoogler.mmrl.database.entity.Repo.Companion.toRepo
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
+import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.json.UpdateJson
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.model.local.State
@@ -25,6 +26,7 @@ import com.dergoogler.mmrl.model.online.OtherSources
 import com.dergoogler.mmrl.model.online.TrackJson
 import com.dergoogler.mmrl.model.online.VersionItem
 import com.dergoogler.mmrl.model.state.OnlineState
+import com.dergoogler.mmrl.service.ModuleService
 import com.dergoogler.mmrl.model.state.OnlineState.Companion.createState
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.model.ModId
@@ -108,7 +110,7 @@ class ModuleViewModel
         var local: LocalModule? by mutableStateOf(null)
             private set
 
-        private val installed get() = local?.let { it.author == online.author } ?: false
+        private val installed get() = local?.let { ModuleIdentity.matches(it.id.id, online.id) } ?: false
         var notifyUpdates by mutableStateOf(false)
             private set
 
@@ -202,6 +204,8 @@ class ModuleViewModel
             viewModelScope.launch {
                 notifyUpdates = updatable
                 localRepository.insertUpdatableTag(module.id, updatable)
+                userPreferencesRepository.clearNotifiedModuleUpdate(module.id)
+                if (!updatable) ModuleService.cancelUpdateNotification(context, module.id)
             }
         }
 
@@ -209,6 +213,8 @@ class ModuleViewModel
             context: Context,
             item: VersionItem,
             onSuccess: (File) -> Unit,
+            onFailure: (Throwable) -> Unit = {},
+            onOperationStarted: (String) -> Unit = {},
         ) {
             viewModelScope.launch {
                 val downloadPath =
@@ -237,6 +243,8 @@ class ModuleViewModel
 
                 val listener =
                     object : DownloadService.IDownloadListener {
+                        override fun onStarted(operationId: String) = onOperationStarted(operationId)
+
                         override fun getProgress(value: Float) {}
 
                         override fun onFileExists() {
@@ -249,7 +257,7 @@ class ModuleViewModel
                         }
 
                         override fun onSuccess() {
-                            if (downloadPath.exists() && downloadPath.mkdirs()) {
+                            if (!downloadPath.exists() && downloadPath.mkdirs()) {
                                 Timber.d("Created directory: $downloadPath")
                             }
 
@@ -258,6 +266,7 @@ class ModuleViewModel
 
                         override fun onFailure(e: Throwable) {
                             Timber.d(e)
+                            onFailure(e)
                         }
                     }
 

@@ -41,6 +41,7 @@ import com.ramcosta.composedestinations.generated.destinations.ModulesScreen2Des
 import com.ramcosta.composedestinations.generated.destinations.OtherScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SecurityScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.TerminalScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.TaskerScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.UpdatesScreenDestination
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 
@@ -108,6 +109,13 @@ fun SettingsScreen() {
                 icon = R.drawable.stack_middle,
                 title = R.string.settings_modules,
                 desc = R.string.settings_modules_desc,
+            )
+
+            NavButton(
+                route = TaskerScreenDestination,
+                icon = R.drawable.shield_bolt,
+                title = R.string.settings_tasker,
+                desc = R.string.settings_tasker_desc,
             )
 
             NavButton(

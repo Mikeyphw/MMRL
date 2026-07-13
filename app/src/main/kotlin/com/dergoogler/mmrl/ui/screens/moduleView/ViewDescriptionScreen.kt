@@ -24,6 +24,8 @@ import com.dergoogler.mmrl.BuildConfig
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.pathHandler.InternalPathHandler
+import com.dergoogler.mmrl.ui.theme.LocalSemanticColors
+import com.dergoogler.mmrl.ui.theme.SemanticColors
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
@@ -51,6 +53,7 @@ fun ViewDescriptionScreen(readmeUrl: String) =
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         val userPrefs = LocalUserPreferences.current
         val scheme = MaterialTheme.colorScheme
+        val semanticColors = LocalSemanticColors.current
 
         @Suppress("KotlinConstantConditions") val wstate =
             rememberWebUIState("https://desc.mmrl.dev", "internal/assets/markdown.html") {
@@ -77,6 +80,9 @@ fun ViewDescriptionScreen(readmeUrl: String) =
                         )
                         add(
                             ColorScheme::class.java to scheme
+                        )
+                        add(
+                            SemanticColors::class.java to semanticColors
                         )
                     }
             }

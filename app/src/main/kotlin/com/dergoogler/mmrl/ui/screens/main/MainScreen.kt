@@ -37,6 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import com.dergoogler.mmrl.ext.currentScreenWidth
 import com.dergoogler.mmrl.ext.none
@@ -56,19 +57,27 @@ import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.remember.rememberUpdatableModuleCount
 import com.dergoogler.mmrl.utils.initPlatform
+import com.dergoogler.mmrl.viewmodel.ActivityViewModel
 import com.dergoogler.mmrl.viewmodel.BulkInstallViewModel
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ModuleUpdatesScreenDestination
 import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
 @Destination<RootGraph>
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    openActivityOnLaunch: Boolean = false,
+    openUpdatesOnLaunch: Boolean = false,
+    onActivityOpened: () -> Unit = {},
+    onUpdatesOpened: () -> Unit = {},
+) {
 //    val width = currentScreenWidth()
     val userPrefs = LocalUserPreferences.current
     val navigator = LocalDestinationsNavigator.current
@@ -77,6 +86,26 @@ fun MainScreen() {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val bulkInstallViewModel: BulkInstallViewModel = hiltViewModel()
+    val activityViewModel: ActivityViewModel = hiltViewModel()
+    val pendingReboots by activityViewModel.pendingRebootCount.collectAsStateWithLifecycle()
+
+    LaunchedEffect(openActivityOnLaunch) {
+        if (openActivityOnLaunch) {
+            navigator.navigate(ActivityScreenDestination) {
+                launchSingleTop = true
+            }
+            onActivityOpened()
+        }
+    }
+
+    LaunchedEffect(openUpdatesOnLaunch) {
+        if (openUpdatesOnLaunch) {
+            navigator.navigate(ModuleUpdatesScreenDestination) {
+                launchSingleTop = true
+            }
+            onUpdatesOpened()
+        }
+    }
 
     LaunchedEffect(Unit) {
         initPlatform(context, userPrefs.workingMode.toPlatform())
@@ -122,7 +151,7 @@ fun MainScreen() {
 
                                     NavigationDrawerItem(
                                         icon = {
-                                            BaseNavIcon(screen, isSelected, updates)
+                                            BaseNavIcon(screen, isSelected, updates, pendingReboots)
                                         },
                                         label = {
                                             Text(
@@ -164,7 +193,7 @@ fun MainScreen() {
 
         ResponsiveScaffold(
             bottomBar = {
-                BottomNav(updates)
+                BottomNav(updates, pendingReboots)
             },
             railBar = {
 //                RailNav(updates)
@@ -200,7 +229,10 @@ private fun CurrentNavHost(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun BottomNav(updates: Int) {
+private fun BottomNav(
+    updates: Int,
+    pendingReboots: Int,
+) {
     val prefs = LocalUserPreferences.current
     val navigator = LocalDestinationsNavigator.current
     val navController = LocalNavController.current
@@ -217,7 +249,7 @@ private fun BottomNav(updates: Int) {
 
             NavigationBarItem(
                 icon = {
-                    BaseNavIcon(screen, isSelected, updates)
+                    BaseNavIcon(screen, isSelected, updates, pendingReboots)
                 },
                 label = {
                     Text(
@@ -262,7 +294,7 @@ private fun RailNav(updates: Int) {
 
             NavigationRailItem(
                 icon = {
-                    BaseNavIcon(screen, isSelected, updates)
+                    BaseNavIcon(screen, isSelected, updates, pendingReboots)
                 },
                 label = {
                     Text(
@@ -294,7 +326,24 @@ private fun BaseNavIcon(
     screen: MainDestination,
     selected: Boolean,
     updates: Int,
+    pendingReboots: Int,
 ) {
+    if (screen == MainDestination.Activity && pendingReboots > 0) {
+        BadgedBox(
+            badge = {
+                Badge {
+                    Text(text = pendingReboots.toString())
+                }
+            },
+        ) {
+            Icon(
+                painter = painterResource(id = if (selected) screen.iconFilled else screen.icon),
+                contentDescription = null,
+            )
+        }
+        return
+    }
+
     if (screen == MainDestination.Modules && updates > 0) {
         BadgedBox(
             badge = {

@@ -17,6 +17,7 @@ import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
+import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import com.dergoogler.mmrl.utils.initPlatform
 import dev.mmrlx.terminal.TerminalEmulator
 import dev.mmrlx.terminal.appendLineOnMain
@@ -39,8 +40,10 @@ constructor(
     localRepository: LocalRepository,
     modulesRepository: ModulesRepository,
     userPreferencesRepository: UserPreferencesRepository,
+    protected val operationHistoryRepository: OperationHistoryRepository,
 ) : MMRLViewModel(application, localRepository, modulesRepository, userPreferencesRepository) {
     protected val logs = mutableListOf<String>()
+    protected var activeOperationId: String? = null
 
     protected var emulator: TerminalEmulator? = null
     protected val emulatorReady = CompletableDeferred<TerminalEmulator>()
@@ -167,7 +170,11 @@ constructor(
             val emu = emulatorReady.await()
             emu.appendLineOnMain(message)
             logs += log
-
+            activeOperationId?.let { operationId ->
+                viewModelScope.launch(Dispatchers.IO) {
+                    operationHistoryRepository.appendLog(operationId, log)
+                }
+            }
         }
     }
 }

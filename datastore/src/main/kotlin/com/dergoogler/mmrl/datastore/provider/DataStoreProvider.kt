@@ -2,10 +2,14 @@ package com.dergoogler.mmrl.datastore.provider
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.dataStoreFile
 import com.dergoogler.mmrl.datastore.UserPreferencesSerializer
 import com.dergoogler.mmrl.datastore.model.UserPreferences
+import com.dergoogler.mmrl.ui.theme.Colors
+import com.dergoogler.mmrl.ui.theme.ThemeColorSource
+import com.dergoogler.mmrl.ui.theme.ThemeRegistry
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,7 +30,26 @@ class DataStoreProvider(
     ): DataStore<UserPreferences> =
         DataStoreFactory.create(
             serializer = userPreferencesSerializer,
+            migrations = listOf(ThemePreferenceIdMigration),
         ) {
             context.dataStoreFile(fileName)
         }
+}
+
+
+private object ThemePreferenceIdMigration : DataMigration<UserPreferences> {
+    override suspend fun shouldMigrate(currentData: UserPreferences): Boolean =
+        currentData.themePaletteId.isBlank()
+
+    override suspend fun migrate(currentData: UserPreferences): UserPreferences =
+        currentData.copy(
+            themePaletteId = ThemeRegistry.migrateLegacyId(currentData.themeColor),
+            themeColorSource = if (currentData.themeColor == Colors.Dynamic.id) {
+                ThemeColorSource.DYNAMIC_FULL
+            } else {
+                ThemeColorSource.BUILT_IN
+            },
+        )
+
+    override suspend fun cleanUp() = Unit
 }

@@ -1,11 +1,9 @@
 package com.dergoogler.mmrl.ui.component.card
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -22,7 +20,6 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +52,6 @@ internal fun BaseCard(
     absolute: @Composable (BoxScope.() -> Unit)? = null,
     relative: @Composable (ColumnScope.() -> Unit),
 ) {
-    val isHovered by interactionSource.collectIsHoveredAsState()
     val modifierParameters = remember { ModifierScopeImpl(modifierScope) }.composeApply(modifier)
 
     val surfaceModifier =
@@ -65,17 +61,6 @@ internal fun BaseCard(
                     .hoverable(interactionSource = interactionSource)
 
             else -> modifierParameters.surface
-        }
-
-    val hoveredSurfaceModifier =
-        if (isHovered) {
-            Modifier.border(
-                width = 1.5.dp,
-                color = MaterialTheme.colorScheme.primary,
-                shape = cardStyle.shape,
-            )
-        } else {
-            Modifier
         }
 
     val boxModifier =
@@ -96,8 +81,7 @@ internal fun BaseCard(
         modifier =
             surfaceModifier
                 .applyAlpha(enabled)
-                .systemBarsPaddingEnd()
-                .then(hoveredSurfaceModifier),
+                .systemBarsPaddingEnd(),
         shape = style.shape,
         color = style.containerColor,
         contentColor = style.contentColor,
@@ -189,10 +173,10 @@ object CardDefaults {
     val cardStyle: CardStyle
         @Composable get() =
             CardStyle(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 contentColor = MaterialTheme.colorScheme.onSurface,
-                tonalElevation = 1.dp,
-                shape = RoundedCornerShape(20.dp),
+                tonalElevation = 0.dp,
+                shape = RoundedCornerShape(12.dp),
                 boxContentAlignment = Alignment.TopStart,
                 columnVerticalArrangement = Arrangement.Top,
             )
@@ -200,21 +184,12 @@ object CardDefaults {
     val outlinedCardStyle: CardStyle
         @Composable get() =
             cardStyle.copy(
-                containerColor = Color.Unspecified,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
     val outlinedCardModifier
-        @Composable get(): ModifierScope =
-            cardModifier.copy(
-                surface =
-                    Modifier
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline,
-                            shape = cardStyle.shape,
-                        ),
-            )
+        @Composable get(): ModifierScope = cardModifier
 }
 
 internal var defaultCardColorsCached: CardColors? = null

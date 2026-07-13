@@ -8,12 +8,16 @@ import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.ext.toCssValue
 import com.dergoogler.mmrl.ui.component.button.defaultFilledTonalButtonColors
 import com.dergoogler.mmrl.ui.component.card.defaultCardColors
+import com.dergoogler.mmrl.ui.theme.SemanticColors
 import com.dergoogler.mmrl.ui.token.surfaceColorAtElevation
 import java.util.Locale
 import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
 
-data class WebColors(val colorScheme: ColorScheme) {
+data class WebColors(
+    val colorScheme: ColorScheme,
+    val semanticColors: SemanticColors,
+) {
     val filledTonalButtonColors = colorScheme.defaultFilledTonalButtonColors
     val cardColors = colorScheme.defaultCardColors
 
@@ -57,6 +61,25 @@ data class WebColors(val colorScheme: ColorScheme) {
         cardColorsMap.forEach { (name, color) ->
             appendTabbedLine("--filledCard${name.capitalize()}: ${color.toCssValue()};")
         }
+
+        appendTabbedLine("/* Stable MMRL WebUI theme roles */")
+        appendTabbedLine("--mmrl-background: ${colorScheme.background.toCssValue()};")
+        appendTabbedLine("--mmrl-surface: ${colorScheme.surface.toCssValue()};")
+        appendTabbedLine("--mmrl-surface-container: ${colorScheme.surfaceContainer.toCssValue()};")
+        appendTabbedLine("--mmrl-primary: ${colorScheme.primary.toCssValue()};")
+        appendTabbedLine("--mmrl-on-primary: ${colorScheme.onPrimary.toCssValue()};")
+        appendTabbedLine("--mmrl-text: ${colorScheme.onSurface.toCssValue()};")
+        appendTabbedLine("--mmrl-muted: ${colorScheme.onSurfaceVariant.toCssValue()};")
+        appendTabbedLine("--mmrl-success: ${semanticColors.success.toCssValue()};")
+        appendTabbedLine("--mmrl-warning: ${semanticColors.warning.toCssValue()};")
+        appendTabbedLine("--mmrl-error: ${semanticColors.error.toCssValue()};")
+        appendTabbedLine("--mmrl-info: ${semanticColors.info.toCssValue()};")
+        appendTabbedLine("--mmrl-update: ${semanticColors.updateAvailable.toCssValue()};")
+        appendTabbedLine("--mmrl-reboot: ${semanticColors.rebootRequired.toCssValue()};")
+        appendTabbedLine("--mmrl-verified: ${semanticColors.verified.toCssValue()};")
+        appendTabbedLine("--mmrl-incompatible: ${semanticColors.incompatible.toCssValue()};")
+        appendTabbedLine("--mmrl-disabled: ${semanticColors.disabled.toCssValue()};")
+        appendTabbedLine("--mmrl-rollback: ${semanticColors.rollbackAvailable.toCssValue()};")
 
         appendLine("}")
     }

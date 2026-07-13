@@ -56,9 +56,9 @@ data class ModuleManagerSolution(
         }
     }
 
-    private fun isNotSupportedRootVersion(version: Int) = min != null && version < min || min == -1
+    fun isNotSupportedRootVersion(version: Int) = min != null && version < min || min == -1
 
-    private fun isNotSupportedDevice() =
+    fun isNotSupportedDevice() =
         devices.isNotNullOrEmpty() &&
             !devices
                 .map { it.lowercase() }
@@ -72,7 +72,7 @@ data class ModuleManagerSolution(
         }
     }
 
-    private fun isNotSupportedArch() =
+    fun isNotSupportedArch() =
         arch.isNotNullOrEmpty() &&
             !arch
                 .map { it.lowercase() }
@@ -85,4 +85,9 @@ data class ModuleManagerSolution(
             block()
         }
     }
+
+    fun isCompatible(version: Int): Boolean =
+        !isNotSupportedRootVersion(version) &&
+            !isNotSupportedDevice() &&
+            !isNotSupportedArch()
 }

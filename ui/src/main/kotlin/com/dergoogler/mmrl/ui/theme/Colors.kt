@@ -115,7 +115,7 @@ sealed class Colors(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && id == Dynamic.id) {
                 Dynamic(this)
             } else {
-                mColors[id]
+                mColors.firstOrNull { it.id == id } ?: MMRLBase
             }
 
         fun Context.getColorScheme(

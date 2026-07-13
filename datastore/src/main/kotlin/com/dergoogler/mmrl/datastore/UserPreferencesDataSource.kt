@@ -12,6 +12,7 @@ import com.dergoogler.mmrl.datastore.model.WebUIEngine
 import com.dergoogler.mmrl.datastore.model.WorkingMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import javax.inject.Inject
 
 class UserPreferencesDataSource
@@ -45,6 +46,81 @@ class UserPreferencesDataSource
                     it.copy(
                         themeColor = value,
                     )
+                }
+            }
+
+        suspend fun setThemePaletteId(value: String) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(themePaletteId = value)
+                }
+            }
+
+        suspend fun setThemeColorSource(value: com.dergoogler.mmrl.ui.theme.ThemeColorSource) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(
+                        themeColorSource = value,
+                        themePaletteId = it.themePaletteId.ifBlank {
+                            com.dergoogler.mmrl.ui.theme.ThemeRegistry.migrateLegacyId(it.themeColor)
+                        },
+                    )
+                }
+            }
+
+        suspend fun setDynamicFallbackPaletteId(value: String) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(dynamicFallbackPaletteId = value)
+                }
+            }
+
+        suspend fun setThemeSurfaceStyle(value: com.dergoogler.mmrl.ui.theme.ThemeSurfaceStyle) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(themeSurfaceStyle = value)
+                }
+            }
+
+        suspend fun setThemeContrast(value: com.dergoogler.mmrl.ui.theme.ThemeContrast) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(themeContrast = value)
+                }
+            }
+
+        suspend fun setThemePureBlack(value: Boolean) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(themePureBlack = value)
+                }
+            }
+
+        suspend fun setThemeAccentIntensity(value: Float) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(themeAccentIntensity = value.coerceIn(0f, 1f))
+                }
+            }
+
+        suspend fun setEnhancedStatusDistinction(value: Boolean) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(enhancedStatusDistinction = value)
+                }
+            }
+
+        suspend fun setBatterySaverForcesDark(value: Boolean) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(batterySaverForcesDark = value)
+                }
+            }
+
+        suspend fun setCustomThemeJson(value: String) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(customThemeJson = value)
                 }
             }
 
@@ -425,4 +501,36 @@ class UserPreferencesDataSource
                     )
                 }
             }
-    }
+
+        suspend fun replaceNotifiedModuleUpdates(values: Set<String>) =
+            withContext(Dispatchers.IO) {
+                userPreferences.updateData {
+                    it.copy(notifiedModuleUpdates = values)
+                }
+            }
+
+        suspend fun clearNotifiedModuleUpdate(moduleId: String) =
+            withContext(Dispatchers.IO) {
+                val normalizedId = moduleId.trim().lowercase(Locale.ROOT)
+                userPreferences.updateData { preferences ->
+                    preferences.copy(
+                        notifiedModuleUpdates =
+                            preferences.notifiedModuleUpdates.filterNot { key ->
+                                key.substringBeforeLast(':') == normalizedId
+                            }.toSet(),
+                    )
+                }
+            }
+
+        suspend fun setTaskerIntegrationEnabled(value: Boolean) = update { copy(taskerIntegrationEnabled = value) }
+        suspend fun setTaskerAllowDownloads(value: Boolean) = update { copy(taskerAllowDownloads = value) }
+        suspend fun setTaskerAllowStateChanges(value: Boolean) = update { copy(taskerAllowStateChanges = value) }
+        suspend fun setTaskerAllowModuleActions(value: Boolean) = update { copy(taskerAllowModuleActions = value) }
+        suspend fun setTaskerAllowRemovals(value: Boolean) = update { copy(taskerAllowRemovals = value) }
+        suspend fun setTaskerAllowReviewedInstalls(value: Boolean) = update { copy(taskerAllowReviewedInstalls = value) }
+        suspend fun setTaskerApprovalPolicy(value: com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy) = update { copy(taskerApprovalPolicy = value) }
+        suspend fun setTaskerAllowedModules(value: Set<String>) = update { copy(taskerAllowedModules = value) }
+
+        private suspend fun update(block: com.dergoogler.mmrl.datastore.model.UserPreferences.() -> com.dergoogler.mmrl.datastore.model.UserPreferences) =
+            withContext(Dispatchers.IO) { userPreferences.updateData { it.block() } }
+}

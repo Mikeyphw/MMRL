@@ -78,6 +78,46 @@ class SettingsViewModel
             }
         }
 
+        fun setThemePaletteId(value: String) {
+            viewModelScope.launch { userPreferencesRepository.setThemePaletteId(value) }
+        }
+
+        fun setThemeColorSource(value: com.dergoogler.mmrl.ui.theme.ThemeColorSource) {
+            viewModelScope.launch { userPreferencesRepository.setThemeColorSource(value) }
+        }
+
+        fun setDynamicFallbackPaletteId(value: String) {
+            viewModelScope.launch { userPreferencesRepository.setDynamicFallbackPaletteId(value) }
+        }
+
+        fun setThemeSurfaceStyle(value: com.dergoogler.mmrl.ui.theme.ThemeSurfaceStyle) {
+            viewModelScope.launch { userPreferencesRepository.setThemeSurfaceStyle(value) }
+        }
+
+        fun setThemeContrast(value: com.dergoogler.mmrl.ui.theme.ThemeContrast) {
+            viewModelScope.launch { userPreferencesRepository.setThemeContrast(value) }
+        }
+
+        fun setThemePureBlack(value: Boolean) {
+            viewModelScope.launch { userPreferencesRepository.setThemePureBlack(value) }
+        }
+
+        fun setThemeAccentIntensity(value: Float) {
+            viewModelScope.launch { userPreferencesRepository.setThemeAccentIntensity(value) }
+        }
+
+        fun setEnhancedStatusDistinction(value: Boolean) {
+            viewModelScope.launch { userPreferencesRepository.setEnhancedStatusDistinction(value) }
+        }
+
+        fun setBatterySaverForcesDark(value: Boolean) {
+            viewModelScope.launch { userPreferencesRepository.setBatterySaverForcesDark(value) }
+        }
+
+        fun setCustomThemeJson(value: String) {
+            viewModelScope.launch { userPreferencesRepository.setCustomThemeJson(value) }
+        }
+
         fun setDeleteZipFile(value: Boolean) {
             viewModelScope.launch {
                 userPreferencesRepository.setDeleteZipFile(value)
@@ -307,4 +347,13 @@ class SettingsViewModel
                 userPreferencesRepository.setProviderServiceEnabled(value)
             }
         }
-    }
+
+        fun setTaskerIntegrationEnabled(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerIntegrationEnabled(value) }
+        fun setTaskerAllowDownloads(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowDownloads(value) }
+        fun setTaskerAllowStateChanges(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowStateChanges(value) }
+        fun setTaskerAllowModuleActions(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowModuleActions(value) }
+        fun setTaskerAllowRemovals(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowRemovals(value) }
+        fun setTaskerAllowReviewedInstalls(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowReviewedInstalls(value) }
+        fun setTaskerApprovalPolicy(value: com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy) = viewModelScope.launch { userPreferencesRepository.setTaskerApprovalPolicy(value) }
+        fun setTaskerAllowedModules(value: Set<String>) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowedModules(value) }
+}

@@ -14,8 +14,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
@@ -67,7 +65,6 @@ fun BlurToolbar(
         label = "toolbar_alpha",
     )
 
-    val borderColor = MaterialTheme.colorScheme.outline
     val backgroundColor = MaterialTheme.colorScheme.background
 
     val topAppBarColors = TopAppBarDefaults.topAppBarColors()
@@ -112,18 +109,7 @@ fun BlurToolbar(
         title = { title(animatedAlpha) },
         modifier =
             Modifier
-                .drawBehind {
-                    if (animatedAlpha > 0.01f) {
-                        val borderSize = Dp.Hairline
-                        val y = size.height - borderSize.value
-                        drawLine(
-                            color = borderColor.copy(alpha = animatedAlpha),
-                            start = Offset(0f, y),
-                            end = Offset(size.width, y),
-                            strokeWidth = borderSize.value,
-                        )
-                    }
-                }.then(blur)
+                .then(blur)
                 .then(modifier),
         navigationIcon = navigationIcon,
         actions = actions,

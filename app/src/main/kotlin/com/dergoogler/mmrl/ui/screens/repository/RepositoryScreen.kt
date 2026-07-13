@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,13 +15,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
@@ -61,9 +68,7 @@ import com.dergoogler.mmrl.model.ui.TopCategory
 import com.dergoogler.mmrl.ui.component.Cover
 import com.dergoogler.mmrl.ui.component.LabelItem
 import com.dergoogler.mmrl.ui.component.LabelItemDefaults
-import com.dergoogler.mmrl.ui.component.Loading
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
-import com.dergoogler.mmrl.ui.component.PageIndicator
 import com.dergoogler.mmrl.ui.component.card.Card
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.text.BBCodeText
@@ -144,17 +149,19 @@ fun RepositoryScreen(repo: Repo) =
             ) { _ ->
                 ResponsiveContent {
                     if (viewModel.isLoading) {
-                        Loading()
-
+                        RepositoryLoadingState()
                         return@ResponsiveContent
                     }
 
                     if (list.isEmpty() && !viewModel.isLoading) {
-                        PageIndicator(
-                            icon = R.drawable.cloud,
-                            text = if (viewModel.isSearch) R.string.search_empty else R.string.repository_empty,
+                        RepositoryEmptyState(
+                            isSearch = viewModel.isSearch,
+                            isOffline = viewModel.isOffline,
+                            errorMessage = viewModel.errorMessage,
+                            isRefreshing = viewModel.isRefreshing,
+                            onRetry = viewModel::retry,
+                            onClearSearch = viewModel::closeSearch,
                         )
-
                         return@ResponsiveContent
                     }
 
@@ -164,8 +171,19 @@ fun RepositoryScreen(repo: Repo) =
                             Modifier
                                 .fillMaxSize()
                                 .hazeSource(state = hazeState),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        if (viewModel.isOffline || viewModel.errorMessage != null || viewModel.isRefreshing) {
+                            item(key = "repository_state_banner") {
+                                RepositoryStateBanner(
+                                    isOffline = viewModel.isOffline,
+                                    errorMessage = viewModel.errorMessage,
+                                    isRefreshing = viewModel.isRefreshing,
+                                    onRetry = viewModel::retry,
+                                )
+                            }
+                        }
+
                         item {
                             Box {
                                 Cover(
@@ -234,7 +252,7 @@ fun RepositoryScreen(repo: Repo) =
                                                     .relative()
                                                     .padding(16.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp),
                                         ) {
                                             Text(
                                                 text = repo.name,
@@ -362,6 +380,108 @@ fun RepositoryScreen(repo: Repo) =
             }
         }
     }
+
+@Composable
+private fun RepositoryLoadingState() {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator()
+        Text(
+            text = stringResource(R.string.repository_state_loading),
+            modifier = Modifier.padding(top = 14.dp),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Text(
+            text = stringResource(R.string.repository_state_loading_description),
+            modifier = Modifier.padding(top = 4.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun RepositoryEmptyState(
+    isSearch: Boolean,
+    isOffline: Boolean,
+    errorMessage: String?,
+    isRefreshing: Boolean,
+    onRetry: () -> Unit,
+    onClearSearch: () -> Unit,
+) {
+    val title = when {
+        isSearch -> stringResource(R.string.search_empty)
+        isOffline -> stringResource(R.string.repository_state_offline)
+        errorMessage != null -> stringResource(R.string.repository_state_failed)
+        else -> stringResource(R.string.repository_empty)
+    }
+    val description = when {
+        isSearch -> stringResource(R.string.repository_state_search_empty_description)
+        isOffline -> stringResource(R.string.repository_state_offline_description)
+        errorMessage != null -> errorMessage
+        else -> stringResource(R.string.repository_state_empty_description)
+    }
+    Column(
+        modifier = Modifier.fillMaxSize().padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            painter = painterResource(if (isOffline) R.drawable.cloud else R.drawable.box),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(title, modifier = Modifier.padding(top = 14.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(description, modifier = Modifier.padding(top = 5.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        if (isSearch) {
+            TextButton(onClick = onClearSearch, modifier = Modifier.padding(top = 10.dp)) { Text(stringResource(R.string.repository_state_clear_search)) }
+        } else {
+            Button(enabled = !isRefreshing, onClick = onRetry, modifier = Modifier.padding(top = 14.dp)) {
+                if (isRefreshing) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                else Text(stringResource(R.string.activity_retry))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RepositoryStateBanner(
+    isOffline: Boolean,
+    errorMessage: String?,
+    isRefreshing: Boolean,
+    onRetry: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(10.dp),
+        tonalElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (isRefreshing) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            else Icon(painterResource(if (isOffline) R.drawable.cloud else R.drawable.info_circle), contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(
+                text = when {
+                    isRefreshing -> stringResource(R.string.repository_state_refreshing)
+                    isOffline -> stringResource(R.string.repository_state_cached_offline)
+                    else -> errorMessage ?: stringResource(R.string.repository_state_failed)
+                },
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (!isRefreshing) TextButton(onClick = onRetry) { Text(stringResource(R.string.activity_retry)) }
+        }
+    }
+}
 
 @Composable
 fun getDomainIcon(url: String) =

@@ -1,19 +1,32 @@
 package com.dergoogler.mmrl.ui.screens.modules
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,38 +36,52 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
-import com.dergoogler.mmrl.ext.rememberTrue
-import com.dergoogler.mmrl.model.local.LocalModule
+import com.dergoogler.mmrl.ext.isPackageInstalled
+import com.dergoogler.mmrl.model.local.InstalledModuleGroupKey
+import com.dergoogler.mmrl.model.local.LocalModule as InstalledModule
+import com.dergoogler.mmrl.model.local.groupInstalledModules
 import com.dergoogler.mmrl.model.local.State
+import com.dergoogler.mmrl.model.local.versionDisplay
 import com.dergoogler.mmrl.model.online.Blacklist
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.platform.Platform
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
+import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasModConf
+import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasWebUI
 import com.dergoogler.mmrl.ui.activity.terminal.action.ActionActivity
 import com.dergoogler.mmrl.ui.component.VersionItemBottomSheet
 import com.dergoogler.mmrl.ui.component.scaffold.ScaffoldScope
 import com.dergoogler.mmrl.ui.component.scrollbar.VerticalFastScrollbar
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
-import com.dergoogler.mmrl.ui.providable.LocalModule
+import com.dergoogler.mmrl.ui.providable.LocalModule as LocalModuleProvider
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
+import com.dergoogler.mmrl.utils.webUILauncher
+import com.dergoogler.mmrl.viewmodel.ModuleUpdateInfo
 import com.dergoogler.mmrl.viewmodel.ModulesViewModel
 import dev.chrisbanes.haze.hazeSource
 
 @Composable
 fun ScaffoldScope.ModulesList(
     innerPadding: PaddingValues,
-    list: List<LocalModule>,
+    list: List<InstalledModule>,
+    allModules: List<InstalledModule>,
+    updates: List<ModuleUpdateInfo>,
     state: LazyListState,
-    onDownload: (LocalModule, VersionItem, Boolean) -> Unit,
+    onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
 ) = Box(
@@ -62,6 +89,14 @@ fun ScaffoldScope.ModulesList(
 ) {
     val paddingValues = LocalMainScreenInnerPaddings.current
     val layoutDirection = LocalLayoutDirection.current
+    val updateMap = remember(updates) { updates.associateBy { it.local.id } }
+    val groups =
+        remember(list, updateMap) {
+            groupInstalledModules(
+                modules = list,
+                updateIds = updateMap.keys,
+            )
+        }
 
     this@ModulesList.ResponsiveContent {
         LazyColumn(
@@ -72,27 +107,35 @@ fun ScaffoldScope.ModulesList(
                     .hazeSource(state = LocalHazeState.current),
             contentPadding =
                 PaddingValues(
-                    top = innerPadding.calculateTopPadding() + 16.dp,
-                    start = innerPadding.calculateStartPadding(layoutDirection) + 16.dp,
+                    top = innerPadding.calculateTopPadding() + 10.dp,
+                    start = innerPadding.calculateStartPadding(layoutDirection),
                     bottom = paddingValues.calculateBottomPadding() + 16.dp,
-                    end = 16.dp,
                 ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            items(
-                items = list,
-                key = { it.id.id },
-                contentType = { "module_item" },
-            ) { module ->
-                CompositionLocalProvider(
-                    LocalModule provides module,
-                ) {
-                    ModuleItem(
-                        viewModel = viewModel,
-                        onDownload = onDownload,
-                        isProviderAlive = isProviderAlive,
+            item(key = "device_status") {
+                DeviceStatusHeader(
+                    platform = viewModel.platform,
+                    modules = allModules,
+                    updateCount = updates.size,
+                    providerAlive = isProviderAlive,
+                )
+            }
+
+            groups.forEach { group ->
+                item(key = "group_${group.title}") {
+                    ModuleGroupHeader(
+                        title = stringResource(group.key.titleResource),
+                        count = group.modules.size,
                     )
                 }
+                moduleRows(
+                    modules = group.modules,
+                    updateMap = updateMap,
+                    viewModel = viewModel,
+                    isProviderAlive = isProviderAlive,
+                    onDownload = onDownload,
+                )
             }
         }
     }
@@ -109,252 +152,407 @@ fun ScaffoldScope.ModulesList(
     )
 }
 
-@Composable
-private fun ModuleItem(
-    onDownload: (LocalModule, VersionItem, Boolean) -> Unit,
+private fun LazyListScope.moduleRows(
+    modules: List<InstalledModule>,
+    updateMap: Map<com.dergoogler.mmrl.platform.model.ModId, ModuleUpdateInfo>,
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
+    onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
 ) {
-    val context = LocalContext.current
-    val module = LocalModule.current
-    val userPreferences = LocalUserPreferences.current
-
-    val ops = remember(userPreferences.useShellForModuleStateChange, module.state) {
-        viewModel.createModuleOps(
-            userPreferences.useShellForModuleStateChange,
-            module,
-        )
-    }
-
-    val blacklist = remember(module.id) {
-        viewModel.getBlacklist(module.id.toString())
-    }
-
-    val isModuleSwitchChecked = remember(module.state) {
-        module.state == State.ENABLE
-    }
-
-    val isModuleEnabled = remember(module.state, isProviderAlive, viewModel.platform) {
-        val enabled =
-            with(viewModel.platform) {
-                when {
-                    isKernelSuNext || isKernelSU || isAPatch -> isProviderAlive && module.state != State.UPDATE
-                    else -> isProviderAlive
-                }
-            }
-        enabled && module.state != State.REMOVE
-    }
-
-    val isActionEnabled = remember(isProviderAlive, module.state) {
-        isProviderAlive && module.state != State.REMOVE && module.state != State.DISABLE
-    }
-
-    val isBlacklisted by Blacklist.isBlacklisted(blacklist)
-
-    val item = viewModel.getVersionItem(module)
-    val progress = viewModel.getProgress(item)
-
-    var open by remember { mutableStateOf(false) }
-
-    VersionItemBottomSheetIfNeeded(
-        open = open,
-        item = item,
-        isProviderAlive = isProviderAlive,
-        onDownload = { onDownload(module, item!!, it) },
-        onClose = { open = false },
-        isBlacklisted = isBlacklisted,
-    )
-
-    ModuleItem(
-        isProviderAlive = isProviderAlive,
-        isBlacklisted = isBlacklisted,
-        progress = progress,
-        indeterminate = ops.isOpsRunning,
-        alpha =
-            when (module.state) {
-                State.DISABLE, State.REMOVE -> 0.5f
-                else -> 1f
-            },
-        decoration =
-            when (module.state) {
-                State.REMOVE -> TextDecoration.LineThrough
-                else -> TextDecoration.None
-            },
-        switch = {
-            Switch(
-                checked = isModuleSwitchChecked,
-                onCheckedChange = ops.toggle,
-                enabled = isModuleEnabled,
+    items(
+        items = modules,
+        key = { it.id.id },
+        contentType = { "compact_module_row" },
+    ) { module ->
+        CompositionLocalProvider(LocalModuleProvider provides module) {
+            CompactInstalledModuleRow(
+                update = updateMap[module.id],
+                viewModel = viewModel,
+                isProviderAlive = isProviderAlive,
+                onDownload = onDownload,
             )
-        },
-        indicator = {
-            when (module.state) {
-                State.REMOVE -> StateIndicator(R.drawable.trash)
-                State.UPDATE -> StateIndicator(R.drawable.device_mobile_down)
-                else -> {}
-            }
-        },
-        startTrailingButton = {
-            module.hasAction.rememberTrue {
-                ActionButton(
-                    enabled = isActionEnabled,
-                    onClick =
-                        remember {
-                            {
-                                ActionActivity.start(
-                                    context = context,
-                                    modId = module.id,
-                                )
-                            }
-                        },
-                )
-            }
-        },
-        trailingButton = {
-            item?.let { itm ->
-                val hasUpdate = remember(itm, module.versionCode) {
-                    itm.versionCode > module.versionCode
-                }
+        }
+    }
+}
 
-                UpdateButton(
-                    enabled = hasUpdate,
-                    onClick = remember { { open = true } },
-                )
 
-                Spacer(modifier = Modifier.width(12.dp))
-            }
+private val InstalledModuleGroupKey.titleResource: Int
+    get() =
+        when (this) {
+            InstalledModuleGroupKey.NEEDS_ATTENTION -> R.string.modules_group_attention
+            InstalledModuleGroupKey.UPDATES_AVAILABLE -> R.string.modules_group_updates
+            InstalledModuleGroupKey.ENABLED -> R.string.modules_group_enabled
+            InstalledModuleGroupKey.DISABLED -> R.string.modules_group_disabled
+            InstalledModuleGroupKey.PENDING_REMOVAL -> R.string.modules_group_pending_removal
+        }
 
-            val isRemoveOrRestoreEnabled = remember(
-                userPreferences.useShellForModuleStateChange,
-                module.state,
-                isProviderAlive,
+@Composable
+private fun DeviceStatusHeader(
+    platform: Platform,
+    modules: List<InstalledModule>,
+    updateCount: Int,
+    providerAlive: Boolean,
+) {
+    val activeCount = modules.count { it.state == State.ENABLE || it.state == State.UPDATE }
+    val rebootRequired = modules.any { it.state == State.UPDATE || it.state == State.REMOVE }
+    val platformName =
+        when (platform) {
+            Platform.KsuNext -> "KernelSU Next"
+            Platform.KernelSU -> "KernelSU"
+            Platform.Magisk -> "Magisk"
+            Platform.APatch -> "APatch"
+            Platform.MKSU -> "MKSU"
+            Platform.SukiSU -> "SukiSU Ultra"
+            Platform.RKSU -> "RKSU"
+            Platform.Shizuku -> "Shizuku"
+            Platform.NonRoot -> stringResource(R.string.non_root)
+            Platform.Unknown -> stringResource(R.string.unknown)
+        }
+
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                isProviderAlive &&
-                    (
-                        !(viewModel.moduleCompatibility.canRestoreModules && userPreferences.useShellForModuleStateChange) ||
-                            module.state != State.REMOVE
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = platformName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                     )
+                    Text(
+                        text = stringResource(R.string.modules_active_count, activeCount),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                StatusDot(
+                    text = stringResource(if (providerAlive) R.string.root_available else R.string.root_unavailable),
+                    color = if (providerAlive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                )
             }
 
-            RemoveOrRestore(
-                module = module,
-                enabled = isRemoveOrRestoreEnabled,
-                onClick = ops.change,
-            )
-        },
-    )
+            FlowRow(
+                modifier = Modifier.padding(top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                StatusDot(
+                    text = stringResource(R.string.modules_updates_count, updateCount),
+                    color = if (updateCount > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline,
+                )
+                if (rebootRequired) {
+                    StatusDot(
+                        text = stringResource(R.string.modules_reboot_required),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
-private fun VersionItemBottomSheetIfNeeded(
-    open: Boolean,
-    item: VersionItem?,
-    isProviderAlive: Boolean,
-    onDownload: (Boolean) -> Unit,
-    onClose: () -> Unit,
-    isBlacklisted: Boolean,
+private fun ModuleGroupHeader(
+    title: String,
+    count: Int,
 ) {
-    if (open && item != null) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.outline,
+        )
+    }
+}
+
+@Composable
+private fun CompactInstalledModuleRow(
+    update: ModuleUpdateInfo?,
+    viewModel: ModulesViewModel,
+    isProviderAlive: Boolean,
+    onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
+) {
+    val context = LocalContext.current
+    val module = LocalModuleProvider.current
+    val preferences = LocalUserPreferences.current
+    val ops =
+        remember(preferences.useShellForModuleStateChange, module.state) {
+            viewModel.createModuleOps(preferences.useShellForModuleStateChange, module)
+        }
+    val blacklist = remember(module.id) { viewModel.getBlacklist(module.id.toString()) }
+    val isBlacklisted by Blacklist.isBlacklisted(blacklist)
+    val updateItem = update?.version
+    val progress = viewModel.getProgress(updateItem)
+
+    val switchChecked = module.state == State.ENABLE
+    val switchEnabled =
+        remember(module.state, isProviderAlive, viewModel.platform) {
+            val providerSupportsStateChange =
+                with(viewModel.platform) {
+                    when {
+                        isKernelSuNext || isKernelSU || isAPatch -> isProviderAlive && module.state != State.UPDATE
+                        else -> isProviderAlive
+                    }
+                }
+            providerSupportsStateChange && module.state != State.REMOVE
+        }
+    val actionEnabled = isProviderAlive && module.state != State.REMOVE && module.state != State.DISABLE
+    val removeEnabled =
+        remember(preferences.useShellForModuleStateChange, module.state, isProviderAlive) {
+            isProviderAlive &&
+                (
+                    !(viewModel.moduleCompatibility.canRestoreModules && preferences.useShellForModuleStateChange) ||
+                        module.state != State.REMOVE
+                )
+        }
+
+    var updateSheetOpen by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var requiredAppBottomSheet by remember { mutableStateOf(false) }
+
+    if (updateSheetOpen && updateItem != null) {
         VersionItemBottomSheet(
             isUpdate = true,
-            item = item,
+            item = updateItem,
             isProviderAlive = isProviderAlive,
-            onDownload = onDownload,
-            onClose = onClose,
+            onDownload = { onDownload(module, updateItem, it) },
+            onClose = { updateSheetOpen = false },
             isBlacklisted = isBlacklisted,
         )
     }
-}
 
-@Composable
-private fun UpdateButton(
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    val contentPadding = remember { PaddingValues(horizontal = 12.dp) }
-    val iconSize = remember { Modifier.size(20.dp) }
-    val spacerWidth = remember { Modifier.width(6.dp) }
+    if (requiredAppBottomSheet) {
+        BottomSheetForWXP { requiredAppBottomSheet = false }
+    }
 
-    FilledTonalButton(
-        onClick = onClick,
-        enabled = enabled,
-        contentPadding = contentPadding,
+    val canOpenWebUi =
+        isProviderAlive &&
+            (module.hasWebUI || module.hasModConf) &&
+            module.state != State.REMOVE
+    val launchWebUi = preferences.webUILauncher(context, module)
+    val webUiXMissing = !context.isPackageInstalled(preferences.webuixPackageName)
+
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = canOpenWebUi) {
+                    if (webUiXMissing) {
+                        requiredAppBottomSheet = true
+                    } else {
+                        launchWebUi()
+                    }
+                },
+        color = Color.Transparent,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
     ) {
-        Icon(
-            modifier = iconSize,
-            painter = painterResource(id = R.drawable.device_mobile_down),
-            contentDescription = null,
-        )
+        Column {
+            Row(
+                modifier =
+                    Modifier
+                        .alpha(if (module.state == State.DISABLE || module.state == State.REMOVE) 0.58f else 1f)
+                        .padding(horizontal = 16.dp, vertical = 11.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    ) {
+                        Text(
+                            text = module.name,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            textDecoration = if (module.state == State.REMOVE) TextDecoration.LineThrough else TextDecoration.None,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (isBlacklisted) {
+                            Icon(
+                                painter = painterResource(R.drawable.alert_triangle),
+                                contentDescription = stringResource(R.string.blacklisted),
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
 
-        Spacer(modifier = spacerWidth)
-        Text(
-            text = stringResource(id = R.string.module_update),
-        )
+                    Text(
+                        text = stringResource(R.string.module_version_author, module.versionDisplay, module.author),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    FlowRow(
+                        modifier = Modifier.padding(top = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        if (update != null) {
+                            StatusDot(
+                                text = stringResource(R.string.module_update_available),
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
+                        if (module.hasWebUI || module.hasModConf) {
+                            StatusDot(
+                                text = stringResource(R.string.view_module_features_webui),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        if (module.hasAction) {
+                            StatusDot(
+                                text = stringResource(R.string.module_action),
+                                color = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                        when (module.state) {
+                            State.UPDATE ->
+                                StatusDot(
+                                    text = stringResource(R.string.modules_needs_attention),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            State.REMOVE ->
+                                StatusDot(
+                                    text = stringResource(R.string.modules_pending_removal),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            else -> Unit
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+                Switch(
+                    checked = switchChecked,
+                    onCheckedChange = ops.toggle,
+                    enabled = switchEnabled,
+                )
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(
+                            painter = painterResource(R.drawable.dots_vertical),
+                            contentDescription = stringResource(R.string.module_manage),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false },
+                    ) {
+                        if (canOpenWebUi) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.view_module_features_webui)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.sandbox), null) },
+                                onClick = {
+                                    menuOpen = false
+                                    if (webUiXMissing) requiredAppBottomSheet = true else launchWebUi()
+                                },
+                            )
+                        }
+                        if (module.hasAction) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.module_action)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.player_play), null) },
+                                enabled = actionEnabled,
+                                onClick = {
+                                    menuOpen = false
+                                    ActionActivity.start(context = context, modId = module.id)
+                                },
+                            )
+                        }
+                        if (updateItem != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.module_update)) },
+                                leadingIcon = { Icon(painterResource(R.drawable.device_mobile_down), null) },
+                                onClick = {
+                                    menuOpen = false
+                                    updateSheetOpen = true
+                                },
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (module.state == State.REMOVE) R.string.module_restore else R.string.module_remove,
+                                    ),
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painterResource(if (module.state == State.REMOVE) R.drawable.rotate else R.drawable.trash),
+                                    null,
+                                )
+                            },
+                            enabled = removeEnabled,
+                            onClick = {
+                                menuOpen = false
+                                ops.change()
+                            },
+                        )
+                    }
+                }
+            }
+
+            when {
+                ops.isOpsRunning ->
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().height(2.dp),
+                        strokeCap = StrokeCap.Round,
+                    )
+                progress != 0f ->
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth().height(2.dp),
+                        strokeCap = StrokeCap.Round,
+                    )
+            }
+        }
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun RemoveOrRestore(
-    module: LocalModule,
-    enabled: Boolean,
-    onClick: () -> Unit,
+private fun StatusDot(
+    text: String,
+    color: Color,
 ) {
-    val contentPadding = remember { PaddingValues(horizontal = 12.dp) }
-    val iconSize = remember { Modifier.size(20.dp) }
-    val spacerWidth = remember { Modifier.width(6.dp) }
-
-    FilledTonalButton(
-        onClick = onClick,
-        enabled = enabled,
-        contentPadding = contentPadding,
+    Surface(
+        color = color.copy(alpha = 0.12f),
+        contentColor = color,
+        shape = RoundedCornerShape(6.dp),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
     ) {
-        Icon(
-            modifier = iconSize,
-            painter =
-                painterResource(
-                    id =
-                        if (module.state == State.REMOVE) {
-                            R.drawable.rotate
-                        } else {
-                            R.drawable.trash
-                        },
-                ),
-            contentDescription = null,
-        )
-
-        Spacer(modifier = spacerWidth)
         Text(
-            text =
-                stringResource(
-                    id =
-                        if (module.state == State.REMOVE) {
-                            R.string.module_restore
-                        } else {
-                            R.string.module_remove
-                        },
-                ),
-        )
-    }
-}
-
-@Composable
-private fun ActionButton(
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    val contentPadding = remember { PaddingValues(horizontal = 12.dp) }
-    val iconSize = remember { Modifier.size(20.dp) }
-
-    FilledTonalButton(
-        onClick = onClick,
-        enabled = enabled,
-        contentPadding = contentPadding,
-    ) {
-        Icon(
-            modifier = iconSize,
-            painter = painterResource(id = R.drawable.player_play),
-            contentDescription = null,
+            text = text,
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
         )
     }
 }

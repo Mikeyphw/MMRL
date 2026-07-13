@@ -5,11 +5,13 @@ package com.dergoogler.mmrl.datastore.model
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
-import android.os.Build
 import android.os.Environment
 import com.dergoogler.mmrl.datastore.BuildConfig
 import com.dergoogler.mmrl.ui.theme.Colors
-import com.dergoogler.mmrl.ui.theme.Colors.Companion.getColorScheme
+import com.dergoogler.mmrl.ui.theme.ThemeColorSource
+import com.dergoogler.mmrl.ui.theme.ThemeContrast
+import com.dergoogler.mmrl.ui.theme.ThemeRegistry
+import com.dergoogler.mmrl.ui.theme.ThemeSurfaceStyle
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromByteArray
@@ -26,8 +28,8 @@ import kotlin.contracts.contract
 @Serializable
 data class UserPreferences(
     @ProtoNumber(1) val workingMode: WorkingMode = WorkingMode.FIRST_SETUP,
-    @ProtoNumber(2) val darkMode: DarkMode = DarkMode.FollowSystem,
-    @ProtoNumber(3) val themeColor: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Colors.Dynamic.id else Colors.MMRLBase.id,
+    @ProtoNumber(2) val darkMode: DarkMode = DarkMode.AlwaysOn,
+    @ProtoNumber(3) val themeColor: Int = Colors.MMRLBase.id,
     @ProtoNumber(4) val deleteZipFile: Boolean = false,
     @ProtoNumber(5) val downloadPath: String = PUBLIC_DOWNLOADS.path,
     @ProtoNumber(6) val homepage: Homepage = Homepage.Home,
@@ -71,21 +73,54 @@ data class UserPreferences(
     @ProtoNumber(38) val showTerminalLineNumbers: Boolean = true,
     @ProtoNumber(39) val devAlwaysShowUpdateAlert: Boolean = false,
     @ProtoNumber(40) val webuixPackageName: String = "com.dergoogler.mmrl.wx${if (BuildConfig.DEBUG) ".debug" else ""}",
-    @ProtoNumber(41) val enableBlur: Boolean = true,
+    @ProtoNumber(41) val enableBlur: Boolean = false,
     @ProtoNumber(42) val hideBottomBarLabels: Boolean = false,
     @ProtoNumber(43) val superUserMenu: SuperUserMenu = SuperUserMenu(),
     @ProtoNumber(44) val repositoryServiceEnabled: Boolean = false,
-    @ProtoNumber(45) val moduleServiceEnabled: Boolean = false,
+    @ProtoNumber(45) val moduleServiceEnabled: Boolean = true,
     @ProtoNumber(46) val providerServiceEnabled: Boolean = false,
+    @ProtoNumber(47) val notifiedModuleUpdates: Set<String> = emptySet(),
+    @ProtoNumber(48) val taskerIntegrationEnabled: Boolean = false,
+    @ProtoNumber(49) val taskerAllowDownloads: Boolean = true,
+    @ProtoNumber(50) val taskerAllowStateChanges: Boolean = false,
+    @ProtoNumber(51) val taskerAllowModuleActions: Boolean = false,
+    @ProtoNumber(52) val taskerAllowRemovals: Boolean = false,
+    @ProtoNumber(53) val taskerAllowReviewedInstalls: Boolean = false,
+    @ProtoNumber(54) val taskerApprovalPolicy: TaskerApprovalPolicy = TaskerApprovalPolicy.ALWAYS_ASK,
+    @ProtoNumber(55) val taskerAllowedModules: Set<String> = emptySet(),
+    /** Stable palette ID. Empty means this profile still needs legacy integer migration. */
+    @ProtoNumber(56) val themePaletteId: String = "",
+    @ProtoNumber(57) val themeColorSource: ThemeColorSource = ThemeColorSource.BUILT_IN,
+    @ProtoNumber(58) val dynamicFallbackPaletteId: String = ThemeRegistry.NORD_ID,
+    @ProtoNumber(59) val themeSurfaceStyle: ThemeSurfaceStyle = ThemeSurfaceStyle.FLAT,
+    @ProtoNumber(60) val themeContrast: ThemeContrast = ThemeContrast.STANDARD,
+    @ProtoNumber(61) val themePureBlack: Boolean = false,
+    @ProtoNumber(62) val themeAccentIntensity: Float = 0.72f,
+    @ProtoNumber(63) val enhancedStatusDistinction: Boolean = true,
+    @ProtoNumber(64) val batterySaverForcesDark: Boolean = false,
+    @ProtoNumber(65) val customThemeJson: String = "",
 ) {
-    fun isDarkMode() =
-        when (darkMode) {
+    fun isDarkMode(context: Context? = null): Boolean {
+        val batteryForcesDark = batterySaverForcesDark && context?.let {
+            (it.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager)?.isPowerSaveMode
+        } == true
+        if (batteryForcesDark) return true
+        return when (darkMode) {
             DarkMode.AlwaysOff -> false
             DarkMode.AlwaysOn -> true
             DarkMode.FollowSystem -> isSystemInDarkTheme()
         }
+    }
 
-    fun colorScheme(context: Context) = context.getColorScheme(themeColor, isDarkMode())
+    fun resolvedThemePaletteId(): String =
+        themePaletteId.takeIf { it.isNotBlank() } ?: ThemeRegistry.migrateLegacyId(themeColor)
+
+    fun resolvedThemeColorSource(): ThemeColorSource =
+        if (themePaletteId.isBlank() && themeColor == Colors.Dynamic.id) {
+            ThemeColorSource.DYNAMIC_FULL
+        } else {
+            themeColorSource
+        }
 
     private fun isSystemInDarkTheme(): Boolean {
         val uiMode = Resources.getSystem().configuration.uiMode

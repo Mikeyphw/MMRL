@@ -8,6 +8,9 @@ import com.dergoogler.mmrl.database.entity.online.OnlineModuleEntity
 
 @Dao
 interface OnlineDao {
+    @Query("SELECT * FROM onlineModules")
+    suspend fun getAll(): List<OnlineModuleEntity>
+
     @Query("SELECT * FROM onlineModules WHERE id = :id")
     suspend fun getAllById(id: String): List<OnlineModuleEntity>
 

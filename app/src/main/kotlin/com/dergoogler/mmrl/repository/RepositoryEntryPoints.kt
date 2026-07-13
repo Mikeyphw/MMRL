@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.repository
 
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
+import com.dergoogler.mmrl.installer.UpdateRollbackStore
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -13,4 +14,8 @@ interface RepositoryEntryPoints {
     fun modulesRepository(): ModulesRepository
 
     fun userPreferencesRepository(): UserPreferencesRepository
+
+    fun operationHistoryRepository(): OperationHistoryRepository
+
+    fun updateRollbackStore(): UpdateRollbackStore
 }

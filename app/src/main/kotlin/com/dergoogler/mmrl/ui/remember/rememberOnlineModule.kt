@@ -7,10 +7,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import com.dergoogler.mmrl.database.entity.Repo
-import com.dergoogler.mmrl.datastore.model.Option
 import com.dergoogler.mmrl.datastore.providable.LocalUserPreferences
 import com.dergoogler.mmrl.model.json.UpdateJson
 import com.dergoogler.mmrl.model.online.OnlineModule
+import com.dergoogler.mmrl.model.sort.sortedForRepository
 import com.dergoogler.mmrl.model.state.OnlineState
 import com.dergoogler.mmrl.model.state.OnlineState.Companion.createState
 import com.dergoogler.mmrl.platform.model.ModId
@@ -54,30 +54,7 @@ fun rememberOnlineModules(
                         local = local,
                         hasUpdatableTag = localRepository.hasUpdatableTag(it.id),
                     ) to it.copy(versions = versionsList)
-                }.sortedWith(
-                    if (repositoryMenu.descending) {
-                        when (repositoryMenu.option) {
-                            Option.Name -> compareByDescending { it.second.name.lowercase() }
-                            Option.UpdatedTime -> compareBy { it.first.lastUpdated }
-                            Option.Size -> compareByDescending { 0 }
-                        }
-                    } else {
-                        when (repositoryMenu.option) {
-                            Option.Name -> compareBy { it.second.name.lowercase() }
-                            Option.UpdatedTime -> compareByDescending { it.first.lastUpdated }
-                            Option.Size -> compareBy { 0 }
-                        }
-                    },
-                ).let { list ->
-                    var result = list
-                    if (repositoryMenu.pinInstalled) {
-                        result = result.sortedByDescending { it.first.installed }
-                    }
-                    if (repositoryMenu.pinUpdatable) {
-                        result = result.sortedByDescending { it.first.updatable }
-                    }
-                    result
-                }
+                }.sortedForRepository(repositoryMenu)
 
         val newKey =
             when {

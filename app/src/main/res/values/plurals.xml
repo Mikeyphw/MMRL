@@ -12,4 +12,9 @@
         <item quantity="one">%1$d hour</item>
         <item quantity="other">%1$d hours</item>
     </plurals>
+
+    <plurals name="activity_pending_reboot">
+        <item quantity="one">%1$d operation is waiting for a reboot</item>
+        <item quantity="other">%1$d operations are waiting for a reboot</item>
+    </plurals>
 </resources>

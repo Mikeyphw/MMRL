@@ -8,7 +8,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,7 +18,6 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,11 +69,11 @@ import com.dergoogler.mmrl.ui.token.applyTonalElevation
 fun Card(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    color: Color = MaterialTheme.colorScheme.surface,
+    color: Color = MaterialTheme.colorScheme.surfaceContainerLow,
     contentColor: Color = contentColorFor(color),
-    shape: Shape = RoundedCornerShape(20.dp),
+    shape: Shape = RoundedCornerShape(12.dp),
     outsideContentPadding: PaddingValues = PaddingValues(0.dp),
-    tonalElevation: Dp = 1.dp,
+    tonalElevation: Dp = 0.dp,
     shadowElevation: Dp = 0.dp,
     border: BorderStroke? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
@@ -84,7 +82,6 @@ fun Card(
     content: @Composable CardScope.() -> Unit,
 ) {
     val instance = remember { CardScopeInstance() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
     val absoluteElevation = LocalAbsoluteTonalElevation.current + tonalElevation
 
     val clickableModifier =
@@ -99,13 +96,6 @@ fun Card(
                 ).hoverable(interactionSource)
         } else {
             Modifier
-        }
-
-    val hoveredBorder =
-        if (isHovered) {
-            BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
-        } else {
-            border
         }
 
     CompositionLocalProvider(
@@ -123,7 +113,7 @@ fun Card(
                                 color,
                                 absoluteElevation,
                             ),
-                        border = hoveredBorder,
+                        border = border,
                         shadowElevation = with(LocalDensity.current) { shadowElevation.toPx() },
                     ).applyAlpha(enabled)
                     .semantics(mergeDescendants = false) {
@@ -182,7 +172,7 @@ fun Card(
 }
 
 fun Modifier.card(
-    shape: Shape = RoundedCornerShape(20.dp),
+    shape: Shape = RoundedCornerShape(12.dp),
     backgroundColor: Color = Color.Transparent,
     border: BorderStroke? = null,
     shadowElevation: Float? = null,

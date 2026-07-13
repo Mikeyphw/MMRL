@@ -2,6 +2,7 @@ package com.dergoogler.mmrl.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -16,12 +17,18 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.database.entity.history.OperationAction
+import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.datastore.model.ModulesMenu
 import com.dergoogler.mmrl.datastore.model.Option
 import com.dergoogler.mmrl.model.json.UpdateJson
+import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.model.local.State
+import com.dergoogler.mmrl.model.state.Permissions
+import com.dergoogler.mmrl.service.ModuleService
+import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.VersionItem
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
@@ -31,6 +38,7 @@ import com.dergoogler.mmrl.platform.model.ModId
 import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
+import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import com.dergoogler.mmrl.service.DownloadService
 import com.dergoogler.mmrl.utils.Utils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -56,6 +64,16 @@ data class ModulesScreenState(
     val isRefreshing: Boolean = false,
 )
 
+data class ModuleUpdateInfo(
+    val local: LocalModule,
+    val version: VersionItem,
+    val online: OnlineModule?,
+    val repositoryName: String?,
+    val compatible: Boolean,
+    val hasBootScripts: Boolean,
+    val hasSensitiveChanges: Boolean,
+)
+
 @HiltViewModel
 class ModulesViewModel
     @Inject
@@ -63,6 +81,7 @@ class ModulesViewModel
         localRepository: LocalRepository,
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
+        operationHistoryRepository: OperationHistoryRepository,
         application: Application,
     ) : MMRLViewModel(
             application = application,
@@ -70,6 +89,8 @@ class ModulesViewModel
             modulesRepository = modulesRepository,
             userPreferencesRepository = userPreferencesRepository,
         ) {
+        private val historyRepository = operationHistoryRepository
+
         val moduleCompatibility: ModuleCompatibility
             get() =
                 PlatformManager.get(
@@ -113,10 +134,20 @@ class ModulesViewModel
         private val versionItemCache = mutableStateMapOf<ModId, VersionItem?>()
 
         private val opsTasks = mutableStateListOf<ModId>()
+        private val pendingOperations = mutableMapOf<ModId, PendingModuleOperation>()
         private val opsCallback =
             object : IModuleOpsCallback.Stub() {
                 override fun onSuccess(id: ModId) {
                     viewModelScope.launch {
+                        val pending = pendingOperations.remove(id)
+                        pending?.let {
+                            historyRepository.succeed(
+                                id = it.historyId,
+                                summary = it.successSummary,
+                                requiresReboot = true,
+                                rollbackAction = it.rollbackAction,
+                            )
+                        }
                         modulesRepository.getLocal(id)
                         opsTasks.remove(id)
                     }
@@ -126,7 +157,15 @@ class ModulesViewModel
                     id: ModId,
                     msg: String?,
                 ) {
-                    opsTasks.remove(id)
+                    viewModelScope.launch {
+                        pendingOperations.remove(id)?.let {
+                            historyRepository.fail(
+                                id = it.historyId,
+                                summary = msg ?: "Module operation failed",
+                            )
+                        }
+                        opsTasks.remove(id)
+                    }
                     Timber.w("$id: $msg")
                 }
             }
@@ -155,6 +194,87 @@ class ModulesViewModel
                     started = SharingStarted.WhileSubscribed(5000),
                     initialValue = ModulesScreenState(),
                 )
+
+        val updates: StateFlow<List<ModuleUpdateInfo>> =
+            combine(
+                localRepository.getLocalAllAsFlow(),
+                localRepository.getOnlineAllAsFlow(),
+                localRepository.getRepoAllAsFlow(),
+                localRepository.getUpdatableTagsAsFlow(),
+            ) { localModules, onlineModules, repositories, updatableTags ->
+                val repoNames = repositories.associate { it.url to it.name }
+                val updateTracking = updatableTags.associate { ModuleIdentity.normalize(it.id) to it.updatable }
+                val platform = PlatformManager.platform
+                val rootVersion =
+                    PlatformManager.get(0) {
+                        with(moduleManager) { versionCode }
+                    }
+
+                buildList {
+                    localModules.forEach { local ->
+                        val normalizedId = ModuleIdentity.normalize(local.id.id)
+                        if (updateTracking[normalizedId] == false) return@forEach
+
+                        val online =
+                            onlineModules
+                                .filter { ModuleIdentity.matches(it.id, local.id.id) }
+                                .maxByOrNull { it.versionCode }
+
+                        val version =
+                            if (local.updateJson.isNotBlank()) {
+                                UpdateJson.loadToVersionItem(local.updateJson)
+                            } else {
+                                online?.versions?.maxByOrNull { it.versionCode }
+                                    ?: localRepository.getVersionById(local.id.toString()).maxByOrNull { it.versionCode }
+                            }
+
+                        if (version == null || version.versionCode <= local.versionCode) return@forEach
+
+                        val managerCompatible =
+                            online?.manager(platform)?.isCompatible(rootVersion) ?: true
+                        val androidCompatible =
+                            online?.let { module ->
+                                (module.minApi == null || Build.VERSION.SDK_INT >= module.minApi) &&
+                                    (module.maxApi == null || Build.VERSION.SDK_INT <= module.maxApi)
+                            } ?: true
+                        val permissions = online?.permissions.orEmpty()
+                        val features = online?.features
+                        val hasBootScripts =
+                            Permissions.MAGISK_SERVICE in permissions ||
+                                Permissions.MAGISK_POST_FS_DATA in permissions ||
+                                Permissions.KERNELSU_POST_MOUNT in permissions ||
+                                Permissions.KERNELSU_BOOT_COMPLETED in permissions ||
+                                features?.service == true ||
+                                features?.postFsData == true ||
+                                features?.postMount == true ||
+                                features?.bootCompleted == true
+                        val hasSensitiveChanges =
+                            Permissions.MAGISK_SEPOLICY in permissions ||
+                                Permissions.MAGISK_RESETPROP in permissions ||
+                                features?.sepolicy == true ||
+                                features?.resetprop == true
+
+                        add(
+                            ModuleUpdateInfo(
+                                local = local,
+                                version = version,
+                                online = online,
+                                repositoryName = repoNames[online?.repoUrl ?: version.repoUrl],
+                                compatible = managerCompatible && androidCompatible,
+                                hasBootScripts = hasBootScripts,
+                                hasSensitiveChanges = hasSensitiveChanges,
+                            ),
+                        )
+                    }
+                }.sortedWith(
+                    compareByDescending<ModuleUpdateInfo> { it.hasSensitiveChanges || it.hasBootScripts }
+                        .thenBy { it.local.name.lowercase() },
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
 
         private fun dataObserver() {
             combine(
@@ -283,14 +403,29 @@ class ModulesViewModel
                 ModuleOps(
                     isOpsRunning = opsTasks.contains(module.id),
                     toggle = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .disable(module.id, useShell, opsCallback)
+                        launchModuleOperation(
+                            module = module,
+                            useShell = useShell,
+                            kind = OperationKind.DISABLE,
+                            action = OperationAction.DISABLE,
+                            rollbackAction = OperationAction.ENABLE,
+                            successSummary = "Module disabled; reboot required",
+                        ) {
+                            PlatformManager.moduleManager.disable(module.id, useShell, opsCallback)
+                        }
                     },
                     change = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .remove(module.id, useShell, opsCallback)
+                        launchModuleOperation(
+                            module = module,
+                            useShell = useShell,
+                            kind = OperationKind.REMOVE,
+                            action = OperationAction.REMOVE,
+                            rollbackAction =
+                                if (moduleCompatibility.canRestoreModules) OperationAction.ENABLE else null,
+                            successSummary = "Module marked for removal; reboot required",
+                        ) {
+                            PlatformManager.moduleManager.remove(module.id, useShell, opsCallback)
+                        }
                     },
                 )
 
@@ -298,14 +433,29 @@ class ModulesViewModel
                 ModuleOps(
                     isOpsRunning = opsTasks.contains(module.id),
                     toggle = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .enable(module.id, useShell, opsCallback)
+                        launchModuleOperation(
+                            module = module,
+                            useShell = useShell,
+                            kind = OperationKind.ENABLE,
+                            action = OperationAction.ENABLE,
+                            rollbackAction = OperationAction.DISABLE,
+                            successSummary = "Module enabled; reboot required",
+                        ) {
+                            PlatformManager.moduleManager.enable(module.id, useShell, opsCallback)
+                        }
                     },
                     change = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .remove(module.id, useShell, opsCallback)
+                        launchModuleOperation(
+                            module = module,
+                            useShell = useShell,
+                            kind = OperationKind.REMOVE,
+                            action = OperationAction.REMOVE,
+                            rollbackAction =
+                                if (moduleCompatibility.canRestoreModules) OperationAction.ENABLE else null,
+                            successSummary = "Module marked for removal; reboot required",
+                        ) {
+                            PlatformManager.moduleManager.remove(module.id, useShell, opsCallback)
+                        }
                     },
                 )
 
@@ -314,9 +464,16 @@ class ModulesViewModel
                     isOpsRunning = opsTasks.contains(module.id),
                     toggle = {},
                     change = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .enable(module.id, useShell, opsCallback)
+                        launchModuleOperation(
+                            module = module,
+                            useShell = useShell,
+                            kind = OperationKind.RESTORE,
+                            action = OperationAction.ENABLE,
+                            rollbackAction = OperationAction.REMOVE,
+                            successSummary = "Module removal cancelled; reboot required",
+                        ) {
+                            PlatformManager.moduleManager.enable(module.id, useShell, opsCallback)
+                        }
                     },
                 )
 
@@ -327,6 +484,57 @@ class ModulesViewModel
                     change = {},
                 )
         }
+
+        private fun launchModuleOperation(
+            module: LocalModule,
+            useShell: Boolean,
+            kind: OperationKind,
+            action: OperationAction,
+            rollbackAction: OperationAction?,
+            successSummary: String,
+            execute: () -> Unit,
+        ) {
+            if (opsTasks.contains(module.id)) return
+            opsTasks.add(module.id)
+            viewModelScope.launch {
+                val historyId =
+                    historyRepository.start(
+                        kind = kind,
+                        title = module.name,
+                        summary = kind.name.lowercase().replaceFirstChar(Char::uppercaseChar),
+                        moduleId = module.id.id,
+                        moduleName = module.name,
+                        retryAction = action,
+                        rollbackAction = rollbackAction,
+                        useShell = useShell,
+                    )
+                pendingOperations[module.id] =
+                    PendingModuleOperation(
+                        historyId = historyId,
+                        successSummary = successSummary,
+                        rollbackAction = rollbackAction,
+                    )
+                historyRepository.appendLog(historyId, "Module ID: ${module.id.id}")
+                historyRepository.appendLog(historyId, "Root backend: ${PlatformManager.platform.name}")
+                try {
+                    execute()
+                } catch (error: Throwable) {
+                    pendingOperations.remove(module.id)
+                    opsTasks.remove(module.id)
+                    historyRepository.fail(
+                        id = historyId,
+                        summary = error.message ?: "Unable to start module operation",
+                        error = error,
+                    )
+                }
+            }
+        }
+
+        private data class PendingModuleOperation(
+            val historyId: String,
+            val successSummary: String,
+            val rollbackAction: OperationAction?,
+        )
 
         @Composable
         fun getVersionItem(module: LocalModule): VersionItem? {
@@ -357,11 +565,21 @@ class ModulesViewModel
             return item
         }
 
+        fun setUpdateIgnored(moduleId: String, ignored: Boolean) {
+            viewModelScope.launch {
+                localRepository.insertUpdatableTag(moduleId, !ignored)
+                userPreferencesRepository.clearNotifiedModuleUpdate(moduleId)
+                if (ignored) ModuleService.cancelUpdateNotification(context, moduleId)
+            }
+        }
+
         fun downloader(
             context: Context,
             module: LocalModule,
             item: VersionItem,
             onSuccess: (File) -> Unit,
+            onFailure: (Throwable) -> Unit = { Timber.d(it) },
+            onOperationStarted: (String) -> Unit = {},
         ) {
             viewModelScope.launch {
                 val downloadPath =
@@ -388,6 +606,8 @@ class ModulesViewModel
 
                 val listener =
                     object : DownloadService.IDownloadListener {
+                        override fun onStarted(operationId: String) = onOperationStarted(operationId)
+
                         override fun getProgress(value: Float) {}
 
                         override fun onFileExists() {
@@ -405,6 +625,7 @@ class ModulesViewModel
 
                         override fun onFailure(e: Throwable) {
                             Timber.d(e)
+                            onFailure(e)
                         }
                     }
 

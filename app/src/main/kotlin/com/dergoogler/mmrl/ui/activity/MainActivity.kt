@@ -2,6 +2,7 @@ package com.dergoogler.mmrl.ui.activity
 
 import android.Manifest
 import android.os.Build
+import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.Crossfade
@@ -28,6 +29,8 @@ import timber.log.Timber
 
 class MainActivity : MMRLComponentActivity() {
     private var isLoading by mutableStateOf(true)
+    private var openActivityOnLaunch by mutableStateOf(false)
+    private var openUpdatesOnLaunch by mutableStateOf(false)
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override val requirePermissions = listOf(Manifest.permission.POST_NOTIFICATIONS)
@@ -36,6 +39,8 @@ class MainActivity : MMRLComponentActivity() {
         val splashScreen = installSplashScreen()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(savedInstanceState)
+        openActivityOnLaunch = intent.getBooleanExtra(EXTRA_OPEN_ACTIVITY, false)
+        openUpdatesOnLaunch = intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)
 
         splashScreen.setKeepOnScreenCondition { isLoading }
 
@@ -78,9 +83,25 @@ class MainActivity : MMRLComponentActivity() {
                         setWorkingMode = ::setWorkingMode,
                     )
                 } else {
-                    MainScreen()
+                    MainScreen(
+                        openActivityOnLaunch = openActivityOnLaunch,
+                        openUpdatesOnLaunch = openUpdatesOnLaunch,
+                        onActivityOpened = { openActivityOnLaunch = false },
+                        onUpdatesOpened = { openUpdatesOnLaunch = false },
+                    )
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_OPEN_ACTIVITY, false)) {
+            openActivityOnLaunch = true
+        }
+        if (intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)) {
+            openUpdatesOnLaunch = true
         }
     }
 
@@ -94,5 +115,10 @@ class MainActivity : MMRLComponentActivity() {
         lifecycleScope.launch {
             userPreferencesRepository.setEnableBlur(value)
         }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_ACTIVITY = "com.mikeyphw.mmrl.extra.OPEN_ACTIVITY"
+        const val EXTRA_OPEN_UPDATES = "com.mikeyphw.mmrl.extra.OPEN_UPDATES"
     }
 }

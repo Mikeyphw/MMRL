@@ -7,6 +7,7 @@ import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.platform.ksu.KsuNative
 import com.dergoogler.mmrl.ui.remember.rememberIsRoot
 import com.dergoogler.mmrl.utils.isManager
+import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModulesScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.RepositoriesScreenDestination
@@ -58,6 +59,15 @@ enum class MainDestination(
         icon = R.drawable.keyframes,
         iconFilled = R.drawable.keyframes_filled,
         requiresRoot = true,
+        requiresKernel = false,
+    ),
+
+    Activity(
+        direction = ActivityScreenDestination,
+        label = R.string.page_activity,
+        icon = R.drawable.logs,
+        iconFilled = R.drawable.logs,
+        requiresRoot = false,
         requiresKernel = false,
     ),
 

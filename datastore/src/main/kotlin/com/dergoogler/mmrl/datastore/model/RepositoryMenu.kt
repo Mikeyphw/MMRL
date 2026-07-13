@@ -8,10 +8,10 @@ import kotlinx.serialization.protobuf.ProtoNumber
 data class RepositoryMenu
     @OptIn(ExperimentalSerializationApi::class)
     constructor(
-        @ProtoNumber(1) val option: Option = Option.Name,
-        @ProtoNumber(2) val descending: Boolean = false,
-        @ProtoNumber(3) val pinInstalled: Boolean = true,
-        @ProtoNumber(4) val pinUpdatable: Boolean = true,
+        @ProtoNumber(1) val option: Option = Option.UpdatedTime,
+        @ProtoNumber(2) val descending: Boolean = true,
+        @ProtoNumber(3) val pinInstalled: Boolean = false,
+        @ProtoNumber(4) val pinUpdatable: Boolean = false,
         @ProtoNumber(5) val showIcon: Boolean = true,
         @ProtoNumber(6) val showLicense: Boolean = true,
         @ProtoNumber(7) val showUpdatedTime: Boolean = true,

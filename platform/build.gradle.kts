@@ -11,6 +11,7 @@ plugins {
 android {
     namespace = "com.dergoogler.mmrl.platform"
     compileSdk = 36
+    ndkVersion = "29.0.14206865"
 
     publishing {
         singleVariant("release")

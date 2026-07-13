@@ -6,6 +6,7 @@ import com.dergoogler.mmrl.database.dao.BlacklistDao
 import com.dergoogler.mmrl.database.dao.JoinDao
 import com.dergoogler.mmrl.database.dao.LocalDao
 import com.dergoogler.mmrl.database.dao.OnlineDao
+import com.dergoogler.mmrl.database.dao.OperationHistoryDao
 import com.dergoogler.mmrl.database.dao.RepoDao
 import com.dergoogler.mmrl.database.dao.VersionDao
 import dagger.Module
@@ -47,4 +48,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun providesBlacklistDao(db: AppDatabase): BlacklistDao = db.blacklistDao()
+
+    @Provides
+    @Singleton
+    fun providesOperationHistoryDao(db: AppDatabase): OperationHistoryDao = db.operationHistoryDao()
 }

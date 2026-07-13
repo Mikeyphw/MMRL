@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -49,8 +48,6 @@ fun ScaffoldScope.TypedModulesList(
     val paddingValues = LocalMainScreenInnerPaddings.current
     val layoutDirection = LocalLayoutDirection.current
 
-    val pad = remember(menu) { if (menu.repoListMode == RepoListMode.Compact) 0.dp else 16.dp }
-
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -60,12 +57,12 @@ fun ScaffoldScope.TypedModulesList(
                 modifier = Modifier.fillMaxSize().hazeSource(LocalHazeState.current),
                 contentPadding =
                     PaddingValues(
-                        top = innerPadding.calculateTopPadding() + pad,
-                        bottom = pad,
-                        start = innerPadding.calculateStartPadding(layoutDirection) + pad,
-                        end = pad,
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = 0.dp,
+                        start = innerPadding.calculateStartPadding(layoutDirection),
+                        end = 0.dp,
                     ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 items(
                     items = list,
@@ -85,11 +82,13 @@ fun ScaffoldScope.TypedModulesList(
                             RepoListMode.Compact ->
                                 ModuleItemCompact(
                                     onClick = click,
+                                    sourceProvider = repo.name,
                                 )
 
                             RepoListMode.Detailed ->
                                 ModuleItemDetailed(
                                     onClick = click,
+                                    sourceProvider = repo.name,
                                 )
                         }
                     }

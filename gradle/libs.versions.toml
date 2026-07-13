@@ -137,8 +137,6 @@ dev-rikka-rikkax-parcelablelist = { module = "dev.rikka.rikkax.parcelablelist:pa
 
 markwon-core = "io.noties.markwon:core:4.6.2"
 hiddenApiBypass = "org.lsposed.hiddenapibypass:hiddenapibypass:6.1"
-mmrlx-terminal = { module = "dev.mmrlx:terminal", version.ref = "mmrlx" }
-mmrlx-webui-core = { module = "dev.mmrlx:webui.core", version.ref = "mmrlx" }
 timber = "com.jakewharton.timber:timber:5.0.1"
 
 # Dependencies of the included build-logic
@@ -158,6 +156,8 @@ androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "s
 webuix-hwui = { module = "com.github.MMRLApp.WebUI-X-Portable:hwui", version.ref = "webuiXPortable" }
 webuix-helper = { module = "com.github.MMRLApp.WebUI-X-Portable:helper", version.ref = "webuiXPortable" }
 
+mmrlx-terminal = { module = "dev.mmrlx:terminal", version.ref = "mmrlx" }
+mmrlx-webui-core = { module = "dev.mmrlx:webui.core", version.ref = "mmrlx" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.BuildConfig
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Event
+import com.dergoogler.mmrl.database.entity.history.OperationAction
+import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.model.terminal.ScriptError
 import com.dergoogler.mmrl.platform.PlatformManager
@@ -14,6 +16,7 @@ import com.dergoogler.mmrl.platform.content.State
 import com.dergoogler.mmrl.platform.model.ModId
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
+import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import com.topjohnwu.superuser.CallbackList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.mmrlx.terminal.newSuperUserPty
@@ -33,7 +36,14 @@ constructor(
     localRepository: LocalRepository,
     modulesRepository: ModulesRepository,
     userPreferencesRepository: UserPreferencesRepository,
-) : TerminalViewModel(application, localRepository, modulesRepository, userPreferencesRepository) {
+    operationHistoryRepository: OperationHistoryRepository,
+) : TerminalViewModel(
+        application,
+        localRepository,
+        modulesRepository,
+        userPreferencesRepository,
+        operationHistoryRepository,
+    ) {
     val logfile get() = "Action_${LocalDateTime.now()}.log"
 
     init {
@@ -97,8 +107,25 @@ constructor(
                 return@withContext
             }
 
+            val historyId =
+                operationHistoryRepository.start(
+                    kind = OperationKind.MODULE_ACTION,
+                    title = module.name,
+                    summary = "Running module action",
+                    moduleId = module.id.id,
+                    moduleName = module.name,
+                    retryAction = OperationAction.RUN_ACTION,
+                    useShell = userPreferences.useShellForModuleAction,
+                )
+            activeOperationId = historyId
             val success = executeAction(modId, userPreferences.useShellForModuleAction)
 
+            if (success) {
+                operationHistoryRepository.succeed(historyId, "Module action completed")
+            } else {
+                operationHistoryRepository.fail(historyId, "Module action failed")
+            }
+            activeOperationId = null
             event = if (success) Event.SUCCEEDED else Event.FAILED
         }
 

@@ -42,7 +42,9 @@ class InstallActivity : TerminalActivity() {
 
         Log.d(TAG, "InstallActivity onCreate: $uris")
 
-        val confirm = intent.getBooleanExtra("confirm", true)
+        val confirm = intent.getBooleanExtra(EXTRA_CONFIRM, true)
+        val parentOperationId = intent.getStringExtra(EXTRA_PARENT_OPERATION_ID)
+        val rollbackMode = intent.getBooleanExtra(EXTRA_ROLLBACK_MODE, false)
 
         if (uris.isNullOrEmpty()) {
             finish()
@@ -50,7 +52,7 @@ class InstallActivity : TerminalActivity() {
         }
 
         if (!confirm) {
-            initModule(uris.toList())
+            initModule(uris.toList(), parentOperationId, rollbackMode)
         }
 
         setBaseContent {
@@ -64,7 +66,7 @@ class InstallActivity : TerminalActivity() {
                     },
                     onConfirm = {
                         confirmDialog = false
-                        initModule(uris.toList())
+                        initModule(uris.toList(), parentOperationId, rollbackMode)
                     },
                 )
             }
@@ -80,11 +82,17 @@ class InstallActivity : TerminalActivity() {
         super.onDestroy()
     }
 
-    private fun initModule(uris: List<Uri>) {
+    private fun initModule(
+        uris: List<Uri>,
+        parentOperationId: String?,
+        rollbackMode: Boolean,
+    ) {
         val job =
             lifecycleScope.launch {
                 viewModel.installModules(
                     uris = uris,
+                    parentOperationId = parentOperationId,
+                    rollbackMode = rollbackMode,
                 )
             }
 
@@ -93,16 +101,23 @@ class InstallActivity : TerminalActivity() {
 
     companion object {
         private const val TAG = "InstallActivity"
+        private const val EXTRA_CONFIRM = "confirm"
+        private const val EXTRA_PARENT_OPERATION_ID = "parentOperationId"
+        private const val EXTRA_ROLLBACK_MODE = "rollbackMode"
 
         fun start(
             context: Context,
             uri: List<Uri>,
             confirm: Boolean = true,
+            parentOperationId: String? = null,
+            rollbackMode: Boolean = false,
         ) {
             val intent =
                 Intent(context, InstallActivity::class.java)
                     .apply {
-                        putExtra("confirm", confirm)
+                        putExtra(EXTRA_CONFIRM, confirm)
+                        putExtra(EXTRA_PARENT_OPERATION_ID, parentOperationId)
+                        putExtra(EXTRA_ROLLBACK_MODE, rollbackMode)
                         putParcelableArrayListExtra("uris", ArrayList(uri))
                     }
 
@@ -113,8 +128,10 @@ class InstallActivity : TerminalActivity() {
             context: Context,
             uri: Uri,
             confirm: Boolean = true,
+            parentOperationId: String? = null,
+            rollbackMode: Boolean = false,
         ) {
-            start(context, listOf(uri), confirm)
+            start(context, listOf(uri), confirm, parentOperationId, rollbackMode)
         }
     }
 }

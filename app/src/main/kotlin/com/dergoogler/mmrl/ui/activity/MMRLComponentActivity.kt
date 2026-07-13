@@ -37,7 +37,7 @@ import com.dergoogler.mmrl.ui.providable.LocalSettings
 import com.dergoogler.mmrl.ui.providable.LocalSuperUserViewModel
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.providable.LocalWindowSizeClass
-import com.dergoogler.mmrl.ui.theme.Colors
+import com.dergoogler.mmrl.ui.theme.ThemeRegistry
 import com.dergoogler.mmrl.ui.theme.MMRLAppTheme
 import com.dergoogler.mmrl.viewmodel.SettingsViewModel
 import com.dergoogler.mmrl.viewmodel.SuperUserViewModel
@@ -213,13 +213,34 @@ fun BaseContent(
         }
 
     val context = LocalContext.current
-    val currentTheme = Colors.getColor(preferences.themeColor, preferences.isDarkMode())
-    val toolbarColor = currentTheme.surface
+    val darkMode = preferences.isDarkMode(context)
+    val resolvedTheme = ThemeRegistry.resolve(
+        context = context,
+        darkMode = darkMode,
+        paletteId = preferences.resolvedThemePaletteId(),
+        source = preferences.resolvedThemeColorSource(),
+        dynamicFallbackPaletteId = preferences.dynamicFallbackPaletteId,
+        surfaceStyle = preferences.themeSurfaceStyle,
+        contrast = preferences.themeContrast,
+        pureBlack = preferences.themePureBlack,
+        accentIntensity = preferences.themeAccentIntensity,
+        enhancedStatusDistinction = preferences.enhancedStatusDistinction,
+        customThemeJson = preferences.customThemeJson,
+    )
+    val toolbarColor = resolvedTheme.colorScheme.surface
 
     MMRLAppTheme(
-        darkMode = preferences.isDarkMode(),
+        darkMode = darkMode,
         navController = navController,
-        themeColor = preferences.themeColor,
+        paletteId = preferences.resolvedThemePaletteId(),
+        colorSource = preferences.resolvedThemeColorSource(),
+        dynamicFallbackPaletteId = preferences.dynamicFallbackPaletteId,
+        surfaceStyle = preferences.themeSurfaceStyle,
+        contrast = preferences.themeContrast,
+        pureBlack = preferences.themePureBlack,
+        accentIntensity = preferences.themeAccentIntensity,
+        enhancedStatusDistinction = preferences.enhancedStatusDistinction,
+        customThemeJson = preferences.customThemeJson,
         providerValues =
             arrayOf(
                 LocalWindowSizeClass provides windowSizeClass,

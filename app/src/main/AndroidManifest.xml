@@ -43,6 +43,7 @@
         <package android:name="com.sukisu.ultra" />
         <package android:name="com.dergoogler.mmrl.wx" />
         <package android:name="com.dergoogler.mmrl.wx.debug" />
+        <package android:name="net.dinglisch.android.taskerm" />
 
         <intent>
             <action android:name="android.settings.APP_NOTIFICATION_SETTINGS" />
@@ -75,7 +76,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="mmrl-mikeyphw" />
+                <data android:host="repository" />
+            </intent-filter>
+
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -143,6 +154,47 @@
             </intent-filter>
         </activity>
 
+
+        <!-- Tasker actions: read-only status/update queries and queued downloads. -->
+        <activity android:name="${__packageName__}.tasker.GetModuleStatusConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_get_module_status">
+            <intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter>
+        </activity>
+        <activity android:name="${__packageName__}.tasker.ListModulesConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_list_modules">
+            <intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter>
+        </activity>
+        <activity android:name="${__packageName__}.tasker.CheckUpdatesConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_check_updates">
+            <intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter>
+        </activity>
+        <activity android:name="${__packageName__}.tasker.GetOperationResultConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_get_operation">
+            <intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter>
+        </activity>
+        <activity android:name="${__packageName__}.tasker.DownloadModuleConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_download_module">
+            <intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter>
+        </activity>
+        <activity android:name="${__packageName__}.tasker.CancelDownloadConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_cancel_download">
+            <intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter>
+        </activity>
+        <activity android:name="${__packageName__}.tasker.ExportOperationLogConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_export_log">
+            <intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter>
+        </activity>
+
+        <activity android:name="${__packageName__}.tasker.EnableModuleConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_enable_module"><intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter></activity>
+        <activity android:name="${__packageName__}.tasker.DisableModuleConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_disable_module"><intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter></activity>
+        <activity android:name="${__packageName__}.tasker.RemoveModuleConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_remove_module"><intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter></activity>
+        <activity android:name="${__packageName__}.tasker.RunModuleActionConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_run_module_action"><intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter></activity>
+        <activity android:name="${__packageName__}.tasker.RestoreModuleConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_restore_module"><intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter></activity>
+        <activity android:name="${__packageName__}.tasker.PrepareReviewedInstallConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_prepare_install"><intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter></activity>
+        <activity android:name="${__packageName__}.tasker.ExecuteReviewedInstallConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_action_execute_install"><intent-filter><action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" /></intent-filter></activity>
+        <activity android:name="${__packageName__}.tasker.TaskerApprovalActivity" android:exported="false" android:excludeFromRecents="true" android:theme="@style/Theme.MMRL" />
+
+        <!-- Tasker event conditions. -->
+        <activity android:name="${__packageName__}.tasker.UpdateDiscoveredEventConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_event_update_discovered">
+            <intent-filter><action android:name="net.dinglisch.android.tasker.ACTION_EDIT_EVENT" /></intent-filter>
+        </activity>
+        <activity android:name="${__packageName__}.tasker.OperationFailedEventConfigActivity" android:exported="true" android:icon="@mipmap/launcher" android:label="@string/tasker_event_operation_failed">
+            <intent-filter><action android:name="net.dinglisch.android.tasker.ACTION_EDIT_EVENT" /></intent-filter>
+        </activity>
+
         <service
             android:name="${__packageName__}.service.DownloadService"
             android:exported="false"
@@ -171,6 +223,15 @@
             android:name="${__packageName__}.receiver.LogcatReceiver"
             android:enabled="true"
             android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="${__packageName__}.receiver.OperationHistoryBootReceiver"
+            android:enabled="true"
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>

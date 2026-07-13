@@ -12,17 +12,19 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val baseAppName = "MMRL"
-val mmrlBaseApplicationId = "com.dergoogler.mmrl"
+val baseAppName = "MMRL Fork"
+val mmrlSourceNamespace = "com.dergoogler.mmrl"
+val mmrlForkApplicationId = "com.mikeyphw.mmrl"
+val mmrlWebUiPermissionId = "com.dergoogler.mmrl"
 
 val appVersion = commitCount + 31320
 
 android {
     compileSdk = COMPILE_SDK
-    namespace = mmrlBaseApplicationId
+    namespace = mmrlSourceNamespace
 
     defaultConfig {
-        applicationId = namespace
+        applicationId = mmrlForkApplicationId
         versionName = "v$appVersion"
         versionCode = appVersion
 
@@ -66,7 +68,7 @@ android {
     productFlavors {
         create("official") {
             dimension = "distribution"
-            applicationId = mmrlBaseApplicationId
+            applicationId = mmrlForkApplicationId
             resValue("string", "app_name", baseAppName)
             buildConfigField("Boolean", "IS_SPOOFED_BUILD", "false")
         }
@@ -96,7 +98,7 @@ android {
             renderscriptOptimLevel = 3
             multiDexEnabled = true
 
-            manifestPlaceholders["webuiPermissionId"] = mmrlBaseApplicationId
+            manifestPlaceholders["webuiPermissionId"] = mmrlWebUiPermissionId
         }
 
         create("playstore") {
@@ -118,7 +120,7 @@ android {
             isMinifyEnabled = false
             multiDexEnabled = true
 
-            manifestPlaceholders["webuiPermissionId"] = "$mmrlBaseApplicationId.debug"
+            manifestPlaceholders["webuiPermissionId"] = "$mmrlWebUiPermissionId.debug"
         }
 
         all {
@@ -129,7 +131,7 @@ android {
             buildConfigField("String", "MIN_SDK", "\"$MIN_SDK\"")
             buildConfigField("String", "LATEST_COMMIT_ID", "\"${commitId}\"")
 
-            manifestPlaceholders["__packageName__"] = mmrlBaseApplicationId
+            manifestPlaceholders["__packageName__"] = mmrlSourceNamespace
         }
     }
 
@@ -177,7 +179,7 @@ androidComponents {
         variant.outputs.filterIsInstance<VariantOutputImpl>().forEach { output ->
             output.outputFileName.set(
                 output.versionName.map { vName ->
-                    "MMRL-${vName}-${variant.buildType ?: variant.name}.apk"
+                    "MMRL-Fork-${vName}-${variant.buildType ?: variant.name}.apk"
                 }
             )
         }
@@ -188,6 +190,8 @@ androidComponents {
 }
 
 dependencies {
+    implementation("com.joaomgcd:taskerpluginlibrary:0.4.10")
+    testImplementation(libs.junit)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.swiperefreshlayout)
     compileOnly(projects.hiddenApi)
@@ -271,10 +275,10 @@ dependencies {
     implementation(libs.square.moshi)
     ksp(libs.square.moshi.kotlin)
 
-    implementation(libs.mmrlx.terminal)
-    implementation(libs.mmrlx.webui.core)
+implementation(libs.mmrlx.terminal)
+implementation(libs.mmrlx.webui.core)
 
-    implementation("dev.chrisbanes.haze:haze:1.6.10")
+implementation("dev.chrisbanes.haze:haze:1.6.10")
     implementation("dev.chrisbanes.haze:haze-materials:1.6.10")
 
     implementation(libs.composedestinations.core)

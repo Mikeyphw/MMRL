@@ -1,6 +1,9 @@
 package com.dergoogler.mmrl.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,10 +13,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
-import com.dergoogler.mmrl.datastore.model.Option
 import com.dergoogler.mmrl.datastore.model.RepositoryMenu
 import com.dergoogler.mmrl.model.json.UpdateJson
 import com.dergoogler.mmrl.model.online.OnlineModule
+import com.dergoogler.mmrl.model.sort.sortedForRepository
 import com.dergoogler.mmrl.model.state.OnlineState
 import com.dergoogler.mmrl.model.state.OnlineState.Companion.createState
 import com.dergoogler.mmrl.repository.LocalRepository
@@ -40,6 +43,8 @@ class RepositoryViewModel
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
     ) : MMRLViewModel(application, localRepository, modulesRepository, userPreferencesRepository) {
+        private val appContext = application
+
         private val repositoryMenu
             get() =
                 userPreferencesRepository.data
@@ -57,6 +62,15 @@ class RepositoryViewModel
         val online get() = onlineFlow.asStateFlow()
 
         var isLoading by mutableStateOf(true)
+            private set
+
+        var isRefreshing by mutableStateOf(false)
+            private set
+
+        var isOffline by mutableStateOf(!appContext.hasValidatedNetwork())
+            private set
+
+        var errorMessage by mutableStateOf<String?>(null)
             private set
 
         init {
@@ -94,24 +108,10 @@ class RepositoryViewModel
                                 local = local,
                                 hasUpdatableTag = localRepository.hasUpdatableTag(it.id),
                             ) to it.copy(versions = versionsList)
-                        }.sortedWith(
-                            comparator(menu.option, menu.descending),
-                        ).let { v ->
-                            val a =
-                                if (menu.pinInstalled) {
-                                    v.sortedByDescending { it.first.installed }
-                                } else {
-                                    v
-                                }
-
-                            if (menu.pinUpdatable) {
-                                a.sortedByDescending { it.first.updatable }
-                            } else {
-                                a
-                            }
-                        }
+                        }.sortedForRepository(menu)
 
                 isLoading = false
+                if (list.isNotEmpty()) errorMessage = null
             }.launchIn(viewModelScope)
         }
 
@@ -162,23 +162,6 @@ class RepositoryViewModel
             }.launchIn(viewModelScope)
         }
 
-        private fun comparator(
-            option: Option,
-            descending: Boolean,
-        ): Comparator<Pair<OnlineState, OnlineModule>> =
-            if (descending) {
-                when (option) {
-                    Option.Name -> compareByDescending { it.second.name.lowercase() }
-                    Option.UpdatedTime -> compareBy { it.first.lastUpdated }
-                    Option.Size -> compareByDescending { 0 }
-                }
-            } else {
-                when (option) {
-                    Option.Name -> compareBy { it.second.name.lowercase() }
-                    Option.UpdatedTime -> compareByDescending { it.first.lastUpdated }
-                    Option.Size -> compareBy { 0 }
-                }
-            }
 
         fun search(key: String) {
             keyFlow.value = key
@@ -193,9 +176,34 @@ class RepositoryViewModel
             keyFlow.value = ""
         }
 
+
+        fun retry() {
+            viewModelScope.launch {
+                isRefreshing = true
+                isOffline = !appContext.hasValidatedNetwork()
+                if (isOffline) {
+                    errorMessage = null
+                    isRefreshing = false
+                    return@launch
+                }
+
+                modulesRepository
+                    .getRepo(repo)
+                    .onSuccess { errorMessage = null }
+                    .onFailure { errorMessage = it.message ?: "Repository refresh failed" }
+                isOffline = !appContext.hasValidatedNetwork()
+                isRefreshing = false
+            }
+        }
+
+        fun clearError() {
+            errorMessage = null
+        }
+
         fun setRepositoryMenu(value: RepositoryMenu) {
             viewModelScope.launch {
                 userPreferencesRepository.setRepositoryMenu(value)
+                listState.scrollToItem(0)
             }
         }
 
@@ -205,6 +213,15 @@ class RepositoryViewModel
         }
 
         companion object {
+            private fun Context.hasValidatedNetwork(): Boolean {
+                val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                    ?: return false
+                val network = manager.activeNetwork ?: return false
+                val capabilities = manager.getNetworkCapabilities(network) ?: return false
+                return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            }
+
             @Composable
             fun build(repo: Repo): RepositoryViewModel =
                 hiltViewModel<RepositoryViewModel, Factory> { factory ->

@@ -1,5 +1,6 @@
 package com.dergoogler.mmrl.model.state
 
+import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.model.online.OnlineModule
 
@@ -16,12 +17,10 @@ data class OnlineState(
             hasUpdatableTag: Boolean,
         ): OnlineState {
             val installed =
-                local != null &&
-                    local.id.equals(id) &&
-                    local.author == author
+                local != null && ModuleIdentity.matches(local.id.id, id)
 
             val updatable =
-                local !== null &&
+                local != null &&
                     if (installed && hasUpdatableTag) {
                         local.versionCode < versionCode
                     } else {

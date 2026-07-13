@@ -11,11 +11,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
@@ -33,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,11 +55,13 @@ import com.dergoogler.mmrl.ui.component.PageIndicator
 import com.dergoogler.mmrl.ui.component.TopAppBarEventIcon
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurSearchToolbar
+import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.viewmodel.ModulesViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ModuleUpdatesScreenDestination
 
 @Destination<RootGraph>
 @Composable
@@ -63,8 +69,10 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
     LocalScreenProvider {
         val userPrefs = LocalUserPreferences.current
         val context = LocalContext.current
+        val navigator = LocalDestinationsNavigator.current
 
         val list by viewModel.local.collectAsStateWithLifecycle()
+        val updates by viewModel.updates.collectAsStateWithLifecycle()
         val query by viewModel.query.collectAsStateWithLifecycle()
         val state by viewModel.screenState.collectAsStateWithLifecycle()
         val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -106,6 +114,8 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                     onOpenSearch = viewModel::openSearch,
                     onCloseSearch = viewModel::closeSearch,
                     setMenu = viewModel::setModulesMenu,
+                    updateCount = updates.size,
+                    onOpenUpdates = { navigator.navigate(ModuleUpdatesScreenDestination) },
                     scrollBehavior = scrollBehavior,
                 )
             },
@@ -161,6 +171,8 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                 this@Scaffold.ModulesList(
                     innerPadding = innerPadding,
                     list = list,
+                    allModules = state.items,
+                    updates = updates,
                     state = viewModel.listState,
                     viewModel = viewModel,
                     onDownload = download,
@@ -178,6 +190,8 @@ private fun TopBar(
     onOpenSearch: () -> Unit,
     onCloseSearch: () -> Unit,
     setMenu: (ModulesMenu) -> Unit,
+    updateCount: Int,
+    onOpenUpdates: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val width = currentScreenWidth()
@@ -207,6 +221,28 @@ private fun TopBar(
             TopAppBarEventIcon()
         },
         actions = {
+            if (!isSearch) {
+                IconButton(onClick = onOpenUpdates) {
+                    if (updateCount > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge { Text(updateCount.toString()) }
+                            },
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.refresh),
+                                contentDescription = stringResource(R.string.page_updates),
+                            )
+                        }
+                    } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.refresh),
+                            contentDescription = stringResource(R.string.page_updates),
+                        )
+                    }
+                }
+            }
+
             if (!isSearch) {
                 IconButton(
                     onClick = onOpenSearch,

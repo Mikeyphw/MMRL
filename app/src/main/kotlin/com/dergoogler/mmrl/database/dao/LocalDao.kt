@@ -17,10 +17,10 @@ interface LocalDao {
     @Query("SELECT * FROM localModules")
     fun getAll(): List<LocalModuleEntity>
 
-    @Query("SELECT * FROM localModules WHERE id = :id LIMIT 1")
+    @Query("SELECT * FROM localModules WHERE id = :id COLLATE NOCASE LIMIT 1")
     suspend fun getByIdOrNull(id: String): LocalModuleEntity?
 
-    @Query("SELECT * FROM localModules WHERE id = :id LIMIT 1")
+    @Query("SELECT * FROM localModules WHERE id = :id COLLATE NOCASE LIMIT 1")
     fun getByIdOrNullAsFlow(id: String): Flow<LocalModuleEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -35,10 +35,13 @@ interface LocalDao {
     @Query("SELECT * FROM localModules_updatable")
     suspend fun getUpdatableTagAll(): List<LocalModuleUpdatable>
 
+    @Query("SELECT * FROM localModules_updatable")
+    fun getUpdatableTagAllAsFlow(): Flow<List<LocalModuleUpdatable>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUpdatableTag(value: LocalModuleUpdatable)
 
-    @Query("SELECT * FROM localModules_updatable WHERE id = :id LIMIT 1")
+    @Query("SELECT * FROM localModules_updatable WHERE id = :id COLLATE NOCASE LIMIT 1")
     suspend fun hasUpdatableTagOrNull(id: String): LocalModuleUpdatable?
 
     @Delete

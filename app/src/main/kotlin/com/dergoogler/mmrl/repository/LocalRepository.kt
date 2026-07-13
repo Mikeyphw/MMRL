@@ -13,6 +13,7 @@ import com.dergoogler.mmrl.database.entity.local.LocalModuleUpdatable
 import com.dergoogler.mmrl.database.entity.online.BlacklistEntity
 import com.dergoogler.mmrl.database.entity.online.OnlineModuleEntity
 import com.dergoogler.mmrl.ext.merge
+import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.model.online.Blacklist
 import com.dergoogler.mmrl.model.online.OnlineModule
@@ -41,13 +42,11 @@ class LocalRepository
         fun getLocalAll() = localDao.getAll()
 
         fun getLocalByIdOrNullAsFlow(id: String) =
-            localDao.getByIdOrNullAsFlow(id).map {
-                it?.toModule()
-            }
+            localDao.getByIdOrNullAsFlow(ModuleIdentity.normalize(id)).map { it?.toModule() }
 
         suspend fun getLocalByIdOrNull(id: String) =
             withContext(Dispatchers.IO) {
-                localDao.getByIdOrNull(id)?.toModule()
+                localDao.getByIdOrNull(ModuleIdentity.normalize(id))?.toModule()
             }
 
         suspend fun insertLocal(value: LocalModule) =
@@ -94,9 +93,12 @@ class LocalRepository
             id: String,
             updatable: Boolean,
         ) = withContext(Dispatchers.IO) {
+            val normalizedId = ModuleIdentity.normalize(id)
+            val duplicates = localDao.getUpdatableTagAll().filter { ModuleIdentity.matches(it.id, normalizedId) }
+            if (duplicates.isNotEmpty()) localDao.deleteUpdatableTag(duplicates)
             localDao.insertUpdatableTag(
                 LocalModuleUpdatable(
-                    id = id,
+                    id = normalizedId,
                     updatable = updatable,
                 ),
             )
@@ -104,12 +106,22 @@ class LocalRepository
 
         suspend fun hasUpdatableTag(id: String) =
             withContext(Dispatchers.IO) {
-                localDao.hasUpdatableTagOrNull(id)?.updatable != false
+                localDao.hasUpdatableTagOrNull(ModuleIdentity.normalize(id))?.updatable ?: true
+            }
+
+        fun getUpdatableTagsAsFlow() =
+            localDao.getUpdatableTagAllAsFlow().map { tags ->
+                tags
+                    .groupBy { ModuleIdentity.normalize(it.id) }
+                    .map { (normalizedId, matches) ->
+                        matches.firstOrNull { it.id == normalizedId } ?: matches.last()
+                    }
             }
 
         suspend fun clearUpdatableTag(new: List<String>) =
             withContext(Dispatchers.IO) {
-                val removed = localDao.getUpdatableTagAll().filter { it.id !in new }
+                val retained = new.map(ModuleIdentity::normalize).toSet()
+                val removed = localDao.getUpdatableTagAll().filter { ModuleIdentity.normalize(it.id) !in retained }
                 localDao.deleteUpdatableTag(removed)
             }
 

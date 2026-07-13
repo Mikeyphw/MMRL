@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import com.dergoogler.mmrl.R
@@ -26,6 +27,8 @@ import com.dergoogler.mmrl.ui.component.PageIndicator
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurSearchToolbar
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
+import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
+import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.remember.rememberOnlineModules
 import com.dergoogler.mmrl.ui.remember.rememberUserPreferencesRepository
 import com.dergoogler.mmrl.ui.screens.repository.RepositoryMenu
@@ -54,6 +57,9 @@ fun TypedModulesScreen(
     val modules by rememberOnlineModules(repo, searchQuery)
     val userPreferencesRepository = rememberUserPreferencesRepository()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val snackbarHost = LocalSnackbarHost.current
+    val currentMenu = LocalUserPreferences.current.repositoryMenu
     var isSearch by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     // Use rememberSaveable to persist scroll position across navigation
@@ -108,6 +114,22 @@ fun TypedModulesScreen(
     val setRepositoryMenu = fun(value: RepositoryMenu) {
         scope.launch {
             userPreferencesRepository.setRepositoryMenu(value)
+            listState.scrollToItem(0)
+
+            val orderingChanged =
+                currentMenu.option != value.option ||
+                    currentMenu.descending != value.descending ||
+                    currentMenu.pinInstalled != value.pinInstalled ||
+                    currentMenu.pinUpdatable != value.pinUpdatable
+            snackbarHost.showSnackbar(
+                context.getString(
+                    if (orderingChanged) {
+                        R.string.repository_ordering_updated
+                    } else {
+                        R.string.repository_display_updated
+                    },
+                ),
+            )
         }
     }
 
@@ -124,6 +146,11 @@ fun TypedModulesScreen(
                 onQueryChange = search,
                 onOpenSearch = openSearch,
                 onCloseSearch = closeSearch,
+                activeFilterCount = if (searchQuery.isBlank()) 0 else 1,
+                onResetFilters = {
+                    searchQuery = ""
+                    isSearch = false
+                },
                 setMenu = setRepositoryMenu,
             )
         },
@@ -154,6 +181,8 @@ private fun TopBar(
     onQueryChange: (String) -> Unit,
     onOpenSearch: () -> Unit,
     onCloseSearch: () -> Unit,
+    activeFilterCount: Int,
+    onResetFilters: () -> Unit,
     setMenu: (RepositoryMenu) -> Unit,
 ) {
     var currentQuery by remember { mutableStateOf(query) }
@@ -201,6 +230,8 @@ private fun TopBar(
             }
 
             RepositoryMenu(
+                activeFilterCount = activeFilterCount,
+                onResetFilters = onResetFilters,
                 setMenu = setMenu,
             )
         },

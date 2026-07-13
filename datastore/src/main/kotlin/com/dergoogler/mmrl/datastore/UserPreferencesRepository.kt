@@ -25,6 +25,17 @@ class UserPreferencesRepository
 
         suspend fun setThemeColor(value: Int) = userPreferencesDataSource.setThemeColor(value)
 
+        suspend fun setThemePaletteId(value: String) = userPreferencesDataSource.setThemePaletteId(value)
+        suspend fun setThemeColorSource(value: com.dergoogler.mmrl.ui.theme.ThemeColorSource) = userPreferencesDataSource.setThemeColorSource(value)
+        suspend fun setDynamicFallbackPaletteId(value: String) = userPreferencesDataSource.setDynamicFallbackPaletteId(value)
+        suspend fun setThemeSurfaceStyle(value: com.dergoogler.mmrl.ui.theme.ThemeSurfaceStyle) = userPreferencesDataSource.setThemeSurfaceStyle(value)
+        suspend fun setThemeContrast(value: com.dergoogler.mmrl.ui.theme.ThemeContrast) = userPreferencesDataSource.setThemeContrast(value)
+        suspend fun setThemePureBlack(value: Boolean) = userPreferencesDataSource.setThemePureBlack(value)
+        suspend fun setThemeAccentIntensity(value: Float) = userPreferencesDataSource.setThemeAccentIntensity(value)
+        suspend fun setEnhancedStatusDistinction(value: Boolean) = userPreferencesDataSource.setEnhancedStatusDistinction(value)
+        suspend fun setBatterySaverForcesDark(value: Boolean) = userPreferencesDataSource.setBatterySaverForcesDark(value)
+        suspend fun setCustomThemeJson(value: String) = userPreferencesDataSource.setCustomThemeJson(value)
+
         suspend fun setDeleteZipFile(value: Boolean) = userPreferencesDataSource.setDeleteZipFile(value)
 
         suspend fun setUseDoh(value: Boolean) = userPreferencesDataSource.setUseDoh(value)
@@ -108,4 +119,19 @@ class UserPreferencesRepository
         suspend fun setModuleServiceEnabled(value: Boolean) = userPreferencesDataSource.setModuleServiceEnabled(value)
 
         suspend fun setProviderServiceEnabled(value: Boolean) = userPreferencesDataSource.setProviderServiceEnabled(value)
-    }
+
+        suspend fun replaceNotifiedModuleUpdates(values: Set<String>) =
+            userPreferencesDataSource.replaceNotifiedModuleUpdates(values)
+
+        suspend fun clearNotifiedModuleUpdate(moduleId: String) =
+            userPreferencesDataSource.clearNotifiedModuleUpdate(moduleId)
+
+        suspend fun setTaskerIntegrationEnabled(value: Boolean) = userPreferencesDataSource.setTaskerIntegrationEnabled(value)
+        suspend fun setTaskerAllowDownloads(value: Boolean) = userPreferencesDataSource.setTaskerAllowDownloads(value)
+        suspend fun setTaskerAllowStateChanges(value: Boolean) = userPreferencesDataSource.setTaskerAllowStateChanges(value)
+        suspend fun setTaskerAllowModuleActions(value: Boolean) = userPreferencesDataSource.setTaskerAllowModuleActions(value)
+        suspend fun setTaskerAllowRemovals(value: Boolean) = userPreferencesDataSource.setTaskerAllowRemovals(value)
+        suspend fun setTaskerAllowReviewedInstalls(value: Boolean) = userPreferencesDataSource.setTaskerAllowReviewedInstalls(value)
+        suspend fun setTaskerApprovalPolicy(value: com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy) = userPreferencesDataSource.setTaskerApprovalPolicy(value)
+        suspend fun setTaskerAllowedModules(value: Set<String>) = userPreferencesDataSource.setTaskerAllowedModules(value)
+}

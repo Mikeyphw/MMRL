@@ -5,6 +5,7 @@ import android.util.Log
 import android.webkit.WebResourceResponse
 import androidx.compose.material3.ColorScheme
 import com.dergoogler.mmrl.model.WebColors
+import com.dergoogler.mmrl.ui.theme.SemanticColors
 import dev.mmrlx.webui.PathHandler
 import dev.mmrlx.webui.WebUI
 import dev.mmrlx.webui.WebUIResourceRequest
@@ -16,9 +17,10 @@ class InternalPathHandler(
     webui: WebUI,
     private val readmeUrl: String,
     private val colorScheme: ColorScheme,
+    private val semanticColors: SemanticColors,
 ) : PathHandler(webui) {
     override val id = "/internal/"
-    val webColors get() = WebColors(colorScheme)
+    val webColors get() = WebColors(colorScheme, semanticColors)
     val assetsPathHandler = AssetsPathHandler(this)
 
     override fun handle(request: WebUIResourceRequest): WebResourceResponse {
