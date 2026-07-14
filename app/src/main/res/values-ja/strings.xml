@@ -213,7 +213,7 @@
     <string name="help">ヘルプ</string>
     <string name="we_hit_a_brick_crash">レンガが当たった！</string>
     <string name="report_to_issues">問題を報告</string>
-    <string name="stack_trace_truncated">%s\n… %d 件以上</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d 件以上</string>
     <string name="additional_notes">補足事項</string>
     <string name="repo_added">リポジトリを追加しました</string>
     <!-- Repo Update Service -->
@@ -243,7 +243,7 @@
     <string name="bulk_install_module_added">モジュールを追加しました</string>
     <string name="bulk_module_install">モジュールの一括インストール</string>
     <string name="has_a_new_update">%1$s に新しい更新があります！</string>
-    <string name="update_available_from_to">%s (%d) から %s (%d) への更新が利用可能です。</string>
+    <string name="update_available_from_to">%1$s (%2$d) から %3$s (%4$d) への更新が利用可能です。</string>
     <string name="events_birthday">MMRL は %1$s 周年です！</string>
     <string name="events_halloween">ばぁー！… アッー</string>
     <string name="events_christmas">← ツリー。</string>

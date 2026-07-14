@@ -236,7 +236,7 @@
     <string name="help">உதவி</string>
     <string name="we_hit_a_brick_crash">நாங்கள் ஒரு செங்கல் அடித்தோம்!</string>
     <string name="report_to_issues">சிக்கல்களுக்கு அறிக்கை</string>
-    <string name="stack_trace_truncated">%s\n … %d மேலும்</string>
+    <string name="stack_trace_truncated">%1$s\n … %2$d மேலும்</string>
     <string name="repo_added">ரெப்போ சேர்க்கப்பட்டது</string>
     <string name="repo_update_service">களஞ்சியங்கள் வெற்றிகரமாக புதுப்பிக்கப்பட்டன</string>
     <string name="repo_update_service_desc">கவலைப்பட வேண்டாம், எம்.எம்.ஆர்.எல் உங்களுக்காக நிறுவப்பட்ட களஞ்சியங்களை புதுப்பித்தது. .</string>
@@ -270,7 +270,7 @@
     <string name="action_failure">செயல் தோல்வி</string>
     <string name="action_executing">செயல்படுத்துதல்…</string>
     <string name="has_a_new_update">%1$s ஒரு புதிய புதுப்பிப்பைக் கொண்டுள்ளது!</string>
-    <string name="update_available_from_to">புதுப்பிப்பு %s ( %d) முதல் %s ( %d) வரை கிடைக்கும்.</string>
+    <string name="update_available_from_to">புதுப்பிப்பு %1$s ( %2$d) முதல் %3$s ( %4$d) வரை கிடைக்கும்.</string>
     <string name="events_birthday">%1$s ஆண்டுகள் MMRL!</string>
     <string name="events_halloween">பூ! … ஆ</string>
     <string name="events_christmas">. மரம்.</string>

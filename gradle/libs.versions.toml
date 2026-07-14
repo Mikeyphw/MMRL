@@ -41,7 +41,6 @@ squareRetrofit = "2.11.0"
 squareOkhttp = "4.12.0"
 squareMoshi = "1.15.1"
 runtimeAndroid = "1.7.6"
-mmrlx = "1.0.152"
 webuiXPortable = "c92f5f6c3c"
 workRuntimeKtx = "2.10.0"
 lifecycleProcess = "2.8.7"
@@ -156,8 +155,6 @@ androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "s
 webuix-hwui = { module = "com.github.MMRLApp.WebUI-X-Portable:hwui", version.ref = "webuiXPortable" }
 webuix-helper = { module = "com.github.MMRLApp.WebUI-X-Portable:helper", version.ref = "webuiXPortable" }
 
-mmrlx-terminal = { module = "dev.mmrlx:terminal", version.ref = "mmrlx" }
-mmrlx-webui-core = { module = "dev.mmrlx:webui.core", version.ref = "mmrlx" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }

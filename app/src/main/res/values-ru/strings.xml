@@ -180,7 +180,7 @@
     <string name="unknown_error">Неизвестная ошибка</string>
     <string name="we_hit_a_brick_crash">Мы наткнулись на препятствие!</string>
     <string name="report_to_issues">Сообщить о проблеме</string>
-    <string name="stack_trace_truncated">%s\n… еще %d</string>
+    <string name="stack_trace_truncated">%1$s\n… еще %2$d</string>
     <string name="additional_notes">Дополнительные примечания</string>
     <string name="repo_added">Репозиторий добавлен</string>
     <!-- Repo Update Service -->
@@ -189,7 +189,7 @@
     <string name="repo_update_service_failed">Обновлений для репозиториев не найдено</string>
     <string name="repo_update_service_failed_desc">Нет обновлений для репозиториев</string>
     <string name="has_a_new_update">Для %1$s доступно обновление!</string>
-    <string name="update_available_from_to">Доступно обновление с %s (%d) до %s (%d).</string>
+    <string name="update_available_from_to">Доступно обновление с %1$s (%2$d) до %3$s (%4$d).</string>
     <string name="events_birthday">%1$s лет MMRL!</string>
     <string name="events_halloween">БУ! … АХ</string>
     <string name="events_christmas">← Ёлка.</string>

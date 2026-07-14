@@ -149,8 +149,8 @@
     <string name="settings_updates_desc">Zarządzaj swoimi preferencjami dotyczącymi procesu aktualizacji.</string>
     <string name="we_hit_a_brick_crash">Trafiliśmy na ścianę!</string>
     <string name="report_to_issues">Zgłoś problemy</string>
-    <string name="stack_trace_truncated">%s
-\n… %d więcej</string>
+    <string name="stack_trace_truncated">%1$s
+\n… %2$d więcej</string>
     <string name="additional_notes">Dodatkowe uwagi</string>
     <string name="repo_added">Repo zostało dodane</string>
     <string name="repo_update_service">Pomyślnie zaktualizowano repozytoria</string>
@@ -164,7 +164,7 @@
     <string name="settings_check_modules_update_interval">Częstotliwość sprawdzania aktualizacji</string>
     <string name="settings_check_modules_update_interval_desc">Wybierz przedział czasowy sprawdzania zainstalowanych modułów.</string>
     <string name="has_a_new_update">%1$s ma nową aktualizację!</string>
-    <string name="update_available_from_to">Aktualizacja dostępna od %s (%d) do %s (%d).</string>
+    <string name="update_available_from_to">Aktualizacja dostępna od %1$s (%2$d) do %3$s (%4$d).</string>
     <string name="repo_options">Opcje</string>
     <string name="settings_homepage">Strona startowa</string>
     <string name="events_birthday">%1$s lat MMRL!</string>

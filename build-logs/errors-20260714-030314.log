@@ -1,0 +1,189 @@
+C/C++:     FAILED: CMakeFiles/cmTC_1978b.dir/testCCompiler.c.o 
+C/C++:     ninja: build stopped: subcommand failed.
+> Task :platform:configureCMakeDebug[arm64-v8a] FAILED
+C/C++:     FAILED: CMakeFiles/cmTC_2e931.dir/testCCompiler.c.o 
+C/C++:     ninja: build stopped: subcommand failed.
+> Task :platform:configureCMakeDebug[armeabi-v7a] FAILED
+> Task :platform:configureCMakeDebug[x86_64] FAILED
+C/C++:     FAILED: CMakeFiles/cmTC_7002e.dir/testCCompiler.c.o 
+C/C++:     ninja: build stopped: subcommand failed.
+C/C++:     FAILED: CMakeFiles/cmTC_5c284.dir/testCCompiler.c.o 
+C/C++:     ninja: build stopped: subcommand failed.
+> Task :platform:configureCMakeDebug[x86] FAILED
+/home/termux/Code/MMRL/app/src/main/res/values/strings.xml:793:4: Failed to flatten XML for resource 'settings_tasker_module_actions_desc' with error: Invalid unicode escape sequence in string
+> Task :app:mergeOfficialDebugResources FAILED
+/home/termux/Code/MMRL/app/src/main/res/values/strings.xml:793:4: Failed to flatten XML for resource 'settings_tasker_module_actions_desc' with error: Invalid unicode escape sequence in string
+> Task :app:mergeSpoofedDebugResources FAILED
+e: [ksp] com.ramcosta.composedestinations.codegen.commons.IllegalDestinationsSetup: Parameter "onActivityOpened" of 'File: MainScreen.kt -> MainScreen -> onActivityOpened' was not resolvable: please review it.
+> Task :app:kspSpoofedDebugKotlin FAILED
+e: [ksp] com.ramcosta.composedestinations.codegen.commons.IllegalDestinationsSetup: Parameter "onActivityOpened" of 'File: MainScreen.kt -> MainScreen -> onActivityOpened' was not resolvable: please review it.
+> Task :app:kspOfficialDebugKotlin FAILED
+FAILURE: Build completed with 8 failures.
+1: Task failed with an exception.
+Execution failed for task ':platform:configureCMakeDebug[armeabi-v7a]'.
+  -- Detecting C compiler ABI info - failed
+  C++ build system [configure] failed while executing:
+      FAILED: CMakeFiles/cmTC_1978b.dir/testCCompiler.c.o 
+      ninja: build stopped: subcommand failed.
+    CMakeLists.txt:3 (project) : com.android.ide.common.process.ProcessException: -- The C compiler identification is unknown
+  -- Detecting C compiler ABI info - failed
+  C++ build system [configure] failed while executing:
+      FAILED: CMakeFiles/cmTC_1978b.dir/testCCompiler.c.o 
+      ninja: build stopped: subcommand failed.
+  	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+  Caused by: com.android.ide.common.process.ProcessException: Error while executing process /home/mike/android-sdk/cmake/3.22.1/bin/cmake with arguments {-H/home/termux/Code/MMRL/platform/src/main/jni -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=26 -DANDROID_PLATFORM=android-26 -DANDROID_ABI=armeabi-v7a -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a -DANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_ANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_TOOLCHAIN_FILE=/home/mike/android-sdk/ndk/28.2.13676358/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/home/mike/android-sdk/cmake/3.22.1/bin/ninja -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/armeabi-v7a -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/armeabi-v7a -DCMAKE_BUILD_TYPE=Debug -B/home/termux/Code/MMRL/platform/.cxx/Debug/4m6c403e/armeabi-v7a -GNinja -DANDROID_STL=c++_static -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON}
+  	at com.android.build.gradle.internal.process.GradleProcessResult.buildProcessException(GradleProcessResult.java:73)
+  Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/home/mike/android-sdk/cmake/3.22.1/bin/cmake'' finished with non-zero exit value 1
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':platform:configureCMakeDebug[armeabi-v7a]'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: com.android.builder.errors.EvalIssueException: [CXX1429] error when building with cmake using /home/termux/Code/MMRL/platform/src/main/jni/CMakeLists.txt: -- The C compiler identification is unknown
+-- Detecting C compiler ABI info - failed
+C++ build system [configure] failed while executing:
+    FAILED: CMakeFiles/cmTC_1978b.dir/testCCompiler.c.o 
+    ninja: build stopped: subcommand failed.
+  CMakeLists.txt:3 (project) : com.android.ide.common.process.ProcessException: -- The C compiler identification is unknown
+-- Detecting C compiler ABI info - failed
+C++ build system [configure] failed while executing:
+    FAILED: CMakeFiles/cmTC_1978b.dir/testCCompiler.c.o 
+    ninja: build stopped: subcommand failed.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: com.android.ide.common.process.ProcessException: Error while executing process /home/mike/android-sdk/cmake/3.22.1/bin/cmake with arguments {-H/home/termux/Code/MMRL/platform/src/main/jni -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=26 -DANDROID_PLATFORM=android-26 -DANDROID_ABI=armeabi-v7a -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a -DANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_ANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_TOOLCHAIN_FILE=/home/mike/android-sdk/ndk/28.2.13676358/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/home/mike/android-sdk/cmake/3.22.1/bin/ninja -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/armeabi-v7a -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/armeabi-v7a -DCMAKE_BUILD_TYPE=Debug -B/home/termux/Code/MMRL/platform/.cxx/Debug/4m6c403e/armeabi-v7a -GNinja -DANDROID_STL=c++_static -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON}
+	at com.android.build.gradle.internal.process.GradleProcessResult.buildProcessException(GradleProcessResult.java:73)
+Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/home/mike/android-sdk/cmake/3.22.1/bin/cmake'' finished with non-zero exit value 1
+2: Task failed with an exception.
+Execution failed for task ':platform:configureCMakeDebug[arm64-v8a]'.
+  -- Detecting C compiler ABI info - failed
+  C++ build system [configure] failed while executing:
+      FAILED: CMakeFiles/cmTC_2e931.dir/testCCompiler.c.o 
+      ninja: build stopped: subcommand failed.
+    CMakeLists.txt:3 (project) : com.android.ide.common.process.ProcessException: -- The C compiler identification is unknown
+  -- Detecting C compiler ABI info - failed
+  C++ build system [configure] failed while executing:
+      FAILED: CMakeFiles/cmTC_2e931.dir/testCCompiler.c.o 
+      ninja: build stopped: subcommand failed.
+  	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+  Caused by: com.android.ide.common.process.ProcessException: Error while executing process /home/mike/android-sdk/cmake/3.22.1/bin/cmake with arguments {-H/home/termux/Code/MMRL/platform/src/main/jni -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=26 -DANDROID_PLATFORM=android-26 -DANDROID_ABI=arm64-v8a -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_ANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_TOOLCHAIN_FILE=/home/mike/android-sdk/ndk/28.2.13676358/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/home/mike/android-sdk/cmake/3.22.1/bin/ninja -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/arm64-v8a -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/arm64-v8a -DCMAKE_BUILD_TYPE=Debug -B/home/termux/Code/MMRL/platform/.cxx/Debug/4m6c403e/arm64-v8a -GNinja -DANDROID_STL=c++_static -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON}
+  	at com.android.build.gradle.internal.process.GradleProcessResult.buildProcessException(GradleProcessResult.java:73)
+  Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/home/mike/android-sdk/cmake/3.22.1/bin/cmake'' finished with non-zero exit value 1
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':platform:configureCMakeDebug[arm64-v8a]'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: com.android.builder.errors.EvalIssueException: [CXX1429] error when building with cmake using /home/termux/Code/MMRL/platform/src/main/jni/CMakeLists.txt: -- The C compiler identification is unknown
+-- Detecting C compiler ABI info - failed
+C++ build system [configure] failed while executing:
+    FAILED: CMakeFiles/cmTC_2e931.dir/testCCompiler.c.o 
+    ninja: build stopped: subcommand failed.
+  CMakeLists.txt:3 (project) : com.android.ide.common.process.ProcessException: -- The C compiler identification is unknown
+-- Detecting C compiler ABI info - failed
+C++ build system [configure] failed while executing:
+    FAILED: CMakeFiles/cmTC_2e931.dir/testCCompiler.c.o 
+    ninja: build stopped: subcommand failed.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: com.android.ide.common.process.ProcessException: Error while executing process /home/mike/android-sdk/cmake/3.22.1/bin/cmake with arguments {-H/home/termux/Code/MMRL/platform/src/main/jni -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=26 -DANDROID_PLATFORM=android-26 -DANDROID_ABI=arm64-v8a -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_ANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_TOOLCHAIN_FILE=/home/mike/android-sdk/ndk/28.2.13676358/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/home/mike/android-sdk/cmake/3.22.1/bin/ninja -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/arm64-v8a -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/arm64-v8a -DCMAKE_BUILD_TYPE=Debug -B/home/termux/Code/MMRL/platform/.cxx/Debug/4m6c403e/arm64-v8a -GNinja -DANDROID_STL=c++_static -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON}
+	at com.android.build.gradle.internal.process.GradleProcessResult.buildProcessException(GradleProcessResult.java:73)
+Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/home/mike/android-sdk/cmake/3.22.1/bin/cmake'' finished with non-zero exit value 1
+3: Task failed with an exception.
+Execution failed for task ':platform:configureCMakeDebug[x86_64]'.
+  -- Detecting C compiler ABI info - failed
+  C++ build system [configure] failed while executing:
+      FAILED: CMakeFiles/cmTC_7002e.dir/testCCompiler.c.o 
+      ninja: build stopped: subcommand failed.
+    CMakeLists.txt:3 (project) : com.android.ide.common.process.ProcessException: -- The C compiler identification is unknown
+  -- Detecting C compiler ABI info - failed
+  C++ build system [configure] failed while executing:
+      FAILED: CMakeFiles/cmTC_7002e.dir/testCCompiler.c.o 
+      ninja: build stopped: subcommand failed.
+  	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+  Caused by: com.android.ide.common.process.ProcessException: Error while executing process /home/mike/android-sdk/cmake/3.22.1/bin/cmake with arguments {-H/home/termux/Code/MMRL/platform/src/main/jni -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=26 -DANDROID_PLATFORM=android-26 -DANDROID_ABI=x86_64 -DCMAKE_ANDROID_ARCH_ABI=x86_64 -DANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_ANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_TOOLCHAIN_FILE=/home/mike/android-sdk/ndk/28.2.13676358/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/home/mike/android-sdk/cmake/3.22.1/bin/ninja -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/x86_64 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/x86_64 -DCMAKE_BUILD_TYPE=Debug -B/home/termux/Code/MMRL/platform/.cxx/Debug/4m6c403e/x86_64 -GNinja -DANDROID_STL=c++_static -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON}
+  	at com.android.build.gradle.internal.process.GradleProcessResult.buildProcessException(GradleProcessResult.java:73)
+  Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/home/mike/android-sdk/cmake/3.22.1/bin/cmake'' finished with non-zero exit value 1
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':platform:configureCMakeDebug[x86_64]'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: com.android.builder.errors.EvalIssueException: [CXX1429] error when building with cmake using /home/termux/Code/MMRL/platform/src/main/jni/CMakeLists.txt: -- The C compiler identification is unknown
+-- Detecting C compiler ABI info - failed
+C++ build system [configure] failed while executing:
+    FAILED: CMakeFiles/cmTC_7002e.dir/testCCompiler.c.o 
+    ninja: build stopped: subcommand failed.
+  CMakeLists.txt:3 (project) : com.android.ide.common.process.ProcessException: -- The C compiler identification is unknown
+-- Detecting C compiler ABI info - failed
+C++ build system [configure] failed while executing:
+    FAILED: CMakeFiles/cmTC_7002e.dir/testCCompiler.c.o 
+    ninja: build stopped: subcommand failed.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: com.android.ide.common.process.ProcessException: Error while executing process /home/mike/android-sdk/cmake/3.22.1/bin/cmake with arguments {-H/home/termux/Code/MMRL/platform/src/main/jni -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=26 -DANDROID_PLATFORM=android-26 -DANDROID_ABI=x86_64 -DCMAKE_ANDROID_ARCH_ABI=x86_64 -DANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_ANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_TOOLCHAIN_FILE=/home/mike/android-sdk/ndk/28.2.13676358/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/home/mike/android-sdk/cmake/3.22.1/bin/ninja -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/x86_64 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/x86_64 -DCMAKE_BUILD_TYPE=Debug -B/home/termux/Code/MMRL/platform/.cxx/Debug/4m6c403e/x86_64 -GNinja -DANDROID_STL=c++_static -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON}
+	at com.android.build.gradle.internal.process.GradleProcessResult.buildProcessException(GradleProcessResult.java:73)
+Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/home/mike/android-sdk/cmake/3.22.1/bin/cmake'' finished with non-zero exit value 1
+4: Task failed with an exception.
+Execution failed for task ':platform:configureCMakeDebug[x86]'.
+  -- Detecting C compiler ABI info - failed
+  C++ build system [configure] failed while executing:
+      FAILED: CMakeFiles/cmTC_5c284.dir/testCCompiler.c.o 
+      ninja: build stopped: subcommand failed.
+    CMakeLists.txt:3 (project) : com.android.ide.common.process.ProcessException: -- The C compiler identification is unknown
+  -- Detecting C compiler ABI info - failed
+  C++ build system [configure] failed while executing:
+      FAILED: CMakeFiles/cmTC_5c284.dir/testCCompiler.c.o 
+      ninja: build stopped: subcommand failed.
+  	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+  Caused by: com.android.ide.common.process.ProcessException: Error while executing process /home/mike/android-sdk/cmake/3.22.1/bin/cmake with arguments {-H/home/termux/Code/MMRL/platform/src/main/jni -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=26 -DANDROID_PLATFORM=android-26 -DANDROID_ABI=x86 -DCMAKE_ANDROID_ARCH_ABI=x86 -DANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_ANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_TOOLCHAIN_FILE=/home/mike/android-sdk/ndk/28.2.13676358/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/home/mike/android-sdk/cmake/3.22.1/bin/ninja -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/x86 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/x86 -DCMAKE_BUILD_TYPE=Debug -B/home/termux/Code/MMRL/platform/.cxx/Debug/4m6c403e/x86 -GNinja -DANDROID_STL=c++_static -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON}
+  	at com.android.build.gradle.internal.process.GradleProcessResult.buildProcessException(GradleProcessResult.java:73)
+  Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/home/mike/android-sdk/cmake/3.22.1/bin/cmake'' finished with non-zero exit value 1
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':platform:configureCMakeDebug[x86]'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: com.android.builder.errors.EvalIssueException: [CXX1429] error when building with cmake using /home/termux/Code/MMRL/platform/src/main/jni/CMakeLists.txt: -- The C compiler identification is unknown
+-- Detecting C compiler ABI info - failed
+C++ build system [configure] failed while executing:
+    FAILED: CMakeFiles/cmTC_5c284.dir/testCCompiler.c.o 
+    ninja: build stopped: subcommand failed.
+  CMakeLists.txt:3 (project) : com.android.ide.common.process.ProcessException: -- The C compiler identification is unknown
+-- Detecting C compiler ABI info - failed
+C++ build system [configure] failed while executing:
+    FAILED: CMakeFiles/cmTC_5c284.dir/testCCompiler.c.o 
+    ninja: build stopped: subcommand failed.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: com.android.ide.common.process.ProcessException: Error while executing process /home/mike/android-sdk/cmake/3.22.1/bin/cmake with arguments {-H/home/termux/Code/MMRL/platform/src/main/jni -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=26 -DANDROID_PLATFORM=android-26 -DANDROID_ABI=x86 -DCMAKE_ANDROID_ARCH_ABI=x86 -DANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_ANDROID_NDK=/home/mike/android-sdk/ndk/28.2.13676358 -DCMAKE_TOOLCHAIN_FILE=/home/mike/android-sdk/ndk/28.2.13676358/build/cmake/android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=/home/mike/android-sdk/cmake/3.22.1/bin/ninja -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/x86 -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/termux/Code/MMRL/platform/build/intermediates/cxx/Debug/4m6c403e/obj/x86 -DCMAKE_BUILD_TYPE=Debug -B/home/termux/Code/MMRL/platform/.cxx/Debug/4m6c403e/x86 -GNinja -DANDROID_STL=c++_static -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON}
+	at com.android.build.gradle.internal.process.GradleProcessResult.buildProcessException(GradleProcessResult.java:73)
+Caused by: org.gradle.process.ProcessExecutionException: Process 'command '/home/mike/android-sdk/cmake/3.22.1/bin/cmake'' finished with non-zero exit value 1
+5: Task failed with an exception.
+Execution failed for task ':app:mergeOfficialDebugResources'.
+   > Resource compilation failed (Failed to compile values resource file /home/termux/Code/MMRL/app/build/intermediates/incremental/officialDebug/mergeOfficialDebugResources/merged.dir/values/values.xml. Cause: java.lang.IllegalStateException: Can not extract resource from com.android.aaptcompiler.ParsedResource@193a4eaa.). Check logs for more details.
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:mergeOfficialDebugResources'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing com.android.build.gradle.internal.res.ResourceCompilerRunnable
+Caused by: com.android.aaptcompiler.ResourceCompilationException: Resource compilation failed (Failed to compile values resource file /home/termux/Code/MMRL/app/build/intermediates/incremental/officialDebug/mergeOfficialDebugResources/merged.dir/values/values.xml. Cause: java.lang.IllegalStateException: Can not extract resource from com.android.aaptcompiler.ParsedResource@193a4eaa.). Check logs for more details.
+Caused by: com.android.aaptcompiler.ResourceCompilationException: Failed to compile values resource file /home/termux/Code/MMRL/app/build/intermediates/incremental/officialDebug/mergeOfficialDebugResources/merged.dir/values/values.xml
+Caused by: java.lang.IllegalStateException: Can not extract resource from com.android.aaptcompiler.ParsedResource@193a4eaa.
+6: Task failed with an exception.
+Execution failed for task ':app:mergeSpoofedDebugResources'.
+   > Resource compilation failed (Failed to compile values resource file /home/termux/Code/MMRL/app/build/intermediates/incremental/spoofedDebug/mergeSpoofedDebugResources/merged.dir/values/values.xml. Cause: java.lang.IllegalStateException: Can not extract resource from com.android.aaptcompiler.ParsedResource@5b31a8a0.). Check logs for more details.
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:mergeSpoofedDebugResources'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing com.android.build.gradle.internal.res.ResourceCompilerRunnable
+Caused by: com.android.aaptcompiler.ResourceCompilationException: Resource compilation failed (Failed to compile values resource file /home/termux/Code/MMRL/app/build/intermediates/incremental/spoofedDebug/mergeSpoofedDebugResources/merged.dir/values/values.xml. Cause: java.lang.IllegalStateException: Can not extract resource from com.android.aaptcompiler.ParsedResource@5b31a8a0.). Check logs for more details.
+Caused by: com.android.aaptcompiler.ResourceCompilationException: Failed to compile values resource file /home/termux/Code/MMRL/app/build/intermediates/incremental/spoofedDebug/mergeSpoofedDebugResources/merged.dir/values/values.xml
+Caused by: java.lang.IllegalStateException: Can not extract resource from com.android.aaptcompiler.ParsedResource@5b31a8a0.
+7: Task failed with an exception.
+Execution failed for task ':app:kspSpoofedDebugKotlin'.
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:kspSpoofedDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing com.google.devtools.ksp.gradle.KspAAWorkerAction
+Caused by: com.ramcosta.composedestinations.codegen.commons.IllegalDestinationsSetup: Parameter "onActivityOpened" of 'File: MainScreen.kt -> MainScreen -> onActivityOpened' was not resolvable: please review it.
+	at ksp.com.google.devtools.ksp.common.IncrementalContextBase.closeFilesOnException(IncrementalContextBase.kt:400)
+Caused by: java.lang.IndexOutOfBoundsException: End index (-1) is less than start index (0).
+8: Task failed with an exception.
+Execution failed for task ':app:kspOfficialDebugKotlin'.
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:kspOfficialDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing com.google.devtools.ksp.gradle.KspAAWorkerAction
+Caused by: com.ramcosta.composedestinations.codegen.commons.IllegalDestinationsSetup: Parameter "onActivityOpened" of 'File: MainScreen.kt -> MainScreen -> onActivityOpened' was not resolvable: please review it.
+	at ksp.com.google.devtools.ksp.common.IncrementalContextBase.closeFilesOnException(IncrementalContextBase.kt:400)
+Caused by: java.lang.IndexOutOfBoundsException: End index (-1) is less than start index (0).
+BUILD FAILED in 2m 43s
+error: Command failed (1): /home/termux/Code/MMRL/gradlew assembleDebug --max-workers=4 -Dorg.gradle.java.installations.paths=/usr/lib/jvm/java-21-openjdk-arm64 -Dorg.gradle.java.installations.auto-detect=false --continue --console=plain --stacktrace -Pandroid.aapt2FromMavenOverride=/home/mike/.cache/gradle-build/aapt2/revanced/v1.1.0/aapt2

@@ -218,7 +218,7 @@
     <string name="settings_security_allow_filesystem_api">Dateisystem API erlauben</string>
     <string name="settings_developer">Entwickler</string>
     <string name="settings_developer_desc">Fehlerbehebungs Werkzeuge für Entwickler</string>
-    <string name="stack_trace_truncated">%s\n... %d mehr</string>
+    <string name="stack_trace_truncated">%1$s\n... %2$d mehr</string>
     <string name="repo_added">Repo hinzugefügt</string>
     <string name="repo_update_service">Repositoris erfolgreich geupdated</string>
     <string name="repo_update_service_failed">Keine Updates für die Reposetories gefunden</string>
@@ -246,7 +246,7 @@
     <string name="action_failure">Aktion fehlgeschlagen</string>
     <string name="action_executing">Wird ausgeführt…</string>
     <string name="has_a_new_update">%1$s hat ein neues Update!</string>
-    <string name="update_available_from_to">Update von %s%d verfügbar zu %s%d.</string>
+    <string name="update_available_from_to">Update von %1$s%2$d verfügbar zu %3$s%4$d.</string>
     <string name="events_birthday">%1$s Jahre MMRL!</string>
     <string name="events_halloween">BOO! ... AHH</string>
     <string name="events_christmas">← Baum.</string>

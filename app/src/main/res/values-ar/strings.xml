@@ -178,7 +178,7 @@
     <string name="help">مساعدة</string>
     <string name="we_hit_a_brick_crash">لقد واجهتنا مشكلة!</string>
     <string name="report_to_issues">الإبلاغ عن مشاكل</string>
-    <string name="stack_trace_truncated">%s\n… %d المزيد</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d المزيد</string>
     <string name="additional_notes">ملاحظات إضافية</string>
     <string name="repo_added">تم إضافة المستودع</string>
     <!-- Work Manager -->
@@ -188,7 +188,7 @@
     <string name="repo_update_service_failed">لم يتم العثور على تحديثات للمستودعات</string>
     <string name="repo_update_service_failed_desc">لا توجد تحديثات للمستودعات</string>
     <string name="has_a_new_update">%1$s لديه تحديث جديد!</string>
-    <string name="update_available_from_to">التحديث متاح من %s (%d) إلى %s (%d).</string>
+    <string name="update_available_from_to">التحديث متاح من %1$s (%2$d) إلى %3$s (%4$d).</string>
     <string name="page_home">الصفحة الرئيسية</string>
     <string name="view_module_license">الترخيص</string>
     <string name="view_module_module_support">تفاصيل اخرى</string>

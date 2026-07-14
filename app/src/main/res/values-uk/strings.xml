@@ -232,7 +232,7 @@
     <string name="help">Допомога</string>
     <string name="we_hit_a_brick_crash">Ми врізалися в стіну!</string>
     <string name="report_to_issues">Повідомити про проблеми</string>
-    <string name="stack_trace_truncated">%s\n… ще %d</string>
+    <string name="stack_trace_truncated">%1$s\n… ще %2$d</string>
     <string name="additional_notes">Додаткові примітки</string>
     <string name="repo_added">Репозиторій додано</string>
     <string name="repo_update_service">Репозиторій успішно оновлено</string>
@@ -267,7 +267,7 @@
     <string name="action_failure">Помилка дії</string>
     <string name="action_executing">Виконується…</string>
     <string name="has_a_new_update">Для %1$s доступне нове оновлення!</string>
-    <string name="update_available_from_to">Доступне оновлення з %s (%d) до %s (%d).</string>
+    <string name="update_available_from_to">Доступне оновлення з %1$s (%2$d) до %3$s (%4$d).</string>
     <string name="events_birthday">MMRL %1$s років!</string>
     <string name="events_halloween">БУ! … А-А-А!</string>
     <string name="events_christmas">← Ялинка.</string>

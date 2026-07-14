@@ -104,7 +104,7 @@
     <string name="settings_shell_module_state_change_desc">Utiliza el shell en lugar de crear archivos en el directorio del módulo. Una vez habilitado, no podrá utilizar el botón de restauración debido a limitaciones.</string>
     <string name="view_module_low_root_version">¡Versión root demasiado baja!</string>
     <string name="has_a_new_update">¡%1$s tiene una nueva actualización!</string>
-    <string name="update_available_from_to">Actualización disponible de %s (%d) a %s (%d).</string>
+    <string name="update_available_from_to">Actualización disponible de %1$s (%2$d) a %3$s (%4$d).</string>
     <string name="events_birthday">¡%1$s años de MMRL!</string>
     <string name="events_halloween">¡BUUUUU! … AHH</string>
     <string name="events_new_years_eve">¡Nochevieja!</string>
@@ -124,7 +124,7 @@
     <string name="help">Ayuda</string>
     <string name="we_hit_a_brick_crash">¡Tenemos un problema!</string>
     <string name="report_to_issues">Informar sobre problemas</string>
-    <string name="stack_trace_truncated">%s\n… %d más</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d más</string>
     <string name="additional_notes">Notas adicionales</string>
     <string name="repo_added">Repositorio añadido</string>
     <string name="repo_update_service">Repositorios actualizados correctamente</string>

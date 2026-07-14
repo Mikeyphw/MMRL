@@ -211,7 +211,7 @@
     <string name="help">帮助</string>
     <string name="we_hit_a_brick_crash">我们遇到了问题!</string>
     <string name="report_to_issues">汇报 issue</string>
-    <string name="stack_trace_truncated">%s\n… %d 更多</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d 更多</string>
     <string name="additional_notes">附加说明</string>
     <string name="repo_added">仓库已添加</string>
     <!-- Repo Update Service -->
@@ -241,7 +241,7 @@
     <string name="bulk_install_module_added">模块已添加</string>
     <string name="bulk_module_install">大模块安装</string>
     <string name="has_a_new_update">%1$s 有更新！</string>
-    <string name="update_available_from_to">可用更新 %s (%d) 到 %s (%d).</string>
+    <string name="update_available_from_to">可用更新 %1$s (%2$d) 到 %3$s (%4$d).</string>
     <string name="events_birthday">MMRL %1$s 年!</string>
     <string name="events_halloween">BOO! … AHH</string>
     <string name="events_christmas">← 这里有棵树。</string>

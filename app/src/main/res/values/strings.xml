@@ -780,7 +780,7 @@
     <string name="settings_tasker_state_changes">Allow enable and disable</string>
     <string name="settings_tasker_state_changes_desc">Allow Tasker to request module state changes.</string>
     <string name="settings_tasker_module_actions">Allow predefined module actions</string>
-    <string name="settings_tasker_module_actions_desc">Runs only a module's bundled action.sh; arbitrary shell commands are never accepted.</string>
+    <string name="settings_tasker_module_actions_desc">Runs only a module\'s bundled action.sh; arbitrary shell commands are never accepted.</string>
     <string name="settings_tasker_removals">Allow remove and restore</string>
     <string name="settings_tasker_removals_desc">Allow removal requests and restoration from retained rollback archives.</string>
     <string name="settings_tasker_reviewed_installs">Allow reviewed installs and updates</string>

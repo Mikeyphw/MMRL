@@ -207,7 +207,7 @@
     <string name="help">協助</string>
     <string name="we_hit_a_brick_crash">發生錯誤！</string>
     <string name="report_to_issues">提起錯誤回報</string>
-    <string name="stack_trace_truncated">%s\n……尚有 %d 行</string>
+    <string name="stack_trace_truncated">%1$s\n……尚有 %2$d 行</string>
     <string name="additional_notes">附加提示</string>
     <string name="repo_added">已新增模組倉庫</string>
     <!-- 中介平臺更新背景服務 -->
@@ -234,7 +234,7 @@
     <string name="home_disabled_modules">已停用模組</string>
     <string name="home_updated_modules">尚未更新的模組</string>
     <string name="has_a_new_update">%1$s 已可更新！</string>
-    <string name="update_available_from_to">將版本 %s（%d）更新至 %s（%d）。</string>
+    <string name="update_available_from_to">將版本 %1$s（%2$d）更新至 %3$s（%4$d）。</string>
     <string name="events_birthday">祝《MMRL》%1$s 歲生日快樂！</string>
     <string name="events_halloween">不給糖！……就搗蛋</string>
     <string name="events_christmas">← 聖誕樹。</string>

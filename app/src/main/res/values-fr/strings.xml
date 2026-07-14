@@ -222,7 +222,7 @@
     <string name="view_module_view_track">Voir la piste</string>
     <string name="copy_logs">Copier les journaux</string>
     <string name="home_root_provider_version_name">Nom de la version du fournisseur root</string>
-    <string name="update_available_from_to">Mise à jour disponible de %s (%d) à %s (%d).</string>
+    <string name="update_available_from_to">Mise à jour disponible de %1$s (%2$d) à %3$s (%4$d).</string>
     <string name="home_storage_usage">Utilisation du stockage</string>
     <string name="invalid_ip">Il ne s\'agit pas d\'un domaine local valide !</string>
     <string name="install_screen_cancel_title">Annuler l\'installation ?</string>
@@ -240,7 +240,7 @@
     <string name="settings_shell_module_state_change">Utiliser Shell pour les états</string>
     <string name="settings_clear_install_terminal_desc">Effacer le terminal d\'installation lors de l\'installation de plusieurs modules</string>
     <string name="settings_provider_service_desc">Maintenez le fournisseur en arrière-plan pour réduire considérablement les temps de démarrage et améliorer la réactivité globale</string>
-    <string name="stack_trace_truncated">%s\n… %d restant</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d restant</string>
     <string name="settings_blacklist_alerts_desc">Afficher une alerte pour les modules locaux et d\'exploration, et bloquer en outre l\'installation de tous les modules figurant sur la liste noire</string>
     <string name="submit_module">Soumettre un module</string>
     <string name="explore_repositories">Explorer les Référentiels</string>

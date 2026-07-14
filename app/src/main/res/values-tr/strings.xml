@@ -247,7 +247,7 @@
     <string name="help">Yardım</string>
     <string name="we_hit_a_brick_crash">Bir tuğla çarptık!</string>
     <string name="report_to_issues">Sorunları raporla</string>
-    <string name="stack_trace_truncated">%s\n… %d daha fazla</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d daha fazla</string>
     <string name="additional_notes">Ek Notlar</string>
     <string name="repo_added">Depo eklendi</string>
     <!-- İş Servisi -->
@@ -285,7 +285,7 @@
     <string name="action_failure">Eylem Başarısız</string>
     <string name="action_executing">Yürütülüyor…</string>
     <string name="has_a_new_update">%1$s\'in yeni bir güncellemesi var!</string>
-    <string name="update_available_from_to">%s (%d) sürümünden %s (%d) sürümüne güncelleme mevcut.</string>
+    <string name="update_available_from_to">%1$s (%2$d) sürümünden %3$s (%4$d) sürümüne güncelleme mevcut.</string>
     <string name="events_birthday">%1$s yaşında MMRL!</string>
     <string name="events_halloween">BOO! … AHH</string>
     <string name="events_christmas">← Ağaç.</string>

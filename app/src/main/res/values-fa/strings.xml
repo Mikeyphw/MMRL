@@ -235,7 +235,7 @@
     <string name="help">راهنما</string>
     <string name="we_hit_a_brick_crash">به دیوار برخورد کردیم!</string>
     <string name="report_to_issues">گزارش به مشکلات</string>
-    <string name="stack_trace_truncated">%s\n… %d مورد دیگر</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d مورد دیگر</string>
     <string name="additional_notes">یادداشت‌های اضافی</string>
     <string name="repo_added">مخزن افزوده شد</string>
     <string name="repo_update_service">مخزن‌ها با موفقیت به‌روزرسانی شدند</string>
@@ -265,7 +265,7 @@
     <string name="action_failure">شکست کنش</string>
     <string name="action_executing">در حال اجرا…</string>
     <string name="has_a_new_update">%1$s به‌روزرسانی جدیدی دارد!</string>
-    <string name="update_available_from_to">به‌روزرسانی از %s (%d) به %s (%d) در دسترس است.</string>
+    <string name="update_available_from_to">به‌روزرسانی از %1$s (%2$d) به %3$s (%4$d) در دسترس است.</string>
     <string name="events_birthday">%1$s سال MMRL!</string>
     <string name="events_christmas">← درخت.</string>
     <string name="events_new_years_eve">شب سال نو!</string>

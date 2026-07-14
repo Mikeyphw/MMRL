@@ -190,7 +190,7 @@
     <string name="help">Ajuda</string>
     <string name="we_hit_a_brick_crash">Batemos num tijolo!</string>
     <string name="report_to_issues">Relatar problemas</string>
-    <string name="stack_trace_truncated">%s\n … %d mais</string>
+    <string name="stack_trace_truncated">%1$s\n … %2$d mais</string>
     <string name="additional_notes">Notas adicionais</string>
     <string name="repo_added">Repositório adicionado</string>
     <string name="repo_update_service">Repositórios atualizados com sucesso</string>
@@ -218,7 +218,7 @@
     <string name="bulk_install_module_added">Módulo adicionado</string>
     <string name="bulk_module_install">Instalação de módulo em massa</string>
     <string name="has_a_new_update">%1$s tem uma nova atualização!</string>
-    <string name="update_available_from_to">Atualização disponível de %s (%d) a %s (%d).</string>
+    <string name="update_available_from_to">Atualização disponível de %1$s (%2$d) a %3$s (%4$d).</string>
     <string name="events_birthday">%1$s anos MMRL!</string>
     <string name="events_halloween">BOO! … AHH</string>
     <string name="events_christmas">← Árvore.</string>

@@ -61,8 +61,6 @@ import com.dergoogler.mmrl.viewmodel.ActivityViewModel
 import com.dergoogler.mmrl.viewmodel.BulkInstallViewModel
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModuleUpdatesScreenDestination
@@ -70,7 +68,6 @@ import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
-@Destination<RootGraph>
 @Composable
 fun MainScreen(
     openActivityOnLaunch: Boolean = false,

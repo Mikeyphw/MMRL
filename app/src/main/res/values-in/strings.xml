@@ -177,7 +177,7 @@
     <string name="home_updated_modules">Modul yang Diperbarui</string>
     <string name="bulk_module_install">Pemasangan Modul Massal</string>
     <string name="bulk_install_module_added">Modul ditambahkan</string>
-    <string name="update_available_from_to">Pembaruan tersedia dari %s (%d) hingga %s (%d).</string>
+    <string name="update_available_from_to">Pembaruan tersedia dari %1$s (%2$d) hingga %3$s (%4$d).</string>
     <string name="has_a_new_update">%1$s mendapat pembaruan baru!</string>
     <string name="events_new_years_eve">Malam tahun baru!</string>
     <string name="pre_release">Pra-rilis</string>
@@ -216,7 +216,7 @@
     <string name="repo_options_website">Situs Web</string>
     <string name="repo_options_donate">Donasi</string>
     <string name="repo_options_submission">Pengajuan</string>
-    <string name="stack_trace_truncated">%s\n… %d lihat selengkapnya</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d lihat selengkapnya</string>
     <string name="report_to_issues">Laporkan ke issue</string>
     <string name="we_hit_a_brick_crash">Ada yang salah ~</string>
     <string name="reboot_userspace">Mulai ulang secara halus</string>

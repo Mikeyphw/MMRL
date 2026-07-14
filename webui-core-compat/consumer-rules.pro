@@ -1,0 +1,1 @@
+-keep public class * extends dev.mmrlx.webui.PathHandler { public <init>(...); }

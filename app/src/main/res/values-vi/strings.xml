@@ -277,7 +277,7 @@
     <string name="action_activity">Hành động</string>
     <string name="action_failure">Hành động thất bại</string>
     <string name="action_executing">Đang thực thi…</string>
-    <string name="update_available_from_to">Có bản cập nhật từ %s (%d) lên %s (%d).</string>
+    <string name="update_available_from_to">Có bản cập nhật từ %1$s (%2$d) lên %3$s (%4$d).</string>
     <string name="events_birthday">MMRL đã được %1$s tuổi!</string>
     <string name="events_halloween">BOO! … AHH</string>
     <string name="events_christmas">← Cây thông.</string>
@@ -443,7 +443,7 @@
     <string name="profile_namespace">Không gian tên gắn kết</string>
     <string name="view_module_features_post_mount">Post Mount</string>
     <string name="view_module_features_action_sub">Cho phép người dùng thực thi một tập lệnh thông qua việc nhấn vào nút</string>
-    <string name="stack_trace_truncated">%s\n… %d nhiều hơn nữa</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d nhiều hơn nữa</string>
     <string name="selinux_status_enforcing">Bắt buộc</string>
     <string name="selinux_status_permissive">Cho phép</string>
 </resources>
