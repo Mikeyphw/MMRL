@@ -24,17 +24,21 @@ private const val ERROR_NOT_FOUND = 1002
 private const val ERROR_QUEUE = 1003
 private const val ERROR_INTERNAL = 1099
 
-internal inline fun taskerAction(block: () -> TaskerResultOutput): TaskerPluginResult<TaskerResultOutput> =
+@Suppress("UNCHECKED_CAST")
+private fun taskerError(code: Int, message: String): TaskerPluginResult<TaskerResultOutput> =
+    TaskerPluginResultError(code, message) as TaskerPluginResult<TaskerResultOutput>
+
+internal fun taskerAction(block: () -> TaskerResultOutput): TaskerPluginResult<TaskerResultOutput> =
     try {
         TaskerPluginResultSucess(block())
     } catch (error: IllegalArgumentException) {
-        TaskerPluginResultError(ERROR_INVALID_INPUT, error.message ?: "Invalid input")
+        taskerError(ERROR_INVALID_INPUT, error.message ?: "Invalid input")
     } catch (error: NoSuchElementException) {
-        TaskerPluginResultError(ERROR_NOT_FOUND, error.message ?: "Not found")
+        taskerError(ERROR_NOT_FOUND, error.message ?: "Not found")
     } catch (error: IllegalStateException) {
-        TaskerPluginResultError(ERROR_QUEUE, error.message ?: "Operation could not be queued")
+        taskerError(ERROR_QUEUE, error.message ?: "Operation could not be queued")
     } catch (error: Throwable) {
-        TaskerPluginResultError(ERROR_INTERNAL, error.message ?: error.javaClass.simpleName)
+        taskerError(ERROR_INTERNAL, error.message ?: error.javaClass.simpleName)
     }
 
 class GetModuleStatusRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerResultOutput>() {
@@ -74,7 +78,7 @@ class ListModulesRunner : TaskerPluginRunnerAction<TaskerEmptyInput, TaskerResul
                         .put("available_version_code", remote?.versionCode ?: -1)
                         .put("repository", remote?.repoUrl.orEmpty())
                 }
-                TaskerResultOutput(
+                taskerResultOutput(
                     status = "OK",
                     message = "${locals.size} installed modules",
                     count = locals.size,
@@ -127,7 +131,7 @@ class CheckUpdatesRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerRe
                             .put("repository", remote.repoUrl)
                     }
                     history.succeed(operationId, "${updates.size} module updates found")
-                    TaskerResultOutput(
+                    taskerResultOutput(
                         status = "SUCCEEDED",
                         message = "${updates.size} module updates found",
                         operationId = operationId,
@@ -215,7 +219,7 @@ class DownloadModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, Tasker
                     history.fail(operationId, "Download could not be queued")
                     throw IllegalStateException("Download could not be queued; check storage permission and background restrictions")
                 }
-                TaskerResultOutput(
+                taskerResultOutput(
                     status = OperationStatus.RUNNING.name,
                     message = "Download queued",
                     operationId = operationId,
@@ -251,7 +255,7 @@ class CancelDownloadRunner : TaskerPluginRunnerAction<TaskerRequestInput, Tasker
                 require(entry.status == OperationStatus.RUNNING.name) { "Download is not running" }
                 history.appendLog(operationId, "Cancellation requested by Tasker")
                 check(DownloadService.cancel(context, operationId)) { "Unable to dispatch download cancellation" }
-                TaskerResultOutput(
+                taskerResultOutput(
                     status = "CANCELLATION_REQUESTED",
                     message = "Download cancellation requested",
                     operationId = operationId,
@@ -293,7 +297,7 @@ class ExportOperationLogRunner : TaskerPluginRunnerAction<TaskerRequestInput, Ta
             }
         }
 
-    private fun TaskerResultOutput.copyForExport(uri: String) = TaskerResultOutput(
+    private fun TaskerResultOutput.copyForExport(uri: String) = taskerResultOutput(
         success = success,
         status = status,
         message = "Technical log exported",

@@ -139,7 +139,7 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
 
     override val inputForTasker: TaskerInput<TaskerRequestInput>
         get() = TaskerInput(
-            TaskerRequestInput(
+            taskerRequestInput(
                 moduleId = moduleId.text?.toString()?.trim(),
                 operationId = operationId.text?.toString()?.trim(),
                 url = url.text?.toString()?.trim(),
@@ -281,7 +281,7 @@ class ListModulesConfigActivity : Activity(), TaskerPluginConfig<TaskerEmptyInpu
     override val context: Context get() = applicationContext
     private val helper by lazy { ListModulesHelper(this) }
     override fun assignFromInput(input: TaskerInput<TaskerEmptyInput>) = Unit
-    override val inputForTasker get() = TaskerInput(TaskerEmptyInput())
+    override val inputForTasker get() = TaskerInput(taskerEmptyInput())
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         helper.finishForTasker()

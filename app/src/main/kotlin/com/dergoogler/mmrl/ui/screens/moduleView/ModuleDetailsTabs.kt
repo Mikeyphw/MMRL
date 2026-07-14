@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +29,7 @@ import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.model.online.ModuleFeatures
 import com.dergoogler.mmrl.model.state.Permissions
 import com.dergoogler.mmrl.platform.PlatformManager
-import com.dergoogler.mmrl.platform.content.isValid
+import com.dergoogler.mmrl.platform.content.LocalModule.Companion.isEmpty
 import com.dergoogler.mmrl.ui.providable.LocalModule
 import com.dergoogler.mmrl.ui.providable.LocalOnlineModule
 import com.dergoogler.mmrl.ui.providable.LocalRepo
@@ -73,7 +72,7 @@ internal fun ModuleDecisionSummary() {
             text = stringResource(if (compatible) R.string.repo_compatible else R.string.repo_incompatible),
             color = if (compatible) semantic.success else semantic.incompatible,
         )
-        if (local.isValid) {
+        if (!local.isEmpty) {
             DecisionTag("${local.version} → ${version.version}", MaterialTheme.colorScheme.secondary)
         } else {
             DecisionTag(version.versionDisplay, MaterialTheme.colorScheme.secondary)
@@ -160,7 +159,7 @@ private fun ChangesPage() {
     val local = LocalModule.current
     val version = LocalVersionItem.current
     SectionBlock(stringResource(R.string.module_details_version_change)) {
-        DetailValue(stringResource(R.string.module_details_installed_version), if (local.isValid) local.version else stringResource(R.string.module_details_not_installed))
+        DetailValue(stringResource(R.string.module_details_installed_version), if (!local.isEmpty) local.version else stringResource(R.string.module_details_not_installed))
         DetailValue(stringResource(R.string.module_details_available_version), version.versionDisplay)
     }
     SectionBlock(stringResource(R.string.module_details_changelog)) {

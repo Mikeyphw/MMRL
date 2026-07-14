@@ -123,7 +123,7 @@ fun ScaffoldScope.ModulesList(
             }
 
             groups.forEach { group ->
-                item(key = "group_${group.title}") {
+                item(key = "group_${group.key}") {
                     ModuleGroupHeader(
                         title = stringResource(group.key.titleResource),
                         count = group.modules.size,

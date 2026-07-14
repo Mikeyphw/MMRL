@@ -85,7 +85,7 @@ private fun rootAction(
             "Waiting for MMRL approval",
         )
     }
-    TaskerResultOutput(
+    taskerResultOutput(
         status = status,
         message = if (status == "AWAITING_APPROVAL") "Waiting for MMRL approval" else "Root action queued",
         operationId = operationId,
@@ -172,7 +172,7 @@ class RestoreModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerR
                     "Waiting for MMRL approval",
                 )
             }
-            TaskerResultOutput(
+            taskerResultOutput(
                 status = status,
                 message = if (status == "AWAITING_APPROVAL") "Waiting for MMRL approval" else "Restore queued",
                 operationId = operationId,

@@ -108,7 +108,7 @@ class PrepareReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
                 } else {
                     repos.operationHistoryRepository().fail(operationId, "Archive failed safety inspection")
                 }
-                TaskerResultOutput(
+                taskerResultOutput(
                     success = inspection.canInstall,
                     status = if (inspection.canInstall) "REVIEW_READY" else "BLOCKED",
                     message = if (inspection.canInstall) "Reviewed installation is ready" else "Archive was blocked by inspection",
@@ -201,7 +201,7 @@ class ExecuteReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
                         if (token.routine) "Waiting for MMRL approval" else "Non-routine changes require MMRL approval",
                     )
                 }
-                TaskerResultOutput(
+                taskerResultOutput(
                     status = status,
                     message = if (status == "AWAITING_APPROVAL") "Waiting for MMRL approval" else "Reviewed install queued",
                     operationId = operationId,

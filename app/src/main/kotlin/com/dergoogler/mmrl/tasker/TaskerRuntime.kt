@@ -41,7 +41,7 @@ internal object TaskerRuntime {
         }
         val updateAvailable = local != null && online != null && online.versionCode > local.versionCode
         val state = local?.state?.name.orEmpty()
-        return TaskerResultOutput(
+        return taskerResultOutput(
             success = true,
             status = state.ifBlank { if (online != null) "NOT_INSTALLED" else "NOT_FOUND" },
             message = when {
@@ -78,7 +78,7 @@ internal object TaskerRuntime {
     }
 
     fun operationOutput(entry: OperationHistoryEntity, logUri: String = ""): TaskerResultOutput =
-        TaskerResultOutput(
+        taskerResultOutput(
             success = entry.status == OperationStatus.SUCCEEDED.name || entry.status == OperationStatus.RUNNING.name,
             status = entry.status,
             message = entry.summary,

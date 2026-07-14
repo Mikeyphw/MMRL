@@ -24,7 +24,7 @@ class UpdateDiscoveredEventRunner :
         update: TaskerUpdateEvent?,
     ): TaskerPluginResultCondition<TaskerResultOutput> {
         update ?: return TaskerPluginResultConditionUnsatisfied()
-        val output = TaskerResultOutput(
+        val output = taskerResultOutput(
             status = "UPDATE_DISCOVERED",
             message = "Update available for ${update.moduleName.orEmpty()}",
             moduleId = update.moduleId.orEmpty(),
@@ -59,7 +59,7 @@ class OperationFailedEventRunner :
         update: TaskerFailureEvent?,
     ): TaskerPluginResultCondition<TaskerResultOutput> {
         update ?: return TaskerPluginResultConditionUnsatisfied()
-        val output = TaskerResultOutput(
+        val output = taskerResultOutput(
             success = false,
             status = "OPERATION_FAILED",
             message = update.errorMessage.orEmpty(),
@@ -107,7 +107,7 @@ class OperationFailedEventHelper(config: TaskerPluginConfig<TaskerEmptyInput>) :
 abstract class TaskerEventConfigActivity : Activity(), TaskerPluginConfig<TaskerEmptyInput> {
     override val context: Context get() = applicationContext
     override fun assignFromInput(input: TaskerInput<TaskerEmptyInput>) = Unit
-    override val inputForTasker get() = TaskerInput(TaskerEmptyInput())
+    override val inputForTasker get() = TaskerInput(taskerEmptyInput())
     protected abstract fun finishEventConfig()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,7 +130,7 @@ object TaskerEventPublisher {
         runCatching {
             UpdateDiscoveredEventConfigActivity::class.java.requestQuery(
                 context,
-                TaskerUpdateEvent(
+                taskerUpdateEvent(
                     moduleId = local.id,
                     moduleName = local.name,
                     installedVersion = local.version,
@@ -147,7 +147,7 @@ object TaskerEventPublisher {
         runCatching {
             OperationFailedEventConfigActivity::class.java.requestQuery(
                 context,
-                TaskerFailureEvent(
+                taskerFailureEvent(
                     operationId = entry.id,
                     operationType = entry.kind,
                     moduleId = entry.moduleId,

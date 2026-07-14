@@ -89,14 +89,14 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         }
 
         val download: (LocalModule, VersionItem, Boolean) -> Unit = { module, item, install ->
-            viewModel.downloader(context, module, item) {
+            viewModel.downloader(context, module, item, onSuccess = {
                 if (install) {
                     InstallActivity.start(
                         context = context,
                         uri = it.toUri(),
                     )
                 }
-            }
+            })
         }
 
         BackHandler(
