@@ -327,13 +327,11 @@ private fun String.toStyleMarkup(
                                     placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
                                 ),
                             ) {
-                                runCatching {
-                                    ProvideContentColorTextStyle(
-                                        contentColor = color,
-                                        textStyle = textStyle,
-                                    ) {
-                                        iconContent(value)
-                                    }
+                                ProvideContentColorTextStyle(
+                                    contentColor = color,
+                                    textStyle = textStyle,
+                                ) {
+                                    iconContent(value)
                                 }
                             }
                     }
@@ -350,9 +348,7 @@ private fun String.toStyleMarkup(
                                     placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
                                 ),
                             ) {
-                                runCatching {
-                                    imageContent(value)
-                                }
+                                imageContent(value)
                             }
                     }
 
