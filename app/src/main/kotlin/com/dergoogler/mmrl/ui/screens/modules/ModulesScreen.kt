@@ -42,7 +42,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.model.ModulesMenu
-import com.dergoogler.mmrl.ext.currentScreenWidth
 import com.dergoogler.mmrl.ext.isScrollingUp
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.systemBarsPaddingEnd
@@ -52,9 +51,9 @@ import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
 import com.dergoogler.mmrl.ui.component.Loading
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.PageIndicator
-import com.dergoogler.mmrl.ui.component.TopAppBarEventIcon
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurSearchToolbar
+import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
@@ -194,8 +193,6 @@ private fun TopBar(
     onOpenUpdates: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    val width = currentScreenWidth()
-
     var currentQuery by remember { mutableStateOf(query) }
     DisposableEffect(isSearch) {
         onDispose { currentQuery = "" }
@@ -216,9 +213,7 @@ private fun TopBar(
             currentQuery = ""
         },
         title = {
-            if (!width.isSmall) return@BlurSearchToolbar
-
-            TopAppBarEventIcon()
+            ToolbarTitle(title = stringResource(R.string.page_modules))
         },
         actions = {
             if (!isSearch) {
@@ -249,7 +244,7 @@ private fun TopBar(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.search),
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.accessibility_search),
                     )
                 }
             }

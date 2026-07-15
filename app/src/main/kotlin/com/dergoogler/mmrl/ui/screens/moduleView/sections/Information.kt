@@ -58,7 +58,7 @@ internal fun Information() {
                     .padding(horizontal = 16.dp, vertical = 14.dp),
         ) {
             Text(
-                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.outline),
+                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                 modifier = Modifier.weight(1f),
                 text = stringResource(id = R.string.view_module_license),
             )
@@ -92,7 +92,7 @@ internal fun Information() {
                 .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
         Text(
-            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.outline),
+            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             modifier = Modifier.weight(1f),
             text = stringResource(id = R.string.view_module_provided_by),
         )
@@ -216,7 +216,7 @@ private fun ModuleInfoListItem(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
         Text(
-            style = style.copy(color = MaterialTheme.colorScheme.outline),
+            style = style.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             modifier = Modifier.weight(1f),
             text = stringResource(id = title) + if (infoCanDiffer) " *" else "",
         )

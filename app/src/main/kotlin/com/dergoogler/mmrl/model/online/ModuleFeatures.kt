@@ -9,14 +9,14 @@ import kotlinx.serialization.Serializable
 @JsonClass(generateAdapter = true)
 data class ModuleFeatures(
     val service: Boolean? = null,
-    @Json(name = "post_fs_data") val postFsData: Boolean? = null,
+    @param:Json(name = "post_fs_data") val postFsData: Boolean? = null,
     val resetprop: Boolean? = null,
     val sepolicy: Boolean? = null,
     val zygisk: Boolean? = null,
     val apks: Boolean? = null,
     val webroot: Boolean? = null,
-    @Json(name = "post_mount") val postMount: Boolean? = null,
-    @Json(name = "boot_completed") val bootCompleted: Boolean? = null,
+    @param:Json(name = "post_mount") val postMount: Boolean? = null,
+    @param:Json(name = "boot_completed") val bootCompleted: Boolean? = null,
     val action: Boolean? = null,
 ) {
     fun isNotEmpty() =

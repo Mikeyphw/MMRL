@@ -45,7 +45,7 @@ fun AlertView(block: AlertBlock) {
     ) {
         BBCodeText(
             text = "[color=$textColor]$type:[/color] ${block.text}",
-            style = style.copy(color = colorScheme.outline),
+            style = style.copy(color = colorScheme.onSurfaceVariant),
         )
     }
 }

@@ -142,6 +142,27 @@
     <string name="settings_changelog">Changelog</string>
     <string name="settings_changelo_desc">All current changes within MMRL</string>
     <string name="settings_open_notification_settings">Open Notification Settings</string>
+
+    <string name="settings_section_core">Core settings</string>
+    <string name="settings_section_automation">Automation and tools</string>
+    <string name="settings_section_advanced">Advanced</string>
+    <string name="settings_section_about">About and support</string>
+    <string name="settings_try_wxp_desc">Run module WebUIs in a separate portable companion app</string>
+    <string name="accessibility_search">Search</string>
+    <string name="accessibility_add_repository">Add repository</string>
+    <string name="accessibility_repository_menu">Repository display and sorting</string>
+    <string name="accessibility_refresh_provider">Refresh root provider status</string>
+    <string name="accessibility_support_project">Support the project</string>
+    <string name="accessibility_about_app">About MMRL</string>
+    <string name="accessibility_share_repository">Share repository</string>
+    <string name="module_action_available">Action available</string>
+    <string name="module_enabled_switch">%1$s enabled</string>
+    <string name="module_disabled_switch">%1$s disabled</string>
+    <string name="activity_retry_available">Retry available</string>
+    <string name="activity_file_missing">The downloaded module file could not be found. It may have been moved or deleted.</string>
+    <string name="activity_file_unreadable">The selected module file could not be opened.</string>
+    <string name="activity_archive_invalid">The selected file is not a readable module archive.</string>
+
     <!-- Root Item -->
     <string name="settings_root_access">Root Access: %s</string>
     <string name="settings_root_provider">Provider: %s</string>
@@ -258,7 +279,7 @@
     <string name="help">Help</string>
     <string name="we_hit_a_brick_crash">We hit a brick!</string>
     <string name="report_to_issues">Report to issues</string>
-    <string name="stack_trace_truncated">%s\n… %d more</string>
+    <string name="stack_trace_truncated">%1$s\n… %2$d more</string>
     <string name="additional_notes">Additional Notes</string>
     <string name="repo_added">Repo added</string>
     <!-- Work Manager -->
@@ -296,7 +317,7 @@
     <string name="action_failure">Action Failure</string>
     <string name="action_executing">Executing…</string>
     <string name="has_a_new_update">%1$s has a new update!</string>
-    <string name="update_available_from_to">Update available from %s (%d) to %s (%d).</string>
+    <string name="update_available_from_to">Update available from %1$s (%2$d) to %3$s (%4$d).</string>
     <string name="events_birthday">%1$s years MMRL!</string>
     <string name="events_halloween">BOO! … AHH</string>
     <string name="events_christmas">← Tree.</string>
@@ -519,8 +540,8 @@
     <string name="modules_pending_removal">Pending removal</string>
     <string name="module_manage">Manage module</string>
     <string name="module_action">Run action</string>
-    <string name="root_available">Root available</string>
-    <string name="root_unavailable">Root unavailable</string>
+    <string name="root_available">Root access</string>
+    <string name="root_unavailable">No root access</string>
     <string name="non_root">Non-root</string>
     <string name="unknown">Unknown</string>
     <string name="cancel">Cancel</string>

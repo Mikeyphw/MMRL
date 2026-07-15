@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -68,6 +70,7 @@ import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.theme.LocalSemanticColors
 import com.dergoogler.mmrl.ui.theme.LocalMMRLSurfaces
@@ -89,7 +92,7 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
         val entries by viewModel.visibleHistory.collectAsStateWithLifecycle()
         val filter by viewModel.filter.collectAsStateWithLifecycle()
         val pendingReboots by viewModel.pendingRebootCount.collectAsStateWithLifecycle()
-        val bottomPadding = LocalMainScreenInnerPaddings.current.calculateBottomPadding()
+        val bottomPadding = LocalMainScreenInnerPaddings.current.mainContentBottomPadding()
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
         var selectedEntry by remember { mutableStateOf<OperationHistoryEntity?>(null) }
@@ -207,7 +210,7 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
                     contentPadding =
                         PaddingValues(
                             top = 6.dp,
-                            bottom = bottomPadding + 16.dp,
+                            bottom = bottomPadding,
                         ),
                     verticalArrangement = Arrangement.spacedBy(1.dp),
                 ) {
@@ -292,7 +295,7 @@ private fun PendingRebootBanner(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            TextButton(onClick = onShow) { Text(stringResource(R.string.activity_view)) }
+            FilledTonalButton(onClick = onShow) { Text(stringResource(R.string.activity_view)) }
             TextButton(onClick = onClear) { Text(stringResource(R.string.activity_mark_rebooted)) }
         }
     }
@@ -348,7 +351,7 @@ private fun ActivityRow(
                 Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = entry.title,
+                            text = entry.displayTitle(),
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
@@ -358,7 +361,7 @@ private fun ActivityRow(
                         Text(
                             text = formatTime(entry.startedAt),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Text(
@@ -368,7 +371,7 @@ private fun ActivityRow(
                     )
                     if (entry.summary.isNotBlank()) {
                         Text(
-                            text = entry.summary,
+                            text = entry.displaySummary(),
                             modifier = Modifier.padding(top = 3.dp),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -394,8 +397,8 @@ private fun ActivityRow(
                         if (entry.isPendingReboot) {
                             ActivityTag(stringResource(R.string.modules_reboot_required), semantic.rebootRequired)
                         }
-                        if (entry.canRetry && entry.isFailed) {
-                            ActivityTag(stringResource(R.string.activity_retry), MaterialTheme.colorScheme.primary)
+                        if (entry.canOfferRetry && entry.isFailed) {
+                            ActivityTag(stringResource(R.string.activity_retry_available), MaterialTheme.colorScheme.primary)
                         }
                         if (entry.canRollback && !entry.isRunning) {
                             ActivityTag(stringResource(R.string.activity_rollback), semantic.rollbackAvailable)
@@ -458,7 +461,7 @@ private fun ActivityDetailsSheet(
     onShareLog: () -> Unit,
 ) = BottomSheet(onDismissRequest = onClose) {
     Text(
-        text = entry.title,
+        text = entry.displayTitle(),
         modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
         style = MaterialTheme.typography.headlineSmall,
     )
@@ -499,7 +502,7 @@ private fun ActivityDetailsSheet(
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
             ) {
-                Text(error, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
+                Text(humanizeActivityMessage(error), modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
             }
         }
 
@@ -531,7 +534,7 @@ private fun ActivityDetailsSheet(
                 text = stringResource(R.string.activity_log_truncated),
                 modifier = Modifier.padding(top = 6.dp),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -577,7 +580,7 @@ private fun ActivityDetailsSheet(
             if (entry.canRollback && !entry.isRunning) {
                 Button(onClick = onRollback) { Text(stringResource(R.string.activity_rollback)) }
             }
-            if (entry.canRetry && entry.isFailed) {
+            if (entry.canOfferRetry && entry.isFailed) {
                 Button(onClick = onRetry) { Text(stringResource(R.string.activity_retry)) }
             }
         }
@@ -659,6 +662,59 @@ private fun OperationHistoryEntity.icon(): Int =
         null -> R.drawable.logs
     }
 
+
+private val OperationHistoryEntity.canOfferRetry: Boolean
+    get() =
+        canRetry &&
+            (
+                !sourceUrl.isNullOrBlank() ||
+                    !sourceUri.isNullOrBlank() ||
+                    !destinationPath.isNullOrBlank()
+            )
+
+private fun OperationHistoryEntity.displayTitle(): String {
+    moduleName?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+
+    val candidate =
+        title.takeIf { it.isNotBlank() }
+            ?: destinationPath
+            ?: sourceUri
+            ?: moduleId
+            ?: return "MMRL operation"
+
+    val decoded = runCatching { Uri.decode(candidate) }.getOrDefault(candidate)
+    val leaf = decoded.substringBefore('?').substringAfterLast('/')
+    return leaf
+        .removeSuffix(".zip")
+        .trim()
+        .trimStart('.', '_')
+        .ifBlank { candidate }
+}
+
+@Composable
+private fun OperationHistoryEntity.displaySummary(): String =
+    humanizeActivityMessage(summary)
+
+@Composable
+private fun humanizeActivityMessage(message: String): String {
+    val normalized = message.lowercase()
+    return when {
+        "archive does not exist" in normalized ||
+            "no such file" in normalized ->
+            stringResource(R.string.activity_file_missing)
+
+        "unable to resolve the selected file" in normalized ||
+            "could not be opened" in normalized ->
+            stringResource(R.string.activity_file_unreadable)
+
+        "not a zip" in normalized ||
+            "invalid archive" in normalized ||
+            "zip exception" in normalized ->
+            stringResource(R.string.activity_archive_invalid)
+
+        else -> message
+    }
+}
 
 private fun isSameDay(
     first: Long,

@@ -36,7 +36,7 @@ data class ExploreRepository(
     val url: String,
     val cover: String? = null,
     val timestamp: Float? = null,
-    @Json(name = "modules_count") val modulesCount: Int? = null,
+    @param:Json(name = "modules_count") val modulesCount: Int? = null,
     val submission: String? = null,
     val description: String? = null,
     val donate: String? = null,

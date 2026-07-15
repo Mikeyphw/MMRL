@@ -9,14 +9,14 @@ import com.squareup.moshi.Json
 @TypeConverters
 data class ModuleFeaturesEntity(
     val service: Boolean? = false,
-    @Json(name = "post_fs_data") val postFsData: Boolean? = false,
+    @param:Json(name = "post_fs_data") val postFsData: Boolean? = false,
     val resetprop: Boolean? = false,
     val sepolicy: Boolean? = false,
     val zygisk: Boolean? = false,
     val apks: Boolean? = false,
     val webroot: Boolean? = false,
-    @Json(name = "post_mount") val postMount: Boolean? = false,
-    @Json(name = "boot_completed") val bootCompleted: Boolean? = false,
+    @param:Json(name = "post_mount") val postMount: Boolean? = false,
+    @param:Json(name = "boot_completed") val bootCompleted: Boolean? = false,
     val action: Boolean? = false,
 ) {
     constructor(original: ModuleFeatures?) : this(

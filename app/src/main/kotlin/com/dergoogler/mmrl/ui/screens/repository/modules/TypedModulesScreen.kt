@@ -224,7 +224,7 @@ private fun TopBar(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.search),
-                        contentDescription = null,
+                        contentDescription = androidx.compose.ui.res.stringResource(R.string.accessibility_search),
                     )
                 }
             }

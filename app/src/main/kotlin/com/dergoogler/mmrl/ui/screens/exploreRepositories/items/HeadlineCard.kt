@@ -68,7 +68,7 @@ fun HeadlineCard(
                 text = stringResource(R.string.explore_repos_discover_text, repoCount, moduleCount),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.outlineVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp,
             )
 
@@ -110,7 +110,7 @@ fun StatBox(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.outline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

@@ -121,7 +121,11 @@ class DownloadService : LifecycleService() {
             val item = intent?.taskItemOrNull ?: return@launch
             val userPreferences = userPreferencesRepository.data.first()
             val downloadPath = userPreferences.downloadPath
-            val destination = File(downloadPath, item.filename)
+            val destination = DownloadPathPolicy.destination(
+                configuredPath = downloadPath,
+                filename = item.filename,
+                publicDownloads = Const.PUBLIC_DOWNLOADS,
+            )
             val historyId =
                 item.operationId ?: operationHistoryRepository.start(
                     kind = OperationKind.DOWNLOAD,
@@ -158,7 +162,7 @@ class DownloadService : LifecycleService() {
                                 summary = getString(R.string.file_already_exists),
                             )
                             listeners[item]?.onFileExists()
-                            listeners[item]?.onSuccess()
+                            listeners[item]?.onSuccess(destination.toUri())
                             onDownloadSucceeded(trackedItem)
                             cleanupTask(item, trackedItem, historyId)
                             return@withPermit
@@ -208,7 +212,7 @@ class DownloadService : LifecycleService() {
                         val publishedUri = publishTemporaryFile(temporary, destination)
                         operationHistoryRepository.appendLog(historyId, "Published to $publishedUri")
                         temporary.delete()
-                        listener.onSuccess()
+                        listener.onSuccess(publishedUri)
                     } catch (error: Throwable) {
                         destination.takeIf { it.exists() && it.length() == 0L }?.delete()
                         temporary.delete()
@@ -234,8 +238,8 @@ class DownloadService : LifecycleService() {
             progressFlow.value = tracked to value
         }
 
-        override fun onSuccess() {
-            listeners[original]?.onSuccess()
+        override fun onSuccess(uri: Uri) {
+            listeners[original]?.onSuccess(uri)
             progressFlow.value = tracked to 0f
             lifecycleScope.launch {
                 operationHistoryRepository.succeed(
@@ -280,13 +284,16 @@ class DownloadService : LifecycleService() {
         val expectedBytes = temporary.length()
         require(expectedBytes > 0L) { "Cannot publish an empty download" }
 
-        destination.parentFile?.let { parent ->
-            if (!parent.exists() && !parent.mkdirs()) {
-                throw IOException("Cannot create download directory: ${parent.absolutePath}")
+        val inPublicDownloads = destination.isInside(Const.PUBLIC_DOWNLOADS)
+        if (!inPublicDownloads) {
+            destination.parentFile?.let { parent ->
+                if (!parent.exists() && !parent.mkdirs()) {
+                    throw IOException("Cannot create download directory: ${parent.absolutePath}")
+                }
             }
         }
 
-        return if (destination.isInside(Const.PUBLIC_DOWNLOADS)) {
+        return if (inPublicDownloads) {
             val relativePath = destination.relativeTo(Const.PUBLIC_DOWNLOADS).path
             val uri = createDownloadUri(path = relativePath, mimeType = "application/zip")
             try {
@@ -471,6 +478,9 @@ class DownloadService : LifecycleService() {
         fun getProgress(value: Float) {}
         fun onFileExists() {}
         fun onSuccess() {}
+        fun onSuccess(uri: Uri) {
+            onSuccess()
+        }
         fun onFailure(e: Throwable) {}
     }
 

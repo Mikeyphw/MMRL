@@ -1,12 +1,12 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package com.dergoogler.mmrl.datastore.model
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 data class RepositoryMenu
-    @OptIn(ExperimentalSerializationApi::class)
     constructor(
         @ProtoNumber(1) val option: Option = Option.UpdatedTime,
         @ProtoNumber(2) val descending: Boolean = true,

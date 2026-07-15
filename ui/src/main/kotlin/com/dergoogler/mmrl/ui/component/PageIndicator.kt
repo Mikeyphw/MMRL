@@ -118,7 +118,7 @@ fun Loading(
         Text(
             text = stringResource(id = R.string.loading),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.outline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     },
     minHeight = minHeight,
@@ -136,12 +136,12 @@ fun Failed(
 
 object PageIndicatorDefaults {
     val iconSize = 80.dp
-    val iconColor @Composable get() = MaterialTheme.colorScheme.outline.copy(0.5f)
+    val iconColor @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f)
 
     val textStyle
         @Composable get() =
             TextStyle(
-                color = MaterialTheme.colorScheme.outline.copy(0.5f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f),
                 fontSize = 20.sp,
                 fontFamily = FontFamily.SansSerif,
                 fontWeight = FontWeight.SemiBold,

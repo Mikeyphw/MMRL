@@ -149,7 +149,7 @@ private fun VersionItem(
                 Text(
                     text = item.timestamp.toFormattedDateSafely,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

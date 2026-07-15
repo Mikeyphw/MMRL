@@ -38,7 +38,7 @@ data class ToolbarEvent(
     val start: String,
     val end: String,
     val title: Any? = null,
-    @DrawableRes val icon: Int = com.dergoogler.mmrl.ui.R.drawable.mmrl_logo,
+    @param:DrawableRes val icon: Int = com.dergoogler.mmrl.ui.R.drawable.mmrl_logo,
 ) {
     private fun checkDateRange(
         startDate: String,

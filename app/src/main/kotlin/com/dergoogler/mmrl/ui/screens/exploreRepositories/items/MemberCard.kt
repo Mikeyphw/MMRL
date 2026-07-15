@@ -96,7 +96,7 @@ fun MemberCard(
                     Text(
                         text = it.toDecodedUrl(),
                         maxLines = 1,
-                        style = MaterialTheme.typography.titleSmall.copy(color = MaterialTheme.colorScheme.outline),
+                        style = MaterialTheme.typography.titleSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     )
                 }
 

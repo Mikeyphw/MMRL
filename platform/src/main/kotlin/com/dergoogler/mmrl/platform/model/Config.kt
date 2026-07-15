@@ -18,11 +18,11 @@ import kotlin.jvm.java
 @JsonClass(generateAdapter = true)
 data class ModuleConfig(
     val __module__identifier__: ModId,
-    @Json(name = "name")
+    @param:Json(name = "name")
     val nam: Any? = null,
-    @Json(name = "description")
+    @param:Json(name = "description")
     val desc: Any? = null,
-    @Json(name = "webui-engine")
+    @param:Json(name = "webui-engine")
     val webuiEngine: Any? = "wx",
     val cover: String? = null,
 ) : ConfigFile<ModuleConfig>() {

@@ -1,11 +1,13 @@
 package com.dergoogler.mmrl.tasker
 
 import android.content.Context
+import com.dergoogler.mmrl.app.Const
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.database.entity.history.OperationStatus
 import com.dergoogler.mmrl.model.ModuleIdentity
+import com.dergoogler.mmrl.service.DownloadPathPolicy
 import com.dergoogler.mmrl.service.DownloadService
 import com.joaomgcd.taskerpluginlibrary.action.TaskerPluginRunnerAction
 import com.joaomgcd.taskerpluginlibrary.input.TaskerInput
@@ -17,7 +19,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
 
 private const val ERROR_INVALID_INPUT = 1001
 private const val ERROR_NOT_FOUND = 1002
@@ -192,6 +193,12 @@ class DownloadModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, Tasker
                 }
                 val history = repos.operationHistoryRepository()
                 val downloadPath = preferences.downloadPath
+                val destination =
+                    DownloadPathPolicy.destination(
+                        configuredPath = downloadPath,
+                        filename = filename,
+                        publicDownloads = Const.PUBLIC_DOWNLOADS,
+                    )
                 val operationId = history.start(
                     kind = OperationKind.DOWNLOAD,
                     title = module?.name ?: filename,
@@ -199,7 +206,7 @@ class DownloadModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, Tasker
                     moduleId = module?.id,
                     moduleName = module?.name,
                     sourceUrl = validatedUrl,
-                    destinationPath = File(downloadPath, filename).absolutePath,
+                    destinationPath = destination.absolutePath,
                     retryAction = OperationAction.DOWNLOAD,
                     origin = "TASKER",
                 )

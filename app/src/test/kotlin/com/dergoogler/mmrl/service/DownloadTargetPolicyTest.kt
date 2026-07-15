@@ -26,4 +26,14 @@ class DownloadTargetPolicyTest {
         assertEquals(ExistingDownload.VALID, DownloadTargetPolicy.classify(file))
         file.delete()
     }
+    @Test
+    fun `hidden filename is made MediaStore stable`() {
+        assertEquals("_.BRENE-module.zip", DownloadTargetPolicy.sanitizeFilename(".BRENE-module.zip"))
+    }
+
+    @Test
+    fun `filename cannot escape destination directory`() {
+        assertEquals("module.zip", DownloadTargetPolicy.sanitizeFilename("../../module.zip"))
+    }
+
 }

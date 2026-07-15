@@ -26,6 +26,7 @@ import com.dergoogler.mmrl.ui.component.scrollbar.VerticalFastScrollbar
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalOnlineModule
 import com.dergoogler.mmrl.ui.providable.LocalOnlineModuleState
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
@@ -95,7 +96,7 @@ fun ScaffoldScope.TypedModulesList(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding()))
+                    Spacer(modifier = Modifier.height(paddingValues.mainContentBottomPadding()))
                 }
             }
         }
@@ -107,7 +108,7 @@ fun ScaffoldScope.TypedModulesList(
                     .align(Alignment.CenterEnd)
                     .padding(
                         top = innerPadding.calculateTopPadding(),
-                        bottom = paddingValues.calculateBottomPadding(),
+                        bottom = paddingValues.mainContentBottomPadding(),
                     ),
         )
     }

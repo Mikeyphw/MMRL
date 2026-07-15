@@ -152,7 +152,7 @@ fun RepositoryItem(
                                     repo.timestamp.toFormattedDateSafely,
                                 ),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textDecoration = textDecoration,
                         )
                     }
@@ -172,7 +172,9 @@ fun RepositoryItem(
                             .padding(horizontal = 16.dp),
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -200,6 +202,7 @@ fun RepositoryItem(
 
                 CardButtonItem(
                     icon = R.drawable.share,
+                    contentDescription = R.string.accessibility_share_repository,
                     enabled = isEnabled,
                     onClick = { context.shareText(repo.url) },
                 )
@@ -207,7 +210,7 @@ fun RepositoryItem(
                 Spacer(Modifier.weight(1f))
 
                 CardButtonItem(
-                    icon = R.drawable.at,
+                    icon = R.drawable.dots_vertical,
                     label = R.string.repo_options,
                     onClick = { open = true },
                     enabled = isEnabled,
@@ -262,7 +265,7 @@ private fun BottomSheetForItem(
                             repo.timestamp.toFormattedDateSafely,
                         ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -341,6 +344,7 @@ private fun BottomSheetForItem(
 private fun CardButtonItem(
     @DrawableRes icon: Int,
     @StringRes label: Int? = null,
+    @StringRes contentDescription: Int? = label,
     onClick: () -> Unit,
     enabled: Boolean = true,
 ) = FilledTonalButton(
@@ -351,7 +355,7 @@ private fun CardButtonItem(
     Icon(
         modifier = Modifier.size(20.dp),
         painter = painterResource(id = icon),
-        contentDescription = null,
+        contentDescription = contentDescription?.let { stringResource(it) },
     )
 
     label?.let {

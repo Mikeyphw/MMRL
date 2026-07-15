@@ -22,7 +22,7 @@ import com.dergoogler.mmrl.ext.thenComposeInvoke
 import com.dergoogler.mmrl.ui.R
 
 data class BaseParameters(
-    @StringRes var learnMoreText: Int = R.string.learn_more,
+    @param:StringRes var learnMoreText: Int = R.string.learn_more,
     var learnMore: (() -> Unit)? = null,
     var labels: List<@Composable RowScope.() -> Unit>? = null,
 )

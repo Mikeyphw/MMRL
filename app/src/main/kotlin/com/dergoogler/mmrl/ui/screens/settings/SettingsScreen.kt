@@ -2,10 +2,12 @@ package com.dergoogler.mmrl.ui.screens.settings
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.BuildConfig
 import com.dergoogler.mmrl.R
@@ -23,6 +25,7 @@ import com.dergoogler.mmrl.ui.component.listItem.dsl.ListItemSlot
 import com.dergoogler.mmrl.ui.component.listItem.dsl.ListScope
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.ButtonItem
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.RadioDialogItem
+import com.dergoogler.mmrl.ui.component.listItem.dsl.component.Section
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Description
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Icon
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Title
@@ -58,7 +61,7 @@ fun SettingsScreen() {
         allowNavigateBack = false,
         title = R.string.page_settings,
     ) {
-        List {
+        List(contentPadding = PaddingValues(vertical = 10.dp, horizontal = 25.dp)) {
             context.isPackageInstalled(userPreferences.webuixPackageName).takeFalse {
                 ButtonItem(
                     onClick = {
@@ -71,10 +74,9 @@ fun SettingsScreen() {
                         )
                     },
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.sandbox),
-                    )
+                    Icon(painter = painterResource(R.drawable.sandbox))
                     Title(R.string.settings_try_wxp)
+                    Description(R.string.settings_try_wxp_desc)
                     Icon(
                         slot = ListItemSlot.End,
                         size = 12.dp,
@@ -83,129 +85,131 @@ fun SettingsScreen() {
                 }
             }
 
-            NavButton(
-                route = AppearanceScreenDestination,
-                icon = R.drawable.color_swatch,
-                title = R.string.settings_appearance,
-                desc = R.string.settings_appearance_desc,
-            )
-
-            NavButton(
-                route = SecurityScreenDestination,
-                icon = R.drawable.shield,
-                title = R.string.settings_security,
-                desc = R.string.settings_security_desc,
-            )
-
-            NavButton(
-                route = UpdatesScreenDestination,
-                icon = R.drawable.refresh,
-                title = R.string.settings_updates,
-                desc = R.string.settings_updates_desc,
-            )
-
-            NavButton(
-                route = ModulesScreen2Destination,
-                icon = R.drawable.stack_middle,
-                title = R.string.settings_modules,
-                desc = R.string.settings_modules_desc,
-            )
-
-            NavButton(
-                route = TaskerScreenDestination,
-                icon = R.drawable.shield_bolt,
-                title = R.string.settings_tasker,
-                desc = R.string.settings_tasker_desc,
-            )
-
-            NavButton(
-                route = TerminalScreenDestination,
-                icon = R.drawable.terminal_2_outlined,
-                title = R.string.settings_terminal,
-                desc = R.string.settings_terminal_desc,
-            )
-
-            NavButton(
-                route = OtherScreenDestination,
-                icon = R.drawable.tool,
-                title = R.string.settings_other,
-                desc = R.string.settings_other_desc,
-            )
-
-            LinkButton(
-                uri = Const.RESOURCES_URL,
-                icon = R.drawable.file_3d,
-                title = R.string.settings_resources,
-                desc = R.string.settings_resources_desc,
-            )
-
-            val manager =
-                FeaturedManager.managers.find { userPreferences.workingMode == it.workingMode }
-
-            manager.nullable { mng ->
-                RadioDialogItem(
-                    selection = mng.workingMode,
-                    options = FeaturedManager.managers.map { it.toRadioDialogItem() },
-                    onConfirm = {
-                        confirm(
-                            ConfirmData(
-                                title = context.getString(R.string.change_platform),
-                                description = context.getString(R.string.working_mode_change_dialog_desc),
-                                closeText = context.getString(R.string.keep),
-                                onClose = {},
-                                confirmText = context.getString(R.string.apply),
-                                onConfirm = {
-                                    viewModel.setWorkingMode(it.value)
-                                    ProcessPhoenix.triggerRebirth(context)
-                                },
-                            ),
-                        )
-                    },
-                ) {
-                    Icon(painter = painterResource(mng.icon))
-                    Title(R.string.platform)
-                    Description(mng.name)
-                }
+            Section(title = stringResource(R.string.settings_section_core)) {
+                NavButton(
+                    route = AppearanceScreenDestination,
+                    icon = R.drawable.color_swatch,
+                    title = R.string.settings_appearance,
+                    desc = R.string.settings_appearance_desc,
+                )
+                NavButton(
+                    route = SecurityScreenDestination,
+                    icon = R.drawable.shield,
+                    title = R.string.settings_security,
+                    desc = R.string.settings_security_desc,
+                )
+                NavButton(
+                    route = UpdatesScreenDestination,
+                    icon = R.drawable.refresh,
+                    title = R.string.settings_updates,
+                    desc = R.string.settings_updates_desc,
+                )
+                NavButton(
+                    route = ModulesScreen2Destination,
+                    icon = R.drawable.stack_middle,
+                    title = R.string.settings_modules,
+                    desc = R.string.settings_modules_desc,
+                )
             }
 
-            NavButton(
-                route = ChangelogScreenDestination,
-                icon = R.drawable.files,
-                title = R.string.settings_changelog,
-                desc = R.string.settings_changelo_desc,
-            )
+            Section(title = stringResource(R.string.settings_section_automation)) {
+                NavButton(
+                    route = TaskerScreenDestination,
+                    icon = R.drawable.shield_bolt,
+                    title = R.string.settings_tasker,
+                    desc = R.string.settings_tasker_desc,
+                )
+                NavButton(
+                    route = TerminalScreenDestination,
+                    icon = R.drawable.terminal_2_outlined,
+                    title = R.string.settings_terminal,
+                    desc = R.string.settings_terminal_desc,
+                )
+            }
 
-            NavButton(
-                route = BlacklistScreenDestination,
-                icon = R.drawable.file_shredder,
-                title = R.string.settings_blacklist,
-                desc = R.string.settings_blacklist_desc,
-            )
+            Section(title = stringResource(R.string.settings_section_advanced)) {
+                NavButton(
+                    route = OtherScreenDestination,
+                    icon = R.drawable.tool,
+                    title = R.string.settings_other,
+                    desc = R.string.settings_other_desc,
+                )
+                LinkButton(
+                    uri = Const.RESOURCES_URL,
+                    icon = R.drawable.file_3d,
+                    title = R.string.settings_resources,
+                    desc = R.string.settings_resources_desc,
+                )
 
-            NavButton(
-                route = LogScreenDestination,
-                icon = R.drawable.logs,
-                title = R.string.settings_log_viewer,
-            )
+                val manager =
+                    FeaturedManager.managers.find { userPreferences.workingMode == it.workingMode }
 
-            NavButton(
-                route = DeveloperScreenDestination,
-                icon = R.drawable.bug,
-                title = R.string.settings_developer,
-                desc = R.string.settings_developer_desc,
-            )
+                manager.nullable { mng ->
+                    RadioDialogItem(
+                        selection = mng.workingMode,
+                        options = FeaturedManager.managers.map { it.toRadioDialogItem() },
+                        onConfirm = {
+                            confirm(
+                                ConfirmData(
+                                    title = context.getString(R.string.change_platform),
+                                    description = context.getString(R.string.working_mode_change_dialog_desc),
+                                    closeText = context.getString(R.string.keep),
+                                    onClose = {},
+                                    confirmText = context.getString(R.string.apply),
+                                    onConfirm = {
+                                        viewModel.setWorkingMode(it.value)
+                                        ProcessPhoenix.triggerRebirth(context)
+                                    },
+                                ),
+                            )
+                        },
+                    ) {
+                        Icon(painter = painterResource(mng.icon))
+                        Title(R.string.platform)
+                        Description(mng.name)
+                    }
+                }
 
-            LinkButton(
-                uri = Const.PRIVACY_POLICY_URL,
-                icon = R.drawable.spy,
-                title = R.string.settings_privacy_policy,
-            )
+                NavButton(
+                    route = BlacklistScreenDestination,
+                    icon = R.drawable.file_shredder,
+                    title = R.string.settings_blacklist,
+                    desc = R.string.settings_blacklist_desc,
+                )
+                NavButton(
+                    route = LogScreenDestination,
+                    icon = R.drawable.logs,
+                    title = R.string.settings_log_viewer,
+                )
+                NavButton(
+                    route = DeveloperScreenDestination,
+                    icon = R.drawable.bug,
+                    title = R.string.settings_developer,
+                    desc = R.string.settings_developer_desc,
+                )
+            }
 
-            LinkButton(
-                uri = Const.TERMS_OF_SERVICE_URL,
-                icon = R.drawable.files,
-                title = R.string.settings_terms_of_service,
-            )
+            Section(
+                title = stringResource(R.string.settings_section_about),
+                divider = false,
+            ) {
+                NavButton(
+                    route = ChangelogScreenDestination,
+                    icon = R.drawable.files,
+                    title = R.string.settings_changelog,
+                    desc = R.string.settings_changelo_desc,
+                )
+                LinkButton(
+                    uri = Const.PRIVACY_POLICY_URL,
+                    icon = R.drawable.spy,
+                    title = R.string.settings_privacy_policy,
+                )
+                LinkButton(
+                    uri = Const.TERMS_OF_SERVICE_URL,
+                    icon = R.drawable.files,
+                    title = R.string.settings_terms_of_service,
+                )
+            }
         }
     }
 }

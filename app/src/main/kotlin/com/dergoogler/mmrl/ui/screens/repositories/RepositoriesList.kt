@@ -35,6 +35,7 @@ import com.dergoogler.mmrl.ui.component.scrollbar.VerticalFastScrollbar
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.screens.repositories.items.ExploreReposCard
 import com.ramcosta.composedestinations.generated.destinations.RepositoryScreenDestination
 import dev.chrisbanes.haze.hazeSource
@@ -88,7 +89,7 @@ fun ScaffoldScope.RepositoriesList(
             }
 
             item {
-                Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding()))
+                Spacer(modifier = Modifier.height(paddingValues.mainContentBottomPadding()))
             }
         }
     }
@@ -100,7 +101,7 @@ fun ScaffoldScope.RepositoriesList(
                 .align(Alignment.CenterEnd)
                 .padding(
                     top = innerPadding.calculateTopPadding(),
-                    bottom = paddingValues.calculateBottomPadding(),
+                    bottom = paddingValues.mainContentBottomPadding(),
                 ),
     )
 }

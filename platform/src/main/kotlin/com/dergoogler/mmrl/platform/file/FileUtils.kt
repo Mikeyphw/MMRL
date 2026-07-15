@@ -9,7 +9,6 @@ import android.system.Int64Ref
 import android.system.Os
 import android.system.OsConstants
 import android.util.ArraySet
-import android.util.MutableLong
 import androidx.annotation.RequiresApi
 import java.io.File
 import java.io.FileDescriptor
@@ -20,6 +19,8 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.nio.file.OpenOption
 import java.nio.file.StandardOpenOption
+
+internal class MutableFileOffset(var value: Long)
 
 @SuppressLint("DiscouragedPrivateApi")
 internal object FileUtils {
@@ -143,40 +144,52 @@ internal object FileUtils {
         }
     }
 
-    @Suppress("deprecation")
     @Throws(ErrnoException::class)
     fun sendfile(
         outFd: FileDescriptor?,
         inFd: FileDescriptor?,
-        inOffset: MutableLong?,
+        inOffset: MutableFileOffset?,
         byteCount: Long,
     ): Long {
         if (Build.VERSION.SDK_INT >= 28) {
-            val off = if (inOffset == null) null else Int64Ref(inOffset.value)
+            val off = inOffset?.let { Int64Ref(it.value) }
             val result = Os.sendfile(outFd, inFd, off, byteCount)
-            if (off != null) inOffset!!.value = off.value
+            if (off != null) inOffset?.value = off.value
             return result
-        } else {
-            try {
-                if (os == null) {
-                    os = Class.forName("libcore.io.Libcore").getField("os")[null]
-                }
-                if (sendfile == null) {
-                    sendfile =
-                        os!!.javaClass.getMethod(
-                            "sendfile",
-                            FileDescriptor::class.java,
-                            FileDescriptor::class.java,
-                            MutableLong::class.java,
-                            Long::class.javaPrimitiveType,
-                        )
-                }
-                return sendfile!!.invoke(os, outFd, inFd, inOffset, byteCount) as Long
-            } catch (e: InvocationTargetException) {
-                throw (e.targetException as ErrnoException)
-            } catch (e: ReflectiveOperationException) {
-                throw ErrnoException("sendfile", OsConstants.ENOSYS)
+        }
+
+        try {
+            if (os == null) {
+                os = Class.forName("libcore.io.Libcore").getField("os")[null]
             }
+
+            val mutableLongClass = Class.forName("android.util.MutableLong")
+            if (sendfile == null) {
+                sendfile =
+                    os!!.javaClass.getMethod(
+                        "sendfile",
+                        FileDescriptor::class.java,
+                        FileDescriptor::class.java,
+                        mutableLongClass,
+                        Long::class.javaPrimitiveType,
+                    )
+            }
+
+            val platformOffset =
+                inOffset?.let {
+                    mutableLongClass
+                        .getConstructor(Long::class.javaPrimitiveType)
+                        .newInstance(it.value)
+                }
+            val result = sendfile!!.invoke(os, outFd, inFd, platformOffset, byteCount) as Long
+            if (platformOffset != null) {
+                inOffset?.value = mutableLongClass.getField("value").getLong(platformOffset)
+            }
+            return result
+        } catch (e: InvocationTargetException) {
+            throw (e.targetException as ErrnoException)
+        } catch (e: ReflectiveOperationException) {
+            throw ErrnoException("sendfile", OsConstants.ENOSYS)
         }
     }
 

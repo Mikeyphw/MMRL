@@ -96,7 +96,6 @@ android {
             isJniDebuggable = false
             versionNameSuffix = "-release"
             renderscriptOptimLevel = 3
-            multiDexEnabled = true
 
             manifestPlaceholders["webuiPermissionId"] = mmrlWebUiPermissionId
         }
@@ -118,7 +117,6 @@ android {
             isDebuggable = true
             renderscriptOptimLevel = 0
             isMinifyEnabled = false
-            multiDexEnabled = true
 
             manifestPlaceholders["webuiPermissionId"] = "$mmrlWebUiPermissionId.debug"
         }
@@ -127,8 +125,10 @@ android {
             signingConfig = releaseSigning
 
             buildConfigField("String", "COMPILE_SDK", "\"$COMPILE_SDK\"")
+            buildConfigField("String", "TARGET_SDK", "\"$TARGET_SDK\"")
             buildConfigField("String", "BUILD_TOOLS_VERSION", "\"${BUILD_TOOLS_VERSION}\"")
             buildConfigField("String", "MIN_SDK", "\"$MIN_SDK\"")
+            buildConfigField("String", "NDK_VERSION", "\"$NDK_VERSION\"")
             buildConfigField("String", "LATEST_COMMIT_ID", "\"${commitId}\"")
 
             manifestPlaceholders["__packageName__"] = mmrlSourceNamespace
@@ -256,7 +256,6 @@ dependencies {
     implementation(libs.multiplatform.markdown.renderer.m3)
     implementation(libs.multiplatform.markdown.renderer.android)
     implementation(libs.multiplatform.markdown.renderer.coil3)
-    implementation(libs.androidx.multidex)
     implementation(libs.dev.rikka.rikkax.parcelablelist)
     implementation(libs.lib.zoomable)
     implementation(libs.process.phoenix)

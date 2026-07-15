@@ -6,7 +6,6 @@ import android.system.Int64Ref
 import android.system.Os
 import android.system.OsConstants
 import android.system.StructStat
-import android.util.MutableLong
 import java.io.Closeable
 import java.io.FileDescriptor
 import java.io.IOException
@@ -123,7 +122,7 @@ internal class OpenFile : Closeable {
                 )
             ) {
                 // sendfile only supports reading from mmap-able files
-                val inOff = if (offset < 0) null else MutableLong(offset)
+                val inOff = if (offset < 0) null else MutableFileOffset(offset)
                 result = FileUtils.sendfile(write, fd, inOff, len.toLong())
             } else {
                 // Fallback to copy into internal buffer

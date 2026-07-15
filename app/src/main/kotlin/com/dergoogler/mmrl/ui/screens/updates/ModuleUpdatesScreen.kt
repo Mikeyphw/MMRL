@@ -445,7 +445,7 @@ private fun UpdateRow(
                         ),
                     modifier = Modifier.padding(top = 5.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

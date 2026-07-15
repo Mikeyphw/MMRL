@@ -34,8 +34,8 @@ fun ListScope.PermissionItem(
 }
 
 data class Permission(
-    @StringRes val title: Int,
-    @StringRes val desc: Int,
+    @param:StringRes val title: Int,
+    @param:StringRes val desc: Int,
     val rootSolutions: (@Composable RowScope.() -> Unit)? = null,
 )
 

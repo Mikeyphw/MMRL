@@ -20,9 +20,9 @@ import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 
 enum class MainDestination(
     val direction: DirectionDestinationSpec,
-    @StringRes val label: Int,
-    @DrawableRes val icon: Int,
-    @DrawableRes val iconFilled: Int,
+    @param:StringRes val label: Int,
+    @param:DrawableRes val icon: Int,
+    @param:DrawableRes val iconFilled: Int,
     val requiresRoot: Boolean,
     val requiresKernel: Boolean,
 ) {

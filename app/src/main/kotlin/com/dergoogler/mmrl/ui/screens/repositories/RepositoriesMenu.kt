@@ -40,7 +40,7 @@ fun RepositoriesMenu(setMenu: (RepositoriesMenu) -> Unit) {
     ) {
         Icon(
             painter = painterResource(id = R.drawable.filter_outlined),
-            contentDescription = null,
+            contentDescription = stringResource(R.string.accessibility_repository_menu),
         )
 
         if (open) {

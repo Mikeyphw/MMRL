@@ -108,7 +108,7 @@ private fun ValueItem(
                         track.type.name.replace("_", " "),
                     ),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             track.added?.let {
@@ -119,7 +119,7 @@ private fun ValueItem(
                             it.toFormattedDateSafely,
                         ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

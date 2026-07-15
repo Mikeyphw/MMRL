@@ -8,6 +8,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import com.dergoogler.mmrl.ext.findActivity
 
 /**
  * Configures the status bar and navigation bar styles for the application.
@@ -45,8 +46,7 @@ fun StatusBarStyle(
     statusBarScrim: Color = Color.Transparent,
     navigationBarScrim: Color = Color.Transparent,
 ) {
-    val context = LocalContext.current
-    val activity = context as ComponentActivity
+    val activity = LocalContext.current.findActivity() as? ComponentActivity ?: return
 
     SideEffect {
         activity.enableEdgeToEdge(

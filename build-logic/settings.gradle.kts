@@ -1,3 +1,5 @@
+rootProject.name = "mmrl-build-logic"
+
 dependencyResolutionManagement {
     repositories {
         google()

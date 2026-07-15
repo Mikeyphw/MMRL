@@ -92,7 +92,7 @@ fun BlacklistBottomSheet(
                             )
                             MarkdownText(
                                 text = it,
-                                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.outline),
+                                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                             )
                         }
                     }

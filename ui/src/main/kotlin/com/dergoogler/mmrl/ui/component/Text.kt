@@ -42,7 +42,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.text.HtmlCompat
-import com.dergoogler.mmrl.ext.thenComposeInvoke
 import com.dergoogler.mmrl.ext.toAnnotatedString
 
 @Composable
@@ -263,34 +262,43 @@ fun TextWithIcon(
     rightIcon: Boolean = false,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
     verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
-) = TextWithIcon(
-    rowModifier = rowModifier,
-    style = style,
-    iconScalingFactor = iconScalingFactor,
-    spacing = spacing,
-    rightIcon = rightIcon,
-    text =
-        text.thenComposeInvoke<String, RowScope, TextStyle>(showText) { it, stl ->
+) {
+    if (icon == null && !showText) return
+
+    val iconSize = with(LocalDensity.current) { style.fontSize.toDp() * iconScalingFactor }
+    val spacer = with(LocalDensity.current) { spacing.toDp() }
+
+    Row(
+        modifier = rowModifier,
+        verticalAlignment = verticalAlignment,
+        horizontalArrangement = horizontalArrangement,
+    ) {
+        if (icon != null && !rightIcon) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(iconSize).then(iconModifier),
+            )
+            if (showText) Spacer(modifier = Modifier.width(spacer))
+        }
+        if (showText) {
             Text(
-                text = it,
-                style = stl,
+                text = text,
+                style = style,
                 modifier = textModifier,
                 maxLines = maxLines,
                 overflow = overflow,
             )
-        },
-    icon =
-        icon.thenComposeInvoke<Int, RowScope, Dp> { it, size ->
+        }
+        if (icon != null && rightIcon) {
+            if (showText) Spacer(modifier = Modifier.width(spacer))
             Icon(
-                painter = painterResource(id = it),
+                painter = painterResource(id = icon),
                 contentDescription = contentDescription,
                 tint = tint,
-                modifier =
-                    Modifier
-                        .size(size)
-                        .then(iconModifier),
+                modifier = Modifier.size(iconSize).then(iconModifier),
             )
-        },
-    verticalAlignment = verticalAlignment,
-    horizontalArrangement = horizontalArrangement,
-)
+        }
+    }
+}

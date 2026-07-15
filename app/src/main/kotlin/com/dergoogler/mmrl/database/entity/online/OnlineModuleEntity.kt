@@ -38,7 +38,7 @@ data class OnlineModuleEntity(
     @Embedded val note: ModuleNoteEntity? = null,
     @Embedded val features: ModuleFeaturesEntity? = null,
     @Embedded val track: TrackJsonEntity,
-    @Embedded val blacklist: BlacklistEntity?,
+    @Embedded val blacklist: EmbeddedBlacklist?,
 ) {
     constructor(
         original: OnlineModule,
@@ -74,7 +74,7 @@ data class OnlineModuleEntity(
         require = original.require,
         devices = original.devices,
         arch = original.arch,
-        blacklist = BlacklistEntity(blacklist),
+        blacklist = EmbeddedBlacklist(blacklist),
         stars = original.stars
     )
 

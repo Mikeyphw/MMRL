@@ -301,7 +301,7 @@ private fun LogItem(value: LogText) =
                     MaterialTheme.typography.bodySmall.copy(
                         fontFamily = FontFamily.Serif,
                     ),
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

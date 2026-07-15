@@ -91,7 +91,7 @@ fun ThankYouScreen(vm: ThankYouViewModel = hiltViewModel()) =
                                         ),
                                     style =
                                         MaterialTheme.typography.titleSmall.copy(
-                                            color = MaterialTheme.colorScheme.outline,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         ),
                                 )
                             }
@@ -130,7 +130,7 @@ fun ThankYouScreen(vm: ThankYouViewModel = hiltViewModel()) =
                                         ),
                                     style =
                                         MaterialTheme.typography.titleSmall.copy(
-                                            color = MaterialTheme.colorScheme.outline,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         ),
                                 )
                             }

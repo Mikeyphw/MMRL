@@ -103,7 +103,7 @@ internal fun RepositoryModuleRow(
             modifier =
                 Modifier
                     .alpha(alpha)
-                    .padding(horizontal = 16.dp, vertical = 11.dp),
+                    .padding(horizontal = 16.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (preview != null) {
@@ -112,8 +112,8 @@ internal fun RepositoryModuleRow(
                     modifier =
                         Modifier
                             .size(
-                                width = if (previewIsCover) 72.dp else 44.dp,
-                                height = if (previewIsCover) 58.dp else 44.dp,
+                                width = if (previewIsCover) 64.dp else 40.dp,
+                                height = if (previewIsCover) 50.dp else 40.dp,
                             ).clip(RoundedCornerShape(if (previewIsCover) 8.dp else 12.dp)),
                     contentScale = ContentScale.Crop,
                     contentDescription = null,
@@ -122,7 +122,7 @@ internal fun RepositoryModuleRow(
             } else if (menu.showIcon) {
                 Logo(
                     icon = R.drawable.box,
-                    modifier = Modifier.size(44.dp),
+                    modifier = Modifier.size(40.dp),
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 )
@@ -140,7 +140,7 @@ internal fun RepositoryModuleRow(
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         textDecoration = decoration,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
 
@@ -159,7 +159,7 @@ internal fun RepositoryModuleRow(
                     style = MaterialTheme.typography.bodySmall,
                     textDecoration = decoration,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
 
@@ -168,7 +168,7 @@ internal fun RepositoryModuleRow(
                     Text(
                         text = sourceLine,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -179,7 +179,7 @@ internal fun RepositoryModuleRow(
                     Text(
                         text = module.description ?: stringResource(R.string.view_module_no_description),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -243,7 +243,7 @@ internal fun RepositoryModuleRow(
                         text = stringResource(R.string.module_update_at, state.lastUpdated.toFormattedDateSafely),
                         modifier = Modifier.padding(top = 5.dp),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                     )
                 }

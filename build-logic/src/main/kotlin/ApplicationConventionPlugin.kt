@@ -14,17 +14,14 @@ class ApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) =
         with(target) {
             apply(plugin = "com.android.application")
-            if (extensions.findByName("kotlin") == null) {
-                apply(plugin = "org.jetbrains.kotlin.android")
-            }
-
             extensions.configure<ApplicationExtension> {
                 compileSdk = COMPILE_SDK
                 buildToolsVersion = BUILD_TOOLS_VERSION
+                ndkVersion = NDK_VERSION
 
                 defaultConfig {
                     minSdk = MIN_SDK
-                    targetSdk = COMPILE_SDK
+                    targetSdk = TARGET_SDK
                 }
 
                 compileOptions {

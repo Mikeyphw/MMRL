@@ -7,8 +7,7 @@ import com.dergoogler.mmrl.BuildConfig
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Const.CLEAR_CMD
 import com.dergoogler.mmrl.app.Event
-import com.dergoogler.mmrl.compat.MediaStoreCompat.copyToDir
-import com.dergoogler.mmrl.compat.MediaStoreCompat.getPathForUri
+import com.dergoogler.mmrl.compat.MediaStoreCompat.materializeFileForUri
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
@@ -110,26 +109,26 @@ constructor(
         event = Event.LOADING
         var allSucceeded = true
 
-        val processedModules = mutableListOf<Pair<Uri, BulkModule?>>()
+        val preparedModules = mutableListOf<PreparedInstall>()
         var blacklistedModuleFound = false
 
         withContext(Dispatchers.IO) {
             for (uri in uris) {
-                val path = context.getPathForUri(uri)
-                if (path == null) {
+                val archive = context.materializeFileForUri(uri, context.tmpDir)
+                if (archive == null) {
                     withContext(Dispatchers.Main) {
                         devLog(
                             R.string.unable_to_find_path_for_uri,
                             uri.toString(),
                         )
                     }
-                    recordRejectedInstall(uri, "Unable to resolve the selected file")
-                    processedModules.add(uri to null)
+                    recordRejectedInstall(uri, "Unable to open the selected file")
                     allSucceeded = false
                     continue
                 }
 
-                if (userPreferences.strictMode && !path.endsWith(".zip")) {
+                val path = archive.path
+                if (userPreferences.strictMode && !archive.name.endsWith(".zip", ignoreCase = true)) {
                     withContext(Dispatchers.Main) {
                         log(
                             R.string.is_not_a_module_file_magisk_modules_must_be_zip_files_skipping,
@@ -137,7 +136,6 @@ constructor(
                         )
                     }
                     recordRejectedInstall(uri, "The selected file is not a ZIP module")
-                    processedModules.add(uri to null)
                     allSucceeded = false
                     continue
                 }
@@ -151,7 +149,6 @@ constructor(
                         )
                     }
                     recordRejectedInstall(uri, "Unable to read module metadata")
-                    processedModules.add(uri to null)
                     allSucceeded = false
                     continue
                 }
@@ -172,28 +169,31 @@ constructor(
                     blacklistedModuleFound = true
                     break
                 }
-                processedModules.add(uri to BulkModule(id = info.id.toString(), name = info.name))
+
+                preparedModules += PreparedInstall(
+                    sourceUri = uri,
+                    archive = archive,
+                    module = info,
+                )
             }
         }
 
-        if (blacklistedModuleFound) {
-            return
-        }
+        if (blacklistedModuleFound) return
 
-        val validBulkModules = processedModules.mapNotNull { it.second }
+        val validBulkModules = preparedModules.map(PreparedInstall::bulkModule)
 
-        for (item in processedModules) {
-            val uri = item.first
-            val bulkModuleInfo = item.second
-            if (bulkModuleInfo == null) {
-                continue
-            }
-
+        for (prepared in preparedModules) {
             if (userPreferences.clearInstallTerminal && uris.size > 1) {
                 log(CLEAR_CMD)
             }
 
-            val result = loadAndInstallModule(uri, validBulkModules, parentOperationId, rollbackMode)
+            val result =
+                loadAndInstallModule(
+                    prepared = prepared,
+                    allBulkModulesInBatch = validBulkModules,
+                    parentOperationId = parentOperationId,
+                    rollbackMode = rollbackMode,
+                )
             if (!result) {
                 allSucceeded = false
                 withContext(Dispatchers.Main) {
@@ -226,70 +226,67 @@ constructor(
         operationHistoryRepository.fail(historyId, summary)
     }
 
+    private data class PreparedInstall(
+        val sourceUri: Uri,
+        val archive: File,
+        val module: LocalModule,
+    ) {
+        val bulkModule = BulkModule(id = module.id.toString(), name = module.name)
+    }
+
     private val datePattern = runBlocking { userPreferencesRepository.data.first().datePattern }
 
     private suspend fun loadAndInstallModule(
-        uri: Uri,
+        prepared: PreparedInstall,
         allBulkModulesInBatch: List<BulkModule>,
         parentOperationId: String?,
         rollbackMode: Boolean,
     ): Boolean =
         withContext(Dispatchers.IO) {
-            val path = context.getPathForUri(uri)
+            val moduleInfo = prepared.module
+            val archive = prepared.archive
 
-            if (path != null) {
-                val moduleInfoFromPath = PlatformManager.moduleManager.getModuleInfo(path)
-                if (moduleInfoFromPath != null) {
-                    withContext<Unit>(Dispatchers.Main) {
-                        moduleInfoFromPath.let { mod ->
-                            devLog(R.string.install_view_module_info)
-                            devLog("ID: ${mod.id.id}")
-                            devLog("Name: ${mod.name}")
-                            devLog("Version: ${mod.version}")
-                            devLog("Version Code: ${mod.versionCode}")
-                            devLog("Author: ${mod.author}")
-                            devLog("Description: ${mod.description}")
-                            devLog("Update JSON: ${mod.updateJson}")
-                            devLog("State: ${mod.state}")
-                            devLog("Size: ${mod.size.toFormattedFileSize()}")
-                            devLog(
-                                "Last Updated: ${
-                                    mod.lastUpdated.toFormattedDateSafely(
-                                        datePattern
-                                    )
-                                }"
-                            )
-                            devLog("::endgroup::")
-                        }
-                    }
-                    return@withContext install(path, allBulkModulesInBatch, moduleInfoFromPath, uri.toString(), parentOperationId, rollbackMode)
-                }
-            }
-
-            withContext(Dispatchers.Main) { log(R.string.copying_zip_to_temp_directory) }
-            val tmpFile =
-                context.copyToDir(uri, context.tmpDir) ?: run {
-                    withContext(Dispatchers.Main) {
-                        event = Event.FAILED
-                        log(context.getString(R.string.copying_failed))
-                    }
-                    return@withContext false
-                }
-
-            val moduleInfoFromTmp = PlatformManager.moduleManager.getModuleInfo(tmpFile.path)
-            if (moduleInfoFromTmp == null) {
+            if (!archive.isFile || !archive.canRead() || archive.length() <= 0L) {
                 withContext(Dispatchers.Main) {
                     event = Event.FAILED
-                    log(R.string.unable_to_gather_module_info)
+                    log(context.getString(R.string.copying_failed))
                 }
-                tmpFile.delete()
+                recordRejectedInstall(
+                    uri = prepared.sourceUri,
+                    summary = "The prepared module archive is no longer available",
+                    moduleId = moduleInfo.id.id,
+                    moduleName = moduleInfo.name,
+                )
                 return@withContext false
             }
 
-            withContext(Dispatchers.Main) {
-                devLog(R.string.install_view_module_info, moduleInfoFromTmp.toString())
+            withContext<Unit>(Dispatchers.Main) {
+                devLog(R.string.install_view_module_info)
+                devLog("ID: ${moduleInfo.id.id}")
+                devLog("Name: ${moduleInfo.name}")
+                devLog("Version: ${moduleInfo.version}")
+                devLog("Version Code: ${moduleInfo.versionCode}")
+                devLog("Author: ${moduleInfo.author}")
+                devLog("Description: ${moduleInfo.description}")
+                devLog("Update JSON: ${moduleInfo.updateJson}")
+                devLog("State: ${moduleInfo.state}")
+                devLog("Size: ${moduleInfo.size.toFormattedFileSize()}")
+                devLog(
+                    "Last Updated: ${
+                        moduleInfo.lastUpdated.toFormattedDateSafely(datePattern)
+                    }",
+                )
+                devLog("::endgroup::")
             }
-            return@withContext install(tmpFile.path, allBulkModulesInBatch, moduleInfoFromTmp, uri.toString(), parentOperationId, rollbackMode)
+
+            install(
+                zipPath = archive.path,
+                allBulkModulesInBatch = allBulkModulesInBatch,
+                module = moduleInfo,
+                sourceUri = prepared.sourceUri.toString(),
+                parentOperationId = parentOperationId,
+                rollbackMode = rollbackMode,
+            )
         }
 
     private suspend fun install(

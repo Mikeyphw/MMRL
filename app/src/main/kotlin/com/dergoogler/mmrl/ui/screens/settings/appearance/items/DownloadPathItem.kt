@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Const
+import com.dergoogler.mmrl.service.DownloadPathPolicy
 import com.dergoogler.mmrl.ui.component.dialog.TextFieldDialog
 import com.dergoogler.mmrl.ui.component.listItem.dsl.ListScope
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.ButtonItem
@@ -39,7 +40,13 @@ fun ListScope.DownloadPathItem(
         onClick = { edit = true },
     ) {
         Title(R.string.settings_download_path)
-        Description(File(downloadPath).absolutePath)
+        Description(
+            runCatching {
+                DownloadPathPolicy.resolveDirectory(downloadPath, Const.PUBLIC_DOWNLOADS).absolutePath
+            }.getOrElse {
+                File(downloadPath).absolutePath
+            },
+        )
     }
 }
 
@@ -49,8 +56,17 @@ private fun OpenDocumentTreeDialog(
     onClose: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var name by remember {
-        mutableStateOf(File(path).toRelativeString(Const.PUBLIC_DOWNLOADS))
+    var name by remember(path) {
+        mutableStateOf(
+            runCatching {
+                DownloadPathPolicy.displayValue(path, Const.PUBLIC_DOWNLOADS)
+            }.getOrDefault(path),
+        )
+    }
+    val resolved = remember(name) {
+        runCatching {
+            DownloadPathPolicy.resolveDirectory(name, Const.PUBLIC_DOWNLOADS)
+        }
     }
 
     TextFieldDialog(
@@ -58,8 +74,9 @@ private fun OpenDocumentTreeDialog(
         title = { Text(text = stringResource(id = R.string.settings_download_path)) },
         confirmButton = {
             TextButton(
+                enabled = resolved.isSuccess,
                 onClick = {
-                    val new = Const.PUBLIC_DOWNLOADS.resolve(name)
+                    val new = resolved.getOrThrow()
                     onConfirm(new.path)
                     onClose()
                 },
@@ -82,6 +99,10 @@ private fun OpenDocumentTreeDialog(
             onValueChange = { name = it },
             shape = RoundedCornerShape(15.dp),
             label = { Text(text = Const.PUBLIC_DOWNLOADS.absolutePath) },
+            supportingText = {
+                resolved.exceptionOrNull()?.message?.let { Text(text = it) }
+            },
+            isError = resolved.isFailure,
             singleLine = true,
         )
     }

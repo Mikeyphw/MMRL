@@ -9,7 +9,7 @@ import com.dergoogler.mmrl.ui.component.listItem.dsl.component.RadioDialogItem
 
 data class FeaturedManager(
     private val nameAs: Any,
-    @DrawableRes val icon: Int,
+    @param:DrawableRes val icon: Int,
     private val desc: Any? = null,
     val workingMode: WorkingMode,
 ) {

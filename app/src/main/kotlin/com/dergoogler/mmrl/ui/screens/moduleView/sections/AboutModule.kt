@@ -76,7 +76,7 @@ internal fun AboutModule() {
                     )
                 }
             },
-        color = MaterialTheme.colorScheme.outline,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
     module.hasCategories {

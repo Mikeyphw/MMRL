@@ -18,7 +18,7 @@ sealed interface JSONCollection
 
 @JsonClass(generateAdapter = true)
 data class JSONString(
-    @Json(name = "value") val string: String,
+    @param:Json(name = "value") val string: String,
 ) : JSONCollection {
     companion object {
         val EMPTY = JSONString("")
@@ -29,7 +29,7 @@ data class JSONString(
 
 @JsonClass(generateAdapter = true)
 data class JSONBoolean(
-    @Json(name = "value") val boolean: Boolean,
+    @param:Json(name = "value") val boolean: Boolean,
 ) : JSONCollection {
     companion object {
         val TRUE = JSONBoolean(true)
@@ -41,7 +41,7 @@ data class JSONBoolean(
 
 @JsonClass(generateAdapter = true)
 data class JSONArray(
-    @Json(name = "values") val array: List<Any?>,
+    @param:Json(name = "values") val array: List<Any?>,
 ) : JSONCollection {
     companion object {
         val EMPTY = JSONArray(emptyList())
@@ -57,7 +57,7 @@ data class JSONArray(
 
 @JsonClass(generateAdapter = true)
 data class JSONNumber(
-    @Json(name = "value") val number: Number,
+    @param:Json(name = "value") val number: Number,
 ) : JSONCollection {
     companion object {
         val ZERO = JSONNumber(0)
@@ -80,7 +80,7 @@ data class JSONNumber(
 
 @JsonClass(generateAdapter = true)
 data class JSONObject(
-    @Json(name = "properties") val properties: Map<String, Any?>,
+    @param:Json(name = "properties") val properties: Map<String, Any?>,
 ) : JSONCollection {
     companion object {
         val EMPTY = JSONObject(emptyMap())

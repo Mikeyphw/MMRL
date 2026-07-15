@@ -86,7 +86,7 @@ fun Console(
                                     Modifier
                                         .padding(end = 8.dp)
                                         .width(40.dp),
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 style = style,
                             )
                         }

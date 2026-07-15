@@ -24,7 +24,7 @@ fun HorizontalDividerWithText(
     text: String,
     textStyle: TextStyle =
         MaterialTheme.typography.titleMedium.copy(
-            color = MaterialTheme.colorScheme.outline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
     paddingValues: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     thickness: Dp = DividerDefaults.Thickness,

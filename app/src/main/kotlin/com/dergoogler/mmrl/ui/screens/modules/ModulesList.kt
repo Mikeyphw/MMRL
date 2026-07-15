@@ -44,6 +44,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,6 +69,7 @@ import com.dergoogler.mmrl.ui.component.scaffold.ScaffoldScope
 import com.dergoogler.mmrl.ui.component.scrollbar.VerticalFastScrollbar
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalModule as LocalModuleProvider
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.utils.webUILauncher
@@ -109,7 +112,7 @@ fun ScaffoldScope.ModulesList(
                 PaddingValues(
                     top = innerPadding.calculateTopPadding() + 10.dp,
                     start = innerPadding.calculateStartPadding(layoutDirection),
-                    bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                    bottom = paddingValues.mainContentBottomPadding(),
                 ),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
@@ -147,7 +150,7 @@ fun ScaffoldScope.ModulesList(
                 .align(Alignment.CenterEnd)
                 .padding(
                     top = innerPadding.calculateTopPadding(),
-                    bottom = paddingValues.calculateBottomPadding(),
+                    bottom = paddingValues.mainContentBottomPadding(),
                 ),
     )
 }
@@ -247,7 +250,7 @@ private fun DeviceStatusHeader(
             ) {
                 StatusDot(
                     text = stringResource(R.string.modules_updates_count, updateCount),
-                    color = if (updateCount > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outline,
+                    color = if (updateCount > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (rebootRequired) {
                     StatusDot(
@@ -281,7 +284,7 @@ private fun ModuleGroupHeader(
         Text(
             text = count.toString(),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.outline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -372,11 +375,15 @@ private fun CompactInstalledModuleRow(
             Row(
                 modifier =
                     Modifier
-                        .alpha(if (module.state == State.DISABLE || module.state == State.REMOVE) 0.58f else 1f)
-                        .padding(horizontal = 16.dp, vertical = 11.dp),
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .alpha(if (module.state == State.DISABLE || module.state == State.REMOVE) 0.72f else 1f),
+                ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -387,7 +394,7 @@ private fun CompactInstalledModuleRow(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             textDecoration = if (module.state == State.REMOVE) TextDecoration.LineThrough else TextDecoration.None,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                         if (isBlacklisted) {
@@ -404,7 +411,7 @@ private fun CompactInstalledModuleRow(
                         text = stringResource(R.string.module_version_author, module.versionDisplay, module.author),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
 
@@ -427,7 +434,7 @@ private fun CompactInstalledModuleRow(
                         }
                         if (module.hasAction) {
                             StatusDot(
-                                text = stringResource(R.string.module_action),
+                                text = stringResource(R.string.module_action_available),
                                 color = MaterialTheme.colorScheme.secondary,
                             )
                         }
@@ -448,7 +455,13 @@ private fun CompactInstalledModuleRow(
                 }
 
                 Spacer(modifier = Modifier.width(10.dp))
+                val switchDescription =
+                    stringResource(
+                        if (switchChecked) R.string.module_enabled_switch else R.string.module_disabled_switch,
+                        module.name,
+                    )
                 Switch(
+                    modifier = Modifier.semantics { contentDescription = switchDescription },
                     checked = switchChecked,
                     onCheckedChange = ops.toggle,
                     enabled = switchEnabled,

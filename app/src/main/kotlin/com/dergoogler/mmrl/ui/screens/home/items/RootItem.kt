@@ -71,11 +71,11 @@ internal fun RootItem(developerMode: Boolean = false) {
             modifier =
                 Modifier
                     .relative()
-                    .padding(20.dp),
+                    .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                modifier = Modifier.size(45.dp),
+                modifier = Modifier.size(40.dp),
                 painter =
                     painterResource(
                         id = getManagerLogo(isAlive, manager),

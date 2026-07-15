@@ -11,7 +11,7 @@ import kotlin.contracts.contract
 @Serializable
 @JsonClass(generateAdapter = true)
 data class VersionItem(
-    @Json(ignore = true) val repoUrl: String = "",
+    @param:Json(ignore = true) val repoUrl: String = "",
     val timestamp: Float,
     val version: String,
     val versionCode: Int,

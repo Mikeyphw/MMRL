@@ -77,7 +77,7 @@ fun RepositoryMenu(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.sort_outline),
-                contentDescription = null,
+                contentDescription = stringResource(R.string.accessibility_repository_menu),
             )
             Text(
                 text = summary,

@@ -27,6 +27,7 @@ import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalNavController
 import dev.chrisbanes.haze.hazeSource
 
@@ -104,7 +105,7 @@ fun SettingsScaffold(
                     relative()
 
                     val paddingValues = LocalMainScreenInnerPaddings.current
-                    Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding()))
+                    Spacer(modifier = Modifier.height(paddingValues.mainContentBottomPadding()))
                 },
             )
 

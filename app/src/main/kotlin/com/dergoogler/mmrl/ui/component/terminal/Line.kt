@@ -62,7 +62,7 @@ fun RowScope.LineNumber(
 
     val outlineColor =
         remember {
-            colorScheme.outline.copy(alpha = 0.6f)
+            colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         }
 
     DisableSelection {

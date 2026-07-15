@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.model.WorkingMode.Companion.isNonRoot
 import com.dergoogler.mmrl.datastore.model.WorkingMode.Companion.isRoot
-import com.dergoogler.mmrl.ext.currentScreenWidth
 import com.dergoogler.mmrl.ext.managerVersion
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.nullable
@@ -58,7 +57,6 @@ import com.dergoogler.mmrl.stub.IMMRLApiManager
 import com.dergoogler.mmrl.ui.component.Alert
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.SELinuxStatus
-import com.dergoogler.mmrl.ui.component.TopAppBarEventIcon
 import com.dergoogler.mmrl.ui.component.card.Card
 import com.dergoogler.mmrl.ui.component.card.component.Relative
 import com.dergoogler.mmrl.ui.component.listItem.dsl.List
@@ -68,9 +66,11 @@ import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Icon
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Title
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
+import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.remember.rememberLocalAnalytics
 import com.dergoogler.mmrl.ui.remember.seLinuxContext
@@ -138,7 +138,7 @@ fun HomeScreen() =
                             .verticalScroll(rememberScrollState())
                             .padding(16.dp)
                             .padding(top = innerPadding.calculateTopPadding()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     when {
                         userPreferences.workingMode.isRoot ->
@@ -210,13 +210,13 @@ fun HomeScreen() =
                     }
 
                     List(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = listItemContentPaddingValues,
                     ) {
                         val scope = this
 
                         Card(
-                            modifier = Modifier.padding(vertical = 16.dp),
+                            modifier = Modifier.padding(vertical = 4.dp),
                         ) {
                             val uname = Os.uname()
                             Column(
@@ -267,7 +267,7 @@ fun HomeScreen() =
                         PlatformManager.isAlive.takeTrue {
                             userPreferences.developerMode.takeTrue {
                                 Card(
-                                    modifier = Modifier.padding(vertical = 16.dp),
+                                    modifier = Modifier.padding(vertical = 4.dp),
                                 ) {
                                     Column(
                                         modifier = Modifier.relative(),
@@ -317,7 +317,7 @@ fun HomeScreen() =
                                     Card(
                                         modifier =
                                             Modifier
-                                                .padding(vertical = 16.dp)
+                                                .padding(vertical = 4.dp)
                                                 .weight(1f),
                                     ) {
                                         Relative {
@@ -331,7 +331,7 @@ fun HomeScreen() =
                                     Card(
                                         modifier =
                                             Modifier
-                                                .padding(vertical = 16.dp)
+                                                .padding(vertical = 4.dp)
                                                 .weight(1f),
                                     ) {
                                         Relative {
@@ -346,7 +346,7 @@ fun HomeScreen() =
                                 Card(
                                     modifier =
                                         Modifier
-                                            .padding(vertical = 16.dp),
+                                            .padding(vertical = 4.dp),
                                 ) {
                                     Relative {
                                         scope.Item {
@@ -387,7 +387,7 @@ fun HomeScreen() =
                                     Card(
                                         modifier =
                                             Modifier
-                                                .padding(vertical = 16.dp)
+                                                .padding(vertical = 4.dp)
                                                 .weight(1f),
                                     ) {
                                         Relative {
@@ -401,7 +401,7 @@ fun HomeScreen() =
                                     Card(
                                         modifier =
                                             Modifier
-                                                .padding(vertical = 16.dp)
+                                                .padding(vertical = 4.dp)
                                                 .weight(1f),
                                     ) {
                                         Relative {
@@ -418,7 +418,7 @@ fun HomeScreen() =
                         Card(
                             modifier =
                                 Modifier
-                                    .padding(vertical = 16.dp)
+                                    .padding(vertical = 4.dp)
                                     .fillMaxWidth(),
                             onClick = {
                                 browser.openUri("https://github.com/sponsors/MMRLApp")
@@ -447,7 +447,7 @@ fun HomeScreen() =
                     }
 
                     val paddingValues = LocalMainScreenInnerPaddings.current
-                    Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding()))
+                    Spacer(modifier = Modifier.height(paddingValues.mainContentBottomPadding()))
                 }
             }
         }
@@ -460,23 +460,19 @@ private fun TopBar(
     onHeartClick: () -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    val width = currentScreenWidth()
-
     BlurToolbar(
         scrollBehavior = scrollBehavior,
         fade = true,
         fadeDistance = 50f,
         title = {
-            if (!width.isSmall) return@BlurToolbar
-
-            TopAppBarEventIcon()
+            ToolbarTitle(title = stringResource(R.string.page_home))
         },
         actions = {
             if (PlatformManager.isAlive) {
                 IconButton(onClick = onRebootClick) {
                     Icon(
                         painter = painterResource(id = R.drawable.refresh),
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.accessibility_refresh_provider),
                     )
                 }
             }
@@ -484,14 +480,14 @@ private fun TopBar(
             IconButton(onClick = onHeartClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.heart),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.accessibility_support_project),
                 )
             }
 
             IconButton(onClick = onInfoClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.info_circle),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.accessibility_about_app),
                 )
             }
         },

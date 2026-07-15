@@ -9,7 +9,9 @@ import java.util.Properties
 // #### CONFIG START ####
 
 const val COMPILE_SDK = 36
-const val BUILD_TOOLS_VERSION = "$COMPILE_SDK.0.0"
+const val TARGET_SDK = 36
+const val BUILD_TOOLS_VERSION = "36.0.0"
+const val NDK_VERSION = "28.2.13676358"
 const val MIN_SDK = 26
 
 // ####  CONFIG END  ####

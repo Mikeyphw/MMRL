@@ -73,7 +73,7 @@ object ListItemDefaults {
         @Composable get() =
             ListItemTextStyle(
                 titleTextColor = LocalContentColor.current,
-                descTextColor = MaterialTheme.colorScheme.outline,
+                descTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 titleTextStyle = MaterialTheme.typography.bodyLarge,
                 descTextStyle = MaterialTheme.typography.bodyMedium,
                 iconSize = 24.dp,

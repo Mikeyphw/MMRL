@@ -18,6 +18,7 @@ class LibraryConventionPlugin : Plugin<Project> {
             extensions.configure<LibraryExtension> {
                 compileSdk = COMPILE_SDK
                 buildToolsVersion = BUILD_TOOLS_VERSION
+                ndkVersion = NDK_VERSION
 
                 defaultConfig {
                     minSdk = MIN_SDK

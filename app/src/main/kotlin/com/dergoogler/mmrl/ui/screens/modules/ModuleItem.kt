@@ -245,7 +245,7 @@ fun ModuleItem(
                                 ),
                             style = MaterialTheme.typography.bodySmall,
                             textDecoration = decoration,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -271,7 +271,7 @@ fun ModuleItem(
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis,
                 textDecoration = decoration,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             LiteRow(
@@ -431,7 +431,7 @@ fun BottomSheetForWXP(onCancel: () -> Unit) {
 @Composable
 fun StateIndicator(
     @DrawableRes icon: Int,
-    color: Color = MaterialTheme.colorScheme.outline,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) = Image(
     modifier = Modifier.requiredSize(150.dp),
     painter = painterResource(id = icon),

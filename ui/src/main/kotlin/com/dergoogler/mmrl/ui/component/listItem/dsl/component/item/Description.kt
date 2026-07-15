@@ -27,7 +27,7 @@ fun ListItemScope.Description(
 ) {
     val baseTextStyle =
         MaterialTheme.typography.bodyMedium.copy(
-            color = MaterialTheme.colorScheme.outline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
     val finalTextStyle =

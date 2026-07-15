@@ -335,7 +335,7 @@ private fun BaseNavIcon(
         ) {
             Icon(
                 painter = painterResource(id = if (selected) screen.iconFilled else screen.icon),
-                contentDescription = null,
+                contentDescription = stringResource(screen.label),
             )
         }
         return
@@ -359,7 +359,7 @@ private fun BaseNavIcon(
                                 screen.icon
                             },
                     ),
-                contentDescription = null,
+                contentDescription = stringResource(screen.label),
             )
         }
 
@@ -376,6 +376,6 @@ private fun BaseNavIcon(
                         screen.icon
                     },
             ),
-        contentDescription = null,
+        contentDescription = stringResource(screen.label),
     )
 }

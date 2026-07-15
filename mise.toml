@@ -1,0 +1,172 @@
+[env]
+ANDROID_HOME = "{{env.HOME}}/Android/Sdk"
+ANDROID_SDK_ROOT = "{{env.HOME}}/Android/Sdk"
+
+_.path = [
+  "{{env.ANDROID_SDK_ROOT}}/cmdline-tools/latest/bin",
+  "{{env.ANDROID_SDK_ROOT}}/platform-tools",
+]
+
+[tasks.android-licenses]
+description = "Accept Android SDK licenses"
+shell = "bash -c"
+run = '''
+set -eu
+SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+test -x "$SDKMANAGER" || { echo "sdkmanager not found: $SDKMANAGER"; exit 1; }
+yes | "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" --licenses
+echo "Android SDK licenses accepted."
+'''
+
+[tasks.android-sdk]
+description = "Install the stable Android SDK required by MMRL"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+test -x "$SDKMANAGER" || { echo "sdkmanager not found: $SDKMANAGER"; exit 1; }
+
+"$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" \
+  "platform-tools" \
+  "platforms;android-36" \
+  "build-tools;36.0.0" \
+  "ndk;28.2.13676358"
+
+test -x "$ANDROID_SDK_ROOT/platform-tools/adb"
+test -d "$ANDROID_SDK_ROOT/platforms/android-36"
+test -d "$ANDROID_SDK_ROOT/build-tools/36.0.0"
+test -f "$ANDROID_SDK_ROOT/ndk/28.2.13676358/source.properties"
+echo "Stable Android SDK installation completed successfully."
+'''
+
+
+[tasks.android-sdk-repair-command-line-tools]
+description = "Normalize duplicate Android Command-Line Tools installations"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+TOOLS_ROOT="$ANDROID_SDK_ROOT/cmdline-tools"
+EXPECTED="$TOOLS_ROOT/latest"
+
+mapfile -t CANDIDATES < <(
+  find "$TOOLS_ROOT" -mindepth 1 -maxdepth 1 -type d \
+    \( -name latest -o -name 'latest-*' \) -print | sort -V
+)
+
+if [[ -z "${CANDIDATES[*]-}" ]]; then
+  echo "No Android Command-Line Tools installation was found in $TOOLS_ROOT."
+  exit 1
+fi
+
+BEST=""
+BEST_REVISION=""
+for candidate in "${CANDIDATES[@]}"; do
+  [[ -x "$candidate/bin/sdkmanager" ]] || continue
+  revision="$(awk -F= '/^Pkg.Revision=/{gsub(/[[:space:]]/, "", $2); print $2}' "$candidate/source.properties" 2>/dev/null || true)"
+  [[ -n "$revision" ]] || revision="0"
+  if [[ -z "$BEST" || "$(printf '%s\n%s\n' "$BEST_REVISION" "$revision" | sort -V | tail -n 1)" == "$revision" ]]; then
+    BEST="$candidate"
+    BEST_REVISION="$revision"
+  fi
+done
+
+if [[ -z "$BEST" ]]; then
+  echo "No usable sdkmanager was found below $TOOLS_ROOT."
+  exit 1
+fi
+
+TEMP="$TOOLS_ROOT/.latest-normalized"
+rm -rf "$TEMP"
+cp -a "$BEST" "$TEMP"
+
+for candidate in "${CANDIDATES[@]}"; do
+  rm -rf "$candidate"
+done
+
+mv "$TEMP" "$EXPECTED"
+test -x "$EXPECTED/bin/sdkmanager"
+
+echo "Android Command-Line Tools normalized at $EXPECTED (revision $BEST_REVISION)."
+'''
+
+[tasks.android-sdk-repair-ndk]
+description = "Reinstall the MMRL NDK"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+NDK_VERSION="28.2.13676358"
+rm -rf "$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
+"$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" "ndk;$NDK_VERSION"
+test -f "$ANDROID_SDK_ROOT/ndk/$NDK_VERSION/source.properties"
+echo "NDK repaired successfully."
+'''
+
+[tasks.android-sdk-check]
+description = "Verify Java and Android SDK packages"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+
+check_file() {
+  if [[ -f "$1" ]]; then
+    echo "OK: $1"
+  else
+    echo "MISSING FILE: $1"
+    return 1
+  fi
+}
+
+check_dir() {
+  if [[ -d "$1" ]]; then
+    echo "OK: $1"
+  else
+    echo "MISSING DIRECTORY: $1"
+    return 1
+  fi
+}
+
+echo "Java runtime:"
+java -version
+echo
+
+echo "Java compiler:"
+javac -version
+echo
+
+echo "Gradle:"
+./gradlew --version
+echo
+
+STATUS=0
+check_file "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" || STATUS=1
+check_file "$ANDROID_SDK_ROOT/platform-tools/adb" || STATUS=1
+check_dir "$ANDROID_SDK_ROOT/platforms/android-36" || STATUS=1
+check_dir "$ANDROID_SDK_ROOT/build-tools/36.0.0" || STATUS=1
+check_file "$ANDROID_SDK_ROOT/ndk/28.2.13676358/source.properties" || STATUS=1
+
+if [[ "$STATUS" -ne 0 ]]; then
+  echo
+  echo "Android SDK validation failed. Run: mise run android-sdk"
+  exit 1
+fi
+
+echo
+echo "Android development environment is ready."
+'''
+
+[tasks.gradle-stop]
+description = "Stop Gradle daemons"
+run = "./gradlew --stop"
+
+[tasks.clean]
+description = "Clean the project"
+run = "./gradlew clean"
+
+[tasks.build-debug]
+description = "Build the official debug APK"
+run = "./gradlew :app:assembleOfficialDebug --stacktrace"
+
+[tasks.build-release]
+description = "Build the official release APK"
+run = "./gradlew :app:assembleOfficialRelease --stacktrace"

@@ -76,6 +76,7 @@ import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalRepo
 import com.dergoogler.mmrl.ui.screens.repository.modules.ModulesFilter
 import com.dergoogler.mmrl.viewmodel.RepositoryViewModel
@@ -273,7 +274,7 @@ fun RepositoryScreen(repo: Repo) =
                                                         ),
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 textAlign = TextAlign.Center,
-                                                color = MaterialTheme.colorScheme.outlineVariant,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 lineHeight = 20.sp,
                                             )
 
@@ -372,7 +373,7 @@ fun RepositoryScreen(repo: Repo) =
                             )
 
                             val paddingValues = LocalMainScreenInnerPaddings.current
-                            Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding()))
+                            Spacer(modifier = Modifier.height(paddingValues.mainContentBottomPadding()))
                         }
                     }
                 }

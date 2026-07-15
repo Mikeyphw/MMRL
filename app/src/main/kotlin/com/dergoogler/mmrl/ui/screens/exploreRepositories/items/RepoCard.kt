@@ -112,7 +112,7 @@ fun RepoCard(repo: ExploreRepository) {
                                     it.toFormattedDateSafely,
                                 ),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -130,7 +130,7 @@ fun RepoCard(repo: ExploreRepository) {
                             .padding(horizontal = 16.dp),
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 

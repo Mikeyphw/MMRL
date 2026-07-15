@@ -45,7 +45,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.model.RepositoriesMenu
-import com.dergoogler.mmrl.ext.currentScreenWidth
 import com.dergoogler.mmrl.ext.isScrollingUp
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.rememberSaveableLazyListState
@@ -57,13 +56,14 @@ import com.dergoogler.mmrl.ui.animate.slideOutBottomToTop
 import com.dergoogler.mmrl.ui.component.Loading
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.PageIndicator
-import com.dergoogler.mmrl.ui.component.TopAppBarEventIcon
 import com.dergoogler.mmrl.ui.component.dialog.TextFieldDialog
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
+import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalBulkInstall
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.screens.repositories.items.BulkBottomSheet
 import com.dergoogler.mmrl.viewmodel.BulkDownloadException
@@ -327,15 +327,12 @@ private fun TopBar(
     setMenu: KFunction1<RepositoriesMenu, Unit>,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    val width = currentScreenWidth()
     val navigator = LocalDestinationsNavigator.current
 
     BlurToolbar(
         scrollBehavior = scrollBehavior,
         title = {
-            if (!width.isSmall) return@BlurToolbar
-
-            TopAppBarEventIcon()
+            ToolbarTitle(title = stringResource(R.string.page_repos))
         },
         fadeDistance = 50f,
         fade = true,
@@ -347,7 +344,7 @@ private fun TopBar(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.search),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.accessibility_search),
                 )
             }
             IconButton(
@@ -355,7 +352,7 @@ private fun TopBar(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.plus),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.accessibility_add_repository),
                 )
             }
 
@@ -375,7 +372,7 @@ private fun FloatingButton(onClick: () -> Unit) {
             Modifier
                 .systemBarsPaddingEnd()
                 .padding(
-                    bottom = paddingValues.calculateBottomPadding(),
+                    bottom = paddingValues.mainContentBottomPadding(16.dp),
                 ),
         onClick = onClick,
         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -383,7 +380,7 @@ private fun FloatingButton(onClick: () -> Unit) {
     ) {
         Icon(
             painter = painterResource(id = R.drawable.package_import),
-            contentDescription = null,
+            contentDescription = stringResource(R.string.bulk_module_install),
         )
     }
 }

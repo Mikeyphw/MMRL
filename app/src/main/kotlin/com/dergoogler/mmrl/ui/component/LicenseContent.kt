@@ -132,7 +132,7 @@ private fun ViewLicense(
                 .fillMaxWidth(),
         text = license.licenseText,
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.outline,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 

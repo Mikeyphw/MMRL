@@ -262,7 +262,7 @@ fun ExploreRepositoryScreen(repo: ExploreRepository) =
                                         modifier = Modifier.padding(horizontal = 16.dp),
                                         text = it.toDecodedUrl(force = true),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
 
