@@ -5,17 +5,41 @@ import com.joaomgcd.taskerpluginlibrary.input.TaskerInputRoot;
 
 @TaskerInputRoot
 public class TaskerFailureEvent {
-    @TaskerInputField("operation_id")
+    @TaskerInputField(
+            key = "operation_id",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String operationId;
-    @TaskerInputField("operation_type")
+    @TaskerInputField(
+            key = "operation_type",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String operationType;
-    @TaskerInputField("module_id")
+    @TaskerInputField(
+            key = "module_id",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String moduleId;
-    @TaskerInputField("module_name")
+    @TaskerInputField(
+            key = "module_name",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String moduleName;
-    @TaskerInputField("error_message")
+    @TaskerInputField(
+            key = "error_message",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String errorMessage;
-    @TaskerInputField("phase")
+    @TaskerInputField(
+            key = "phase",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String phase;
 
     public TaskerFailureEvent() {

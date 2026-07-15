@@ -152,139 +152,343 @@ public class TaskerResultOutput {
         this.states = states;
     }
 
-    @TaskerOutputVariable("success", R.string.tasker_var_success_label, R.string.tasker_var_success_description)
+    @TaskerOutputVariable(
+            name = "success",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_success_label",
+            htmlLabelResIdName = "tasker_var_success_description"
+    )
     public boolean getSuccess() { return success; }
     public void setSuccess(boolean value) { success = value; }
 
-    @TaskerOutputVariable("status", R.string.tasker_var_status_label, R.string.tasker_var_status_description)
+    @TaskerOutputVariable(
+            name = "status",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_status_label",
+            htmlLabelResIdName = "tasker_var_status_description"
+    )
     public String getStatus() { return status; }
     public void setStatus(String value) { status = value; }
 
-    @TaskerOutputVariable("message", R.string.tasker_var_message_label, R.string.tasker_var_message_description)
+    @TaskerOutputVariable(
+            name = "message",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_message_label",
+            htmlLabelResIdName = "tasker_var_message_description"
+    )
     public String getMessage() { return message; }
     public void setMessage(String value) { message = value; }
 
-    @TaskerOutputVariable("operation_id", R.string.tasker_var_operation_id_label, R.string.tasker_var_operation_id_description)
+    @TaskerOutputVariable(
+            name = "operation_id",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_operation_id_label",
+            htmlLabelResIdName = "tasker_var_operation_id_description"
+    )
     public String getOperationId() { return operationId; }
     public void setOperationId(String value) { operationId = value; }
 
-    @TaskerOutputVariable("operation_type", R.string.tasker_var_operation_type_label, R.string.tasker_var_operation_type_description)
+    @TaskerOutputVariable(
+            name = "operation_type",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_operation_type_label",
+            htmlLabelResIdName = "tasker_var_operation_type_description"
+    )
     public String getOperationType() { return operationType; }
     public void setOperationType(String value) { operationType = value; }
 
-    @TaskerOutputVariable("phase", R.string.tasker_var_phase_label, R.string.tasker_var_phase_description)
+    @TaskerOutputVariable(
+            name = "phase",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_phase_label",
+            htmlLabelResIdName = "tasker_var_phase_description"
+    )
     public String getPhase() { return phase; }
     public void setPhase(String value) { phase = value; }
 
-    @TaskerOutputVariable("progress", R.string.tasker_var_progress_label, R.string.tasker_var_progress_description)
+    @TaskerOutputVariable(
+            name = "progress",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_progress_label",
+            htmlLabelResIdName = "tasker_var_progress_description"
+    )
     public int getProgress() { return progress; }
     public void setProgress(int value) { progress = value; }
 
-    @TaskerOutputVariable("module_id", R.string.tasker_var_module_id_label, R.string.tasker_var_module_id_description)
+    @TaskerOutputVariable(
+            name = "module_id",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_module_id_label",
+            htmlLabelResIdName = "tasker_var_module_id_description"
+    )
     public String getModuleId() { return moduleId; }
     public void setModuleId(String value) { moduleId = value; }
 
-    @TaskerOutputVariable("module_name", R.string.tasker_var_module_name_label, R.string.tasker_var_module_name_description)
+    @TaskerOutputVariable(
+            name = "module_name",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_module_name_label",
+            htmlLabelResIdName = "tasker_var_module_name_description"
+    )
     public String getModuleName() { return moduleName; }
     public void setModuleName(String value) { moduleName = value; }
 
-    @TaskerOutputVariable("installed", R.string.tasker_var_installed_label, R.string.tasker_var_installed_description)
+    @TaskerOutputVariable(
+            name = "installed",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_installed_label",
+            htmlLabelResIdName = "tasker_var_installed_description"
+    )
     public boolean isInstalled() { return installed; }
     public void setInstalled(boolean value) { installed = value; }
 
-    @TaskerOutputVariable("enabled", R.string.tasker_var_enabled_label, R.string.tasker_var_enabled_description)
+    @TaskerOutputVariable(
+            name = "enabled",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_enabled_label",
+            htmlLabelResIdName = "tasker_var_enabled_description"
+    )
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean value) { enabled = value; }
 
-    @TaskerOutputVariable("installed_version", R.string.tasker_var_installed_version_label, R.string.tasker_var_installed_version_description)
+    @TaskerOutputVariable(
+            name = "installed_version",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_installed_version_label",
+            htmlLabelResIdName = "tasker_var_installed_version_description"
+    )
     public String getInstalledVersion() { return installedVersion; }
     public void setInstalledVersion(String value) { installedVersion = value; }
 
-    @TaskerOutputVariable("installed_version_code", R.string.tasker_var_installed_version_code_label, R.string.tasker_var_installed_version_code_description)
+    @TaskerOutputVariable(
+            name = "installed_version_code",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_installed_version_code_label",
+            htmlLabelResIdName = "tasker_var_installed_version_code_description"
+    )
     public int getInstalledVersionCode() { return installedVersionCode; }
     public void setInstalledVersionCode(int value) { installedVersionCode = value; }
 
-    @TaskerOutputVariable("available_version", R.string.tasker_var_available_version_label, R.string.tasker_var_available_version_description)
+    @TaskerOutputVariable(
+            name = "available_version",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_available_version_label",
+            htmlLabelResIdName = "tasker_var_available_version_description"
+    )
     public String getAvailableVersion() { return availableVersion; }
     public void setAvailableVersion(String value) { availableVersion = value; }
 
-    @TaskerOutputVariable("available_version_code", R.string.tasker_var_available_version_code_label, R.string.tasker_var_available_version_code_description)
+    @TaskerOutputVariable(
+            name = "available_version_code",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_available_version_code_label",
+            htmlLabelResIdName = "tasker_var_available_version_code_description"
+    )
     public int getAvailableVersionCode() { return availableVersionCode; }
     public void setAvailableVersionCode(int value) { availableVersionCode = value; }
 
-    @TaskerOutputVariable("update_available", R.string.tasker_var_update_available_label, R.string.tasker_var_update_available_description)
+    @TaskerOutputVariable(
+            name = "update_available",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_update_available_label",
+            htmlLabelResIdName = "tasker_var_update_available_description"
+    )
     public boolean isUpdateAvailable() { return updateAvailable; }
     public void setUpdateAvailable(boolean value) { updateAvailable = value; }
 
-    @TaskerOutputVariable("update_ignored", R.string.tasker_var_update_ignored_label, R.string.tasker_var_update_ignored_description)
+    @TaskerOutputVariable(
+            name = "update_ignored",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_update_ignored_label",
+            htmlLabelResIdName = "tasker_var_update_ignored_description"
+    )
     public boolean isUpdateIgnored() { return updateIgnored; }
     public void setUpdateIgnored(boolean value) { updateIgnored = value; }
 
-    @TaskerOutputVariable("repository", R.string.tasker_var_repository_label, R.string.tasker_var_repository_description)
+    @TaskerOutputVariable(
+            name = "repository",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_repository_label",
+            htmlLabelResIdName = "tasker_var_repository_description"
+    )
     public String getRepository() { return repository; }
     public void setRepository(String value) { repository = value; }
 
-    @TaskerOutputVariable("reboot_required", R.string.tasker_var_reboot_required_label, R.string.tasker_var_reboot_required_description)
+    @TaskerOutputVariable(
+            name = "reboot_required",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_reboot_required_label",
+            htmlLabelResIdName = "tasker_var_reboot_required_description"
+    )
     public boolean isRebootRequired() { return rebootRequired; }
     public void setRebootRequired(boolean value) { rebootRequired = value; }
 
-    @TaskerOutputVariable("rollback_available", R.string.tasker_var_rollback_available_label, R.string.tasker_var_rollback_available_description)
+    @TaskerOutputVariable(
+            name = "rollback_available",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_rollback_available_label",
+            htmlLabelResIdName = "tasker_var_rollback_available_description"
+    )
     public boolean isRollbackAvailable() { return rollbackAvailable; }
     public void setRollbackAvailable(boolean value) { rollbackAvailable = value; }
 
-    @TaskerOutputVariable("error_code", R.string.tasker_var_error_code_label, R.string.tasker_var_error_code_description)
+    @TaskerOutputVariable(
+            name = "error_code",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_error_code_label",
+            htmlLabelResIdName = "tasker_var_error_code_description"
+    )
     public String getErrorCode() { return errorCode; }
     public void setErrorCode(String value) { errorCode = value; }
 
-    @TaskerOutputVariable("error_message", R.string.tasker_var_error_message_label, R.string.tasker_var_error_message_description)
+    @TaskerOutputVariable(
+            name = "error_message",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_error_message_label",
+            htmlLabelResIdName = "tasker_var_error_message_description"
+    )
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String value) { errorMessage = value; }
 
-    @TaskerOutputVariable("log_uri", R.string.tasker_var_log_uri_label, R.string.tasker_var_log_uri_description)
+    @TaskerOutputVariable(
+            name = "log_uri",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_log_uri_label",
+            htmlLabelResIdName = "tasker_var_log_uri_description"
+    )
     public String getLogUri() { return logUri; }
     public void setLogUri(String value) { logUri = value; }
 
-    @TaskerOutputVariable("review_token", R.string.tasker_var_review_token_label, R.string.tasker_var_review_token_description)
+    @TaskerOutputVariable(
+            name = "review_token",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_review_token_label",
+            htmlLabelResIdName = "tasker_var_review_token_description"
+    )
     public String getReviewToken() { return reviewToken; }
     public void setReviewToken(String value) { reviewToken = value; }
 
-    @TaskerOutputVariable("review_expires_at", R.string.tasker_var_review_expires_at_label, R.string.tasker_var_review_expires_at_description)
+    @TaskerOutputVariable(
+            name = "review_expires_at",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_review_expires_at_label",
+            htmlLabelResIdName = "tasker_var_review_expires_at_description"
+    )
     public long getReviewExpiresAt() { return reviewExpiresAt; }
     public void setReviewExpiresAt(long value) { reviewExpiresAt = value; }
 
-    @TaskerOutputVariable("approval_required", R.string.tasker_var_approval_required_label, R.string.tasker_var_approval_required_description)
+    @TaskerOutputVariable(
+            name = "approval_required",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_approval_required_label",
+            htmlLabelResIdName = "tasker_var_approval_required_description"
+    )
     public boolean isApprovalRequired() { return approvalRequired; }
     public void setApprovalRequired(boolean value) { approvalRequired = value; }
 
-    @TaskerOutputVariable("safety_level", R.string.tasker_var_safety_level_label, R.string.tasker_var_safety_level_description)
+    @TaskerOutputVariable(
+            name = "safety_level",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_safety_level_label",
+            htmlLabelResIdName = "tasker_var_safety_level_description"
+    )
     public String getSafetyLevel() { return safetyLevel; }
     public void setSafetyLevel(String value) { safetyLevel = value; }
 
-    @TaskerOutputVariable("inspection_summary", R.string.tasker_var_inspection_summary_label, R.string.tasker_var_inspection_summary_description)
+    @TaskerOutputVariable(
+            name = "inspection_summary",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_inspection_summary_label",
+            htmlLabelResIdName = "tasker_var_inspection_summary_description"
+    )
     public String getInspectionSummary() { return inspectionSummary; }
     public void setInspectionSummary(String value) { inspectionSummary = value; }
 
-    @TaskerOutputVariable("result_json", R.string.tasker_var_result_json_label, R.string.tasker_var_result_json_description)
+    @TaskerOutputVariable(
+            name = "result_json",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_result_json_label",
+            htmlLabelResIdName = "tasker_var_result_json_description"
+    )
     public String getResultJson() { return resultJson; }
     public void setResultJson(String value) { resultJson = value; }
 
-    @TaskerOutputVariable("count", R.string.tasker_var_count_label, R.string.tasker_var_count_description)
+    @TaskerOutputVariable(
+            name = "count",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_count_label",
+            htmlLabelResIdName = "tasker_var_count_description"
+    )
     public int getCount() { return count; }
     public void setCount(int value) { count = value; }
 
-    @TaskerOutputVariable("module_ids", R.string.tasker_var_module_ids_label, R.string.tasker_var_module_ids_description)
+    @TaskerOutputVariable(
+            name = "module_ids",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_module_ids_label",
+            htmlLabelResIdName = "tasker_var_module_ids_description"
+    )
     public String[] getModuleIds() { return moduleIds; }
     public void setModuleIds(String[] value) { moduleIds = value; }
 
-    @TaskerOutputVariable("module_names", R.string.tasker_var_module_names_label, R.string.tasker_var_module_names_description)
+    @TaskerOutputVariable(
+            name = "module_names",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_module_names_label",
+            htmlLabelResIdName = "tasker_var_module_names_description"
+    )
     public String[] getModuleNames() { return moduleNames; }
     public void setModuleNames(String[] value) { moduleNames = value; }
 
-    @TaskerOutputVariable("versions", R.string.tasker_var_versions_label, R.string.tasker_var_versions_description)
+    @TaskerOutputVariable(
+            name = "versions",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_versions_label",
+            htmlLabelResIdName = "tasker_var_versions_description"
+    )
     public String[] getVersions() { return versions; }
     public void setVersions(String[] value) { versions = value; }
 
-    @TaskerOutputVariable("states", R.string.tasker_var_states_label, R.string.tasker_var_states_description)
+    @TaskerOutputVariable(
+            name = "states",
+            labelResId = 0,
+            htmlLabelResId = 0,
+            labelResIdName = "tasker_var_states_label",
+            htmlLabelResIdName = "tasker_var_states_description"
+    )
     public String[] getStates() { return states; }
     public void setStates(String[] value) { states = value; }
 }

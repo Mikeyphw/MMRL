@@ -5,19 +5,47 @@ import com.joaomgcd.taskerpluginlibrary.input.TaskerInputRoot;
 
 @TaskerInputRoot
 public class TaskerUpdateEvent {
-    @TaskerInputField("module_id")
+    @TaskerInputField(
+            key = "module_id",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String moduleId;
-    @TaskerInputField("module_name")
+    @TaskerInputField(
+            key = "module_name",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String moduleName;
-    @TaskerInputField("installed_version")
+    @TaskerInputField(
+            key = "installed_version",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String installedVersion;
-    @TaskerInputField("installed_version_code")
+    @TaskerInputField(
+            key = "installed_version_code",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public int installedVersionCode;
-    @TaskerInputField("available_version")
+    @TaskerInputField(
+            key = "available_version",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String availableVersion;
-    @TaskerInputField("available_version_code")
+    @TaskerInputField(
+            key = "available_version_code",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public int availableVersionCode;
-    @TaskerInputField("repository")
+    @TaskerInputField(
+            key = "repository",
+            labelResId = 0,
+            descriptionResId = 0
+    )
     public String repository;
 
     public TaskerUpdateEvent() {

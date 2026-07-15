@@ -6,17 +6,53 @@ import com.joaomgcd.taskerpluginlibrary.input.TaskerInputRoot;
 
 @TaskerInputRoot
 public class TaskerRequestInput {
-    @TaskerInputField("module_id", R.string.tasker_field_module_id)
+    @TaskerInputField(
+            key = "module_id",
+            labelResId = 0,
+            descriptionResId = 0,
+            labelResIdName = "tasker_field_module_id",
+            descriptionResIdName = "tasker_field_module_id"
+    )
     public String moduleId;
-    @TaskerInputField("operation_id", R.string.tasker_field_operation_id)
+    @TaskerInputField(
+            key = "operation_id",
+            labelResId = 0,
+            descriptionResId = 0,
+            labelResIdName = "tasker_field_operation_id",
+            descriptionResIdName = "tasker_field_operation_id"
+    )
     public String operationId;
-    @TaskerInputField("url", R.string.tasker_field_url)
+    @TaskerInputField(
+            key = "url",
+            labelResId = 0,
+            descriptionResId = 0,
+            labelResIdName = "tasker_field_url",
+            descriptionResIdName = "tasker_field_url"
+    )
     public String url;
-    @TaskerInputField("filename", R.string.tasker_field_filename)
+    @TaskerInputField(
+            key = "filename",
+            labelResId = 0,
+            descriptionResId = 0,
+            labelResIdName = "tasker_field_filename",
+            descriptionResIdName = "tasker_field_filename"
+    )
     public String filename;
-    @TaskerInputField("force_refresh", R.string.tasker_field_force_refresh)
+    @TaskerInputField(
+            key = "force_refresh",
+            labelResId = 0,
+            descriptionResId = 0,
+            labelResIdName = "tasker_field_force_refresh",
+            descriptionResIdName = "tasker_field_force_refresh"
+    )
     public boolean forceRefresh;
-    @TaskerInputField("review_token", R.string.tasker_field_review_token)
+    @TaskerInputField(
+            key = "review_token",
+            labelResId = 0,
+            descriptionResId = 0,
+            labelResIdName = "tasker_field_review_token",
+            descriptionResIdName = "tasker_field_review_token"
+    )
     public String reviewToken;
 
     public TaskerRequestInput() {
