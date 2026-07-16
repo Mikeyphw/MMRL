@@ -1,11 +1,13 @@
 package com.dergoogler.mmrl.repository
 
+import android.content.Context
 import com.dergoogler.mmrl.database.entity.Repo
+import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.network.runRequest
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.model.ModId
 import com.dergoogler.mmrl.stub.IMMRLApiManager
-import com.dergoogler.mmrl.stub.IRepoManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -17,7 +19,10 @@ class ModulesRepository
     @Inject
     constructor(
         private val localRepository: LocalRepository,
+        @ApplicationContext context: Context,
     ) {
+        private val githubTokenStore = GitHubTokenStore(context)
+
         suspend fun getLocalAll() =
             withContext(Dispatchers.IO) {
                 with(PlatformManager.moduleManager.modules) {
@@ -44,10 +49,7 @@ class ModulesRepository
 
         suspend fun getRepo(repo: Repo) =
             withContext(Dispatchers.IO) {
-                runRequest {
-                    val api = IRepoManager.build(repo.url)
-                    return@runRequest api.modules.execute()
-                }.onSuccess { modulesJson ->
+                RepositorySourceLoader.load(repo.url, githubTokenStore.getToken()).onSuccess { modulesJson ->
                     localRepository.insertRepo(repo.copy(modulesJson))
                     localRepository.deleteOnlineByUrl(repo.url)
                     localRepository.insertOnline(

@@ -15,7 +15,7 @@ import com.dergoogler.mmrl.database.entity.local.LocalModuleEntity
 import com.dergoogler.mmrl.database.entity.online.OnlineModuleEntity
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.online.Blacklist
-import com.dergoogler.mmrl.stub.IRepoManager
+import com.dergoogler.mmrl.repository.RepositorySourceLoader
 import com.dergoogler.mmrl.tasker.TaskerEventPublisher
 import com.dergoogler.mmrl.ui.activity.MainActivity
 import dev.dergoogler.mmrl.compat.worker.MMRLLifecycleService
@@ -122,9 +122,7 @@ class ModuleService : MMRLLifecycleService() {
         val failedRepositories = mutableSetOf<String>()
         database.repoDao().getAll().filter { it.enable }.forEach { repo ->
             val result = runCatching {
-                val response = IRepoManager.build(repo.url).modules.execute()
-                require(response.isSuccessful) { "Repository returned HTTP ${response.code()}" }
-                requireNotNull(response.body()).modules
+                RepositorySourceLoader.load(repo.url).getOrThrow().modules
             }
             result.onSuccess { entries ->
                 modules += entries.map { OnlineModuleEntity(it, repo.url, Blacklist.EMPTY) }

@@ -28,6 +28,8 @@ import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.ext.parcelable
+import com.dergoogler.mmrl.github.GitHubTokenStore
+import com.dergoogler.mmrl.network.NetworkUtils
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import com.dergoogler.mmrl.ui.activity.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -52,12 +54,16 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
+import okhttp3.Request
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
+import java.io.OutputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.zip.ZipFile
 import javax.inject.Inject
 import kotlin.coroutines.coroutineContext
 
@@ -185,7 +191,7 @@ class DownloadService : LifecycleService() {
 
                     val result =
                         temporary.outputStream().buffered().use { output ->
-                            NetworkCompat.download(
+                            download(
                                 url = item.url,
                                 output = output,
                                 onProgress = listener::getProgress,
@@ -209,8 +215,10 @@ class DownloadService : LifecycleService() {
                     operationHistoryRepository.appendLog(historyId, "Downloaded ${temporary.length()} bytes")
 
                     try {
-                        val publishedUri = publishTemporaryFile(temporary, destination)
+                        val publishSource = unwrapGitHubArtifactIfNeeded(item.url, temporary, historyId)
+                        val publishedUri = publishTemporaryFile(publishSource, destination)
                         operationHistoryRepository.appendLog(historyId, "Published to $publishedUri")
+                        if (publishSource != temporary) publishSource.delete()
                         temporary.delete()
                         listener.onSuccess(publishedUri)
                     } catch (error: Throwable) {
@@ -275,6 +283,101 @@ class DownloadService : LifecycleService() {
 
     private fun temporaryFile(operationId: String): File =
         cacheDir.resolve("downloads/${operationId.replace(Regex("[^A-Za-z0-9._-]"), "_")}.part")
+
+    private suspend fun unwrapGitHubArtifactIfNeeded(
+        url: String,
+        archive: File,
+        operationId: String,
+    ): File {
+        if (!url.contains("/actions/artifacts/", ignoreCase = true)) return archive
+        val nested =
+            runCatching {
+                ZipFile(archive).use { zip ->
+                    zip
+                        .entries()
+                        .asSequence()
+                        .filter { !it.isDirectory && it.name.endsWith(".zip", ignoreCase = true) }
+                        .maxByOrNull { nestedZipScore(it.name) }
+                        ?.let { entry ->
+                            val output = temporaryFile("$operationId-nested")
+                            zip.getInputStream(entry).buffered().use { input ->
+                                output.outputStream().buffered().use { outputStream ->
+                                    input.copyTo(outputStream)
+                                }
+                            }
+                            output.takeIf { it.isFile && it.length() > 0L }
+                        }
+                }
+            }.getOrNull()
+
+        if (nested != null) {
+            operationHistoryRepository.appendLog(operationId, "Extracted nested module archive from GitHub artifact")
+            return nested
+        }
+        operationHistoryRepository.appendLog(operationId, "GitHub artifact did not contain a nested ZIP; publishing artifact archive")
+        return archive
+    }
+
+    private fun nestedZipScore(name: String): Int {
+        val lower = name.lowercase()
+        val abiScore =
+            android.os.Build.SUPPORTED_ABIS
+                .flatMap { abi ->
+                    when (abi.lowercase()) {
+                        "arm64-v8a" -> listOf("arm64-v8a", "aarch64", "arm64")
+                        "armeabi-v7a" -> listOf("armeabi-v7a", "armv7", "arm")
+                        "x86_64" -> listOf("x86_64", "amd64")
+                        else -> listOf(abi.lowercase())
+                    }
+                }.distinct()
+                .mapIndexedNotNull { index, alias -> if (lower.contains(alias)) 400 - index else null }
+                .maxOrNull() ?: 0
+        val penalty = if (lower.contains("source") || lower.contains("debug")) -80 else 0
+        return abiScore + penalty
+    }
+
+    private suspend fun download(
+        url: String,
+        output: OutputStream,
+        onProgress: (Float) -> Unit,
+    ): Result<*> {
+        if (!url.startsWith("https://api.github.com/", ignoreCase = true)) {
+            return NetworkCompat.download(url = url, output = output, onProgress = onProgress)
+        }
+
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val request =
+                    Request
+                        .Builder()
+                        .url(url)
+                        .header("Accept", "application/octet-stream")
+                        .header("X-GitHub-Api-Version", "2022-11-28")
+                        .apply {
+                            GitHubTokenStore(this@DownloadService).getToken()?.takeIf(String::isNotBlank)?.let {
+                                header("Authorization", "Bearer $it")
+                            }
+                        }.build()
+
+                NetworkUtils.createOkHttpClient().newCall(request).execute().use { response ->
+                    require(response.isSuccessful) { "HTTP ${response.code} while downloading GitHub file" }
+                    val body = response.body ?: error("Empty GitHub download response")
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    val all = body.contentLength()
+                    var finished = 0L
+                    var read: Int
+                    body.byteStream().buffered().use { input ->
+                        while (input.read(buffer).also { read = it } != -1) {
+                            output.write(buffer, 0, read)
+                            finished += read
+                            if (all > 0L) onProgress((finished.toDouble() / all).toFloat())
+                        }
+                    }
+                    output.flush()
+                }
+            }
+        }
+    }
 
     private fun cleanupTemporaryFile(operationId: String) {
         temporaryFile(operationId).delete()

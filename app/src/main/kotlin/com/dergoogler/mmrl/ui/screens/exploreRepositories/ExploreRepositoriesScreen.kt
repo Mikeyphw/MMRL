@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.nullable
+import com.dergoogler.mmrl.model.online.BuiltInRepositories
 import com.dergoogler.mmrl.model.online.ExploreRepository
 import com.dergoogler.mmrl.network.runRequest
 import com.dergoogler.mmrl.stub.IMMRLApiManager
@@ -59,9 +60,12 @@ fun ExploreRepositoriesScreen() =
                     return@withContext api.repositories.execute()
                 }
             }.onSuccess { list ->
-                exploreRepositories = list
+                exploreRepositories =
+                    (BuiltInRepositories.all + list)
+                        .distinctBy { it.url.trimEnd('/') }
             }.onFailure {
                 Timber.e(it, "unable to get recommended repos")
+                exploreRepositories = BuiltInRepositories.all
             }
         }
 

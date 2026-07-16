@@ -6,18 +6,26 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -39,6 +47,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,6 +59,8 @@ import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.rememberSaveableLazyListState
 import com.dergoogler.mmrl.ext.systemBarsPaddingEnd
 import com.dergoogler.mmrl.model.local.BulkModule
+import com.dergoogler.mmrl.github.GitHubSourceMode
+import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
 import com.dergoogler.mmrl.ui.animate.slideInTopToBottom
 import com.dergoogler.mmrl.ui.animate.slideOutBottomToTop
@@ -72,6 +83,9 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SearchScreenDestination
 import timber.log.Timber
+import java.net.URI
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlin.reflect.KFunction1
 
 @Destination<RootGraph>
@@ -112,17 +126,31 @@ fun RepositoriesScreen() =
         }
 
         var add by remember { mutableStateOf(false) }
+        var selectedTab by remember { mutableStateOf(0) }
         if (add) {
-            AddDialog(
-                onClose = { add = false },
-                onAdd = {
-                    repoUrl = it
-                    viewModel.insert(it) { e ->
-                        failure = true
-                        message = e.stackTraceToString()
-                    }
-                },
-            )
+            if (selectedTab == 0) {
+                AddDialog(
+                    onClose = { add = false },
+                    onAdd = {
+                        repoUrl = it
+                        viewModel.insert(it) { e ->
+                            failure = true
+                            message = e.stackTraceToString()
+                        }
+                    },
+                )
+            } else {
+                GitHubSourceAddDialog(
+                    onClose = { add = false },
+                    onAdd = {
+                        repoUrl = it
+                        viewModel.insert(it) { e ->
+                            failure = true
+                            message = e.stackTraceToString()
+                        }
+                    },
+                )
+            }
         }
 
         val context = LocalContext.current
@@ -240,13 +268,33 @@ fun RepositoriesScreen() =
                     )
                 },
             ) {
+                val visibleList =
+                    if (selectedTab == 0) {
+                        list.filterNot { it.url.isGitHubSourceUrl() }
+                    } else {
+                        list.filter { it.url.isGitHubSourceUrl() }
+                    }
+                Column {
+                    TabRow(selectedTabIndex = selectedTab) {
+                        Tab(
+                            selected = selectedTab == 0,
+                            onClick = { selectedTab = 0 },
+                            text = { Text("Repositories") },
+                        )
+                        Tab(
+                            selected = selectedTab == 1,
+                            onClick = { selectedTab = 1 },
+                            text = { Text("GitHub") },
+                        )
+                    }
                 this@Scaffold.RepositoriesList(
                     innerPadding = innerPadding,
-                    list = list,
+                        list = visibleList,
                     state = listState,
                     delete = viewModel::delete,
                     getUpdate = viewModel::getUpdate,
                 )
+                }
             }
 
             AnimatedVisibility(
@@ -322,6 +370,136 @@ private fun AddDialog(
 }
 
 @Composable
+private fun GitHubSourceAddDialog(
+    onClose: () -> Unit,
+    onAdd: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    val tokenStore = remember { GitHubTokenStore(context) }
+    var repoUrl by remember { mutableStateOf("") }
+    var mode by remember { mutableStateOf(GitHubSourceMode.RELEASE) }
+    var includePreReleases by remember { mutableStateOf(false) }
+    var regex by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf("") }
+    var hasToken by remember { mutableStateOf(tokenStore.hasToken()) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val add: () -> Unit = {
+        runCatching {
+            buildGitHubSourceUrl(repoUrl, mode, includePreReleases, regex)
+        }.onSuccess { sourceUrl ->
+            if (token.isNotBlank()) {
+                tokenStore.saveToken(token)
+                hasToken = tokenStore.hasToken()
+            }
+            onAdd(sourceUrl)
+            onClose()
+        }.onFailure {
+            error = it.message ?: "Invalid GitHub repository URL"
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Add GitHub source") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = repoUrl,
+                    onValueChange = {
+                        repoUrl = it
+                        error = null
+                    },
+                    label = { Text("Repository URL") },
+                    placeholder = { Text("https://github.com/owner/repo") },
+                    singleLine = true,
+                    keyboardOptions =
+                        KeyboardOptions(
+                            capitalization = KeyboardCapitalization.None,
+                            keyboardType = KeyboardType.Uri,
+                        ),
+                )
+                error?.let {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = mode == GitHubSourceMode.RELEASE,
+                        onClick = { mode = GitHubSourceMode.RELEASE },
+                        label = { Text("Release") },
+                    )
+                    FilterChip(
+                        selected = mode == GitHubSourceMode.NIGHTLY,
+                        onClick = { mode = GitHubSourceMode.NIGHTLY },
+                        label = { Text("Nightly") },
+                    )
+                }
+                if (mode == GitHubSourceMode.RELEASE) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Include pre-releases")
+                        Switch(
+                            checked = includePreReleases,
+                            onCheckedChange = { includePreReleases = it },
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = regex,
+                    onValueChange = { regex = it },
+                    label = { Text("File regex") },
+                    placeholder = { Text("optional, e.g. aarch64|arm64") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = token,
+                    onValueChange = { token = it },
+                    label = { Text(if (hasToken) "GitHub token saved" else "GitHub token") },
+                    placeholder = { Text("optional for private repos") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                )
+                if (hasToken) {
+                    TextButton(
+                        onClick = {
+                            tokenStore.clearToken()
+                            hasToken = false
+                            token = ""
+                        },
+                    ) {
+                        Text("Clear saved token")
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = add,
+                enabled = repoUrl.isNotBlank(),
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onClose) {
+                Text(text = stringResource(id = R.string.dialog_cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun TopBar(
     onAdd: () -> Unit,
     setMenu: KFunction1<RepositoriesMenu, Unit>,
@@ -383,4 +561,34 @@ private fun FloatingButton(onClick: () -> Unit) {
             contentDescription = stringResource(R.string.bulk_module_install),
         )
     }
+}
+
+private fun String.isGitHubSourceUrl(): Boolean =
+    runCatching {
+        val uri = URI(this)
+        uri.host.equals("github.com", ignoreCase = true) &&
+            uri.rawQuery.orEmpty().contains("mmrlSource=")
+    }.getOrDefault(false)
+
+private fun buildGitHubSourceUrl(
+    rawUrl: String,
+    mode: GitHubSourceMode,
+    includePreReleases: Boolean,
+    regex: String,
+): String {
+    val uri = URI(rawUrl.trim().trimEnd('/').removeSuffix(".git"))
+    require(uri.host.equals("github.com", ignoreCase = true)) {
+        "Only github.com repositories are supported"
+    }
+    val parts = uri.path.trim('/').split('/').filter(String::isNotBlank)
+    require(parts.size >= 2) { "GitHub URL must include owner and repository" }
+    val query =
+        buildList {
+            add("mmrlSource=${if (mode == GitHubSourceMode.NIGHTLY) "nightly" else "release"}")
+            if (includePreReleases) add("includePreReleases=true")
+            regex.trim().takeIf(String::isNotBlank)?.let {
+                add("regex=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}")
+            }
+        }.joinToString("&")
+    return "https://github.com/${parts[0]}/${parts[1]}?$query"
 }
