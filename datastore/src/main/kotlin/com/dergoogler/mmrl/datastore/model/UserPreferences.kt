@@ -102,6 +102,11 @@ data class UserPreferences(
     @ProtoNumber(63) val enhancedStatusDistinction: Boolean = true,
     @ProtoNumber(64) val batterySaverForcesDark: Boolean = false,
     @ProtoNumber(65) val customThemeJson: String = "",
+    @ProtoNumber(66) val ashHealthChecksEnabled: Boolean = true,
+    @ProtoNumber(67) val ashHealthCheckIntervalHours: Long = 6,
+    @ProtoNumber(68) val ashIncidentNotifications: Boolean = true,
+    @ProtoNumber(69) val ashRebootReminders: Boolean = true,
+    @ProtoNumber(70) val ashRestorationReminders: Boolean = true,
 ) {
     fun isDarkMode(context: Context? = null): Boolean {
         val batteryForcesDark = batterySaverForcesDark && context?.let {

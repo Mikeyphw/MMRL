@@ -862,4 +862,6 @@
     <string name="recovery_center_title">Recovery Center</string>
     <string name="recovery_center_subtitle">Incidents, quarantine, restoration, and diagnostics</string>
     <string name="recovery_center_refresh">Refresh Recovery Center</string>
+    <string name="notification_name_ash_recovery">Boot protection</string>
+    <string name="notification_description_ash_recovery">Recovery incidents, reboot reminders, and restoration trial alerts</string>
 </resources>

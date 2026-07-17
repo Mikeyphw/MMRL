@@ -31,6 +31,7 @@ class MainActivity : MMRLComponentActivity() {
     private var isLoading by mutableStateOf(true)
     private var openActivityOnLaunch by mutableStateOf(false)
     private var openUpdatesOnLaunch by mutableStateOf(false)
+    private var openRecoveryOnLaunch by mutableStateOf(false)
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override val requirePermissions = listOf(Manifest.permission.POST_NOTIFICATIONS)
@@ -41,6 +42,7 @@ class MainActivity : MMRLComponentActivity() {
         super.onCreate(savedInstanceState)
         openActivityOnLaunch = intent.getBooleanExtra(EXTRA_OPEN_ACTIVITY, false)
         openUpdatesOnLaunch = intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)
+        openRecoveryOnLaunch = intent.getBooleanExtra(EXTRA_OPEN_RECOVERY, false)
 
         splashScreen.setKeepOnScreenCondition { isLoading }
 
@@ -86,8 +88,10 @@ class MainActivity : MMRLComponentActivity() {
                     MainScreen(
                         openActivityOnLaunch = openActivityOnLaunch,
                         openUpdatesOnLaunch = openUpdatesOnLaunch,
+                        openRecoveryOnLaunch = openRecoveryOnLaunch,
                         onActivityOpened = { openActivityOnLaunch = false },
                         onUpdatesOpened = { openUpdatesOnLaunch = false },
+                        onRecoveryOpened = { openRecoveryOnLaunch = false },
                     )
                 }
             }
@@ -102,6 +106,9 @@ class MainActivity : MMRLComponentActivity() {
         }
         if (intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)) {
             openUpdatesOnLaunch = true
+        }
+        if (intent.getBooleanExtra(EXTRA_OPEN_RECOVERY, false)) {
+            openRecoveryOnLaunch = true
         }
     }
 
@@ -120,5 +127,6 @@ class MainActivity : MMRLComponentActivity() {
     companion object {
         const val EXTRA_OPEN_ACTIVITY = "com.mikeyphw.mmrl.extra.OPEN_ACTIVITY"
         const val EXTRA_OPEN_UPDATES = "com.mikeyphw.mmrl.extra.OPEN_UPDATES"
+        const val EXTRA_OPEN_RECOVERY = "com.mikeyphw.mmrl.extra.OPEN_RECOVERY"
     }
 }

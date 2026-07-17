@@ -11,10 +11,14 @@ object NotificationUtils {
     const val CHANNEL_ID_PROVIDER = "PROVIDER"
     const val CHANNEL_ID_REPOSITORY = "REPOSITORY"
     const val CHANNEL_ID_MODULE = "MODULE"
+    const val CHANNEL_ID_ASH_RECOVERY = "ASH_RECOVERY"
     const val NOTIFICATION_ID_DOWNLOAD = 1024
     const val NOTIFICATION_ID_PROVIDER = 2024
     const val NOTIFICATION_ID_REPOSITORY = 3024
     const val NOTIFICATION_ID_MODULE = 4024
+    const val NOTIFICATION_ID_ASH_INCIDENT = 5024
+    const val NOTIFICATION_ID_ASH_REBOOT = 5025
+    const val NOTIFICATION_ID_ASH_TRIAL = 5026
 
     fun init(context: Context) {
         val channels =
@@ -39,6 +43,13 @@ object NotificationUtils {
                     context.getString(R.string.notification_name_module),
                     NotificationManager.IMPORTANCE_HIGH,
                 ),
+                NotificationChannel(
+                    CHANNEL_ID_ASH_RECOVERY,
+                    context.getString(R.string.notification_name_ash_recovery),
+                    NotificationManager.IMPORTANCE_HIGH,
+                ).apply {
+                    description = context.getString(R.string.notification_description_ash_recovery)
+                },
             )
 
         NotificationManagerCompat.from(context).apply {

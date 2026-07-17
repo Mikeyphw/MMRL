@@ -3,6 +3,7 @@ package com.dergoogler.mmrl
 import android.app.Application
 import android.content.Context
 import com.dergoogler.mmrl.app.utils.NotificationUtils
+import com.dergoogler.mmrl.ash.automation.AshAutomationScheduler
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.dergoogler.mmrl.service.ModuleService
@@ -39,6 +40,11 @@ class App : Application() {
             if (preferences.moduleServiceEnabled) {
                 runCatching { ModuleService.start(this@App, preferences.checkModuleUpdatesInterval) }
             }
+            AshAutomationScheduler.synchronize(
+                context = this@App,
+                enabled = preferences.ashHealthChecksEnabled,
+                intervalHours = preferences.ashHealthCheckIntervalHours,
+            )
         }
     }
 

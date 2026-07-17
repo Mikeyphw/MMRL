@@ -47,9 +47,11 @@ import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurNavigateUpToolbar
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
+import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.providable.LocalNavController
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
+import com.dergoogler.mmrl.viewmodel.SettingsViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
@@ -73,7 +75,9 @@ private val recommendedDefaults =
 @Composable
 fun BootProtectionScreen(viewModel: AshViewModel = hiltViewModel()) =
     LocalScreenProvider {
+        val settingsViewModel: SettingsViewModel = hiltViewModel()
         val state by viewModel.state.collectAsStateWithLifecycle()
+        val preferences = LocalUserPreferences.current
         val navController = LocalNavController.current
         val snackbar = LocalSnackbarHost.current
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -102,6 +106,17 @@ fun BootProtectionScreen(viewModel: AshViewModel = hiltViewModel()) =
                 readOnly = state.readOnly,
                 lifecycleText = state.lifecycle.compatibilityMessage,
                 loading = state.loading,
+                healthChecksEnabled = preferences.ashHealthChecksEnabled,
+                healthCheckIntervalHours = preferences.ashHealthCheckIntervalHours,
+                incidentNotifications = preferences.ashIncidentNotifications,
+                rebootReminders = preferences.ashRebootReminders,
+                restorationReminders = preferences.ashRestorationReminders,
+                onHealthChecksEnabled = settingsViewModel::setAshHealthChecksEnabled,
+                onHealthCheckInterval = settingsViewModel::setAshHealthCheckIntervalHours,
+                onIncidentNotifications = settingsViewModel::setAshIncidentNotifications,
+                onRebootReminders = settingsViewModel::setAshRebootReminders,
+                onRestorationReminders = settingsViewModel::setAshRestorationReminders,
+                onCheckNow = settingsViewModel::runAshHealthCheckNow,
                 onSave = viewModel::setProtectionSettings,
                 onDiscardPending = viewModel::discardPending,
                 modifier =
@@ -120,6 +135,17 @@ private fun BootProtectionContent(
     readOnly: Boolean,
     lifecycleText: String,
     loading: Boolean,
+    healthChecksEnabled: Boolean,
+    healthCheckIntervalHours: Long,
+    incidentNotifications: Boolean,
+    rebootReminders: Boolean,
+    restorationReminders: Boolean,
+    onHealthChecksEnabled: (Boolean) -> Unit,
+    onHealthCheckInterval: (Long) -> Unit,
+    onIncidentNotifications: (Boolean) -> Unit,
+    onRebootReminders: (Boolean) -> Unit,
+    onRestorationReminders: (Boolean) -> Unit,
+    onCheckNow: () -> Unit,
     onSave: (Map<String, String>) -> Unit,
     onDiscardPending: () -> Unit,
     modifier: Modifier = Modifier,
@@ -158,6 +184,52 @@ private fun BootProtectionContent(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+
+        ProtectionSection("Proactive recovery") {
+            BooleanSetting(
+                title = "Background health checks",
+                checked = healthChecksEnabled,
+                enabled = true,
+                onCheckedChange = onHealthChecksEnabled,
+            )
+            Text(
+                "Checks reuse MMRL's typed AshReXcue snapshot and only notify when recovery action is required.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text("Check interval", fontWeight = FontWeight.SemiBold)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(1L, 3L, 6L, 12L, 24L).forEach { hours ->
+                    FilterChip(
+                        selected = healthCheckIntervalHours == hours,
+                        onClick = { onHealthCheckInterval(hours) },
+                        enabled = healthChecksEnabled,
+                        label = { Text(if (hours == 1L) "1 hour" else "$hours hours") },
+                    )
+                }
+            }
+            BooleanSetting(
+                title = "Recovery incident alerts",
+                checked = incidentNotifications,
+                enabled = healthChecksEnabled,
+                onCheckedChange = onIncidentNotifications,
+            )
+            BooleanSetting(
+                title = "Reboot-state reminders",
+                checked = rebootReminders,
+                enabled = healthChecksEnabled,
+                onCheckedChange = onRebootReminders,
+            )
+            BooleanSetting(
+                title = "Restoration-trial reminders",
+                checked = restorationReminders,
+                enabled = healthChecksEnabled,
+                onCheckedChange = onRestorationReminders,
+            )
+            OutlinedButton(onClick = onCheckNow, enabled = healthChecksEnabled) {
+                Text("Check now")
+            }
         }
 
         if (pending.isNotEmpty()) {

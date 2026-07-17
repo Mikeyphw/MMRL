@@ -63,6 +63,7 @@ import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.AshScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModuleUpdatesScreenDestination
 import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
 import dev.chrisbanes.haze.hazeSource
@@ -72,8 +73,10 @@ import dev.chrisbanes.haze.rememberHazeState
 fun MainScreen(
     openActivityOnLaunch: Boolean = false,
     openUpdatesOnLaunch: Boolean = false,
+    openRecoveryOnLaunch: Boolean = false,
     onActivityOpened: () -> Unit = {},
     onUpdatesOpened: () -> Unit = {},
+    onRecoveryOpened: () -> Unit = {},
 ) {
 //    val width = currentScreenWidth()
     val userPrefs = LocalUserPreferences.current
@@ -101,6 +104,15 @@ fun MainScreen(
                 launchSingleTop = true
             }
             onUpdatesOpened()
+        }
+    }
+
+    LaunchedEffect(openRecoveryOnLaunch) {
+        if (openRecoveryOnLaunch) {
+            navigator.navigate(AshScreenDestination) {
+                launchSingleTop = true
+            }
+            onRecoveryOpened()
         }
     }
 

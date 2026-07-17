@@ -2,6 +2,7 @@ package com.dergoogler.mmrl.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
+import com.dergoogler.mmrl.ash.automation.AshAutomationScheduler
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.datastore.model.DarkMode
 import com.dergoogler.mmrl.datastore.model.Homepage
@@ -346,6 +347,43 @@ class SettingsViewModel
             viewModelScope.launch {
                 userPreferencesRepository.setProviderServiceEnabled(value)
             }
+        }
+
+        fun setAshHealthChecksEnabled(value: Boolean) = viewModelScope.launch {
+            userPreferencesRepository.setAshHealthChecksEnabled(value)
+            val preferences = userPreferencesRepository.data.first()
+            AshAutomationScheduler.synchronize(context, value, preferences.ashHealthCheckIntervalHours)
+        }
+
+        fun setAshHealthCheckIntervalHours(value: Long) = viewModelScope.launch {
+            userPreferencesRepository.setAshHealthCheckIntervalHours(value)
+            val preferences = userPreferencesRepository.data.first()
+            AshAutomationScheduler.synchronize(context, preferences.ashHealthChecksEnabled, value)
+        }
+
+        fun setAshIncidentNotifications(value: Boolean) = viewModelScope.launch {
+            userPreferencesRepository.setAshIncidentNotifications(value)
+            if (userPreferencesRepository.data.first().ashHealthChecksEnabled) {
+                AshAutomationScheduler.enqueueImmediate(context, "incident_alerts_changed")
+            }
+        }
+
+        fun setAshRebootReminders(value: Boolean) = viewModelScope.launch {
+            userPreferencesRepository.setAshRebootReminders(value)
+            if (userPreferencesRepository.data.first().ashHealthChecksEnabled) {
+                AshAutomationScheduler.enqueueImmediate(context, "reboot_reminders_changed")
+            }
+        }
+
+        fun setAshRestorationReminders(value: Boolean) = viewModelScope.launch {
+            userPreferencesRepository.setAshRestorationReminders(value)
+            if (userPreferencesRepository.data.first().ashHealthChecksEnabled) {
+                AshAutomationScheduler.enqueueImmediate(context, "restoration_reminders_changed")
+            }
+        }
+
+        fun runAshHealthCheckNow() {
+            AshAutomationScheduler.enqueueImmediate(context, "manual_settings_check")
         }
 
         fun setTaskerIntegrationEnabled(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerIntegrationEnabled(value) }

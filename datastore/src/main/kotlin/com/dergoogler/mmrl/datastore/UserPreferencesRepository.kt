@@ -134,4 +134,10 @@ class UserPreferencesRepository
         suspend fun setTaskerAllowReviewedInstalls(value: Boolean) = userPreferencesDataSource.setTaskerAllowReviewedInstalls(value)
         suspend fun setTaskerApprovalPolicy(value: com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy) = userPreferencesDataSource.setTaskerApprovalPolicy(value)
         suspend fun setTaskerAllowedModules(value: Set<String>) = userPreferencesDataSource.setTaskerAllowedModules(value)
+
+        suspend fun setAshHealthChecksEnabled(value: Boolean) = userPreferencesDataSource.setAshHealthChecksEnabled(value)
+        suspend fun setAshHealthCheckIntervalHours(value: Long) = userPreferencesDataSource.setAshHealthCheckIntervalHours(value)
+        suspend fun setAshIncidentNotifications(value: Boolean) = userPreferencesDataSource.setAshIncidentNotifications(value)
+        suspend fun setAshRebootReminders(value: Boolean) = userPreferencesDataSource.setAshRebootReminders(value)
+        suspend fun setAshRestorationReminders(value: Boolean) = userPreferencesDataSource.setAshRestorationReminders(value)
 }
