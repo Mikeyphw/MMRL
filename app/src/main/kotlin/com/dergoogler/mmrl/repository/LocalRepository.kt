@@ -9,6 +9,7 @@ import com.dergoogler.mmrl.database.dao.VersionDao
 import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.database.entity.VersionItemEntity
 import com.dergoogler.mmrl.database.entity.local.LocalModuleEntity
+import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.database.entity.local.LocalModuleUpdatable
 import com.dergoogler.mmrl.database.entity.online.BlacklistEntity
 import com.dergoogler.mmrl.database.entity.online.OnlineModuleEntity
@@ -118,11 +119,25 @@ class LocalRepository
                     }
             }
 
+        fun getLocalSourcesAsFlow() = localDao.getSourceAllAsFlow()
+
+        suspend fun getLocalSourceByIdOrNull(id: String) =
+            withContext(Dispatchers.IO) {
+                localDao.getSourceByIdOrNull(ModuleIdentity.normalize(id))
+            }
+
+        suspend fun insertLocalSource(value: LocalModuleSource) =
+            withContext(Dispatchers.IO) {
+                localDao.insertSource(value.copy(id = ModuleIdentity.normalize(value.id)))
+            }
+
         suspend fun clearUpdatableTag(new: List<String>) =
             withContext(Dispatchers.IO) {
                 val retained = new.map(ModuleIdentity::normalize).toSet()
                 val removed = localDao.getUpdatableTagAll().filter { ModuleIdentity.normalize(it.id) !in retained }
                 localDao.deleteUpdatableTag(removed)
+                val removedSources = localDao.getSourceAll().filter { ModuleIdentity.normalize(it.id) !in retained }
+                localDao.deleteSource(removedSources)
             }
 
         fun getRepoAllAsFlow() = repoDao.getAllAsFlow()

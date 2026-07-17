@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.dergoogler.mmrl.database.entity.local.LocalModuleEntity
+import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.database.entity.local.LocalModuleUpdatable
 import kotlinx.coroutines.flow.Flow
 
@@ -46,4 +47,19 @@ interface LocalDao {
 
     @Delete
     suspend fun deleteUpdatableTag(values: List<LocalModuleUpdatable>)
+
+    @Query("SELECT * FROM localModules_source")
+    suspend fun getSourceAll(): List<LocalModuleSource>
+
+    @Query("SELECT * FROM localModules_source")
+    fun getSourceAllAsFlow(): Flow<List<LocalModuleSource>>
+
+    @Query("SELECT * FROM localModules_source WHERE id = :id COLLATE NOCASE LIMIT 1")
+    suspend fun getSourceByIdOrNull(id: String): LocalModuleSource?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSource(value: LocalModuleSource)
+
+    @Delete
+    suspend fun deleteSource(values: List<LocalModuleSource>)
 }

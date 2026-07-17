@@ -11,8 +11,11 @@ import com.dergoogler.mmrl.compat.MediaStoreCompat.materializeFileForUri
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
+import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
+import com.dergoogler.mmrl.database.entity.Repo.Companion.toRepo
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.ext.nullable
+import com.dergoogler.mmrl.github.GitHubSourceSpec
 import com.dergoogler.mmrl.installer.ArchiveInspector
 import com.dergoogler.mmrl.installer.UpdateRollbackStore
 import com.dergoogler.mmrl.ext.tmpDir
@@ -401,6 +404,9 @@ constructor(
             val success = result.isSuccess
             if (success) {
                 module.nullable(::insertLocal)
+                if (module != null) {
+                    recordGitHubInstallSource(module, parentOperationId)
+                }
                 operationHistoryRepository.succeed(
                     id = historyId,
                     summary = when (kind) {
@@ -464,6 +470,42 @@ constructor(
         withContext(Dispatchers.IO) {
             localRepository.insertLocal(module)
         }
+    }
+
+    private suspend fun recordGitHubInstallSource(
+        module: LocalModule,
+        parentOperationId: String?,
+    ) {
+        val parentId = parentOperationId ?: return
+        val sourceUrl = operationHistoryRepository.getById(parentId)
+            ?.sourceUrl
+            ?.takeIf(String::isNotBlank)
+            ?: return
+        val source = GitHubSourceSpec.fromDownloadUrl(sourceUrl) ?: return
+        val repoUrl = source.sourceUrl
+        localRepository.insertRepo(repoUrl.toRepo())
+        modulesRepository.getRepo(repoUrl.toRepo())
+
+        val versions = localRepository.getVersionByIdAndUrl(module.id.id, repoUrl)
+        val installedVersion =
+            versions.firstOrNull { it.zipUrl == sourceUrl }
+                ?: versions.maxByOrNull { it.versionCode }
+
+        localRepository.insertLocalSource(
+            LocalModuleSource(
+                id = module.id.id,
+                repoUrl = repoUrl,
+                mode = source.mode.name,
+                installedVersion = installedVersion?.version ?: module.version,
+                installedVersionCode = installedVersion?.versionCode ?: module.versionCode,
+                sourceUrl = sourceUrl,
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
+        operationHistoryRepository.appendLog(
+            parentId,
+            "Linked ${module.id.id} to GitHub ${source.mode.name.lowercase()} source: $repoUrl",
+        )
     }
 
     private fun deleteBySu(zipPath: String) {

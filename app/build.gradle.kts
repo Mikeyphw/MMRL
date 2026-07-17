@@ -1,6 +1,7 @@
 
 
 import com.android.build.api.variant.impl.VariantOutputImpl
+import org.gradle.api.tasks.bundling.Zip
 
 plugins {
     alias(libs.plugins.self.application)
@@ -136,8 +137,13 @@ android {
     }
 
     buildFeatures {
+        aidl = true
         buildConfig = true
         resValues = true
+    }
+
+    sourceSets.getByName("main") {
+        assets.srcDir(layout.buildDirectory.dir("generated/assets/ash-module").get().asFile)
     }
 
     compileOptions {
@@ -171,6 +177,18 @@ android {
         includeInBundle = false
     }
 
+}
+
+val packageAshReXcueModule by tasks.registering(Zip::class) {
+    archiveFileName.set("AshReXcue_Bootloop_Protector.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("generated/assets/ash-module"))
+    from(layout.projectDirectory.dir("src/main/ash-module"))
+}
+
+tasks.configureEach {
+    if (name.startsWith("merge") && name.endsWith("Assets")) {
+        dependsOn(packageAshReXcueModule)
+    }
 }
 
 

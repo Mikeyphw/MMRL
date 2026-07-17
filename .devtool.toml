@@ -1,0 +1,39 @@
+[project]
+kind = "android"
+default_target = "mmrl_android"
+
+[execution]
+environment = "auto"
+chroot_name = "androidos"
+device_serial = ""
+
+[targets.mmrl_android]
+type = "android"
+root = "."
+execution_environment = "auto"
+chroot_name = "androidos"
+
+[targets.mmrl_android.android]
+variant = "officialDebug"
+aapt2_provider = "auto"
+instrumentation = "never"
+prefer_native_termux = false
+
+[targets.mmrl_android.gradle]
+version = "9.5.0"
+max_workers = 4
+structured_events = false
+no_daemon = false
+daemon_idle_timeout_ms = 900000
+fail_fast = true
+offline = false
+
+[targets.mmrl_android.tasks]
+restore = ["help"]
+build = [":app:assembleOfficialDebug"]
+test = [":app:testOfficialDebugUnitTest"]
+lint = [":app:lintOfficialDebug"]
+clean = ["clean"]
+
+[targets.mmrl_android.artifacts]
+required = true

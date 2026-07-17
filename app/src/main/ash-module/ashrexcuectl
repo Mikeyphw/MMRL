@@ -1,0 +1,161 @@
+#!/system/bin/sh
+
+# Typed control surface for the native companion app.
+# This script intentionally has no generic shell/exec command.
+MODPATH="${0%/*}"
+. "$MODPATH/utils.sh" >/dev/null 2>&1 || {
+  printf '{"ok":false,"message":"failed to load AshReXcue runtime"}\n'
+  exit 1
+}
+initialize_storage >/dev/null 2>&1 || true
+JQ_BIN="$JQ"
+
+single_line() {
+  printf '%s' "$1" | tr '\r\n' '  ' | sed 's/[[:space:]][[:space:]]*/ /g; s/^ //; s/ $//'
+}
+
+json_result() {
+  local ok="$1" message="$2" path="$3"
+  message=$(single_line "$message")
+  if [ -x "$JQ_BIN" ]; then
+    if [ -n "$path" ]; then
+      "$JQ_BIN" -cn --argjson ok "$ok" --arg message "$message" --arg path "$path" '{ok:$ok,message:$message,path:$path}'
+    else
+      "$JQ_BIN" -cn --argjson ok "$ok" --arg message "$message" '{ok:$ok,message:$message}'
+    fi
+  else
+    printf '{"ok":%s,"message":"%s"' "$ok" "$(json_escape "$message")"
+    [ -n "$path" ] && printf ',"path":"%s"' "$(json_escape "$path")"
+    printf '}\n'
+  fi
+}
+
+json_error() { json_result false "$1" ""; }
+json_success() { json_result true "$1" "$2"; }
+
+capture_mutation() {
+  local out_file rc message
+  out_file="$ASHLOOPER_DIR/.ctl-out.$$"
+  "$@" >"$out_file" 2>&1
+  rc=$?
+  message=$(cat "$out_file" 2>/dev/null)
+  rm -f "$out_file"
+  [ -n "$message" ] || message="Operation completed."
+  if [ "$rc" -eq 0 ]; then json_success "$message"; else json_error "$message"; fi
+  return "$rc"
+}
+
+modules_json() {
+  create_mod_list >/dev/null 2>&1 || { json_error "Unable to build module inventory."; return 1; }
+  [ -x "$JQ_BIN" ] || { printf '{"items":[]}\n'; return 0; }
+  "$JQ_BIN" -c '{items: map({folder,id,name,version,versionCode,enabled:(.status=="enabled"),quarantined,trust})}' "$TMP_FILE"
+}
+
+quarantine_json() {
+  local first folder id name trust rescue_id disabled_at exists disable_present
+  first=1
+  printf '{"items":['
+  while IFS="$(printf '\t')" read -r folder id name trust rescue_id disabled_at exists disable_present; do
+    [ -n "$folder" ] || continue
+    [ "$first" -eq 0 ] && printf ','
+    printf '{"folder":"%s","id":"%s","name":"%s","trust":"%s","rescueId":"%s","disabledAt":%s,"exists":%s,"disablePresent":%s}' \
+      "$(json_escape "$folder")" "$(json_escape "$id")" "$(json_escape "$name")" "$(json_escape "$trust")" "$(json_escape "$rescue_id")" "${disabled_at:-0}" "${exists:-false}" "${disable_present:-false}"
+    first=0
+  done <<EOF_Q
+$(list_quarantined_modules_tsv)
+EOF_Q
+  printf ']}\n'
+}
+
+settings_json() {
+  local keys first key pending
+  keys='mode threshold timeout timeout_min timeout_max stability_time failure_threshold check_interval restart_limit boot_ready_consecutive extra_stability systemui_process monitored_processes missing_process_action boot_animation_required ce_storage_required first_boot_grace ota_grace_time'
+  first=1
+  printf '{"items":['
+  for key in $keys; do
+    [ "$first" -eq 0 ] && printf ','
+    printf '{"key":"%s","value":"%s","editable":true}' "$(json_escape "$key")" "$(json_escape "$(get_prop "$key")")"
+    first=0
+  done
+  printf '],"pending":'
+  if [ -x "$JQ_BIN" ]; then
+    pending=$(pending_settings_json 2>/dev/null)
+    printf '%s' "$pending" | "$JQ_BIN" -c '.items // []' 2>/dev/null || printf '[]'
+  else
+    printf '[]'
+  fi
+  printf '}\n'
+}
+
+activity_json() {
+  local limit tmp id timestamp result mode count reason
+  limit="${1:-100}"
+  case "$limit" in ''|*[!0-9]*) limit=100 ;; esac
+  [ "$limit" -gt 200 ] && limit=200
+  [ "$limit" -lt 1 ] && limit=1
+  tmp="$ASHLOOPER_DIR/.activity.$$"
+  : > "$tmp"
+  if [ -x "$JQ_BIN" ]; then
+    rescue_history_json 200 0 all all "" | "$JQ_BIN" -c '.items[] | {id:.rescueId,timestamp:(.createdAt//0),type:"rescue",title:("Rescue · "+(.stage//"unknown")),subtitle:(.reason//""),status:(.status//"unknown"),details:(([.modules[]? | ((.name//.id//.folder)+" ["+(.folder//"")+"]")] | join("\n")))}' 2>/dev/null >> "$tmp"
+  fi
+  while IFS="$(printf '\t')" read -r id timestamp result mode count reason; do
+    [ -n "$id" ] || continue
+    printf '{"id":"%s","timestamp":%s,"type":"restoration","title":"Restoration · %s","subtitle":"%s module(s) · %s","status":"%s","details":"%s"}\n' \
+      "$(json_escape "$id")" "${timestamp:-0}" "$(json_escape "$mode")" "${count:-0}" "$(json_escape "$reason")" "$(json_escape "$result")" "$(json_escape "$reason")"
+  done <<EOF_R >> "$tmp"
+$(list_restore_history_tsv 200)
+EOF_R
+  if [ -x "$JQ_BIN" ]; then
+    "$JQ_BIN" -s --argjson limit "$limit" '{items:(sort_by(.timestamp)|reverse|.[0:$limit])}' "$tmp"
+  else
+    printf '{"items":[]}\n'
+  fi
+  rm -f "$tmp"
+}
+
+command="$1"
+[ "$#" -gt 0 ] && shift
+case "$command" in
+  status) dashboard_json ;;
+  modules) modules_json ;;
+  quarantine) quarantine_json ;;
+  activity) activity_json "$1" ;;
+  settings) settings_json ;;
+  pending-settings) pending_settings_json ;;
+  set-setting)
+    [ "$#" -eq 2 ] || { json_error "Expected setting key and value."; exit 2; }
+    capture_mutation settings_set "$1" "$2"
+    ;;
+  set-settings)
+    [ "$#" -gt 0 ] && [ $(( $# % 2 )) -eq 0 ] || { json_error "Expected one or more setting key/value pairs."; exit 2; }
+    capture_mutation settings_batch_set "$@"
+    ;;
+  set-trust)
+    [ "$#" -eq 2 ] || { json_error "Expected module folder and trust category."; exit 2; }
+    case "$1" in ''|*[!A-Za-z0-9._-]*) json_error "Invalid module folder."; exit 2 ;; esac
+    case "$2" in protected|trusted|normal|suspect) ;; *) json_error "Invalid trust category."; exit 2 ;; esac
+    capture_mutation set_module_trust "$2" "$1"
+    ;;
+  restore)
+    mode="$1"; value="$2"
+    case "$mode" in
+      one)
+        case "$value" in ''|*[!A-Za-z0-9._-]*) json_error "A valid module folder is required."; exit 2 ;; esac
+        capture_mutation restore_quarantined_modules individual "$value"
+        ;;
+      half|all) capture_mutation restore_quarantined_modules "$mode" "" ;;
+      *) json_error "Invalid restore mode."; exit 2 ;;
+    esac
+    ;;
+  complete-trial) capture_mutation complete_restore_trial ;;
+  rollback-trial) capture_mutation rollback_restore_trial "rolled back from companion app" ;;
+  discard-pending-settings) capture_mutation discard_pending_settings ;;
+  diagnostic-export)
+    output=$(create_diagnostic_export 2>&1); rc=$?
+    path=$(printf '%s\n' "$output" | sed -n 's/^Diagnostic export: //p' | tail -n 1)
+    [ -n "$path" ] || path=$(list_diagnostic_exports_tsv 1 | cut -f1)
+    if [ "$rc" -eq 0 ]; then json_success "${output:-Diagnostic export created.}" "$path"; else json_error "${output:-Diagnostic export failed.}"; fi
+    exit "$rc"
+    ;;
+  *) json_error "Unsupported command."; exit 2 ;;
+esac

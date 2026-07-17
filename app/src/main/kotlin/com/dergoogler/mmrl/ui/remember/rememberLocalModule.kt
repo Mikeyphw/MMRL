@@ -136,15 +136,18 @@ fun rememberUpdatableModuleCount(): State<Int> {
 
             for (module in updatableModules) {
                 val id = module.id.toString()
+                val source = localRepository.getLocalSourceByIdOrNull(id)
 
                 val updateVersionItem =
                     if (module.updateJson.isNotBlank()) {
                         UpdateJson.loadToVersionItem(module.updateJson)
+                    } else if (source != null) {
+                        localRepository.getVersionByIdAndUrl(id, source.repoUrl).maxByOrNull { it.versionCode }
                     } else {
                         localRepository.getVersionById(id).firstOrNull()
                     }
 
-                val installedVersionCode = module.versionCode
+                val installedVersionCode = source?.installedVersionCode ?: module.versionCode
                 val updateVersionCode = updateVersionItem?.versionCode ?: -1
 
                 if (updateVersionCode > installedVersionCode) {

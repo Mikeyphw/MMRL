@@ -18,6 +18,7 @@ import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.database.entity.VersionItemEntity
 import com.dergoogler.mmrl.database.entity.history.OperationHistoryEntity
 import com.dergoogler.mmrl.database.entity.local.LocalModuleEntity
+import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.database.entity.local.LocalModuleUpdatable
 import com.dergoogler.mmrl.database.entity.online.BlacklistEntity
 import com.dergoogler.mmrl.database.entity.online.OnlineModuleEntity
@@ -27,13 +28,14 @@ import dev.dergoogler.mmrl.compat.Converters
     entities = [
         Repo::class,
         LocalModuleUpdatable::class,
+        LocalModuleSource::class,
         OnlineModuleEntity::class,
         VersionItemEntity::class,
         LocalModuleEntity::class,
         BlacklistEntity::class,
         OperationHistoryEntity::class,
     ],
-    version = 18,
+    version = 19,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -109,6 +111,26 @@ abstract class AppDatabase : RoomDatabase() {
                 }
             }
 
+        private val MIGRATION_18_19 =
+            object : Migration(18, 19) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `localModules_source` (
+                            `id` TEXT NOT NULL,
+                            `repoUrl` TEXT NOT NULL,
+                            `mode` TEXT NOT NULL,
+                            `installedVersion` TEXT NOT NULL,
+                            `installedVersionCode` INTEGER NOT NULL,
+                            `sourceUrl` TEXT NOT NULL,
+                            `updatedAt` INTEGER NOT NULL,
+                            PRIMARY KEY(`id`)
+                        )
+                        """.trimIndent(),
+                    )
+                }
+            }
+
         /**
          * Existing fallback behavior is retained for unsupported legacy schemas.
          * Versions 15 to 16, 16 to 17, and 17 to 18 are migrated explicitly so operation history
@@ -121,7 +143,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context,
                     AppDatabase::class.java,
                     "mmrl_v2",
-                ).addMigrations(MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
+                ).addMigrations(MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19)
                 .fallbackToDestructiveMigration()
                 .build()
     }

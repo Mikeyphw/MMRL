@@ -210,6 +210,10 @@
             android:name="${__packageName__}.service.LogcatService"
             android:exported="false" />
 
+        <service
+            android:name="${__packageName__}.ash.root.AshRootService"
+            android:exported="false" />
+
         <receiver
             android:name="${__packageName__}.receiver.LogcatReceiver"
             android:enabled="true"

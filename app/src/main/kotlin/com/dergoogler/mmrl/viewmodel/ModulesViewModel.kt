@@ -201,9 +201,11 @@ class ModulesViewModel
                 localRepository.getOnlineAllAsFlow(),
                 localRepository.getRepoAllAsFlow(),
                 localRepository.getUpdatableTagsAsFlow(),
-            ) { localModules, onlineModules, repositories, updatableTags ->
+                localRepository.getLocalSourcesAsFlow(),
+            ) { localModules, onlineModules, repositories, updatableTags, localSources ->
                 val repoNames = repositories.associate { it.url to it.name }
                 val updateTracking = updatableTags.associate { ModuleIdentity.normalize(it.id) to it.updatable }
+                val sourceTracking = localSources.associateBy { ModuleIdentity.normalize(it.id) }
                 val platform = PlatformManager.platform
                 val rootVersion =
                     PlatformManager.get(0) {
@@ -214,21 +216,29 @@ class ModulesViewModel
                     localModules.forEach { local ->
                         val normalizedId = ModuleIdentity.normalize(local.id.id)
                         if (updateTracking[normalizedId] == false) return@forEach
+                        val source = sourceTracking[normalizedId]
 
                         val online =
                             onlineModules
-                                .filter { ModuleIdentity.matches(it.id, local.id.id) }
+                                .filter {
+                                    ModuleIdentity.matches(it.id, local.id.id) &&
+                                        (source == null || it.repoUrl == source.repoUrl)
+                                }
                                 .maxByOrNull { it.versionCode }
 
                         val version =
                             if (local.updateJson.isNotBlank()) {
                                 UpdateJson.loadToVersionItem(local.updateJson)
+                            } else if (source != null) {
+                                online?.versions?.maxByOrNull { it.versionCode }
+                                    ?: localRepository.getVersionByIdAndUrl(local.id.toString(), source.repoUrl).maxByOrNull { it.versionCode }
                             } else {
                                 online?.versions?.maxByOrNull { it.versionCode }
                                     ?: localRepository.getVersionById(local.id.toString()).maxByOrNull { it.versionCode }
                             }
 
-                        if (version == null || version.versionCode <= local.versionCode) return@forEach
+                        val installedVersionCode = source?.installedVersionCode ?: local.versionCode
+                        if (version == null || version.versionCode <= installedVersionCode) return@forEach
 
                         val managerCompatible =
                             online?.manager(platform)?.isCompatible(rootVersion) ?: true
@@ -554,9 +564,16 @@ class ModulesViewModel
                     if (module.updateJson.isNotBlank()) {
                         UpdateJson.loadToVersionItem(module.updateJson)
                     } else {
-                        localRepository
-                            .getVersionById(module.id.toString())
-                            .firstOrNull()
+                        val source = localRepository.getLocalSourceByIdOrNull(module.id.toString())
+                        if (source != null) {
+                            localRepository
+                                .getVersionByIdAndUrl(module.id.toString(), source.repoUrl)
+                                .maxByOrNull { it.versionCode }
+                        } else {
+                            localRepository
+                                .getVersionById(module.id.toString())
+                                .firstOrNull()
+                        }
                     }
 
                 versionItemCache[module.id] = versionItem

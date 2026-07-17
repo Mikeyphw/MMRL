@@ -54,3 +54,14 @@ data class LocalModuleUpdatable(
     @PrimaryKey val id: String,
     val updatable: Boolean,
 )
+
+@Entity(tableName = "localModules_source")
+data class LocalModuleSource(
+    @PrimaryKey val id: String,
+    val repoUrl: String,
+    val mode: String,
+    val installedVersion: String,
+    val installedVersionCode: Int,
+    val sourceUrl: String,
+    val updatedAt: Long,
+)

@@ -87,9 +87,9 @@ internal object RepositorySourceLoader {
         val github = parseGitHubRepository(options.repoUrl)
         val properties =
             if (options.mode == GitHubSourceMode.RELEASE) {
-                resolveModuleProperties(github.baseUrl, candidate.version)
+                resolveModuleProperties(github.baseUrl, candidate.version, githubToken)
             } else {
-                resolveModuleProperties(github.baseUrl, "HEAD")
+                resolveModuleProperties(github.baseUrl, "HEAD", githubToken)
             }
 
         val moduleId =
@@ -108,11 +108,15 @@ internal object RepositorySourceLoader {
                 ?.takeIf(String::isNotBlank)
                 ?: candidate.version
         val moduleVersionCode =
-            properties["versionCode"]
-                ?.trim()
-                ?.toIntOrNull()
-                ?.takeIf { it > 0 }
-                ?: candidate.versionCode
+            if (options.mode == GitHubSourceMode.NIGHTLY) {
+                candidate.versionCode
+            } else {
+                properties["versionCode"]
+                    ?.trim()
+                    ?.toIntOrNull()
+                    ?.takeIf { it > 0 }
+                    ?: candidate.versionCode
+            }
         val moduleAuthor =
             properties["author"]
                 ?.trim()
@@ -337,6 +341,7 @@ internal object RepositorySourceLoader {
     private fun resolveModuleProperties(
         repoUrl: String,
         tag: String,
+        githubToken: String? = null,
     ): Map<String, String> {
         val encodedTag = encodePathSegment(tag)
         val candidates =
@@ -348,7 +353,7 @@ internal object RepositorySourceLoader {
             )
 
         return candidates.firstNotNullOfOrNull { url ->
-            runCatching { parseModuleProperties(fetchText(url)) }.getOrNull()
+            runCatching { parseModuleProperties(fetchText(url, githubToken)) }.getOrNull()
                 ?.takeIf { it.isNotEmpty() }
         }.orEmpty()
     }
@@ -436,8 +441,23 @@ internal object RepositorySourceLoader {
         )
     }
 
-    private fun fetchText(url: String): String {
-        val request = Request.Builder().url(url).build()
+    private fun fetchText(
+        url: String,
+        githubToken: String? = null,
+    ): String {
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .apply {
+                    if (url.contains("github", ignoreCase = true)) {
+                        header("Accept", "application/vnd.github+json")
+                        header("X-GitHub-Api-Version", "2022-11-28")
+                        githubToken?.trim()?.takeIf(String::isNotBlank)?.let {
+                            header("Authorization", "Bearer $it")
+                        }
+                    }
+                }.build()
         return httpClient.newCall(request).execute().use { response ->
             require(response.isSuccessful) { "HTTP ${response.code} while loading $url" }
             response.body?.string() ?: error("Empty response while loading $url")

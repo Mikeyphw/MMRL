@@ -8,6 +8,7 @@ import com.dergoogler.mmrl.platform.ksu.KsuNative
 import com.dergoogler.mmrl.ui.remember.rememberIsRoot
 import com.dergoogler.mmrl.utils.isManager
 import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.AshScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModulesScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.RepositoriesScreenDestination
@@ -58,6 +59,15 @@ enum class MainDestination(
         label = R.string.page_modules,
         icon = R.drawable.keyframes,
         iconFilled = R.drawable.keyframes_filled,
+        requiresRoot = true,
+        requiresKernel = false,
+    ),
+
+    Ash(
+        direction = AshScreenDestination,
+        label = R.string.page_ashrexcue,
+        icon = R.drawable.shield_bolt,
+        iconFilled = R.drawable.shield_filled,
         requiresRoot = true,
         requiresKernel = false,
     ),
