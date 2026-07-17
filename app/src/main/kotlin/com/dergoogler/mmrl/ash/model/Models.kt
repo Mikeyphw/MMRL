@@ -234,10 +234,7 @@ object AshModuleLifecycleResolver {
 
 enum class MainDestination(val label: String, val glyph: String) {
     Status("Status", "S"),
-    Modules("Modules", "M"),
     Recovery("Recovery", "R"),
-    Activity("Activity", "A"),
-    Settings("Settings", "⚙"),
 }
 
 enum class ThemePreset(val label: String) {

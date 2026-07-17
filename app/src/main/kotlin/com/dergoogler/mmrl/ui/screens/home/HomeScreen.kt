@@ -41,6 +41,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.model.WorkingMode.Companion.isNonRoot
 import com.dergoogler.mmrl.datastore.model.WorkingMode.Companion.isRoot
@@ -48,6 +50,7 @@ import com.dergoogler.mmrl.ext.managerVersion
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.nullable
 import com.dergoogler.mmrl.ext.takeTrue
+import com.dergoogler.mmrl.ash.model.protectionSummary
 import com.dergoogler.mmrl.model.online.Changelog
 import com.dergoogler.mmrl.network.runRequest
 import com.dergoogler.mmrl.platform.PlatformManager
@@ -76,6 +79,7 @@ import com.dergoogler.mmrl.ui.remember.rememberLocalAnalytics
 import com.dergoogler.mmrl.ui.remember.seLinuxContext
 import com.dergoogler.mmrl.ui.remember.superUserCount
 import com.dergoogler.mmrl.ui.remember.versionName
+import com.dergoogler.mmrl.ui.screens.home.items.AshProtectionCard
 import com.dergoogler.mmrl.ui.screens.home.items.NonRootItem
 import com.dergoogler.mmrl.ui.screens.home.items.RebootBottomSheet
 import com.dergoogler.mmrl.ui.screens.home.items.RootItem
@@ -83,18 +87,20 @@ import com.dergoogler.mmrl.ui.screens.settings.changelogs.items.ChangelogBottomS
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AboutScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.AshScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ThankYouScreenDestination
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import com.dergoogler.mmrl.viewmodel.HomeViewModel
 
 val listItemContentPaddingValues: PaddingValues = PaddingValues(vertical = 8.dp, horizontal = 25.dp)
 
 @Destination<RootGraph>(start = true)
 @OptIn(ExperimentalComposeApi::class)
 @Composable
-fun HomeScreen() =
+fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) =
     LocalScreenProvider {
         val navigator = LocalDestinationsNavigator.current
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -103,6 +109,8 @@ fun HomeScreen() =
         val browser = LocalUriHandler.current
 
         val analytics by rememberLocalAnalytics()
+        val ashState by viewModel.ashState.collectAsStateWithLifecycle()
+        val ashSummary = ashState.protectionSummary()
 
         var openRebootSheet by remember { mutableStateOf(false) }
         if (openRebootSheet) {
@@ -150,6 +158,14 @@ fun HomeScreen() =
                             NonRootItem(
                                 developerMode = userPreferences.developerMode,
                             )
+                    }
+
+                    if (userPreferences.workingMode.isRoot) {
+                        AshProtectionCard(
+                            summary = ashSummary,
+                            onClick = { navigator.navigate(AshScreenDestination) },
+                            onRefresh = viewModel::refreshAshProtection,
+                        )
                     }
 
                     if (userPreferences.checkAppUpdates) {

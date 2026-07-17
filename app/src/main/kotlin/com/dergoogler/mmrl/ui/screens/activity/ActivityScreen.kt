@@ -256,6 +256,7 @@ private fun ActivityFilters(
                         } else {
                             stringResource(R.string.activity_filter_reboot)
                         }
+                    ActivityFilter.ASHREXCUE -> stringResource(R.string.activity_filter_ashrexcue)
                 }
             FilterChip(
                 selected = selected == filter,
@@ -477,7 +478,11 @@ private fun ActivityDetailsSheet(
         entry.origin?.let { origin ->
             DetailLine(
                 stringResource(R.string.activity_origin),
-                if (origin == "TASKER") stringResource(R.string.activity_source_tasker) else origin,
+                when (origin) {
+                    "TASKER" -> stringResource(R.string.activity_source_tasker)
+                    "ashrexcue" -> "AshReXcue"
+                    else -> origin
+                },
             )
         }
         DetailLine(stringResource(R.string.activity_started), formatDateTime(entry.startedAt))
@@ -549,8 +554,10 @@ private fun ActivityDetailsSheet(
             TextButton(onClick = onShareLog, enabled = entry.technicalLog.isNotBlank()) {
                 Text(stringResource(R.string.activity_share_log))
             }
-            TextButton(onClick = onDelete) {
-                Text(stringResource(R.string.activity_delete_entry), color = MaterialTheme.colorScheme.error)
+            if (entry.origin != "ashrexcue") {
+                TextButton(onClick = onDelete) {
+                    Text(stringResource(R.string.activity_delete_entry), color = MaterialTheme.colorScheme.error)
+                }
             }
         }
 
@@ -642,6 +649,10 @@ private fun OperationHistoryEntity.kindLabel(): String =
         OperationKind.CHECK_UPDATES -> stringResource(R.string.activity_kind_check_updates)
         OperationKind.EXPORT_LOG -> stringResource(R.string.activity_kind_export_log)
         OperationKind.PREPARE_INSTALL -> stringResource(R.string.activity_kind_prepare_install)
+        OperationKind.ASH_RESCUE -> stringResource(R.string.activity_kind_ash_rescue)
+        OperationKind.ASH_RESTORATION -> stringResource(R.string.activity_kind_ash_restoration)
+        OperationKind.ASH_SETTINGS -> stringResource(R.string.activity_kind_ash_settings)
+        OperationKind.ASH_DIAGNOSTICS -> stringResource(R.string.activity_kind_ash_diagnostics)
         null -> kind
     }
 
@@ -659,6 +670,10 @@ private fun OperationHistoryEntity.icon(): Int =
         OperationKind.CHECK_UPDATES -> R.drawable.refresh
         OperationKind.EXPORT_LOG -> R.drawable.logs
         OperationKind.PREPARE_INSTALL -> R.drawable.package_import
+        OperationKind.ASH_RESCUE -> R.drawable.shield_bolt
+        OperationKind.ASH_RESTORATION -> R.drawable.reload
+        OperationKind.ASH_SETTINGS -> R.drawable.settings
+        OperationKind.ASH_DIAGNOSTICS -> R.drawable.logs
         null -> R.drawable.logs
     }
 

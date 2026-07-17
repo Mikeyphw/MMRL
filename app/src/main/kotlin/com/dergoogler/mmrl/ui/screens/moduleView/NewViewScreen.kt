@@ -38,6 +38,7 @@ import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.nullable
 import com.dergoogler.mmrl.ext.systemBarsPaddingEnd
 import com.dergoogler.mmrl.installer.ArchiveInspector
+import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.BulkModule
 import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.VersionItem
@@ -64,6 +65,7 @@ import com.dergoogler.mmrl.ui.screens.moduleView.items.ViewTrackBottomSheet
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalModuleViewDownloader
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalModuleViewModel
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalRequireModules
+import com.dergoogler.mmrl.ui.screens.moduleView.sections.AshReXcueIntegrationCard
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.Header
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.Toolbar
 import com.dergoogler.mmrl.viewmodel.ModuleViewModel
@@ -334,6 +336,9 @@ fun NewViewScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Header()
+                        if (ModuleIdentity.matches(module.id, "AshLooper")) {
+                            AshReXcueIntegrationCard()
+                        }
                         ModuleDecisionSummary()
                         ModuleDetailsTabs()
 

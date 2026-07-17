@@ -55,9 +55,11 @@ import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurSearchToolbar
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
+import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.viewmodel.ModulesViewModel
+import kotlinx.coroutines.flow.collectLatest
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ModuleUpdatesScreenDestination
@@ -75,6 +77,13 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         val query by viewModel.query.collectAsStateWithLifecycle()
         val state by viewModel.screenState.collectAsStateWithLifecycle()
         val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+        val ashState by viewModel.ashState.collectAsStateWithLifecycle()
+        val ashFilter by viewModel.ashFilter.collectAsStateWithLifecycle()
+        val snackbar = LocalSnackbarHost.current
+
+        LaunchedEffect(viewModel) {
+            viewModel.ashMessages.collectLatest(snackbar::showSnackbar)
+        }
 
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
@@ -176,6 +185,9 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                     viewModel = viewModel,
                     onDownload = download,
                     isProviderAlive = viewModel.isProviderAlive,
+                    ashState = ashState,
+                    ashFilter = ashFilter,
+                    onAshFilterSelected = viewModel::setAshFilter,
                 )
             }
         }

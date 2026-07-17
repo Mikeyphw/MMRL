@@ -851,4 +851,12 @@
     <string name="activity_kind_prepare_install">Prepare install</string>
     <string name="activity_approve_tasker">Approve</string>
     <string name="activity_deny_tasker">Deny</string>
+
+    <string name="activity_filter_ashrexcue">AshReXcue</string>
+    <string name="activity_kind_ash_rescue">AshReXcue rescue</string>
+    <string name="activity_kind_ash_restoration">AshReXcue restoration</string>
+    <string name="activity_kind_ash_settings">AshReXcue settings</string>
+    <string name="activity_kind_ash_diagnostics">AshReXcue diagnostics</string>
+    <string name="settings_boot_protection">Boot protection</string>
+    <string name="settings_boot_protection_desc">Configure AshReXcue rescue thresholds, boot signals, and queued changes</string>
 </resources>

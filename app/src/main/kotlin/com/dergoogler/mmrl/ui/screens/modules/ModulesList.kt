@@ -51,7 +51,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.ash.model.AshManagerState
+import com.dergoogler.mmrl.ash.model.AshModuleFilter
+import com.dergoogler.mmrl.ash.model.AshModuleProtection
+import com.dergoogler.mmrl.ash.model.moduleProtections
 import com.dergoogler.mmrl.ext.isPackageInstalled
+import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.InstalledModuleGroupKey
 import com.dergoogler.mmrl.model.local.LocalModule as InstalledModule
 import com.dergoogler.mmrl.model.local.groupInstalledModules
@@ -87,12 +92,17 @@ fun ScaffoldScope.ModulesList(
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
+    ashState: AshManagerState,
+    ashFilter: AshModuleFilter,
+    onAshFilterSelected: (AshModuleFilter) -> Unit,
 ) = Box(
     modifier = Modifier.fillMaxSize(),
 ) {
     val paddingValues = LocalMainScreenInnerPaddings.current
     val layoutDirection = LocalLayoutDirection.current
     val updateMap = remember(updates) { updates.associateBy { it.local.id } }
+    val ashProtectionMap = remember(ashState) { ashState.moduleProtections() }
+    val ashWritable = !ashState.readOnly && ashState.lifecycle.compatible
     val groups =
         remember(list, updateMap) {
             groupInstalledModules(
@@ -125,6 +135,16 @@ fun ScaffoldScope.ModulesList(
                 )
             }
 
+            if (ashState.snapshot != null) {
+                item(key = "ash_filters") {
+                    AshProtectionFilters(
+                        selected = ashFilter,
+                        protections = ashProtectionMap.values,
+                        onSelected = onAshFilterSelected,
+                    )
+                }
+            }
+
             groups.forEach { group ->
                 item(key = "group_${group.key}") {
                     ModuleGroupHeader(
@@ -138,6 +158,8 @@ fun ScaffoldScope.ModulesList(
                     viewModel = viewModel,
                     isProviderAlive = isProviderAlive,
                     onDownload = onDownload,
+                    ashProtectionMap = ashProtectionMap,
+                    ashWritable = ashWritable,
                 )
             }
         }
@@ -161,6 +183,8 @@ private fun LazyListScope.moduleRows(
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
+    ashProtectionMap: Map<String, AshModuleProtection>,
+    ashWritable: Boolean,
 ) {
     items(
         items = modules,
@@ -173,6 +197,8 @@ private fun LazyListScope.moduleRows(
                 viewModel = viewModel,
                 isProviderAlive = isProviderAlive,
                 onDownload = onDownload,
+                ashProtection = ashProtectionMap[ModuleIdentity.normalize(module.id.id)],
+                ashWritable = ashWritable,
             )
         }
     }
@@ -264,6 +290,44 @@ private fun DeviceStatusHeader(
 }
 
 @Composable
+private fun AshProtectionFilters(
+    selected: AshModuleFilter,
+    protections: Collection<AshModuleProtection>,
+    onSelected: (AshModuleFilter) -> Unit,
+) {
+    val counts =
+        mapOf(
+            AshModuleFilter.Protected to protections.count { it.trust == "protected" },
+            AshModuleFilter.Trusted to protections.count { it.trust == "trusted" },
+            AshModuleFilter.Normal to protections.count { it.trust == "normal" && !it.quarantined },
+            AshModuleFilter.Suspect to protections.count { it.trust == "suspect" },
+            AshModuleFilter.Quarantined to protections.count { it.quarantined },
+        )
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Text(
+            text = "AshReXcue protection",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlowRow(
+            modifier = Modifier.padding(top = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            AshModuleFilter.entries.forEach { filter ->
+                val count = if (filter == AshModuleFilter.All) protections.size else counts[filter] ?: 0
+                androidx.compose.material3.FilterChip(
+                    selected = selected == filter,
+                    onClick = { onSelected(filter) },
+                    label = { Text("${filter.name} ($count)") },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ModuleGroupHeader(
     title: String,
     count: Int,
@@ -295,6 +359,8 @@ private fun CompactInstalledModuleRow(
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
+    ashProtection: AshModuleProtection?,
+    ashWritable: Boolean,
 ) {
     val context = LocalContext.current
     val module = LocalModuleProvider.current
@@ -438,6 +504,19 @@ private fun CompactInstalledModuleRow(
                                 color = MaterialTheme.colorScheme.secondary,
                             )
                         }
+                        ashProtection?.let { protection ->
+                            StatusDot(
+                                text = protection.label,
+                                color =
+                                    when {
+                                        protection.quarantined -> MaterialTheme.colorScheme.error
+                                        protection.trust == "suspect" -> MaterialTheme.colorScheme.error
+                                        protection.trust == "protected" -> MaterialTheme.colorScheme.primary
+                                        protection.trust == "trusted" -> MaterialTheme.colorScheme.tertiary
+                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                            )
+                        }
                         when (module.state) {
                             State.UPDATE ->
                                 StatusDot(
@@ -507,6 +586,43 @@ private fun CompactInstalledModuleRow(
                                     updateSheetOpen = true
                                 },
                             )
+                        }
+                        ashProtection?.let { protection ->
+                            if (protection.quarantined) {
+                                DropdownMenuItem(
+                                    text = { Text("Test restore next boot") },
+                                    leadingIcon = { Icon(painterResource(R.drawable.reload), null) },
+                                    enabled = ashWritable,
+                                    onClick = {
+                                        menuOpen = false
+                                        viewModel.testRestore(module)
+                                    },
+                                )
+                            }
+                            listOf(
+                                "protected" to "Protect with AshReXcue",
+                                "trusted" to "Mark trusted",
+                                "normal" to "Mark normal",
+                                "suspect" to "Mark suspect",
+                            ).forEach { (trust, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    leadingIcon = {
+                                        Icon(
+                                            painterResource(
+                                                if (trust == "suspect") R.drawable.alert_triangle else R.drawable.shield_bolt,
+                                            ),
+                                            null,
+                                        )
+                                    },
+                                    enabled = ashWritable && protection.trust != trust &&
+                                        !(ModuleIdentity.matches(module.id.id, "AshLooper") && trust != "protected"),
+                                    onClick = {
+                                        menuOpen = false
+                                        viewModel.setAshTrust(module, trust)
+                                    },
+                                )
+                            }
                         }
                         DropdownMenuItem(
                             text = {

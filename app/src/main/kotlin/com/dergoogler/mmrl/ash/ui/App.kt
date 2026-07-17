@@ -1,6 +1,5 @@
 package com.dergoogler.mmrl.ash.ui
 
-import android.content.Context
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,10 +24,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -63,22 +59,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.ash.AshUiState
 import com.dergoogler.mmrl.ash.AshViewModel
 import com.dergoogler.mmrl.ash.ConnectionState
-import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycle
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.MainDestination
 import com.dergoogler.mmrl.ash.model.ModuleItem
 import com.dergoogler.mmrl.ash.model.QuarantineItem
-import com.dergoogler.mmrl.ash.model.SettingItem
-import com.dergoogler.mmrl.ash.model.ThemePreset
 import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
 import java.util.Locale
 
@@ -86,29 +78,15 @@ import java.util.Locale
 fun AshReXcueApp(viewModel: AshViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("appearance", Context.MODE_PRIVATE) }
-    var theme by remember {
-        mutableStateOf(
-            runCatching { ThemePreset.valueOf(prefs.getString("theme", ThemePreset.MMRL.name) ?: ThemePreset.MMRL.name) }
-                .getOrDefault(ThemePreset.MMRL),
-        )
-    }
     LaunchedEffect(viewModel, context) {
         viewModel.moduleInstalls.collect { prepared ->
             InstallActivity.start(context = context, uri = prepared.uri)
         }
     }
-    AshReXcueTheme(theme) {
-        MainShell(
-            state = state,
-            viewModel = viewModel,
-            theme = theme,
-            onThemeChanged = {
-                theme = it
-                prefs.edit().putString("theme", it.name).apply()
-            },
-        )
-    }
+    MainShell(
+        state = state,
+        viewModel = viewModel,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,8 +94,6 @@ fun AshReXcueApp(viewModel: AshViewModel) {
 private fun MainShell(
     state: AshUiState,
     viewModel: AshViewModel,
-    theme: ThemePreset,
-    onThemeChanged: (ThemePreset) -> Unit,
 ) {
     var destination by remember { mutableStateOf(MainDestination.Status) }
     val snackbar = remember { SnackbarHostState() }
@@ -217,9 +193,9 @@ private fun MainShell(
                         )
                         is ConnectionState.Cached -> Column(Modifier.fillMaxSize()) {
                             CachedSnapshotBanner(connection.message, state.lastSuccessfulAt)
-                            AshContent(state, destination, viewModel, theme, onThemeChanged)
+                            AshContent(state, destination, viewModel)
                         }
-                        ConnectionState.Ready -> AshContent(state, destination, viewModel, theme, onThemeChanged)
+                        ConnectionState.Ready -> AshContent(state, destination, viewModel)
                     }
                     if (state.loading && (state.connection == ConnectionState.Ready || state.connection is ConnectionState.Cached)) {
                         CircularProgressIndicator(Modifier.align(Alignment.TopEnd).padding(16.dp).size(22.dp), strokeWidth = 2.dp)
@@ -235,8 +211,6 @@ private fun AshContent(
     state: AshUiState,
     destination: MainDestination,
     viewModel: AshViewModel,
-    theme: ThemePreset,
-    onThemeChanged: (ThemePreset) -> Unit,
 ) {
     when (destination) {
         MainDestination.Status -> StatusScreen(
@@ -247,18 +221,9 @@ private fun AshContent(
             viewModel = viewModel,
             onInstallModule = viewModel::prepareModuleInstall,
         )
-        MainDestination.Modules -> ModulesScreen(state.modules, state.readOnly, viewModel)
         MainDestination.Recovery -> RecoveryScreen(
             state.dashboard,
             state.quarantine,
-            state.readOnly,
-            viewModel,
-        )
-        MainDestination.Activity -> ActivityScreen(state.activity)
-        MainDestination.Settings -> SettingsScreen(
-            state.settings,
-            theme,
-            onThemeChanged,
             state.readOnly,
             viewModel,
         )
@@ -615,121 +580,6 @@ private fun RecoveryScreen(dashboard: Dashboard, quarantine: List<QuarantineItem
             dismissButton = { TextButton(onClick = { confirm = null }) { Text("Cancel") } },
         )
     }
-}
-
-@Composable
-private fun ActivityScreen(activity: List<ActivityItem>) {
-    var selected by remember { mutableStateOf<ActivityItem?>(null) }
-    if (activity.isEmpty()) {
-        CenterMessage("No rescue or restoration activity has been recorded yet.")
-    } else {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(activity, key = { "${it.type}:${it.id}:${it.timestamp}" }) { item ->
-                Card(
-                    modifier = Modifier.fillMaxWidth().clickable { selected = item },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f)),
-                ) {
-                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        StatusDot(statusColor(item.status))
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(item.title, fontWeight = FontWeight.Medium)
-                            Text(item.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text(relativeTime(item.timestamp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Text(item.status.title(), style = MaterialTheme.typography.labelMedium, color = statusColor(item.status))
-                    }
-                }
-            }
-        }
-    }
-    selected?.let { item ->
-        AlertDialog(
-            onDismissRequest = { selected = null },
-            title = { Text(item.title) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    KeyValue("Type", item.type.title())
-                    KeyValue("Status", item.status.title())
-                    KeyValue("Time", relativeTime(item.timestamp))
-                    Text(item.details.ifBlank { item.subtitle })
-                }
-            },
-            confirmButton = { TextButton(onClick = { selected = null }) { Text("Close") } },
-        )
-    }
-}
-
-@Composable
-private fun SettingsScreen(settings: List<SettingItem>, theme: ThemePreset, onThemeChanged: (ThemePreset) -> Unit, readOnly: Boolean, viewModel: AshViewModel) {
-    val map = settings.associateBy { it.key }
-    var threshold by remember(settings) { mutableStateOf(map["threshold"]?.queuedValue ?: map["threshold"]?.value ?: "2") }
-    var timeout by remember(settings) { mutableStateOf(map["timeout"]?.queuedValue ?: map["timeout"]?.value ?: "60") }
-    var stability by remember(settings) { mutableStateOf(map["stability_time"]?.queuedValue ?: map["stability_time"]?.value ?: "60") }
-    var extra by remember(settings) { mutableStateOf((map["extra_stability"]?.queuedValue ?: map["extra_stability"]?.value) == "true") }
-    var missingAction by remember(settings) { mutableStateOf(map["missing_process_action"]?.queuedValue ?: map["missing_process_action"]?.value ?: "rescue") }
-    val queued = settings.count { it.queuedValue != null }
-
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp, 12.dp, 16.dp, 40.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionCard("Protection") {
-            NumericSetting("Failed boots before rescue", threshold, enabled = !readOnly) { threshold = it }
-            NumericSetting("Boot timeout (seconds)", timeout, enabled = !readOnly) { timeout = it }
-            NumericSetting("Stability window (seconds)", stability, enabled = !readOnly) { stability = it }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Extra process monitoring", fontWeight = FontWeight.Medium)
-                    Text("Also monitor configured system daemons", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = extra, onCheckedChange = { extra = it }, enabled = !readOnly)
-            }
-            Text("Missing process action", fontWeight = FontWeight.Medium)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("warn", "rescue").forEach { value ->
-                    FilterChip(selected = missingAction == value, onClick = { missingAction = value }, enabled = !readOnly, label = { Text(value.title()) })
-                }
-            }
-            Button(onClick = {
-                viewModel.setProtectionSettings(
-                    linkedMapOf(
-                        "threshold" to threshold,
-                        "timeout" to timeout,
-                        "stability_time" to stability,
-                        "extra_stability" to extra.toString(),
-                        "missing_process_action" to missingAction,
-                    ),
-                )
-            }, enabled = !readOnly) { Text("Save protection settings") }
-            if (queued > 0) {
-                Text("$queued change(s) are queued for the next boot because protection is currently active.", color = MaterialTheme.colorScheme.tertiary)
-                OutlinedButton(onClick = viewModel::discardPending, enabled = !readOnly) { Text("Discard queued changes") }
-            }
-        }
-        SectionCard("Appearance") {
-            Text("Theme palette", fontWeight = FontWeight.Medium)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ThemePreset.entries.forEach { preset ->
-                    FilterChip(selected = theme == preset, onClick = { onThemeChanged(preset) }, label = { Text(preset.label) })
-                }
-            }
-        }
-        SectionCard("Native companion") {
-            Text("This app communicates through the fixed ashrexcuectl root API. The boot protector remains fully autonomous when the app is absent.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedButton(onClick = viewModel::exportDiagnostics, enabled = !readOnly) { Text("Export sanitized diagnostics") }
-        }
-    }
-}
-
-@Composable
-private fun NumericSetting(label: String, value: String, enabled: Boolean, onValueChanged: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { candidate -> if (candidate.all(Char::isDigit)) onValueChanged(candidate) },
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(label) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        enabled = enabled,
-        singleLine = true,
-    )
 }
 
 @Composable

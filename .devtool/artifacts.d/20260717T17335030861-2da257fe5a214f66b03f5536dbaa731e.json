@@ -1,0 +1,41 @@
+{
+  "applied_at": "2026-07-17T17:33:50.308614Z",
+  "artifact": "/mnt/extra/home/Downloads/mmrl_ashrexcue_phase_b_overlay.zip",
+  "artifact_name": "mmrl_ashrexcue_phase_b_overlay.zip",
+  "type": "overlay",
+  "sha256": "a8340e5ff4cd1787b4ea3c0cc23b6b41843c033073a4067952e1b9307393475d",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Integrate AshReXcue into native MMRL surfaces",
+  "commit_hash": "",
+  "file_count": 20,
+  "change_counts": {
+    "add": 6,
+    "modify": 14
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Integrate AshReXcue into native MMRL surfaces"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "2da257fe5a214f66b03f5536dbaa731e"
+}

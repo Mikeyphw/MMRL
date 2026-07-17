@@ -27,10 +27,23 @@ class AshReXcueManager @Inject constructor(
     private val moduleInstaller: AshModuleInstaller,
 ) {
     private val refreshMutex = Mutex()
+    private var lastRefreshCompletedAt = 0L
     private val _state = MutableStateFlow(AshManagerState())
     val state: StateFlow<AshManagerState> = _state.asStateFlow()
 
-    suspend fun refresh(): AshManagerState = refreshMutex.withLock {
+    suspend fun refresh(): AshManagerState = refreshInternal(force = true)
+
+    suspend fun refreshIfStale(maxAgeMillis: Long = 30_000L): AshManagerState =
+        refreshInternal(force = false, maxAgeMillis = maxAgeMillis)
+
+    private suspend fun refreshInternal(
+        force: Boolean,
+        maxAgeMillis: Long = 0L,
+    ): AshManagerState = refreshMutex.withLock {
+        val now = System.currentTimeMillis()
+        if (!force && _state.value.snapshot != null && now - lastRefreshCompletedAt <= maxAgeMillis) {
+            return@withLock _state.value
+        }
         val bundled = runCatching { bundledModuleProvider.metadata() }
             .getOrElse { error ->
                 return@withLock publish(
@@ -169,5 +182,9 @@ class AshReXcueManager @Inject constructor(
         return block()
     }
 
-    private fun publish(state: AshManagerState): AshManagerState = state.also { _state.value = it }
+    private fun publish(state: AshManagerState): AshManagerState =
+        state.also {
+            lastRefreshCompletedAt = System.currentTimeMillis()
+            _state.value = it
+        }
 }

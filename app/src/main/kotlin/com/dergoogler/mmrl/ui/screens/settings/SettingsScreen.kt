@@ -37,6 +37,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AppearanceScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.BlacklistScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.BootProtectionScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ChangelogScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.DeveloperScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.LogScreenDestination
@@ -97,6 +98,12 @@ fun SettingsScreen() {
                     icon = R.drawable.shield,
                     title = R.string.settings_security,
                     desc = R.string.settings_security_desc,
+                )
+                NavButton(
+                    route = BootProtectionScreenDestination,
+                    icon = R.drawable.shield_bolt,
+                    title = R.string.settings_boot_protection,
+                    desc = R.string.settings_boot_protection_desc,
                 )
                 NavButton(
                     route = UpdatesScreenDestination,

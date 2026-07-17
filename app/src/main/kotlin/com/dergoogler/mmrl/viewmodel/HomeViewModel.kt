@@ -2,6 +2,8 @@ package com.dergoogler.mmrl.viewmodel
 
 import android.app.Application
 import android.content.Context
+import androidx.lifecycle.viewModelScope
+import com.dergoogler.mmrl.ash.AshReXcueManager
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.model.local.ModuleAnalytics
 import com.dergoogler.mmrl.platform.PlatformManager
@@ -10,6 +12,7 @@ import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
@@ -21,7 +24,18 @@ class HomeViewModel
         localRepository: LocalRepository,
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
+        private val ashManager: AshReXcueManager,
     ) : MMRLViewModel(application, localRepository, modulesRepository, userPreferencesRepository) {
+        val ashState = ashManager.state
+
+        init {
+            viewModelScope.launch { ashManager.refreshIfStale() }
+        }
+
+        fun refreshAshProtection() {
+            viewModelScope.launch { ashManager.refresh() }
+        }
+
         val versionName: String
             get() =
                 PlatformManager.get("") {

@@ -246,6 +246,129 @@
         }
       },
       "history_id": "4f60c1f774ae4c5d8c6801bcb4d0acc3"
+    },
+    {
+      "applied_at": "2026-07-17T17:13:28.096620Z",
+      "artifact": "/mnt/extra/home/Downloads/mmrl_ashrexcue_phase_b_overlay.zip",
+      "artifact_name": "mmrl_ashrexcue_phase_b_overlay.zip",
+      "type": "overlay",
+      "sha256": "8c81e5c677431e86aab7f2107ae14db588067637e269f8e2f71597b6352dbe8b",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Integrate AshReXcue into native MMRL surfaces",
+      "commit_hash": "",
+      "file_count": 20,
+      "change_counts": {
+        "add": 6,
+        "modify": 14
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Integrate AshReXcue into native MMRL surfaces"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "16fed5228af6440b80841d58e4765b7f"
+    },
+    {
+      "applied_at": "2026-07-17T17:23:52.152056Z",
+      "artifact": "/mnt/extra/home/Downloads/mmrl_ashrexcue_phase_b_overlay(2).zip",
+      "artifact_name": "mmrl_ashrexcue_phase_b_overlay(2).zip",
+      "type": "overlay",
+      "sha256": "a8340e5ff4cd1787b4ea3c0cc23b6b41843c033073a4067952e1b9307393475d",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Integrate AshReXcue into native MMRL surfaces",
+      "commit_hash": "",
+      "file_count": 20,
+      "change_counts": {
+        "add": 6,
+        "modify": 14
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Integrate AshReXcue into native MMRL surfaces"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "ab636c07bb5441d9a51e555b85f91f75"
+    },
+    {
+      "applied_at": "2026-07-17T17:33:50.308614Z",
+      "artifact": "/mnt/extra/home/Downloads/mmrl_ashrexcue_phase_b_overlay.zip",
+      "artifact_name": "mmrl_ashrexcue_phase_b_overlay.zip",
+      "type": "overlay",
+      "sha256": "a8340e5ff4cd1787b4ea3c0cc23b6b41843c033073a4067952e1b9307393475d",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Integrate AshReXcue into native MMRL surfaces",
+      "commit_hash": "",
+      "file_count": 20,
+      "change_counts": {
+        "add": 6,
+        "modify": 14
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Integrate AshReXcue into native MMRL surfaces"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "2da257fe5a214f66b03f5536dbaa731e"
     }
   ]
 }

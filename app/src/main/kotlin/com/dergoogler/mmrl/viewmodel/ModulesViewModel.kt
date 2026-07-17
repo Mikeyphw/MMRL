@@ -17,6 +17,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.ash.AshReXcueManager
+import com.dergoogler.mmrl.ash.model.AshModuleFilter
+import com.dergoogler.mmrl.ash.model.AshModuleProtection
+import com.dergoogler.mmrl.ash.model.matches
+import com.dergoogler.mmrl.ash.model.moduleProtections
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
@@ -42,9 +47,11 @@ import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import com.dergoogler.mmrl.service.DownloadService
 import com.dergoogler.mmrl.utils.Utils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -82,6 +89,7 @@ class ModulesViewModel
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
         operationHistoryRepository: OperationHistoryRepository,
+        private val ashManager: AshReXcueManager,
         application: Application,
     ) : MMRLViewModel(
             application = application,
@@ -90,6 +98,12 @@ class ModulesViewModel
             userPreferencesRepository = userPreferencesRepository,
         ) {
         private val historyRepository = operationHistoryRepository
+
+        val ashState = ashManager.state
+        private val ashFilterFlow = MutableStateFlow(AshModuleFilter.All)
+        val ashFilter = ashFilterFlow.asStateFlow()
+        private val ashMessagesFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
+        val ashMessages = ashMessagesFlow.asSharedFlow()
 
         val moduleCompatibility: ModuleCompatibility
             get() =
@@ -175,6 +189,7 @@ class ModulesViewModel
             providerObserver()
             dataObserver()
             keyObserver()
+            viewModelScope.launch { ashManager.refreshIfStale() }
         }
 
         private fun providerObserver() {
@@ -327,7 +342,10 @@ class ModulesViewModel
             combine(
                 keyFlow,
                 cacheFlow,
-            ) { key, source ->
+                ashFilterFlow,
+                ashManager.state,
+            ) { key, source, ashFilter, ashState ->
+                val protections = ashState.moduleProtections()
                 val newKey =
                     when {
                         key.startsWith("id:", ignoreCase = true) -> key.removePrefix("id:")
@@ -337,22 +355,24 @@ class ModulesViewModel
                     }.trim()
 
                 localFlow.value =
-                    source.filter {
+                    source.filter { module ->
+                        val protection = protections[ModuleIdentity.normalize(module.id.id)]
+                        if (!protection.matches(ashFilter)) return@filter false
                         if (key.isNotBlank() || newKey.isNotBlank()) {
                             when {
                                 key.startsWith("id:", ignoreCase = true) ->
-                                    it.id.equals(newKey, ignoreCase = true)
+                                    module.id.equals(newKey, ignoreCase = true)
 
                                 key.startsWith("name:", ignoreCase = true) ->
-                                    it.name.equals(newKey, ignoreCase = true)
+                                    module.name.equals(newKey, ignoreCase = true)
 
                                 key.startsWith("author:", ignoreCase = true) ->
-                                    it.author.equals(newKey, ignoreCase = true)
+                                    module.author.equals(newKey, ignoreCase = true)
 
                                 else ->
-                                    it.name.contains(key, ignoreCase = true) ||
-                                        it.author.contains(key, ignoreCase = true) ||
-                                        it.description.contains(key, ignoreCase = true)
+                                    module.name.contains(key, ignoreCase = true) ||
+                                        module.author.contains(key, ignoreCase = true) ||
+                                        module.description.contains(key, ignoreCase = true)
                             }
                         } else {
                             true
@@ -402,6 +422,52 @@ class ModulesViewModel
         fun setModulesMenu(value: ModulesMenu) {
             viewModelScope.launch {
                 userPreferencesRepository.setModulesMenu(value)
+            }
+        }
+
+        fun setAshFilter(value: AshModuleFilter) {
+            ashFilterFlow.value = value
+        }
+
+        fun refreshAshProtection() {
+            viewModelScope.launch {
+                runCatching { ashManager.refresh() }
+                    .onFailure { ashMessagesFlow.emit(it.message ?: "Unable to refresh AshReXcue") }
+            }
+        }
+
+        fun ashProtection(module: LocalModule): AshModuleProtection? =
+            ashManager.state.value.moduleProtections()[ModuleIdentity.normalize(module.id.id)]
+
+        fun setAshTrust(module: LocalModule, trust: String) {
+            val protection = ashProtection(module)
+            if (protection == null) {
+                ashMessagesFlow.tryEmit("AshReXcue has not indexed this module yet")
+                return
+            }
+            viewModelScope.launch {
+                runCatching { ashManager.setTrust(protection.folder, trust) }
+                    .onSuccess { result ->
+                        ashMessagesFlow.emit(result.message)
+                        ashManager.refresh()
+                    }
+                    .onFailure { ashMessagesFlow.emit(it.message ?: "Unable to change AshReXcue trust") }
+            }
+        }
+
+        fun testRestore(module: LocalModule) {
+            val protection = ashProtection(module)
+            if (protection?.quarantined != true) {
+                ashMessagesFlow.tryEmit("This module is not quarantined")
+                return
+            }
+            viewModelScope.launch {
+                runCatching { ashManager.restoreOne(protection.folder) }
+                    .onSuccess { result ->
+                        ashMessagesFlow.emit(result.message)
+                        ashManager.refresh()
+                    }
+                    .onFailure { ashMessagesFlow.emit(it.message ?: "Unable to start restoration trial") }
             }
         }
 

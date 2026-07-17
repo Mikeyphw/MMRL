@@ -62,6 +62,10 @@ enum class OperationKind {
     CHECK_UPDATES,
     EXPORT_LOG,
     PREPARE_INSTALL,
+    ASH_RESCUE,
+    ASH_RESTORATION,
+    ASH_SETTINGS,
+    ASH_DIAGNOSTICS,
 }
 
 enum class OperationStatus {
