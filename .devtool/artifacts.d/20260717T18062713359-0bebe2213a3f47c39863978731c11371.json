@@ -1,0 +1,41 @@
+{
+  "applied_at": "2026-07-17T18:06:27.133597Z",
+  "artifact": "/mnt/extra/home/Downloads/mmrl_ashrexcue_phase_c_overlay.zip",
+  "artifact_name": "mmrl_ashrexcue_phase_c_overlay.zip",
+  "type": "overlay",
+  "sha256": "d1117f42c68ab7c6ca8216b86e2cd7d7e9b9daa7ca8dc8e3d3e67b43367cda1a",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Add native AshReXcue Recovery Center",
+  "commit_hash": "",
+  "file_count": 8,
+  "change_counts": {
+    "add": 3,
+    "modify": 5
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add native AshReXcue Recovery Center"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "0bebe2213a3f47c39863978731c11371"
+}

@@ -50,6 +50,7 @@ data class AshUiState(
     val quarantine: List<QuarantineItem> = emptyList(),
     val activity: List<ActivityItem> = emptyList(),
     val settings: List<SettingItem> = emptyList(),
+    val lastOperation: OperationResult? = null,
     val message: String? = null,
 )
 
@@ -175,7 +176,11 @@ class AshViewModel @Inject constructor(
             _state.value = _state.value.copy(loading = true, message = null)
             runCatching { block() }
                 .onSuccess { result ->
-                    _state.value = _state.value.copy(loading = false, message = result.message)
+                    _state.value = _state.value.copy(
+                        loading = false,
+                        lastOperation = result,
+                        message = result.message,
+                    )
                     refreshAll()
                 }
                 .onFailure { error ->

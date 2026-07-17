@@ -65,7 +65,7 @@ internal fun AshReXcueIntegrationCard(viewModel: AshViewModel = hiltViewModel())
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { navigator.navigate(AshScreenDestination) }) {
-                    Text("Open protection")
+                    Text("Open Recovery Center")
                 }
                 if (lifecycle.updateAvailable || lifecycle.state == AshModuleLifecycleState.Outdated) {
                     OutlinedButton(
