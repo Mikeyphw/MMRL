@@ -25,7 +25,6 @@ max_workers = 4
 structured_events = false
 no_daemon = false
 daemon_idle_timeout_ms = 900000
-fail_fast = true
 offline = false
 
 [targets.mmrl_android.tasks]
