@@ -3,6 +3,9 @@ package com.dergoogler.mmrl.ash.data
 import com.dergoogler.mmrl.ash.database.ActivityDao
 import com.dergoogler.mmrl.ash.database.ActivityEntity
 import com.dergoogler.mmrl.ash.model.ActivityItem
+import com.dergoogler.mmrl.ash.model.AshCapabilities
+import com.dergoogler.mmrl.ash.model.AshModuleInstallation
+import com.dergoogler.mmrl.ash.model.AshSnapshot
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.ModuleItem
 import com.dergoogler.mmrl.ash.model.OperationResult
@@ -22,99 +25,57 @@ class AshRepository @Inject constructor(
     private val activityDao: ActivityDao,
 ) {
     suspend fun rootAvailable(): Boolean = rootClient.rootAvailable()
-    suspend fun moduleAvailable(): Boolean = rootClient.moduleAvailable()
-    suspend fun dashboard(): Dashboard = parseDashboard(parse(rootClient.status()))
+    suspend fun moduleStateRaw(): String = rootClient.moduleState()
+    suspend fun snapshotRaw(activityLimit: Int = 150): String = rootClient.snapshot(activityLimit)
 
-    suspend fun modules(): List<ModuleItem> {
-        val items = parse(rootClient.modules()).optJSONArray("items") ?: JSONArray()
-        return buildList {
-            for (index in 0 until items.length()) {
-                val item = items.optJSONObject(index) ?: continue
-                add(
-                    ModuleItem(
-                        folder = item.optString("folder"),
-                        id = item.optString("id"),
-                        name = item.optString("name", item.optString("id")),
-                        version = item.optString("version"),
-                        versionCode = item.optString("versionCode"),
-                        enabled = item.optBoolean("enabled"),
-                        quarantined = item.optBoolean("quarantined"),
-                        trust = item.optString("trust", "normal"),
-                    ),
-                )
-            }
-        }
+    fun parseModuleInstallation(raw: String): AshModuleInstallation {
+        val root = parse(raw)
+        return AshModuleInstallation(
+            installed = root.optBoolean("installed"),
+            active = root.optBoolean("active"),
+            folder = root.optString("folder"),
+            id = root.optString("id"),
+            name = root.optString("name"),
+            version = root.optString("version"),
+            versionCode = root.optInt("versionCode"),
+            source = root.optString("source", "none"),
+            controlAvailable = root.optBoolean("controlAvailable"),
+            disabled = root.optBoolean("disabled"),
+            removalPending = root.optBoolean("removalPending"),
+            updatePending = root.optBoolean("updatePending"),
+        )
     }
 
-    suspend fun quarantine(): List<QuarantineItem> {
-        val items = parse(rootClient.quarantine()).optJSONArray("items") ?: JSONArray()
-        return buildList {
-            for (index in 0 until items.length()) {
-                val item = items.optJSONObject(index) ?: continue
-                add(
-                    QuarantineItem(
-                        folder = item.optString("folder"),
-                        id = item.optString("id"),
-                        name = item.optString("name", item.optString("id")),
-                        trust = item.optString("trust", "normal"),
-                        rescueId = item.optString("rescueId"),
-                        disabledAt = item.optLong("disabledAt"),
-                        exists = item.optBoolean("exists"),
-                        disablePresent = item.optBoolean("disablePresent"),
-                    ),
-                )
-            }
+    suspend fun parseSnapshot(raw: String): AshSnapshot {
+        val root = parse(raw)
+        val schemaVersion = root.optInt("schemaVersion")
+        require(schemaVersion == SUPPORTED_SNAPSHOT_SCHEMA) {
+            "Unsupported AshReXcue snapshot schema $schemaVersion"
         }
-    }
 
-    suspend fun activity(): List<ActivityItem> {
-        val remoteItems = parseActivity(parse(rootClient.activity(150)))
-        val localItems = activityDao.recent(150).map { entity -> entity.toModel() }
-        return (remoteItems + localItems)
-            .distinctBy { it.id }
-            .sortedByDescending { it.timestamp }
-            .take(200)
-    }
+        val capabilities = parseCapabilities(root.optJSONObject("capabilities") ?: JSONObject())
+        val pendingSettings = parsePendingSettings(root.optJSONArray("pendingSettings") ?: JSONArray())
+        val pendingByKey = pendingSettings.associate { item -> item.key to item.value }
+        val remoteActivity = parseActivity(root.optJSONArray("activity") ?: JSONArray())
+        val localActivity = activityDao.recent(150).map { entity -> entity.toModel() }
 
-    suspend fun settings(): List<SettingItem> {
-        val root = parse(rootClient.settings())
-        val queued = mutableMapOf<String, String>()
-        val pending = root.optJSONArray("pending") ?: JSONArray()
-        for (index in 0 until pending.length()) {
-            val item = pending.optJSONObject(index) ?: continue
-            queued[item.optString("key")] = item.optString("value")
-        }
-        val items = root.optJSONArray("items") ?: JSONArray()
-        return buildList {
-            for (index in 0 until items.length()) {
-                val item = items.optJSONObject(index) ?: continue
-                val key = item.optString("key")
-                add(
-                    SettingItem(
-                        key = key,
-                        value = item.optString("value"),
-                        queuedValue = queued[key],
-                        editable = item.optBoolean("editable", true),
-                    ),
-                )
-            }
-        }
-    }
-
-    suspend fun pendingSettings(): List<PendingSetting> {
-        val items = parse(rootClient.pendingSettings()).optJSONArray("items") ?: JSONArray()
-        return buildList {
-            for (index in 0 until items.length()) {
-                val item = items.optJSONObject(index) ?: continue
-                add(
-                    PendingSetting(
-                        key = item.optString("key"),
-                        value = item.optString("value"),
-                        current = item.optString("current"),
-                    ),
-                )
-            }
-        }
+        return AshSnapshot(
+            schemaVersion = schemaVersion,
+            generatedAt = root.optLong("generatedAt"),
+            capabilities = capabilities,
+            dashboard = parseDashboard(root.optJSONObject("dashboard") ?: JSONObject()),
+            modules = parseModules(root.optJSONArray("modules") ?: JSONArray()),
+            quarantine = parseQuarantine(root.optJSONArray("quarantine") ?: JSONArray()),
+            activity = (remoteActivity + localActivity)
+                .distinctBy(ActivityItem::id)
+                .sortedByDescending(ActivityItem::timestamp)
+                .take(200),
+            settings = parseSettings(
+                root.optJSONArray("settings") ?: JSONArray(),
+                pendingByKey,
+            ),
+            pendingSettings = pendingSettings,
+        )
     }
 
     suspend fun setSetting(key: String, value: String): OperationResult =
@@ -127,30 +88,45 @@ class AshRepository @Inject constructor(
             details = values.entries.joinToString("\n") { (key, value) -> "$key=$value" },
         ) { rootClient.setSettings(values) }
 
-
     suspend fun setTrust(folder: String, trust: String): OperationResult =
-        mutation("trust", "Changed module trust", "$folder → $trust") { rootClient.setTrust(folder, trust) }
+        mutation("trust", "Changed module trust", "$folder → $trust") {
+            rootClient.setTrust(folder, trust)
+        }
 
     suspend fun restoreOne(folder: String): OperationResult =
-        mutation("restoration", "Started restoration trial", folder) { rootClient.restoreOne(folder) }
+        mutation("restoration", "Started restoration trial", folder) {
+            rootClient.restoreOne(folder)
+        }
 
     suspend fun restoreHalf(): OperationResult =
-        mutation("restoration", "Started half restoration trial", "Binary-search batch") { rootClient.restoreHalf() }
+        mutation("restoration", "Started half restoration trial", "Binary-search batch") {
+            rootClient.restoreHalf()
+        }
 
     suspend fun restoreAll(): OperationResult =
-        mutation("restoration", "Started full restoration trial", "All quarantined modules") { rootClient.restoreAll() }
+        mutation("restoration", "Started full restoration trial", "All quarantined modules") {
+            rootClient.restoreAll()
+        }
 
     suspend fun completeTrial(): OperationResult =
-        mutation("restoration", "Completed restoration trial", "Restored batch accepted") { rootClient.completeTrial() }
+        mutation("restoration", "Completed restoration trial", "Restored batch accepted") {
+            rootClient.completeTrial()
+        }
 
     suspend fun rollbackTrial(): OperationResult =
-        mutation("restoration", "Rolled back restoration trial", "Restored batch re-quarantined") { rootClient.rollbackTrial() }
+        mutation("restoration", "Rolled back restoration trial", "Restored batch re-quarantined") {
+            rootClient.rollbackTrial()
+        }
 
     suspend fun discardPending(): OperationResult =
-        mutation("settings", "Discarded queued settings", "Pending changes removed") { rootClient.discardPendingSettings() }
+        mutation("settings", "Discarded queued settings", "Pending changes removed") {
+            rootClient.discardPendingSettings()
+        }
 
     suspend fun exportDiagnostics(): OperationResult =
-        mutation("diagnostics", "Exported diagnostics", "Sanitized diagnostic archive") { rootClient.exportDiagnostics() }
+        mutation("diagnostics", "Exported diagnostics", "Sanitized diagnostic archive") {
+            rootClient.exportDiagnostics()
+        }
 
     private suspend fun mutation(
         type: String,
@@ -165,7 +141,7 @@ class AshRepository @Inject constructor(
                 "message",
                 if (root.optBoolean("ok")) "Completed" else "Operation failed",
             ),
-            path = root.optString("path").takeIf { it.isNotBlank() },
+            path = root.optString("path").takeIf(String::isNotBlank),
         )
         val now = System.currentTimeMillis() / 1000L
         activityDao.insert(
@@ -182,7 +158,7 @@ class AshRepository @Inject constructor(
                 },
                 details = buildString {
                     append(details)
-                    result.path?.let { append("\n").append(it) }
+                    result.path?.let { path -> append("\n").append(path) }
                 },
             ),
         )
@@ -199,23 +175,102 @@ class AshRepository @Inject constructor(
         }
     }
 
-    private fun parseActivity(root: JSONObject): List<ActivityItem> {
-        val items = root.optJSONArray("items") ?: JSONArray()
-        return buildList {
-            for (index in 0 until items.length()) {
-                val item = items.optJSONObject(index) ?: continue
-                add(
-                    ActivityItem(
-                        id = item.optString("id"),
-                        timestamp = item.optLong("timestamp"),
-                        type = item.optString("type"),
-                        title = item.optString("title"),
-                        subtitle = item.optString("subtitle"),
-                        status = item.optString("status"),
-                        details = item.optString("details"),
-                    ),
-                )
-            }
+    private fun parseCapabilities(root: JSONObject): AshCapabilities {
+        val features = root.optJSONArray("features") ?: JSONArray()
+        return AshCapabilities(
+            apiVersion = root.optInt("apiVersion"),
+            minimumClientApi = root.optInt("minimumClientApi"),
+            moduleVersion = root.optString("moduleVersion"),
+            moduleVersionCode = root.optInt("moduleVersionCode"),
+            features = buildSet {
+                for (index in 0 until features.length()) {
+                    features.optString(index).takeIf(String::isNotBlank)?.let(::add)
+                }
+            },
+        )
+    }
+
+    private fun parseModules(items: JSONArray): List<ModuleItem> = buildList {
+        for (index in 0 until items.length()) {
+            val item = items.optJSONObject(index) ?: continue
+            add(
+                ModuleItem(
+                    folder = item.optString("folder"),
+                    id = item.optString("id"),
+                    name = item.optString("name", item.optString("id")),
+                    version = item.optString("version"),
+                    versionCode = item.optString("versionCode"),
+                    enabled = item.optBoolean("enabled"),
+                    quarantined = item.optBoolean("quarantined"),
+                    trust = item.optString("trust", "normal"),
+                ),
+            )
+        }
+    }
+
+    private fun parseQuarantine(items: JSONArray): List<QuarantineItem> = buildList {
+        for (index in 0 until items.length()) {
+            val item = items.optJSONObject(index) ?: continue
+            add(
+                QuarantineItem(
+                    folder = item.optString("folder"),
+                    id = item.optString("id"),
+                    name = item.optString("name", item.optString("id")),
+                    trust = item.optString("trust", "normal"),
+                    rescueId = item.optString("rescueId"),
+                    disabledAt = item.optLong("disabledAt"),
+                    exists = item.optBoolean("exists"),
+                    disablePresent = item.optBoolean("disablePresent"),
+                ),
+            )
+        }
+    }
+
+    private fun parseActivity(items: JSONArray): List<ActivityItem> = buildList {
+        for (index in 0 until items.length()) {
+            val item = items.optJSONObject(index) ?: continue
+            add(
+                ActivityItem(
+                    id = item.optString("id"),
+                    timestamp = item.optLong("timestamp"),
+                    type = item.optString("type"),
+                    title = item.optString("title"),
+                    subtitle = item.optString("subtitle"),
+                    status = item.optString("status"),
+                    details = item.optString("details"),
+                ),
+            )
+        }
+    }
+
+    private fun parseSettings(
+        items: JSONArray,
+        pendingByKey: Map<String, String>,
+    ): List<SettingItem> = buildList {
+        for (index in 0 until items.length()) {
+            val item = items.optJSONObject(index) ?: continue
+            val key = item.optString("key")
+            add(
+                SettingItem(
+                    key = key,
+                    value = item.optString("value"),
+                    queuedValue = pendingByKey[key],
+                    editable = item.optBoolean("editable", true),
+                ),
+            )
+        }
+    }
+
+    private fun parsePendingSettings(items: JSONArray): List<PendingSetting> = buildList {
+        for (index in 0 until items.length()) {
+            val item = items.optJSONObject(index) ?: continue
+            add(
+                PendingSetting(
+                    key = item.optString("key"),
+                    value = item.optString("value"),
+                    current = item.optString("current"),
+                ),
+            )
         }
     }
 
@@ -266,4 +321,8 @@ class AshRepository @Inject constructor(
         status = status,
         details = details,
     )
+
+    private companion object {
+        const val SUPPORTED_SNAPSHOT_SCHEMA = 1
+    }
 }

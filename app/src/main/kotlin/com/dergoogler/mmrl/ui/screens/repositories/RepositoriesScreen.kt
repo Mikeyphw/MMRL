@@ -58,9 +58,10 @@ import com.dergoogler.mmrl.ext.isScrollingUp
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.rememberSaveableLazyListState
 import com.dergoogler.mmrl.ext.systemBarsPaddingEnd
-import com.dergoogler.mmrl.model.local.BulkModule
 import com.dergoogler.mmrl.github.GitHubSourceMode
 import com.dergoogler.mmrl.github.GitHubTokenStore
+import com.dergoogler.mmrl.model.local.BulkModule
+import com.dergoogler.mmrl.repository.normalizeRepositoryUrlInput
 import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
 import com.dergoogler.mmrl.ui.animate.slideInTopToBottom
 import com.dergoogler.mmrl.ui.animate.slideOutBottomToTop
@@ -322,11 +323,17 @@ private fun AddDialog(
     onClose: () -> Unit,
     onAdd: (String) -> Unit,
 ) {
-    var domain by remember { mutableStateOf("") }
+    var repositoryUrl by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
 
     val onDone: () -> Unit = {
-        onAdd("https://$domain/")
-        onClose()
+        runCatching { normalizeRepositoryUrlInput(repositoryUrl) }
+            .onSuccess { normalizedUrl ->
+                onAdd(normalizedUrl)
+                onClose()
+            }.onFailure {
+                error = it.message ?: "Invalid repository URL"
+            }
     }
 
     TextFieldDialog(
@@ -335,7 +342,7 @@ private fun AddDialog(
         confirmButton = {
             TextButton(
                 onClick = onDone,
-                enabled = domain.isNotBlank(),
+                enabled = repositoryUrl.isNotBlank(),
             ) {
                 Text(text = stringResource(id = R.string.repo_add_dialog_add))
             }
@@ -351,18 +358,30 @@ private fun AddDialog(
         OutlinedTextField(
             modifier = Modifier.focusRequester(focusRequester),
             textStyle = MaterialTheme.typography.bodyLarge,
-            value = domain,
-            onValueChange = { domain = it },
-            prefix = { Text(text = "https://") },
-            singleLine = false,
+            value = repositoryUrl,
+            onValueChange = {
+                repositoryUrl = it
+                error = null
+            },
+            label = { Text(text = stringResource(id = R.string.repo_add_dialog_url_label)) },
+            placeholder = { Text(text = stringResource(id = R.string.repo_add_dialog_url_placeholder)) },
+            singleLine = true,
+            isError = error != null,
+            supportingText =
+                if (error == null) {
+                    null
+                } else {
+                    { Text(text = error.orEmpty()) }
+                },
             keyboardOptions =
                 KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
+                    capitalization = KeyboardCapitalization.None,
+                    keyboardType = KeyboardType.Uri,
                     imeAction = ImeAction.Done,
                 ),
             keyboardActions =
                 KeyboardActions {
-                    if (domain.isNotBlank()) onDone()
+                    if (repositoryUrl.isNotBlank()) onDone()
                 },
             shape = RoundedCornerShape(15.dp),
         )

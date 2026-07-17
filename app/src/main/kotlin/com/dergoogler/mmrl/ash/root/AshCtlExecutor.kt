@@ -1,31 +1,46 @@
 package com.dergoogler.mmrl.ash.root
 
 import org.json.JSONObject
-import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-internal class AshCtlExecutor {
-    private val modulePaths = listOf(
-        File("/data/adb/modules/AshLooper/ashrexcuectl"),
-        File("/data/adb/modules_update/AshLooper/ashrexcuectl"),
-        File("/data/adb/modules/AshReXcue/ashrexcuectl"),
-        File("/data/adb/modules_update/AshReXcue/ashrexcuectl"),
-        File("/data/adb/modules/ashrexcue/ashrexcuectl"),
-        File("/data/adb/modules_update/ashrexcue/ashrexcuectl"),
-    )
+internal class AshCtlExecutor(
+    private val moduleLocator: AshModuleLocator = AshModuleLocator(),
+) {
+    fun moduleAvailable(): Boolean = moduleLocator.inspect().controlScript != null
 
-    fun moduleAvailable(): Boolean = modulePaths.any { it.isFile && it.canExecute() }
+    fun moduleState(): String {
+        val inspection = moduleLocator.inspect()
+        val properties = inspection.properties
+        return JSONObject()
+            .put("ok", true)
+            .put("installed", inspection.installed)
+            .put("active", inspection.active)
+            .put("folder", inspection.folder)
+            .put("id", properties["id"].orEmpty())
+            .put("name", properties["name"].orEmpty())
+            .put("version", properties["version"].orEmpty())
+            .put("versionCode", properties["versionCode"]?.toIntOrNull() ?: 0)
+            .put("source", inspection.source)
+            .put("controlAvailable", inspection.controlScript != null)
+            .put("disabled", inspection.disabled)
+            .put("removalPending", inspection.removalPending)
+            .put("updatePending", inspection.updatePending)
+            .toString()
+    }
 
     fun serviceInfo(): String = JSONObject()
         .put("ok", true)
         .put("uid", android.system.Os.getuid())
         .put("pid", android.system.Os.getpid())
-        .put("api", 1)
+        .put("api", 2)
         .put("transport", "libsu-rootservice-aidl")
         .toString()
 
-    fun status(): String = execute("status")
+    fun capabilities(): String = execute("capabilities", timeoutSeconds = 10)
+    fun snapshot(activityLimit: Int): String =
+        execute("snapshot", activityLimit.coerceIn(1, 200).toString(), timeoutSeconds = 70)
+    fun status(): String = execute("status", timeoutSeconds = 70)
     fun modules(): String = execute("modules")
     fun quarantine(): String = execute("quarantine")
     fun activity(limit: Int): String = execute("activity", limit.coerceIn(1, 200).toString())
@@ -72,12 +87,12 @@ internal class AshCtlExecutor {
     private fun execute(
         command: String,
         vararg arguments: String,
-        timeoutSeconds: Long = 15,
+        timeoutSeconds: Long = 25,
     ): String {
-        val ctl = modulePaths.firstOrNull { it.isFile && it.canExecute() }
-            ?: return errorJson("AshReXcue module is not installed or ashrexcuectl is not executable")
+        val ctl = moduleLocator.locateControlScript()
+            ?: return errorJson("AshReXcue module is not installed or its control script could not be found")
         val process = runCatching {
-            ProcessBuilder(listOf(ctl.absolutePath, command) + arguments)
+            ProcessBuilder(listOf(SYSTEM_SHELL, ctl.absolutePath, command) + arguments)
                 .redirectErrorStream(true)
                 .start()
         }.getOrElse { return errorJson(it.message ?: "Unable to start AshReXcue control process") }
@@ -95,11 +110,7 @@ internal class AshCtlExecutor {
                 .getOrElse { return errorJson(it.message ?: "Unable to read AshReXcue response") }
                 .trim()
             if (output.isBlank()) return errorJson("AshReXcue returned an empty response")
-            val jsonText = output
-                .lineSequence()
-                .map { it.trim() }
-                .lastOrNull { it.startsWith("{") && it.endsWith("}") }
-                ?: output
+            val jsonText = AshJsonOutput.extractObject(output) ?: output
             val json = runCatching { JSONObject(jsonText) }.getOrElse {
                 return errorJson("AshReXcue returned malformed JSON: ${output.take(240)}")
             }
@@ -131,6 +142,7 @@ internal class AshCtlExecutor {
         .toString()
 
     private companion object {
+        const val SYSTEM_SHELL = "/system/bin/sh"
         val FOLDER_PATTERN = Regex("^[A-Za-z0-9._-]{1,128}$")
         val TRUST_VALUES = setOf("protected", "trusted", "normal", "suspect")
         val SETTING_KEYS = setOf(

@@ -10,7 +10,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.core.graphics.ColorUtils
 import com.dergoogler.mmrl.ui.theme.color.AlmondBlossomDarkScheme
 import com.dergoogler.mmrl.ui.theme.color.AlmondBlossomLightScheme
 import com.dergoogler.mmrl.ui.theme.color.JeufosseDarkScheme
@@ -31,6 +30,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 
 @Serializable
 enum class ThemeColorSource {
@@ -542,8 +542,16 @@ fun parseHexColor(value: String): Color {
 
 private fun readableOn(color: Color): Color = if (color.luminanceCompat() > .45) Color(0xFF101216) else Color.White
 
-private fun Color.luminanceCompat(): Double = ColorUtils.calculateLuminance(toArgbCompat())
-private fun Color.toArgbCompat(): Int = android.graphics.Color.argb((alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
+private fun Color.luminanceCompat(): Double {
+    fun linearize(component: Float): Double {
+        val value = component.toDouble().coerceIn(0.0, 1.0)
+        return if (value <= 0.04045) value / 12.92 else ((value + 0.055) / 1.055).pow(2.4)
+    }
+
+    return 0.2126 * linearize(red) +
+        0.7152 * linearize(green) +
+        0.0722 * linearize(blue)
+}
 private fun contrastRatio(a: Color, b: Color): Double {
     val l1 = a.luminanceCompat()
     val l2 = b.luminanceCompat()

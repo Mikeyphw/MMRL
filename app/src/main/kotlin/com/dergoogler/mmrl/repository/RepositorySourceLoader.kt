@@ -57,12 +57,12 @@ internal object RepositorySourceLoader {
                     return@runCatching loadGitHubSource(options, githubToken)
                 }
                 val sourceUrl = resolveModulesUrl(repoUrl)
-                val json = fetchText(sourceUrl)
+                val json = fetchText(sourceUrl, githubToken)
                 when (json.firstOrNull { !it.isWhitespace() }) {
                     '{' ->
                         modulesAdapter.fromJson(json)
                             ?: error("Repository returned an empty JSON object")
-                    '[' -> loadKernelSuCatalog(sourceUrl, json)
+                    '[' -> loadKernelSuCatalog(sourceUrl, json, githubToken)
                     else -> error("Unsupported repository JSON: expected an object or array")
                 }
             }
@@ -187,11 +187,10 @@ internal object RepositorySourceLoader {
     private suspend fun loadKernelSuCatalog(
         sourceUrl: String,
         json: String,
+        githubToken: String?,
     ): ModulesJson {
         val entries =
-            kernelSuCatalogAdapter
-                .fromJson(json)
-                .orEmpty()
+            parseKernelSuCatalog(json)
                 .filter { it.visibility == 1 && it.repoUrl.isNotBlank() }
                 .distinctBy { it.repoUrl.trimEnd('/').lowercase(Locale.ROOT) }
 
@@ -204,7 +203,7 @@ internal object RepositorySourceLoader {
                     .map { entry ->
                         async(Dispatchers.IO) {
                             semaphore.withPermit {
-                                runCatching { resolveKernelSuEntry(entry) }
+                                runCatching { resolveKernelSuEntry(entry, githubToken) }
                                     .onFailure {
                                         Timber.w(
                                             it,
@@ -237,10 +236,13 @@ internal object RepositorySourceLoader {
         )
     }
 
-    private fun resolveKernelSuEntry(entry: KernelSuCatalogEntry): OnlineModule {
+    private fun resolveKernelSuEntry(
+        entry: KernelSuCatalogEntry,
+        githubToken: String?,
+    ): OnlineModule {
         val github = parseGitHubRepository(entry.repoUrl)
-        val release = resolveLatestRelease(github.baseUrl)
-        val properties = resolveModuleProperties(github.baseUrl, release.tag)
+        val release = resolveLatestRelease(github.baseUrl, githubToken)
+        val properties = resolveModuleProperties(github.baseUrl, release.tag, githubToken)
 
         val moduleId =
             properties["id"]
@@ -302,8 +304,16 @@ internal object RepositorySourceLoader {
         )
     }
 
-    private fun resolveLatestRelease(repoUrl: String): GitHubRelease {
-        val latestRequest = Request.Builder().url("$repoUrl/releases/latest").build()
+    private fun resolveLatestRelease(
+        repoUrl: String,
+        githubToken: String?,
+    ): GitHubRelease {
+        val latestRequest =
+            Request
+                .Builder()
+                .url("$repoUrl/releases/latest")
+                .applyGitHubAuthentication("$repoUrl/releases/latest", githubToken)
+                .build()
         val redirect =
             noRedirectClient.newCall(latestRequest).execute().use { response ->
                 require(response.code in 300..399) {
@@ -321,7 +331,7 @@ internal object RepositorySourceLoader {
                 ?: error("Unable to determine latest release tag for $repoUrl")
         val tag = URLDecoder.decode(encodedTag, StandardCharsets.UTF_8.name())
         val assetsUrl = "$repoUrl/releases/expanded_assets/${encodePathSegment(tag)}"
-        val assetsHtml = fetchText(assetsUrl)
+        val assetsHtml = fetchText(assetsUrl, githubToken)
         val zipPath =
             Regex(
                 """href=[\"'](/[^\"']+/releases/download/[^\"']+\.zip(?:\?[^\"']*)?)[\"']""",
@@ -357,6 +367,9 @@ internal object RepositorySourceLoader {
                 ?.takeIf { it.isNotEmpty() }
         }.orEmpty()
     }
+
+    internal fun parseKernelSuCatalog(json: String): List<KernelSuCatalogEntry> =
+        kernelSuCatalogAdapter.fromJson(json).orEmpty()
 
     internal fun parseModuleProperties(text: String): Map<String, String> =
         text
@@ -449,20 +462,30 @@ internal object RepositorySourceLoader {
             Request
                 .Builder()
                 .url(url)
-                .apply {
-                    if (url.contains("github", ignoreCase = true)) {
-                        header("Accept", "application/vnd.github+json")
-                        header("X-GitHub-Api-Version", "2022-11-28")
-                        githubToken?.trim()?.takeIf(String::isNotBlank)?.let {
-                            header("Authorization", "Bearer $it")
-                        }
-                    }
-                }.build()
+                .applyGitHubAuthentication(url, githubToken)
+                .build()
         return httpClient.newCall(request).execute().use { response ->
             require(response.isSuccessful) { "HTTP ${response.code} while loading $url" }
             response.body?.string() ?: error("Empty response while loading $url")
         }
     }
+
+    private fun Request.Builder.applyGitHubAuthentication(
+        requestUrl: String,
+        githubToken: String?,
+    ): Request.Builder =
+        apply {
+            val host = runCatching { URI(requestUrl).host.orEmpty() }.getOrDefault("")
+            if (host.contains("github", ignoreCase = true)) {
+                githubToken?.trim()?.takeIf(String::isNotBlank)?.let {
+                    header("Authorization", "Bearer $it")
+                }
+                if (host.equals("api.github.com", ignoreCase = true)) {
+                    header("Accept", "application/vnd.github+json")
+                    header("X-GitHub-Api-Version", "2022-11-28")
+                }
+            }
+        }
 
     private fun catalogName(sourceUrl: String): String =
         if (sourceUrl.contains("KernelSU-Next-Modules-Repo", ignoreCase = true)) {

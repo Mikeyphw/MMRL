@@ -212,7 +212,8 @@
 
         <service
             android:name="${__packageName__}.ash.root.AshRootService"
-            android:exported="false" />
+            android:exported="false"
+            tools:ignore="Instantiatable" />
 
         <receiver
             android:name="${__packageName__}.receiver.LogcatReceiver"

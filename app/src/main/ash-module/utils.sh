@@ -1565,8 +1565,9 @@ next_rescue_label() {
 
 dashboard_json() {
   local state reason started updated loops_now threshold_now stage timeout_now timeout_min_now timeout_max_now stability quarantine restore_state restore_count enabled=0 disabled=0 protected=0 trusted=0 suspect=0 module_folder trust status latest_id latest_stage latest_status latest_count latest_reason repairs last_repair
-  validate_settings >/dev/null 2>&1 || true
-  state_lock_acquire || return 1
+  # Dashboard reads are observational. All state writers use atomic replacement, so the
+  # companion must not wait behind the boot transaction lock just to render status.
+  initialize_storage
   state=$(get_prop state "$BOOT_STATE" 2>/dev/null || true); [ -n "$state" ] || state=$(get_prop boot 2>/dev/null || true); [ -n "$state" ] || state=none
   reason=$(get_prop reason "$BOOT_STATE" 2>/dev/null || true); started=$(get_prop started_at "$BOOT_STATE" 2>/dev/null || true); updated=$(get_prop updated_at "$BOOT_STATE" 2>/dev/null || true)
   loops_now=$(get_prop loops 2>/dev/null || true); threshold_now=$(get_prop threshold 2>/dev/null || true); stage=$(get_prop rescue_stage 2>/dev/null || true)
@@ -1583,8 +1584,13 @@ dashboard_json() {
     latest_id=$("$JQ" -r '.rescueId // ""' "$LATEST_RESCUE" 2>/dev/null); latest_stage=$("$JQ" -r '.stage // ""' "$LATEST_RESCUE" 2>/dev/null)
     latest_status=$("$JQ" -r '.status // ""' "$LATEST_RESCUE" 2>/dev/null); latest_count=$("$JQ" -r '.disabledCount // 0' "$LATEST_RESCUE" 2>/dev/null); latest_reason=$("$JQ" -r '.reason // ""' "$LATEST_RESCUE" 2>/dev/null)
   fi
-  repairs=$(wc -l < "$SETTINGS_REPAIR_LOG" 2>/dev/null | tr -d ' '); [ -n "$repairs" ] || repairs=0
-  last_repair=$(tail -n 1 "$SETTINGS_REPAIR_LOG" 2>/dev/null)
+  if [ -f "$SETTINGS_REPAIR_LOG" ]; then
+    repairs=$(wc -l < "$SETTINGS_REPAIR_LOG" 2>/dev/null | tr -d ' '); [ -n "$repairs" ] || repairs=0
+    last_repair=$(tail -n 1 "$SETTINGS_REPAIR_LOG" 2>/dev/null)
+  else
+    repairs=0
+    last_repair=""
+  fi
   cat <<EOF
 {
   "module":{"version":"$(json_escape "$(get_prop version "$MODPATH/module.prop")")","versionCode":$(get_prop versionCode "$MODPATH/module.prop"),"root":"$(json_escape "$method")"},
@@ -1596,7 +1602,6 @@ dashboard_json() {
   "settings":{"repairCount":${repairs:-0},"lastRepair":"$(json_escape "$last_repair")"}
 }
 EOF
-  state_lock_release
 }
 
 

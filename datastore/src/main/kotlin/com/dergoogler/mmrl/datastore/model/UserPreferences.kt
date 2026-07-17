@@ -7,7 +7,6 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Environment
 import com.dergoogler.mmrl.datastore.BuildConfig
-import com.dergoogler.mmrl.ui.theme.Colors
 import com.dergoogler.mmrl.ui.theme.ThemeColorSource
 import com.dergoogler.mmrl.ui.theme.ThemeContrast
 import com.dergoogler.mmrl.ui.theme.ThemeRegistry
@@ -25,13 +24,17 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
+private const val LEGACY_DYNAMIC_THEME_ID = -1
+private const val LEGACY_MMRL_THEME_ID = 7
+private const val DEFAULT_PUBLIC_DOWNLOADS_PATH = "/storage/emulated/0/Download"
+
 @Serializable
 data class UserPreferences(
     @ProtoNumber(1) val workingMode: WorkingMode = WorkingMode.FIRST_SETUP,
     @ProtoNumber(2) val darkMode: DarkMode = DarkMode.AlwaysOn,
-    @ProtoNumber(3) val themeColor: Int = Colors.MMRLBase.id,
+    @ProtoNumber(3) val themeColor: Int = LEGACY_MMRL_THEME_ID,
     @ProtoNumber(4) val deleteZipFile: Boolean = false,
-    @ProtoNumber(5) val downloadPath: String = PUBLIC_DOWNLOADS.path,
+    @ProtoNumber(5) val downloadPath: String = DEFAULT_PUBLIC_DOWNLOADS_PATH,
     @ProtoNumber(6) val homepage: Homepage = Homepage.Home,
     @ProtoNumber(7) val repositoryMenu: RepositoryMenu = RepositoryMenu(),
     @ProtoNumber(8) val modulesMenu: ModulesMenu = ModulesMenu(),
@@ -116,7 +119,7 @@ data class UserPreferences(
         themePaletteId.takeIf { it.isNotBlank() } ?: ThemeRegistry.migrateLegacyId(themeColor)
 
     fun resolvedThemeColorSource(): ThemeColorSource =
-        if (themePaletteId.isBlank() && themeColor == Colors.Dynamic.id) {
+        if (themePaletteId.isBlank() && themeColor == LEGACY_DYNAMIC_THEME_ID) {
             ThemeColorSource.DYNAMIC_FULL
         } else {
             themeColorSource
@@ -143,10 +146,11 @@ data class UserPreferences(
     }
 
     companion object {
-        val PUBLIC_DOWNLOADS: File =
-            Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS,
-            )
+        /** Runtime Android path retained for callers that need Environment resolution. */
+        val PUBLIC_DOWNLOADS: File by lazy(LazyThreadSafetyMode.PUBLICATION) {
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                ?: File(DEFAULT_PUBLIC_DOWNLOADS_PATH)
+        }
 
         @OptIn(ExperimentalSerializationApi::class)
         fun decodeFrom(input: InputStream): UserPreferences = ProtoBuf.decodeFromByteArray(input.readBytes())

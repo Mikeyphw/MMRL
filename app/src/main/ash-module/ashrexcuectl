@@ -113,9 +113,80 @@ EOF_R
   rm -f "$tmp"
 }
 
+
+capabilities_json() {
+  local version version_code
+  version=$(get_prop version "$MODPATH/module.prop")
+  version_code=$(get_prop versionCode "$MODPATH/module.prop")
+  case "$version_code" in ''|*[!0-9]*) version_code=0 ;; esac
+  if [ -x "$JQ_BIN" ]; then
+    "$JQ_BIN" -cn \
+      --arg version "$version" \
+      --argjson versionCode "$version_code" \
+      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","diagnostic-export","queued-settings","event-history"]}'
+  else
+    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","diagnostic-export","queued-settings","event-history"]}\n' \
+      "$(json_escape "$version")" "$version_code"
+  fi
+}
+
+snapshot_json() {
+  local limit work rc generated_at
+  limit="${1:-150}"
+  case "$limit" in ''|*[!0-9]*) limit=150 ;; esac
+  [ "$limit" -gt 200 ] && limit=200
+  [ "$limit" -lt 1 ] && limit=1
+  [ -x "$JQ_BIN" ] || { json_error "AshReXcue snapshot requires the bundled jq runtime."; return 1; }
+
+  work="$ASHLOOPER_DIR/.snapshot.$$"
+  rm -rf "$work"
+  mkdir -p "$work" || { json_error "Unable to create snapshot workspace."; return 1; }
+  rc=0
+  capabilities_json > "$work/capabilities.json" || rc=1
+  dashboard_json > "$work/dashboard.json" || rc=1
+  modules_json > "$work/modules.json" || rc=1
+  quarantine_json > "$work/quarantine.json" || rc=1
+  activity_json "$limit" > "$work/activity.json" || rc=1
+  settings_json > "$work/settings.json" || rc=1
+  pending_settings_json > "$work/pending.json" || rc=1
+  if [ "$rc" -ne 0 ]; then
+    rm -rf "$work"
+    json_error "Unable to assemble a consistent AshReXcue snapshot."
+    return 1
+  fi
+
+  generated_at=$(date +%s 2>/dev/null || echo 0)
+  "$JQ_BIN" -cn \
+    --argjson generatedAt "$generated_at" \
+    --slurpfile capabilities "$work/capabilities.json" \
+    --slurpfile dashboard "$work/dashboard.json" \
+    --slurpfile modules "$work/modules.json" \
+    --slurpfile quarantine "$work/quarantine.json" \
+    --slurpfile activity "$work/activity.json" \
+    --slurpfile settings "$work/settings.json" \
+    --slurpfile pending "$work/pending.json" \
+    '{
+      ok:true,
+      schemaVersion:1,
+      generatedAt:$generatedAt,
+      capabilities:($capabilities[0] // {}),
+      dashboard:($dashboard[0] // {}),
+      modules:(($modules[0] // {}).items // []),
+      quarantine:(($quarantine[0] // {}).items // []),
+      activity:(($activity[0] // {}).items // []),
+      settings:(($settings[0] // {}).items // []),
+      pendingSettings:(($pending[0] // {}).items // [])
+    }'
+  rc=$?
+  rm -rf "$work"
+  return "$rc"
+}
+
 command="$1"
 [ "$#" -gt 0 ] && shift
 case "$command" in
+  capabilities) capabilities_json ;;
+  snapshot) snapshot_json "$1" ;;
   status) dashboard_json ;;
   modules) modules_json ;;
   quarantine) quarantine_json ;;

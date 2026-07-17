@@ -1,0 +1,41 @@
+{
+  "applied_at": "2026-07-17T15:40:16.753999Z",
+  "artifact": "/mnt/extra/home/Downloads/mmrl_kernelsu_next_ashrexcue_phase_a_overlay(3).zip",
+  "artifact_name": "mmrl_kernelsu_next_ashrexcue_phase_a_overlay(3).zip",
+  "type": "overlay",
+  "sha256": "3269585ec6944f80df55c37f80f456b3f8a1e815db6bc8af7f05d7a00e176ddd",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add KernelSU Next repositories and AshReXcue phase A integration",
+  "commit_hash": "",
+  "file_count": 31,
+  "change_counts": {
+    "add": 13,
+    "modify": 18
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add KernelSU Next repositories and AshReXcue phase A integration"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "8afecd9835534d748ae2060a30b1a33c"
+}

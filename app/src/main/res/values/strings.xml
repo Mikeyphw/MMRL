@@ -242,6 +242,8 @@
     <string name="repo_delete_dialog_desc">Are you sure to delete %s?</string>
     <string name="repo_add_dialog_title">Add repository</string>
     <string name="repo_add_dialog_add">Add</string>
+    <string name="repo_add_dialog_url_label">Repository URL or JSON URL</string>
+    <string name="repo_add_dialog_url_placeholder">https://example.com/ or https://host/path/modules.json</string>
     <!-- About -->
     <string name="about_app_version">Version %1$s (%2$s)</string>
     <string name="about_desc1">Provide modules repositories and Manage modules for Magisk and KernelSU.</string>

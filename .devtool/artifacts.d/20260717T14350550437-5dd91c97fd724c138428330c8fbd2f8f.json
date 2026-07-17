@@ -1,0 +1,41 @@
+{
+  "applied_at": "2026-07-17T14:35:05.504377Z",
+  "artifact": "/mnt/extra/home/Downloads/mmrl_kernelsu_next_native_repo_support_overlay.zip",
+  "artifact_name": "mmrl_kernelsu_next_native_repo_support_overlay.zip",
+  "type": "overlay",
+  "sha256": "ad3288e762252275273b679ecf791e4f4dd9eda206e40e8e118f015f14077b46",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add native KernelSU Next repository support",
+  "commit_hash": "",
+  "file_count": 6,
+  "change_counts": {
+    "add": 3,
+    "modify": 3
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add native KernelSU Next repository support"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "5dd91c97fd724c138428330c8fbd2f8f"
+}

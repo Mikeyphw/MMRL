@@ -66,12 +66,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.ash.AshUiState
 import com.dergoogler.mmrl.ash.AshViewModel
 import com.dergoogler.mmrl.ash.ConnectionState
 import com.dergoogler.mmrl.ash.model.ActivityItem
+import com.dergoogler.mmrl.ash.model.AshInstallMode
+import com.dergoogler.mmrl.ash.model.AshModuleLifecycle
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.MainDestination
 import com.dergoogler.mmrl.ash.model.ModuleItem
@@ -79,7 +80,6 @@ import com.dergoogler.mmrl.ash.model.QuarantineItem
 import com.dergoogler.mmrl.ash.model.SettingItem
 import com.dergoogler.mmrl.ash.model.ThemePreset
 import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
-import java.io.File
 import java.util.Locale
 
 @Composable
@@ -92,6 +92,11 @@ fun AshReXcueApp(viewModel: AshViewModel) {
             runCatching { ThemePreset.valueOf(prefs.getString("theme", ThemePreset.MMRL.name) ?: ThemePreset.MMRL.name) }
                 .getOrDefault(ThemePreset.MMRL),
         )
+    }
+    LaunchedEffect(viewModel, context) {
+        viewModel.moduleInstalls.collect { prepared ->
+            InstallActivity.start(context = context, uri = prepared.uri)
+        }
     }
     AshReXcueTheme(theme) {
         MainShell(
@@ -114,7 +119,6 @@ private fun MainShell(
     theme: ThemePreset,
     onThemeChanged: (ThemePreset) -> Unit,
 ) {
-    val appContext = LocalContext.current
     var destination by remember { mutableStateOf(MainDestination.Status) }
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(state.message) {
@@ -174,30 +178,136 @@ private fun MainShell(
                 Box(Modifier.weight(1f).fillMaxHeight()) {
                     when (val connection = state.connection) {
                         ConnectionState.Checking -> CenterMessage("Checking root and module…", loading = true)
-                        ConnectionState.RootDenied -> CenterMessage("Root access is required. Grant AshReXcue root access in your root manager, then refresh.")
+                        ConnectionState.RootDenied -> CenterMessage("Root access is required. Grant MMRL root access in your root manager, then refresh.")
                         ConnectionState.ModuleMissing -> MissingModuleMessage(
-                            onInstall = {
-                                installBundledAshModule(
-                                    context = appContext,
-                                    onError = viewModel::showMessage,
-                                )
-                            },
+                            onInstall = { viewModel.prepareModuleInstall(AshInstallMode.Install) },
                             onRefresh = viewModel::refreshAll,
                         )
-                        is ConnectionState.Error -> CenterMessage(connection.message)
-                        ConnectionState.Ready -> when (destination) {
-                            MainDestination.Status -> StatusScreen(state.dashboard, state.loading, viewModel)
-                            MainDestination.Modules -> ModulesScreen(state.modules, viewModel)
-                            MainDestination.Recovery -> RecoveryScreen(state.dashboard, state.quarantine, viewModel)
-                            MainDestination.Activity -> ActivityScreen(state.activity)
-                            MainDestination.Settings -> SettingsScreen(state.settings, theme, onThemeChanged, viewModel)
+                        ConnectionState.ModuleDisabled -> LifecycleMessage(
+                            title = "AshReXcue is disabled",
+                            message = "Enable the module in your root manager and reboot. You may also reinstall the bundled module.",
+                            actionLabel = "Reinstall module",
+                            onAction = { viewModel.prepareModuleInstall(AshInstallMode.Reinstall) },
+                            onRefresh = viewModel::refreshAll,
+                        )
+                        is ConnectionState.ModuleOutdated -> LifecycleMessage(
+                            title = "AshReXcue update required",
+                            message = connection.message,
+                            actionLabel = "Update module",
+                            onAction = { viewModel.prepareModuleInstall(AshInstallMode.Update) },
+                            onRefresh = viewModel::refreshAll,
+                        )
+                        is ConnectionState.ModuleIncompatible -> LifecycleMessage(
+                            title = "AshReXcue is incompatible",
+                            message = connection.message,
+                            actionLabel = "Reinstall bundled module",
+                            onAction = { viewModel.prepareModuleInstall(AshInstallMode.Reinstall) },
+                            onRefresh = viewModel::refreshAll,
+                        )
+                        is ConnectionState.RebootPending -> LifecycleMessage(
+                            title = "AshReXcue change pending",
+                            message = connection.message,
+                            actionLabel = "Reinstall module",
+                            onAction = { viewModel.prepareModuleInstall(AshInstallMode.Reinstall) },
+                            onRefresh = viewModel::refreshAll,
+                        )
+                        is ConnectionState.Error -> ErrorMessage(
+                            message = connection.message,
+                            onRefresh = viewModel::refreshAll,
+                        )
+                        is ConnectionState.Cached -> Column(Modifier.fillMaxSize()) {
+                            CachedSnapshotBanner(connection.message, state.lastSuccessfulAt)
+                            AshContent(state, destination, viewModel, theme, onThemeChanged)
                         }
+                        ConnectionState.Ready -> AshContent(state, destination, viewModel, theme, onThemeChanged)
                     }
-                    if (state.loading && state.connection == ConnectionState.Ready) {
+                    if (state.loading && (state.connection == ConnectionState.Ready || state.connection is ConnectionState.Cached)) {
                         CircularProgressIndicator(Modifier.align(Alignment.TopEnd).padding(16.dp).size(22.dp), strokeWidth = 2.dp)
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AshContent(
+    state: AshUiState,
+    destination: MainDestination,
+    viewModel: AshViewModel,
+    theme: ThemePreset,
+    onThemeChanged: (ThemePreset) -> Unit,
+) {
+    when (destination) {
+        MainDestination.Status -> StatusScreen(
+            dashboard = state.dashboard,
+            lifecycle = state.lifecycle,
+            loading = state.loading,
+            readOnly = state.readOnly,
+            viewModel = viewModel,
+            onInstallModule = viewModel::prepareModuleInstall,
+        )
+        MainDestination.Modules -> ModulesScreen(state.modules, state.readOnly, viewModel)
+        MainDestination.Recovery -> RecoveryScreen(
+            state.dashboard,
+            state.quarantine,
+            state.readOnly,
+            viewModel,
+        )
+        MainDestination.Activity -> ActivityScreen(state.activity)
+        MainDestination.Settings -> SettingsScreen(
+            state.settings,
+            theme,
+            onThemeChanged,
+            state.readOnly,
+            viewModel,
+        )
+    }
+}
+
+@Composable
+private fun CachedSnapshotBanner(message: String, savedAt: Long) {
+    Column(
+        Modifier.fillMaxWidth()
+            .background(MaterialTheme.colorScheme.tertiaryContainer)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Text("Read-only cached snapshot", fontWeight = FontWeight.SemiBold)
+        Text(
+            buildString {
+                append(message)
+                if (savedAt > 0) append(" • ").append(relativeTime(savedAt))
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun LifecycleMessage(
+    title: String,
+    message: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    onRefresh: () -> Unit,
+) {
+    Column(
+        Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(20.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = onAction) { Text(actionLabel) }
+            OutlinedButton(onClick = onRefresh) { Text("Refresh") }
         }
     }
 }
@@ -221,6 +331,26 @@ private fun CenterMessage(message: String, loading: Boolean = false) {
         if (loading) CircularProgressIndicator()
         if (loading) Spacer(Modifier.height(20.dp))
         Text(message, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun ErrorMessage(
+    message: String,
+    onRefresh: () -> Unit,
+) {
+    Column(
+        Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(20.dp))
+        OutlinedButton(onClick = onRefresh) { Text("Refresh") }
     }
 }
 
@@ -253,28 +383,16 @@ private fun MissingModuleMessage(
     }
 }
 
-private fun installBundledAshModule(
-    context: Context,
-    onError: (String) -> Unit,
-) {
-    runCatching {
-        val directory = File(context.cacheDir, "ashrexcue")
-        directory.mkdirs()
-        val module = File(directory, ASH_MODULE_ZIP_ASSET)
-        context.assets.open(ASH_MODULE_ZIP_ASSET).use { input ->
-            module.outputStream().use { output -> input.copyTo(output) }
-        }
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", module)
-        InstallActivity.start(context = context, uri = uri)
-    }.onFailure { error ->
-        onError(error.message ?: "Unable to prepare AshReXcue module ZIP")
-    }
-}
-
-private const val ASH_MODULE_ZIP_ASSET = "AshReXcue_Bootloop_Protector.zip"
 
 @Composable
-private fun StatusScreen(dashboard: Dashboard, loading: Boolean, viewModel: AshViewModel) {
+private fun StatusScreen(
+    dashboard: Dashboard,
+    lifecycle: AshModuleLifecycle,
+    loading: Boolean,
+    readOnly: Boolean,
+    viewModel: AshViewModel,
+    onInstallModule: (AshInstallMode) -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 32.dp),
@@ -323,10 +441,26 @@ private fun StatusScreen(dashboard: Dashboard, loading: Boolean, viewModel: AshV
             }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = viewModel::exportDiagnostics, enabled = !loading) { Text("Export diagnostics") }
+            SectionCard("Module lifecycle") {
+                KeyValue("State", lifecycle.state.name)
+                KeyValue("Installed", lifecycle.installation.version.ifBlank { "Unknown" })
+                KeyValue("Bundled", lifecycle.bundled.version.ifBlank { "Unknown" })
+                KeyValue("API", lifecycle.compatibilityMessage)
+                if (lifecycle.rebootRequired) {
+                    Text("A reboot is required to finish the staged module change.", color = MaterialTheme.colorScheme.tertiary)
+                }
+            }
+        }
+        item {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(onClick = viewModel::exportDiagnostics, enabled = !loading && !readOnly) { Text("Export diagnostics") }
+                if (lifecycle.updateAvailable) {
+                    OutlinedButton(onClick = { onInstallModule(AshInstallMode.Update) }, enabled = !loading) { Text("Update module") }
+                } else {
+                    OutlinedButton(onClick = { onInstallModule(AshInstallMode.Reinstall) }, enabled = !loading) { Text("Reinstall module") }
+                }
                 if (dashboard.restoreState == "testing") {
-                    OutlinedButton(onClick = viewModel::rollbackTrial, enabled = !loading) { Text("Rollback trial") }
+                    OutlinedButton(onClick = viewModel::rollbackTrial, enabled = !loading && !readOnly) { Text("Rollback trial") }
                 }
             }
         }
@@ -334,7 +468,7 @@ private fun StatusScreen(dashboard: Dashboard, loading: Boolean, viewModel: AshV
 }
 
 @Composable
-private fun ModulesScreen(modules: List<ModuleItem>, viewModel: AshViewModel) {
+private fun ModulesScreen(modules: List<ModuleItem>, readOnly: Boolean, viewModel: AshViewModel) {
     var query by remember { mutableStateOf("") }
     var stateFilter by remember { mutableStateOf("all") }
     var trustFilter by remember { mutableStateOf("all") }
@@ -372,7 +506,7 @@ private fun ModulesScreen(modules: List<ModuleItem>, viewModel: AshViewModel) {
         }
     }
     selected?.let { module ->
-        ModuleDialog(module, onDismiss = { selected = null }, onTrust = {
+        ModuleDialog(module, readOnly = readOnly, onDismiss = { selected = null }, onTrust = {
             viewModel.setTrust(module.folder, it)
             selected = null
         })
@@ -397,7 +531,7 @@ private fun ModuleRow(module: ModuleItem, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ModuleDialog(module: ModuleItem, onDismiss: () -> Unit, onTrust: (String) -> Unit) {
+private fun ModuleDialog(module: ModuleItem, readOnly: Boolean, onDismiss: () -> Unit, onTrust: (String) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(module.name) },
@@ -410,7 +544,7 @@ private fun ModuleDialog(module: ModuleItem, onDismiss: () -> Unit, onTrust: (St
                 Text("Set trust category", fontWeight = FontWeight.SemiBold)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("protected", "trusted", "normal", "suspect").forEach { trust ->
-                        FilterChip(selected = module.trust == trust, onClick = { onTrust(trust) }, label = { Text(trust.title()) })
+                        FilterChip(selected = module.trust == trust, onClick = { onTrust(trust) }, enabled = !readOnly, label = { Text(trust.title()) })
                     }
                 }
             }
@@ -420,7 +554,7 @@ private fun ModuleDialog(module: ModuleItem, onDismiss: () -> Unit, onTrust: (St
 }
 
 @Composable
-private fun RecoveryScreen(dashboard: Dashboard, quarantine: List<QuarantineItem>, viewModel: AshViewModel) {
+private fun RecoveryScreen(dashboard: Dashboard, quarantine: List<QuarantineItem>, readOnly: Boolean, viewModel: AshViewModel) {
     var confirm by remember { mutableStateOf<String?>(null) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -429,16 +563,16 @@ private fun RecoveryScreen(dashboard: Dashboard, quarantine: List<QuarantineItem
                 KeyValue("Modules in trial", dashboard.restoreCount.toString())
                 if (dashboard.restoreState == "testing") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = viewModel::completeTrial) { Text("Mark stable") }
-                        OutlinedButton(onClick = { confirm = "rollback" }) { Text("Rollback") }
+                        Button(onClick = viewModel::completeTrial, enabled = !readOnly) { Text("Mark stable") }
+                        OutlinedButton(onClick = { confirm = "rollback" }, enabled = !readOnly) { Text("Rollback") }
                     }
                 }
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { confirm = "half" }, enabled = quarantine.isNotEmpty()) { Text("Restore half") }
-                OutlinedButton(onClick = { confirm = "all" }, enabled = quarantine.isNotEmpty()) { Text("Restore all") }
+                Button(onClick = { confirm = "half" }, enabled = quarantine.isNotEmpty() && !readOnly) { Text("Restore half") }
+                OutlinedButton(onClick = { confirm = "all" }, enabled = quarantine.isNotEmpty() && !readOnly) { Text("Restore all") }
             }
         }
         item { Text("Quarantined modules", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) }
@@ -451,7 +585,7 @@ private fun RecoveryScreen(dashboard: Dashboard, quarantine: List<QuarantineItem
                         Text("${item.id} • ${item.trust.title()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         if (!item.exists || !item.disablePresent) Text("Stale quarantine record", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)
                     }
-                    OutlinedButton(onClick = { confirm = "one:${item.folder}" }, enabled = item.exists && item.disablePresent) { Text("Test") }
+                    OutlinedButton(onClick = { confirm = "one:${item.folder}" }, enabled = item.exists && item.disablePresent && !readOnly) { Text("Test") }
                 }
             }
         }
@@ -527,7 +661,7 @@ private fun ActivityScreen(activity: List<ActivityItem>) {
 }
 
 @Composable
-private fun SettingsScreen(settings: List<SettingItem>, theme: ThemePreset, onThemeChanged: (ThemePreset) -> Unit, viewModel: AshViewModel) {
+private fun SettingsScreen(settings: List<SettingItem>, theme: ThemePreset, onThemeChanged: (ThemePreset) -> Unit, readOnly: Boolean, viewModel: AshViewModel) {
     val map = settings.associateBy { it.key }
     var threshold by remember(settings) { mutableStateOf(map["threshold"]?.queuedValue ?: map["threshold"]?.value ?: "2") }
     var timeout by remember(settings) { mutableStateOf(map["timeout"]?.queuedValue ?: map["timeout"]?.value ?: "60") }
@@ -538,20 +672,20 @@ private fun SettingsScreen(settings: List<SettingItem>, theme: ThemePreset, onTh
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp, 12.dp, 16.dp, 40.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionCard("Protection") {
-            NumericSetting("Failed boots before rescue", threshold) { threshold = it }
-            NumericSetting("Boot timeout (seconds)", timeout) { timeout = it }
-            NumericSetting("Stability window (seconds)", stability) { stability = it }
+            NumericSetting("Failed boots before rescue", threshold, enabled = !readOnly) { threshold = it }
+            NumericSetting("Boot timeout (seconds)", timeout, enabled = !readOnly) { timeout = it }
+            NumericSetting("Stability window (seconds)", stability, enabled = !readOnly) { stability = it }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Extra process monitoring", fontWeight = FontWeight.Medium)
                     Text("Also monitor configured system daemons", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Switch(checked = extra, onCheckedChange = { extra = it })
+                Switch(checked = extra, onCheckedChange = { extra = it }, enabled = !readOnly)
             }
             Text("Missing process action", fontWeight = FontWeight.Medium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("warn", "rescue").forEach { value ->
-                    FilterChip(selected = missingAction == value, onClick = { missingAction = value }, label = { Text(value.title()) })
+                    FilterChip(selected = missingAction == value, onClick = { missingAction = value }, enabled = !readOnly, label = { Text(value.title()) })
                 }
             }
             Button(onClick = {
@@ -564,10 +698,10 @@ private fun SettingsScreen(settings: List<SettingItem>, theme: ThemePreset, onTh
                         "missing_process_action" to missingAction,
                     ),
                 )
-            }) { Text("Save protection settings") }
+            }, enabled = !readOnly) { Text("Save protection settings") }
             if (queued > 0) {
                 Text("$queued change(s) are queued for the next boot because protection is currently active.", color = MaterialTheme.colorScheme.tertiary)
-                OutlinedButton(onClick = viewModel::discardPending) { Text("Discard queued changes") }
+                OutlinedButton(onClick = viewModel::discardPending, enabled = !readOnly) { Text("Discard queued changes") }
             }
         }
         SectionCard("Appearance") {
@@ -580,19 +714,20 @@ private fun SettingsScreen(settings: List<SettingItem>, theme: ThemePreset, onTh
         }
         SectionCard("Native companion") {
             Text("This app communicates through the fixed ashrexcuectl root API. The boot protector remains fully autonomous when the app is absent.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedButton(onClick = viewModel::exportDiagnostics) { Text("Export sanitized diagnostics") }
+            OutlinedButton(onClick = viewModel::exportDiagnostics, enabled = !readOnly) { Text("Export sanitized diagnostics") }
         }
     }
 }
 
 @Composable
-private fun NumericSetting(label: String, value: String, onValueChanged: (String) -> Unit) {
+private fun NumericSetting(label: String, value: String, enabled: Boolean, onValueChanged: (String) -> Unit) {
     OutlinedTextField(
         value = value,
         onValueChange = { candidate -> if (candidate.all(Char::isDigit)) onValueChanged(candidate) },
         modifier = Modifier.fillMaxWidth(),
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        enabled = enabled,
         singleLine = true,
     )
 }

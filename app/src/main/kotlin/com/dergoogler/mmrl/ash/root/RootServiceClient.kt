@@ -40,18 +40,10 @@ class RootServiceClient @Inject constructor(
         } ?: false
     }
 
-    suspend fun moduleAvailable(): Boolean =
-        withTimeoutOrNull(MODULE_CHECK_TIMEOUT_MS) {
-            runCatching { service().moduleAvailable() }.getOrDefault(false)
-        } ?: false
-
+    suspend fun moduleState(): String = call(MODULE_STATE_TIMEOUT_MS) { it.moduleState() }
     suspend fun serviceInfo(): String = call { it.serviceInfo() }
-    suspend fun status(): String = call { it.status() }
-    suspend fun modules(): String = call { it.modules() }
-    suspend fun quarantine(): String = call { it.quarantine() }
-    suspend fun activity(limit: Int): String = call { it.activity(limit) }
-    suspend fun settings(): String = call { it.settings() }
-    suspend fun pendingSettings(): String = call { it.pendingSettings() }
+    suspend fun capabilities(): String = call(CAPABILITIES_TIMEOUT_MS) { it.capabilities() }
+    suspend fun snapshot(activityLimit: Int = 150): String = call(SNAPSHOT_TIMEOUT_MS) { it.snapshot(activityLimit) }
     suspend fun setSetting(key: String, value: String): String = call { it.setSetting(key, value) }
 
     suspend fun setSettings(values: Map<String, String>): String {
@@ -147,9 +139,11 @@ class RootServiceClient @Inject constructor(
 
     private companion object {
         const val ROOT_TIMEOUT_MS = 8_000L
-        const val BIND_TIMEOUT_MS = 12_000L
-        const val MODULE_CHECK_TIMEOUT_MS = 10_000L
-        const val CALL_TIMEOUT_MS = 18_000L
-        const val EXPORT_TIMEOUT_MS = 120_000L
+        const val BIND_TIMEOUT_MS = 20_000L
+        const val MODULE_STATE_TIMEOUT_MS = 25_000L
+        const val CAPABILITIES_TIMEOUT_MS = 25_000L
+        const val SNAPSHOT_TIMEOUT_MS = 90_000L
+        const val CALL_TIMEOUT_MS = 40_000L
+        const val EXPORT_TIMEOUT_MS = 135_000L
     }
 }

@@ -1,7 +1,7 @@
 id=AshLooper
 name=AshReXcue BootLoop Protector
-version=11.0
-versionCode=203
+version=11.1.0
+versionCode=210
 author=AshBorn(@Ripper_Hybrid)
 description=Autonomous boot-loop protection with an MMRL-derived native companion app, typed root API, recovery center, diagnostics, and staged restoration.
 updateJson=https://ashrexcue.pages.dev/update.json
