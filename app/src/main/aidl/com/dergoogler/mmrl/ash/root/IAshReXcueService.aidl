@@ -11,6 +11,7 @@ interface IAshReXcueService {
     String setTrust(String folder, String trust);
     String restoreOne(String folder);
     String restoreHalf();
+    String restoreBatch(in String[] folders);
     String restoreAll();
     String completeTrial();
     String rollbackTrial();

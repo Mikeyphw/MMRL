@@ -17,6 +17,7 @@ class AshRootService : RootService() {
         override fun setTrust(folder: String, trust: String): String = executor.setTrust(folder, trust)
         override fun restoreOne(folder: String): String = executor.restoreOne(folder)
         override fun restoreHalf(): String = executor.restoreHalf()
+        override fun restoreBatch(folders: Array<out String>): String = executor.restoreBatch(folders)
         override fun restoreAll(): String = executor.restoreAll()
         override fun completeTrial(): String = executor.completeTrial()
         override fun rollbackTrial(): String = executor.rollbackTrial()

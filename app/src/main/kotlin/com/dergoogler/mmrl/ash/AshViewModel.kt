@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.ash.data.AshModuleInstaller
 import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.ash.model.AshCapabilities
+import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
 import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycle
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
@@ -157,11 +158,17 @@ class AshViewModel @Inject constructor(
     fun setTrust(folder: String, trust: String) = operate { manager.setTrust(folder, trust) }
     fun restoreOne(folder: String) = operate { manager.restoreOne(folder) }
     fun restoreHalf() = operate(manager::restoreHalf)
+    fun restoreBatch(folders: List<String>) = operate { manager.restoreBatch(folders) }
     fun restoreAll() = operate(manager::restoreAll)
     fun completeTrial() = operate(manager::completeTrial)
     fun rollbackTrial() = operate(manager::rollbackTrial)
     fun discardPending() = operate(manager::discardPending)
     fun exportDiagnostics() = operate(manager::exportDiagnostics)
+    fun recordGuidanceOutcome(
+        recommendationId: String,
+        moduleFolder: String,
+        outcome: AshGuidanceOutcome,
+    ) = operate { manager.recordGuidanceOutcome(recommendationId, moduleFolder, outcome) }
 
     fun clearMessage() {
         _state.value = _state.value.copy(message = null)

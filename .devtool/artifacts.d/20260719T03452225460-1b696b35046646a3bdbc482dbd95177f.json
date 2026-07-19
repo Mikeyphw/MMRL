@@ -1,0 +1,41 @@
+{
+  "applied_at": "2026-07-19T03:45:22.254601Z",
+  "artifact": "/storage/emulated/0/Download/mmrl_ashrexcue_phase_e_overlay-1.zip",
+  "artifact_name": "mmrl_ashrexcue_phase_e_overlay-1.zip",
+  "type": "overlay",
+  "sha256": "79f3455b71ac1aca728d2e4e48589802d1de3d5dbebe2b438cb373ca48611454",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add guided AshReXcue recovery intelligence",
+  "commit_hash": "",
+  "file_count": 16,
+  "change_counts": {
+    "add": 4,
+    "modify": 12
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add guided AshReXcue recovery intelligence"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "1b696b35046646a3bdbc482dbd95177f"
+}

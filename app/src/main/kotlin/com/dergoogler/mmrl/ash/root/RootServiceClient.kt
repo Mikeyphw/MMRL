@@ -59,6 +59,7 @@ class RootServiceClient @Inject constructor(
     suspend fun setTrust(folder: String, trust: String): String = call { it.setTrust(folder, trust) }
     suspend fun restoreOne(folder: String): String = call { it.restoreOne(folder) }
     suspend fun restoreHalf(): String = call { it.restoreHalf() }
+    suspend fun restoreBatch(folders: List<String>): String = call { it.restoreBatch(folders.toTypedArray()) }
     suspend fun restoreAll(): String = call { it.restoreAll() }
     suspend fun completeTrial(): String = call { it.completeTrial() }
     suspend fun rollbackTrial(): String = call { it.rollbackTrial() }

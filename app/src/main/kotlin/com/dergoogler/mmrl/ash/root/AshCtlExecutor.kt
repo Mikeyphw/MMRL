@@ -78,6 +78,12 @@ internal class AshCtlExecutor(
     }
 
     fun restoreHalf(): String = execute("restore", "half")
+    fun restoreBatch(folders: Array<out String>): String {
+        require(folders.isNotEmpty()) { "No restoration modules were supplied" }
+        require(folders.size <= 64) { "Too many restoration modules were supplied" }
+        folders.forEach(::requireSafeFolder)
+        return execute("restore", "selected", folders.joinToString(","))
+    }
     fun restoreAll(): String = execute("restore", "all")
     fun completeTrial(): String = execute("complete-trial")
     fun rollbackTrial(): String = execute("rollback-trial")

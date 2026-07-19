@@ -4,6 +4,7 @@ import com.dergoogler.mmrl.ash.database.ActivityDao
 import com.dergoogler.mmrl.ash.database.ActivityEntity
 import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.ash.model.AshCapabilities
+import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
 import com.dergoogler.mmrl.ash.model.AshModuleInstallation
 import com.dergoogler.mmrl.ash.model.AshSnapshot
 import com.dergoogler.mmrl.ash.model.Dashboard
@@ -103,6 +104,15 @@ class AshRepository @Inject constructor(
             rootClient.restoreHalf()
         }
 
+    suspend fun restoreBatch(folders: List<String>): OperationResult =
+        mutation(
+            "restoration",
+            "Started guided restoration trial",
+            folders.joinToString("\n"),
+        ) {
+            rootClient.restoreBatch(folders)
+        }
+
     suspend fun restoreAll(): OperationResult =
         mutation("restoration", "Started full restoration trial", "All quarantined modules") {
             rootClient.restoreAll()
@@ -127,6 +137,40 @@ class AshRepository @Inject constructor(
         mutation("diagnostics", "Exported diagnostics", "Sanitized diagnostic archive") {
             rootClient.exportDiagnostics()
         }
+
+    suspend fun recordGuidanceOutcome(
+        recommendationId: String,
+        moduleFolder: String,
+        outcome: AshGuidanceOutcome,
+    ): OperationResult {
+        require(recommendationId.length in 1..128 && recommendationId.all(::isGuidanceTokenCharacter)) {
+            "Invalid guidance recommendation"
+        }
+        require(moduleFolder.length <= 128 && moduleFolder.all(::isGuidanceTokenCharacter)) {
+            "Invalid module folder"
+        }
+        val now = System.currentTimeMillis() / 1000L
+        activityDao.insert(
+            ActivityEntity(
+                id = "guidance-${UUID.randomUUID()}",
+                timestamp = now,
+                type = "guidance",
+                title = "Recovery guidance outcome",
+                subtitle = outcome.wireValue.replaceFirstChar(Char::uppercaseChar),
+                status = outcome.wireValue,
+                details = buildString {
+                    append("recommendation=").append(recommendationId).append('\n')
+                    append("module=").append(moduleFolder).append('\n')
+                    append("outcome=").append(outcome.wireValue)
+                },
+            ),
+        )
+        activityDao.trim(300)
+        return OperationResult(
+            ok = true,
+            message = "Guidance outcome recorded as ${outcome.wireValue}.",
+        )
+    }
 
     private suspend fun mutation(
         type: String,
@@ -203,6 +247,9 @@ class AshRepository @Inject constructor(
                     enabled = item.optBoolean("enabled"),
                     quarantined = item.optBoolean("quarantined"),
                     trust = item.optString("trust", "normal"),
+                    baseTrust = item.optString("baseTrust", item.optString("trust", "normal")),
+                    fingerprint = item.optString("fingerprint"),
+                    changedSinceStable = item.optBoolean("changedSinceStable"),
                 ),
             )
         }
@@ -221,6 +268,7 @@ class AshRepository @Inject constructor(
                     disabledAt = item.optLong("disabledAt"),
                     exists = item.optBoolean("exists"),
                     disablePresent = item.optBoolean("disablePresent"),
+                    reason = item.optString("reason"),
                 ),
             )
         }
@@ -311,6 +359,9 @@ class AshRepository @Inject constructor(
             repairCount = settings.optInt("repairCount"),
         )
     }
+
+    private fun isGuidanceTokenCharacter(character: Char): Boolean =
+        character.isLetterOrDigit() || character == '.' || character == '_' || character == '-'
 
     private fun ActivityEntity.toModel(): ActivityItem = ActivityItem(
         id = id,

@@ -4,6 +4,7 @@ import com.dergoogler.mmrl.ash.data.AshBundledModuleProvider
 import com.dergoogler.mmrl.ash.data.AshModuleInstaller
 import com.dergoogler.mmrl.ash.data.AshRepository
 import com.dergoogler.mmrl.ash.data.AshSnapshotStore
+import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
 import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshManagerState
 import com.dergoogler.mmrl.ash.model.AshModuleInstallation
@@ -168,11 +169,27 @@ class AshReXcueManager @Inject constructor(
     }
 
     suspend fun restoreHalf(): OperationResult = writable(repository::restoreHalf)
+    suspend fun restoreBatch(folders: List<String>): OperationResult = writable {
+        require(folders.isNotEmpty()) { "No restoration modules were supplied" }
+        if (folders.size == 1) {
+            repository.restoreOne(folders.single())
+        } else {
+            check(_state.value.snapshot?.capabilities?.supports("guided-recovery") == true) {
+                "Update AshReXcue before starting an explicit guided batch"
+            }
+            repository.restoreBatch(folders)
+        }
+    }
     suspend fun restoreAll(): OperationResult = writable(repository::restoreAll)
     suspend fun completeTrial(): OperationResult = writable(repository::completeTrial)
     suspend fun rollbackTrial(): OperationResult = writable(repository::rollbackTrial)
     suspend fun discardPending(): OperationResult = writable(repository::discardPending)
     suspend fun exportDiagnostics(): OperationResult = writable(repository::exportDiagnostics)
+    suspend fun recordGuidanceOutcome(
+        recommendationId: String,
+        moduleFolder: String,
+        outcome: AshGuidanceOutcome,
+    ): OperationResult = repository.recordGuidanceOutcome(recommendationId, moduleFolder, outcome)
 
     private suspend fun writable(block: suspend () -> OperationResult): OperationResult {
         val current = _state.value

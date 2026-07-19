@@ -38,6 +38,9 @@ data class ModuleItem(
     val enabled: Boolean,
     val quarantined: Boolean,
     val trust: String,
+    val baseTrust: String = trust,
+    val fingerprint: String = "",
+    val changedSinceStable: Boolean = false,
 )
 
 data class QuarantineItem(
@@ -49,6 +52,7 @@ data class QuarantineItem(
     val disabledAt: Long,
     val exists: Boolean,
     val disablePresent: Boolean,
+    val reason: String = "",
 )
 
 data class ActivityItem(

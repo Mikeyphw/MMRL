@@ -998,7 +998,7 @@ _complete_restore_trial_unlocked() {
 }
 
 _restore_quarantined_modules_unlocked() {
-  local mode="$1" value="$2" all_file selected_file count take folder id name trust rescue_id disabled_at tmp state_tmp restored=0
+  local mode="$1" value="$2" all_file selected_file count take folder id name trust rescue_id disabled_at tmp state_tmp restored=0 old_ifs token match missing=0
   restore_trial_active && { echo "A restoration trial is already active."; return 2; }
   all_file="$RESCUE_DIR/quarantine_all.$$"; selected_file="$RESCUE_DIR/quarantine_selected.$$"
   list_quarantined_modules_tsv > "$all_file"; count=$(wc -l < "$all_file" | tr -d ' ')
@@ -1007,6 +1007,21 @@ _restore_quarantined_modules_unlocked() {
     individual) awk -F '\t' -v token="$value" '$1==token || $2==token {print; exit}' "$all_file" > "$selected_file" ;;
     next|one) head -n 1 "$all_file" > "$selected_file" ;;
     batch) case "$value" in ''|*[!0-9]*) value=1 ;; esac; [ "$value" -lt 1 ] && value=1; head -n "$value" "$all_file" > "$selected_file" ;;
+    selected)
+      : > "$selected_file"
+      old_ifs="$IFS"; IFS=','
+      for token in $value; do
+        match=$(awk -F '\t' -v token="$token" '$1==token || $2==token {print; exit}' "$all_file")
+        if [ -n "$match" ]; then
+          printf '%s\n' "$match" >> "$selected_file"
+        else
+          missing=1
+        fi
+      done
+      IFS="$old_ifs"
+      [ "$missing" -eq 0 ] || { rm -f "$selected_file"; echo "One or more requested quarantined modules were not found."; return 1; }
+      awk -F '\t' '!seen[$1]++' "$selected_file" > "$selected_file.dedup" && mv -f "$selected_file.dedup" "$selected_file"
+      ;;
     half) take=$(((count + 1) / 2)); head -n "$take" "$all_file" > "$selected_file" ;;
     all) cp "$all_file" "$selected_file" ;;
     *) rm -f "$all_file"; echo "Invalid restore mode."; return 2 ;;

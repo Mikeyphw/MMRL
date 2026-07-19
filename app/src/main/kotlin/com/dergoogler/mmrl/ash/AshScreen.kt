@@ -87,6 +87,7 @@ import java.util.Locale
 
 private enum class RecoverySection(val label: String) {
     Overview("Overview"),
+    Guidance("Guidance"),
     Quarantine("Quarantine"),
     Sessions("Sessions"),
     Diagnostics("Diagnostics"),
@@ -201,6 +202,16 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                         onCompleteTrial = { confirmation = RecoveryConfirmation.CompleteTrial },
                         onRollbackTrial = { confirmation = RecoveryConfirmation.RollbackTrial },
                         onSessionClick = { selectedSession = it },
+                        bottomPadding = bottomPadding,
+                    )
+
+                    RecoverySection.Guidance -> GuidedRecoveryContent(
+                        state = state,
+                        onRestoreBatch = viewModel::restoreBatch,
+                        onMarkSuspect = { folder -> viewModel.setTrust(folder, "suspect") },
+                        onCompleteTrial = viewModel::completeTrial,
+                        onRollbackTrial = viewModel::rollbackTrial,
+                        onOutcome = viewModel::recordGuidanceOutcome,
                         bottomPadding = bottomPadding,
                     )
 

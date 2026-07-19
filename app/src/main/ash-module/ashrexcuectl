@@ -48,18 +48,41 @@ capture_mutation() {
 modules_json() {
   create_mod_list >/dev/null 2>&1 || { json_error "Unable to build module inventory."; return 1; }
   [ -x "$JQ_BIN" ] || { printf '{"items":[]}\n'; return 0; }
-  "$JQ_BIN" -c '{items: map({folder,id,name,version,versionCode,enabled:(.status=="enabled"),quarantined,trust})}' "$TMP_FILE"
+  if [ -f "$MODULE_LIST" ]; then
+    "$JQ_BIN" -c --slurpfile stable "$MODULE_LIST" '
+      {items: map(
+        . as $current |
+        (($stable[0] // []) | map(select(((.folder // .id) == $current.folder) or (.id == $current.id))) | .[0] // null) as $previous |
+        {
+          folder,id,name,version,versionCode,
+          enabled:(.status=="enabled"),
+          quarantined,trust,baseTrust,fingerprint,
+          changedSinceStable:(
+            $previous == null or
+            (if (($previous.fingerprint // "") != "") then
+              (.fingerprint != $previous.fingerprint or .id != $previous.id)
+            else
+              (.name != $previous.name or .version != $previous.version or .versionCode != $previous.versionCode or .id != $previous.id)
+            end)
+          )
+        }
+      )}
+    ' "$TMP_FILE"
+  else
+    "$JQ_BIN" -c '{items: map({folder,id,name,version,versionCode,enabled:(.status=="enabled"),quarantined,trust,baseTrust,fingerprint,changedSinceStable:true})}' "$TMP_FILE"
+  fi
 }
 
 quarantine_json() {
-  local first folder id name trust rescue_id disabled_at exists disable_present
+  local first folder id name trust rescue_id disabled_at exists disable_present reason
   first=1
   printf '{"items":['
   while IFS="$(printf '\t')" read -r folder id name trust rescue_id disabled_at exists disable_present; do
     [ -n "$folder" ] || continue
     [ "$first" -eq 0 ] && printf ','
-    printf '{"folder":"%s","id":"%s","name":"%s","trust":"%s","rescueId":"%s","disabledAt":%s,"exists":%s,"disablePresent":%s}' \
-      "$(json_escape "$folder")" "$(json_escape "$id")" "$(json_escape "$name")" "$(json_escape "$trust")" "$(json_escape "$rescue_id")" "${disabled_at:-0}" "${exists:-false}" "${disable_present:-false}"
+    reason=$(get_prop reason "$QUARANTINE_DIR/$folder.prop")
+    printf '{"folder":"%s","id":"%s","name":"%s","trust":"%s","rescueId":"%s","disabledAt":%s,"exists":%s,"disablePresent":%s,"reason":"%s"}' \
+      "$(json_escape "$folder")" "$(json_escape "$id")" "$(json_escape "$name")" "$(json_escape "$trust")" "$(json_escape "$rescue_id")" "${disabled_at:-0}" "${exists:-false}" "${disable_present:-false}" "$(json_escape "$reason")"
     first=0
   done <<EOF_Q
 $(list_quarantined_modules_tsv)
@@ -123,9 +146,9 @@ capabilities_json() {
     "$JQ_BIN" -cn \
       --arg version "$version" \
       --argjson versionCode "$version_code" \
-      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","diagnostic-export","queued-settings","event-history"]}'
+      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","guided-recovery","diagnostic-export","queued-settings","event-history"]}'
   else
-    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","diagnostic-export","queued-settings","event-history"]}\n' \
+    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","guided-recovery","diagnostic-export","queued-settings","event-history"]}\n' \
       "$(json_escape "$version")" "$version_code"
   fi
 }
@@ -183,6 +206,7 @@ snapshot_json() {
 }
 
 command="$1"
+mode=""; value=""; old_ifs=""; folder=""; output=""; rc=0; path=""; selected_count=0
 [ "$#" -gt 0 ] && shift
 case "$command" in
   capabilities) capabilities_json ;;
@@ -213,6 +237,17 @@ case "$command" in
       one)
         case "$value" in ''|*[!A-Za-z0-9._-]*) json_error "A valid module folder is required."; exit 2 ;; esac
         capture_mutation restore_quarantined_modules individual "$value"
+        ;;
+      selected)
+        [ -n "$value" ] || { json_error "At least one module folder is required."; exit 2; }
+        old_ifs="$IFS"; IFS=','; selected_count=0
+        for folder in $value; do
+          case "$folder" in ''|*[!A-Za-z0-9._-]*) IFS="$old_ifs"; json_error "Invalid module folder."; exit 2 ;; esac
+          selected_count=$((selected_count + 1))
+          [ "$selected_count" -le 64 ] || { IFS="$old_ifs"; json_error "Too many module folders."; exit 2; }
+        done
+        IFS="$old_ifs"
+        capture_mutation restore_quarantined_modules selected "$value"
         ;;
       half|all) capture_mutation restore_quarantined_modules "$mode" "" ;;
       *) json_error "Invalid restore mode."; exit 2 ;;
