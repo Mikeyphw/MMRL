@@ -81,4 +81,65 @@ class TaskerAuthorizationPolicyTest {
         )
     }
 
+    @Test
+    fun `ash recovery capability requires its dedicated toggle`() {
+        val preferences = UserPreferences(
+            taskerIntegrationEnabled = true,
+            taskerAllowAshRecovery = false,
+            taskerApprovalPolicy = TaskerApprovalPolicy.DEVICE_UNLOCKED,
+        )
+        assertEquals(
+            TaskerAuthorizationDecision.DENY,
+            TaskerAuthorizationPolicy.decide(
+                preferences,
+                TaskerCapability.ASH_RECOVERY,
+                "example",
+                true,
+            ),
+        )
+    }
+
+    @Test
+    fun `ash recovery allowlist requires every affected module`() {
+        val preferences = UserPreferences(
+            taskerIntegrationEnabled = true,
+            taskerAllowAshRecovery = true,
+            taskerApprovalPolicy = TaskerApprovalPolicy.MODULE_ALLOWLIST,
+            taskerAllowedModules = setOf("first", "second"),
+        )
+        assertEquals(
+            TaskerAuthorizationDecision.EXECUTE,
+            TaskerAuthorizationPolicy.decideForModules(
+                preferences,
+                TaskerCapability.ASH_RECOVERY,
+                listOf("first", "second"),
+                false,
+            ),
+        )
+        assertEquals(
+            TaskerAuthorizationDecision.REQUIRE_APPROVAL,
+            TaskerAuthorizationPolicy.decideForModules(
+                preferences,
+                TaskerCapability.ASH_RECOVERY,
+                listOf("first", "third"),
+                false,
+            ),
+        )
+    }
+
+    @Test
+    fun `root request preserves ash token binding fields`() {
+        val request = TaskerRootRequest(
+            id = "request-1",
+            operationId = "operation-1",
+            command = "ASH_EXECUTE_PLAN",
+            moduleId = "alpha",
+            moduleName = "Recovery plan",
+            ashAutomationToken = "ash1.1234567890123456",
+            idempotencyKey = "task:recovery-001",
+            createdAt = 123L,
+        )
+        assertEquals(request, TaskerRootRequest.fromJson(request.toJson()))
+    }
+
 }

@@ -137,3 +137,7 @@ Triggered when a persisted operation fails, including Tasker-controlled root act
 ## Safety boundary
 
 MMRL does not expose generic root shell execution. Root changes are asynchronous, capability-gated, approval-aware, and persisted in Activity. Reviewed installs are hash-bound, revalidated immediately before execution, and use the same backup and rollback infrastructure as the normal app flow.
+
+## AshReXcue recovery automation
+
+Phase H adds typed AshReXcue Tasker actions for capabilities, recovery status, module evidence, guarded plan preview/execution, guidance outcomes, and evidence refresh. Mutating actions require the dedicated AshReXcue recovery capability switch. Plans are revision-bound, idempotent, rate limited, auditable, and executed through one-shot 30-minute tokens. High-risk plans always wait for MMRL approval, and no action exposes arbitrary shell execution. See `docs/ASHREXCUE_PHASE_H.md` for the JSON contract and shell equivalents.

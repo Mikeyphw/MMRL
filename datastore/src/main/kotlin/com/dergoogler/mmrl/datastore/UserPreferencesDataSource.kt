@@ -528,6 +528,7 @@ class UserPreferencesDataSource
         suspend fun setTaskerAllowModuleActions(value: Boolean) = update { copy(taskerAllowModuleActions = value) }
         suspend fun setTaskerAllowRemovals(value: Boolean) = update { copy(taskerAllowRemovals = value) }
         suspend fun setTaskerAllowReviewedInstalls(value: Boolean) = update { copy(taskerAllowReviewedInstalls = value) }
+        suspend fun setTaskerAllowAshRecovery(value: Boolean) = update { copy(taskerAllowAshRecovery = value) }
         suspend fun setTaskerApprovalPolicy(value: com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy) = update { copy(taskerApprovalPolicy = value) }
         suspend fun setTaskerAllowedModules(value: Set<String>) = update { copy(taskerAllowedModules = value) }
 

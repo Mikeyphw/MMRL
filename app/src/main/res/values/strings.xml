@@ -864,4 +864,49 @@
     <string name="recovery_center_refresh">Refresh Recovery Center</string>
     <string name="notification_name_ash_recovery">Boot protection</string>
     <string name="notification_description_ash_recovery">Recovery incidents, reboot reminders, and restoration trial alerts</string>
+
+    <string name="settings_tasker_ash_recovery">Allow AshReXcue recovery control</string>
+    <string name="settings_tasker_ash_recovery_desc">Allows guarded, token-bound recovery plans and guidance feedback. Read-only status and evidence remain available.</string>
+
+    <string name="tasker_action_ash_capabilities">MMRL: AshReXcue Capabilities</string>
+    <string name="tasker_action_ash_status">MMRL: AshReXcue Status</string>
+    <string name="tasker_action_ash_evidence">MMRL: AshReXcue Evidence</string>
+    <string name="tasker_action_ash_prepare_plan">MMRL: Prepare AshReXcue Plan</string>
+    <string name="tasker_action_ash_execute_plan">MMRL: Execute AshReXcue Plan</string>
+    <string name="tasker_action_ash_outcome">MMRL: Record AshReXcue Outcome</string>
+    <string name="tasker_action_ash_refresh">MMRL: Refresh AshReXcue Evidence</string>
+
+    <string name="tasker_field_ash_filter">Evidence filter: all, quarantined, suspect, changed, or needs-review</string>
+    <string name="tasker_field_ash_preset">Recovery preset: conservative, balanced, rapid, or custom</string>
+    <string name="tasker_field_ash_folders">Custom module folders, comma or space separated</string>
+    <string name="tasker_field_ash_token">AshReXcue one-shot automation token</string>
+    <string name="tasker_field_idempotency_key">Idempotency key, 8 to 96 characters</string>
+    <string name="tasker_field_dry_run">Dry run: preview without issuing an execution token</string>
+    <string name="tasker_field_recommendation_id">Guidance recommendation ID</string>
+    <string name="tasker_field_module_folder">AshReXcue module folder</string>
+    <string name="tasker_field_guidance_outcome">Guidance outcome: helped, failed, or inconclusive</string>
+    <string name="tasker_error_ash_token_required">AshReXcue automation token is required</string>
+    <string name="tasker_error_idempotency_key_required">Idempotency key is required</string>
+    <string name="tasker_error_recommendation_id_required">Recommendation ID is required</string>
+    <string name="tasker_error_guidance_outcome_required">Guidance outcome is required</string>
+
+    <string name="tasker_var_ash_protocol_version_label">AshReXcue protocol version</string>
+    <string name="tasker_var_ash_protocol_version_description">Version of the stable MMRL AshReXcue external-control contract</string>
+    <string name="tasker_var_ash_schema_label">AshReXcue schema</string>
+    <string name="tasker_var_ash_schema_description">Stable JSON schema identifier returned by the action</string>
+    <string name="tasker_var_ash_token_label">AshReXcue automation token</string>
+    <string name="tasker_var_ash_token_description">Short-lived one-shot token bound to one recovery revision and idempotency key</string>
+    <string name="tasker_var_ash_expires_label">AshReXcue token expiration</string>
+    <string name="tasker_var_ash_expires_description">Unix time in milliseconds when the automation token expires</string>
+    <string name="tasker_var_ash_plan_id_label">AshReXcue plan ID</string>
+    <string name="tasker_var_ash_plan_id_description">Deterministic identifier of the guarded recovery plan</string>
+    <string name="tasker_var_ash_revision_label">AshReXcue recovery revision</string>
+    <string name="tasker_var_ash_revision_description">Exact quarantine revision to which the plan is bound</string>
+    <string name="tasker_var_ash_risk_label">AshReXcue plan risk</string>
+    <string name="tasker_var_ash_risk_description">Low, Moderate, High, or Blocked recovery-plan risk</string>
+    <string name="tasker_var_ash_dry_run_label">AshReXcue dry run</string>
+    <string name="tasker_var_ash_dry_run_description">Whether this result is a preview that cannot be executed</string>
+    <string name="tasker_var_ash_replayed_label">AshReXcue replayed result</string>
+    <string name="tasker_var_ash_replayed_description">Whether an idempotent request returned an existing operation or receipt</string>
+
 </resources>

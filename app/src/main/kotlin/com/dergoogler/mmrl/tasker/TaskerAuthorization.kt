@@ -23,6 +23,7 @@ enum class TaskerCapability {
     MODULE_ACTION,
     REMOVAL,
     REVIEWED_INSTALL,
+    ASH_RECOVERY,
 }
 
 enum class TaskerAuthorizationDecision { EXECUTE, REQUIRE_APPROVAL, DENY }
@@ -35,10 +36,25 @@ internal object TaskerAuthorizationPolicy {
         moduleId: String,
     ): TaskerAuthorizationDecision {
         val manager = context.getSystemService(KeyguardManager::class.java)
-        return decide(
+        return decideForModules(
             preferences = preferences,
             capability = capability,
-            moduleId = moduleId,
+            moduleIds = listOf(moduleId),
+            deviceUnlocked = manager?.isDeviceLocked == false,
+        )
+    }
+
+    fun decideForModules(
+        context: Context,
+        preferences: UserPreferences,
+        capability: TaskerCapability,
+        moduleIds: Collection<String>,
+    ): TaskerAuthorizationDecision {
+        val manager = context.getSystemService(KeyguardManager::class.java)
+        return decideForModules(
+            preferences = preferences,
+            capability = capability,
+            moduleIds = moduleIds,
             deviceUnlocked = manager?.isDeviceLocked == false,
         )
     }
@@ -48,6 +64,18 @@ internal object TaskerAuthorizationPolicy {
         capability: TaskerCapability,
         moduleId: String,
         deviceUnlocked: Boolean,
+    ): TaskerAuthorizationDecision = decideForModules(
+        preferences = preferences,
+        capability = capability,
+        moduleIds = listOf(moduleId),
+        deviceUnlocked = deviceUnlocked,
+    )
+
+    fun decideForModules(
+        preferences: UserPreferences,
+        capability: TaskerCapability,
+        moduleIds: Collection<String>,
+        deviceUnlocked: Boolean,
     ): TaskerAuthorizationDecision {
         if (!preferences.taskerIntegrationEnabled) return TaskerAuthorizationDecision.DENY
         val capabilityAllowed = when (capability) {
@@ -55,6 +83,7 @@ internal object TaskerAuthorizationPolicy {
             TaskerCapability.MODULE_ACTION -> preferences.taskerAllowModuleActions
             TaskerCapability.REMOVAL -> preferences.taskerAllowRemovals
             TaskerCapability.REVIEWED_INSTALL -> preferences.taskerAllowReviewedInstalls
+            TaskerCapability.ASH_RECOVERY -> preferences.taskerAllowAshRecovery
         }
         if (!capabilityAllowed) return TaskerAuthorizationDecision.DENY
         return when (preferences.taskerApprovalPolicy) {
@@ -62,8 +91,10 @@ internal object TaskerAuthorizationPolicy {
             TaskerApprovalPolicy.DEVICE_UNLOCKED ->
                 if (deviceUnlocked) TaskerAuthorizationDecision.EXECUTE else TaskerAuthorizationDecision.REQUIRE_APPROVAL
             TaskerApprovalPolicy.MODULE_ALLOWLIST -> {
-                val normalized = ModuleIdentity.normalize(moduleId)
-                if (preferences.taskerAllowedModules.any { ModuleIdentity.matches(it, normalized) }) {
+                val normalized = moduleIds.map(ModuleIdentity::normalize).filter(String::isNotBlank)
+                if (normalized.isNotEmpty() && normalized.all { moduleId ->
+                        preferences.taskerAllowedModules.any { ModuleIdentity.matches(it, moduleId) }
+                    }) {
                     TaskerAuthorizationDecision.EXECUTE
                 } else {
                     TaskerAuthorizationDecision.REQUIRE_APPROVAL
@@ -92,6 +123,8 @@ data class TaskerRootRequest(
     val moduleName: String,
     val reviewToken: String? = null,
     val targetOperationId: String? = null,
+    val ashAutomationToken: String? = null,
+    val idempotencyKey: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
 ) {
     fun toJson() = JSONObject()
@@ -102,6 +135,8 @@ data class TaskerRootRequest(
         .put("module_name", moduleName)
         .put("review_token", reviewToken)
         .put("target_operation_id", targetOperationId)
+        .put("ash_automation_token", ashAutomationToken)
+        .put("idempotency_key", idempotencyKey)
         .put("created_at", createdAt)
 
     companion object {
@@ -113,6 +148,8 @@ data class TaskerRootRequest(
             moduleName = value.optString("module_name"),
             reviewToken = value.optString("review_token").takeIf(String::isNotBlank),
             targetOperationId = value.optString("target_operation_id").takeIf(String::isNotBlank),
+            ashAutomationToken = value.optString("ash_automation_token").takeIf(String::isNotBlank),
+            idempotencyKey = value.optString("idempotency_key").takeIf(String::isNotBlank),
             createdAt = value.optLong("created_at"),
         )
     }

@@ -889,6 +889,439 @@
         }
       },
       "history_id": "c8d996a1fdfd4762b5beb4d81a70409a"
+    },
+    {
+      "applied_at": "2026-07-20T02:59:51.224145Z",
+      "artifact": "/home/mike/Downloads/mmrl_ashrexcue_phase_h_overlay.zip",
+      "artifact_name": "mmrl_ashrexcue_phase_h_overlay.zip",
+      "type": "overlay",
+      "sha256": "ae22decacb38f93b586d80aac30139454ef3091dfe18ef9b48d377161ceb7490",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Add AshReXcue automation and external control",
+      "commit_hash": "",
+      "file_count": 24,
+      "change_counts": {
+        "add": 6,
+        "modify": 18
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL AshReXcue Phase H automation and external control",
+        "description": "Adds guarded Tasker actions, typed external-control JSON, one-shot plan tokens, idempotent receipts, rate limits, approval routing, audit history, and shell automation.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "TASKER_SUPPORT.md",
+              "action": "modify",
+              "sha256": "3bba9a94760bf69408a91e78fa1efa3afdc2b59a35356b1736bbd4daf993a076",
+              "size": 6001,
+              "source_sha256": "4458f92d65f8e9fc065e01a9982065af0ecacb8e42d283f445274c726a4d05c4"
+            },
+            {
+              "path": "app/src/main/AndroidManifest.xml",
+              "action": "modify",
+              "sha256": "db74cff486dd5db45d0a2d49ce7ea9300c1b3fb46f82f73a45d91e175a52ea72",
+              "size": 16562,
+              "source_sha256": "cc34379a7f64a54274be3dc6b290168050016a5ccf68d9e0c825f5af3c8aacbd"
+            },
+            {
+              "path": "app/src/main/ash-module/ashrexcuectl",
+              "action": "modify",
+              "sha256": "ebcb6bdc8e7687cd456632148066249a0b6b2ba541d16b769b7bbfdfae411337",
+              "size": 13662,
+              "source_sha256": "15010647be604d070d04557bf29916ac547c6532cc170145a739392e4f369959"
+            },
+            {
+              "path": "app/src/main/ash-module/external-control.sh",
+              "action": "add",
+              "sha256": "2408206d342706838b8cd03a114af69073aa314cb8576c266fe2cd3e04a9f234",
+              "size": 17501
+            },
+            {
+              "path": "app/src/main/ash-module/module.prop",
+              "action": "modify",
+              "sha256": "cf90f7819daa2c5311d74835b78808b787d3238de6debe531cc5c4b1461b3b5a",
+              "size": 401,
+              "source_sha256": "62305bd7d675f35ce25aef5c18a05a057c070dcdee828735f34520a25244273d"
+            },
+            {
+              "path": "app/src/main/java/com/dergoogler/mmrl/tasker/TaskerRequestInput.java",
+              "action": "modify",
+              "sha256": "a3e92f5bf28051bcfa613deb1658d07d8c89c9876b9389b20865f78d3e0c1aaf",
+              "size": 4306,
+              "source_sha256": "2cde90aa4b8f759c380e9493d0e58c566f2f1daa9d1af739681e6ef651c9f92b"
+            },
+            {
+              "path": "app/src/main/java/com/dergoogler/mmrl/tasker/TaskerResultOutput.java",
+              "action": "modify",
+              "sha256": "686fcdf3b651ed0096cc06a49066c267597875bd9bb6d4e09b03ad8ecf30f897",
+              "size": 21130,
+              "source_sha256": "d854625218f908beff53c737b814eb9be0b45f85d3e61c4295f06d11e31c6a22"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlModels.kt",
+              "action": "add",
+              "sha256": "76828c3ac7dc11b57dec9721b9361b07c689cbad68b18a1bc77e8cd6eafb8d61",
+              "size": 7956
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlStore.kt",
+              "action": "add",
+              "sha256": "ec4caf73452c6c6da7301a5700e8fd8780851087126ac6b808c3d721efef3f60",
+              "size": 14195
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerApprovalActivity.kt",
+              "action": "modify",
+              "sha256": "fcf36cb2c4524b66560cafff5712c0a1a71a5110d5736afa7b7c3ffd652056f6",
+              "size": 4152,
+              "source_sha256": "c0246dfbb60aa147469da07a035969d11cf386b91ae755f1b6d8f8178ee17150"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAshActions.kt",
+              "action": "add",
+              "sha256": "7dfdb324dc81479f97449aa92165eb83007b25958f3f2abc0e925154e522ca83",
+              "size": 28086
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAuthorization.kt",
+              "action": "modify",
+              "sha256": "b0253fd661b852dafa525fdbc42b6a46ca4b18e76d23b9891a60ed26e07aab87",
+              "size": 11176,
+              "source_sha256": "6c5453828dafb37cccaa1a72f12a6a29af92f3fd26e1fd7e2f8f2ff3290a95c1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAutomationWorker.kt",
+              "action": "modify",
+              "sha256": "db7fb8beb0ad088e44d34ec4ba534c691ae0ea1eb453bcece5d0e97ac7c0e16b",
+              "size": 15589,
+              "source_sha256": "390e54da6867d72557f37d94455bc7e76a1083e8ab550d3ff29e237af1bb85cd"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerConfigActivities.kt",
+              "action": "modify",
+              "sha256": "83e5143454277759bc615191509351becb04bf8a52d1550319fc7ec88abb876b",
+              "size": 34845,
+              "source_sha256": "7034646e6c5757f528120633d7440beb7921cd3c110cba01426bd6b8cf4bce68"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerContractFactories.kt",
+              "action": "modify",
+              "sha256": "f8fe34b4a103d24fc3aab1d2a408ce9819d2ca222f6150075d2f7b622dc8b37c",
+              "size": 5365,
+              "source_sha256": "eccfe211f502877c1def1c760f7964a2943af4b231dd12cf6bcdab77d24f1b07"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/tasker/TaskerScreen.kt",
+              "action": "modify",
+              "sha256": "b6c6443d98f455bfe6e0d56c645613c4358ae2ed72ed6935fa7eb39f72f4d0b0",
+              "size": 6100,
+              "source_sha256": "84c4d24514acce82582f6f484fb3e5aeaff9dcbdc0461ec919ad43ea2dd854a5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/SettingsViewModel.kt",
+              "action": "modify",
+              "sha256": "fe090360e944aa36229b172cb572eb36cdf053458fb51ac530f2d9a1a469aef5",
+              "size": 14500,
+              "source_sha256": "b83e4484c4667eb4e3440c1042c3973973b7bc6e6ca1e8b1155a7e88aa4010ff"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "5d1810334548abff552011097eb668734c88de46edd318d7b7382c406f7d2665",
+              "size": 69568,
+              "source_sha256": "12e87cd8f2e248627b31aa20b6bcfa5cee14d917dbc9b718d00bae5b89c8a94a"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlPolicyTest.kt",
+              "action": "add",
+              "sha256": "5ea268b8fc1595c99695319feaa883b10a510e7277da0f84ae72dbcf8f84aa0d",
+              "size": 5454
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/tasker/TaskerAuthorizationPolicyTest.kt",
+              "action": "modify",
+              "sha256": "31404a44310a98694c4c1256352bcd19001b702df3979c275ee1b3a765f38bec",
+              "size": 5165,
+              "source_sha256": "4c819de7fd5c851624e6752cdaae668ed30312c6e6ae14ae8a5836f55a065f4e"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesDataSource.kt",
+              "action": "modify",
+              "sha256": "86011888aa8b6c0671ddb21e62548121e8f0426e8d3361b5b2736726957985bb",
+              "size": 18962,
+              "source_sha256": "ab9fff5798c31a05ff05a2b82b2d2f23b20d014786814beef3a383af1aa5d098"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesRepository.kt",
+              "action": "modify",
+              "sha256": "71826fc43a0367a74f99d44447cde37b48a027f76917639a42a99fabdb284dbe",
+              "size": 9161,
+              "source_sha256": "892a73a4de9f7a3f2f5bbc02c79489c9aaf70c700de581a4eced81922fb8ed9f"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/model/UserPreferences.kt",
+              "action": "modify",
+              "sha256": "fabda00f4c0d501d5c4504df5e76547317dcfe738e3f0dd65302b2dae4b690f3",
+              "size": 8363,
+              "source_sha256": "12169d99a789c312d1682e72fc4262bbf23af95731fd371ba7d862f31db15d1b"
+            },
+            {
+              "path": "docs/ASHREXCUE_PHASE_H.md",
+              "action": "add",
+              "sha256": "65fd43cc3f700b92483d0c5863f7eeebfa994630aab37d07c7ea790c88176d48",
+              "size": 2406
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add AshReXcue automation and external control"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        },
+        "notes": [
+          "Uses stable mmrl.ash.external.v1 Tasker JSON and ashrexcue.external.v1 module-shell JSON.",
+          "Mutating recovery-plan execution requires a short-lived one-shot token and idempotency key.",
+          "High-risk plans always route through explicit MMRL approval.",
+          "Does not change Room schemas, Gradle dependencies, AIDL, or native build inputs."
+        ]
+      },
+      "history_id": "0b675b7d335a4dc9837b27ffe3376358"
+    },
+    {
+      "applied_at": "2026-07-20T03:18:25.941038Z",
+      "artifact": "/home/mike/Downloads/mmrl_ashrexcue_phase_h_fixed_overlay.zip",
+      "artifact_name": "mmrl_ashrexcue_phase_h_fixed_overlay.zip",
+      "type": "overlay",
+      "sha256": "6e983c7d37da68a6afd6953b5581391d07a57269d0a3bab43cddd7bdf0d9360a",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Add AshReXcue automation and external control",
+      "commit_hash": "",
+      "file_count": 24,
+      "change_counts": {
+        "add": 6,
+        "modify": 18
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL AshReXcue Phase H automation and external control",
+        "description": "Adds guarded Tasker actions, typed external-control JSON, one-shot plan tokens, idempotent receipts, rate limits, approval routing, audit history, shell automation, and corrected Unit-returning Tasker config completion.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "TASKER_SUPPORT.md",
+              "action": "modify",
+              "sha256": "3bba9a94760bf69408a91e78fa1efa3afdc2b59a35356b1736bbd4daf993a076",
+              "size": 6001,
+              "source_sha256": "4458f92d65f8e9fc065e01a9982065af0ecacb8e42d283f445274c726a4d05c4"
+            },
+            {
+              "path": "app/src/main/AndroidManifest.xml",
+              "action": "modify",
+              "sha256": "db74cff486dd5db45d0a2d49ce7ea9300c1b3fb46f82f73a45d91e175a52ea72",
+              "size": 16562,
+              "source_sha256": "cc34379a7f64a54274be3dc6b290168050016a5ccf68d9e0c825f5af3c8aacbd"
+            },
+            {
+              "path": "app/src/main/ash-module/ashrexcuectl",
+              "action": "modify",
+              "sha256": "ebcb6bdc8e7687cd456632148066249a0b6b2ba541d16b769b7bbfdfae411337",
+              "size": 13662,
+              "source_sha256": "15010647be604d070d04557bf29916ac547c6532cc170145a739392e4f369959"
+            },
+            {
+              "path": "app/src/main/ash-module/external-control.sh",
+              "action": "add",
+              "sha256": "2408206d342706838b8cd03a114af69073aa314cb8576c266fe2cd3e04a9f234",
+              "size": 17501
+            },
+            {
+              "path": "app/src/main/ash-module/module.prop",
+              "action": "modify",
+              "sha256": "cf90f7819daa2c5311d74835b78808b787d3238de6debe531cc5c4b1461b3b5a",
+              "size": 401,
+              "source_sha256": "62305bd7d675f35ce25aef5c18a05a057c070dcdee828735f34520a25244273d"
+            },
+            {
+              "path": "app/src/main/java/com/dergoogler/mmrl/tasker/TaskerRequestInput.java",
+              "action": "modify",
+              "sha256": "a3e92f5bf28051bcfa613deb1658d07d8c89c9876b9389b20865f78d3e0c1aaf",
+              "size": 4306,
+              "source_sha256": "2cde90aa4b8f759c380e9493d0e58c566f2f1daa9d1af739681e6ef651c9f92b"
+            },
+            {
+              "path": "app/src/main/java/com/dergoogler/mmrl/tasker/TaskerResultOutput.java",
+              "action": "modify",
+              "sha256": "686fcdf3b651ed0096cc06a49066c267597875bd9bb6d4e09b03ad8ecf30f897",
+              "size": 21130,
+              "source_sha256": "d854625218f908beff53c737b814eb9be0b45f85d3e61c4295f06d11e31c6a22"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlModels.kt",
+              "action": "add",
+              "sha256": "76828c3ac7dc11b57dec9721b9361b07c689cbad68b18a1bc77e8cd6eafb8d61",
+              "size": 7956
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlStore.kt",
+              "action": "add",
+              "sha256": "ec4caf73452c6c6da7301a5700e8fd8780851087126ac6b808c3d721efef3f60",
+              "size": 14195
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerApprovalActivity.kt",
+              "action": "modify",
+              "sha256": "fcf36cb2c4524b66560cafff5712c0a1a71a5110d5736afa7b7c3ffd652056f6",
+              "size": 4152,
+              "source_sha256": "c0246dfbb60aa147469da07a035969d11cf386b91ae755f1b6d8f8178ee17150"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAshActions.kt",
+              "action": "add",
+              "sha256": "7dfdb324dc81479f97449aa92165eb83007b25958f3f2abc0e925154e522ca83",
+              "size": 28086
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAuthorization.kt",
+              "action": "modify",
+              "sha256": "b0253fd661b852dafa525fdbc42b6a46ca4b18e76d23b9891a60ed26e07aab87",
+              "size": 11176,
+              "source_sha256": "6c5453828dafb37cccaa1a72f12a6a29af92f3fd26e1fd7e2f8f2ff3290a95c1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAutomationWorker.kt",
+              "action": "modify",
+              "sha256": "db7fb8beb0ad088e44d34ec4ba534c691ae0ea1eb453bcece5d0e97ac7c0e16b",
+              "size": 15589,
+              "source_sha256": "390e54da6867d72557f37d94455bc7e76a1083e8ab550d3ff29e237af1bb85cd"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerConfigActivities.kt",
+              "action": "modify",
+              "sha256": "eda6877a63e32a86fb50b7eee3dd3a4e9e31fe86017ca50f9d24f2c0125e0959",
+              "size": 34873,
+              "source_sha256": "7034646e6c5757f528120633d7440beb7921cd3c110cba01426bd6b8cf4bce68"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerContractFactories.kt",
+              "action": "modify",
+              "sha256": "f8fe34b4a103d24fc3aab1d2a408ce9819d2ca222f6150075d2f7b622dc8b37c",
+              "size": 5365,
+              "source_sha256": "eccfe211f502877c1def1c760f7964a2943af4b231dd12cf6bcdab77d24f1b07"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/tasker/TaskerScreen.kt",
+              "action": "modify",
+              "sha256": "b6c6443d98f455bfe6e0d56c645613c4358ae2ed72ed6935fa7eb39f72f4d0b0",
+              "size": 6100,
+              "source_sha256": "84c4d24514acce82582f6f484fb3e5aeaff9dcbdc0461ec919ad43ea2dd854a5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/SettingsViewModel.kt",
+              "action": "modify",
+              "sha256": "fe090360e944aa36229b172cb572eb36cdf053458fb51ac530f2d9a1a469aef5",
+              "size": 14500,
+              "source_sha256": "b83e4484c4667eb4e3440c1042c3973973b7bc6e6ca1e8b1155a7e88aa4010ff"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "5d1810334548abff552011097eb668734c88de46edd318d7b7382c406f7d2665",
+              "size": 69568,
+              "source_sha256": "12e87cd8f2e248627b31aa20b6bcfa5cee14d917dbc9b718d00bae5b89c8a94a"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlPolicyTest.kt",
+              "action": "add",
+              "sha256": "5ea268b8fc1595c99695319feaa883b10a510e7277da0f84ae72dbcf8f84aa0d",
+              "size": 5454
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/tasker/TaskerAuthorizationPolicyTest.kt",
+              "action": "modify",
+              "sha256": "31404a44310a98694c4c1256352bcd19001b702df3979c275ee1b3a765f38bec",
+              "size": 5165,
+              "source_sha256": "4c819de7fd5c851624e6752cdaae668ed30312c6e6ae14ae8a5836f55a065f4e"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesDataSource.kt",
+              "action": "modify",
+              "sha256": "86011888aa8b6c0671ddb21e62548121e8f0426e8d3361b5b2736726957985bb",
+              "size": 18962,
+              "source_sha256": "ab9fff5798c31a05ff05a2b82b2d2f23b20d014786814beef3a383af1aa5d098"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesRepository.kt",
+              "action": "modify",
+              "sha256": "71826fc43a0367a74f99d44447cde37b48a027f76917639a42a99fabdb284dbe",
+              "size": 9161,
+              "source_sha256": "892a73a4de9f7a3f2f5bbc02c79489c9aaf70c700de581a4eced81922fb8ed9f"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/model/UserPreferences.kt",
+              "action": "modify",
+              "sha256": "fabda00f4c0d501d5c4504df5e76547317dcfe738e3f0dd65302b2dae4b690f3",
+              "size": 8363,
+              "source_sha256": "12169d99a789c312d1682e72fc4262bbf23af95731fd371ba7d862f31db15d1b"
+            },
+            {
+              "path": "docs/ASHREXCUE_PHASE_H.md",
+              "action": "add",
+              "sha256": "65fd43cc3f700b92483d0c5863f7eeebfa994630aab37d07c7ea790c88176d48",
+              "size": 2406
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add AshReXcue automation and external control"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        },
+        "notes": [
+          "Uses stable mmrl.ash.external.v1 Tasker JSON and ashrexcue.external.v1 module-shell JSON.",
+          "Mutating recovery-plan execution requires a short-lived one-shot token and idempotency key.",
+          "High-risk plans always route through explicit MMRL approval.",
+          "Tasker configuration helperFinish overrides explicitly discard the library SimpleResult and return Unit.",
+          "Does not change Room schemas, Gradle dependencies, AIDL, or native build inputs."
+        ]
+      },
+      "history_id": "1546d6a50a164e5cb7a4d29c2d02280e"
     }
   ]
 }

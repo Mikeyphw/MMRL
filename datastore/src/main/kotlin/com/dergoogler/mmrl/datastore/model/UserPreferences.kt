@@ -107,6 +107,7 @@ data class UserPreferences(
     @ProtoNumber(68) val ashIncidentNotifications: Boolean = true,
     @ProtoNumber(69) val ashRebootReminders: Boolean = true,
     @ProtoNumber(70) val ashRestorationReminders: Boolean = true,
+    @ProtoNumber(71) val taskerAllowAshRecovery: Boolean = false,
 ) {
     fun isDarkMode(context: Context? = null): Boolean {
         val batteryForcesDark = batterySaverForcesDark && context?.let {

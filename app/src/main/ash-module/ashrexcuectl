@@ -7,6 +7,10 @@ MODPATH="${0%/*}"
   printf '{"ok":false,"message":"failed to load AshReXcue runtime"}\n'
   exit 1
 }
+. "$MODPATH/external-control.sh" >/dev/null 2>&1 || {
+  printf '{"ok":false,"message":"failed to load AshReXcue external-control runtime"}\n'
+  exit 1
+}
 initialize_storage >/dev/null 2>&1 || true
 JQ_BIN="$JQ"
 
@@ -111,7 +115,7 @@ settings_json() {
 }
 
 activity_json() {
-  local limit tmp id timestamp result mode count reason
+  local limit tmp id timestamp result mode count reason recommendation folder outcome key
   limit="${1:-100}"
   case "$limit" in ''|*[!0-9]*) limit=100 ;; esac
   [ "$limit" -gt 200 ] && limit=200
@@ -128,6 +132,13 @@ activity_json() {
   done <<EOF_R >> "$tmp"
 $(list_restore_history_tsv 200)
 EOF_R
+  if [ -f "$ASH_EXTERNAL_OUTCOMES" ]; then
+    while IFS="$(printf '\t')" read -r timestamp recommendation folder outcome key; do
+      [ -n "$recommendation" ] || continue
+      printf '{"id":"guidance-%s-%s","timestamp":%s,"type":"guidance","title":"Guidance outcome · %s","subtitle":"%s · %s","status":"%s","details":"idempotency=%s"}\n' \
+        "$(json_escape "$recommendation")" "${timestamp:-0}" "${timestamp:-0}" "$(json_escape "$outcome")" "$(json_escape "$folder")" "$(json_escape "$recommendation")" "$(json_escape "$outcome")" "$(json_escape "$key")"
+    done < "$ASH_EXTERNAL_OUTCOMES" >> "$tmp"
+  fi
   if [ -x "$JQ_BIN" ]; then
     "$JQ_BIN" -s --argjson limit "$limit" '{items:(sort_by(.timestamp)|reverse|.[0:$limit])}' "$tmp"
   else
@@ -146,9 +157,9 @@ capabilities_json() {
     "$JQ_BIN" -cn \
       --arg version "$version" \
       --argjson versionCode "$version_code" \
-      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history"]}'
+      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency"]}'
   else
-    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history"]}\n' \
+    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency"]}\n' \
       "$(json_escape "$version")" "$version_code"
   fi
 }
@@ -224,6 +235,7 @@ command="$1"
 mode=""; value=""; plan_id=""; recovery_revision_value=""; old_ifs=""; folder=""; output=""; rc=0; path=""; selected_count=0
 [ "$#" -gt 0 ] && shift
 case "$command" in
+  automation) ash_external_dispatch "$@" ;;
   capabilities) capabilities_json ;;
   snapshot) snapshot_json "$1" ;;
   status) dashboard_json ;;

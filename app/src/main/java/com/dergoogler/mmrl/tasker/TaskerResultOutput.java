@@ -40,6 +40,15 @@ public class TaskerResultOutput {
     public String[] moduleNames;
     public String[] versions;
     public String[] states;
+    public int protocolVersion;
+    public String schema;
+    public String automationToken;
+    public long automationExpiresAt;
+    public String planId;
+    public String recoveryRevision;
+    public String risk;
+    public boolean dryRun;
+    public boolean replayed;
 
     public TaskerResultOutput() {
         this(
@@ -491,4 +500,40 @@ public class TaskerResultOutput {
     )
     public String[] getStates() { return states; }
     public void setStates(String[] value) { states = value; }
+    @TaskerOutputVariable(name = "ash_protocol_version", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_protocol_version_label", htmlLabelResIdName = "tasker_var_ash_protocol_version_description")
+    public int getProtocolVersion() { return protocolVersion; }
+    public void setProtocolVersion(int value) { protocolVersion = value; }
+
+    @TaskerOutputVariable(name = "ash_schema", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_schema_label", htmlLabelResIdName = "tasker_var_ash_schema_description")
+    public String getSchema() { return schema; }
+    public void setSchema(String value) { schema = value; }
+
+    @TaskerOutputVariable(name = "ash_automation_token", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_token_label", htmlLabelResIdName = "tasker_var_ash_token_description")
+    public String getAutomationToken() { return automationToken; }
+    public void setAutomationToken(String value) { automationToken = value; }
+
+    @TaskerOutputVariable(name = "ash_automation_expires_at", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_expires_label", htmlLabelResIdName = "tasker_var_ash_expires_description")
+    public long getAutomationExpiresAt() { return automationExpiresAt; }
+    public void setAutomationExpiresAt(long value) { automationExpiresAt = value; }
+
+    @TaskerOutputVariable(name = "ash_plan_id", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_plan_id_label", htmlLabelResIdName = "tasker_var_ash_plan_id_description")
+    public String getPlanId() { return planId; }
+    public void setPlanId(String value) { planId = value; }
+
+    @TaskerOutputVariable(name = "ash_recovery_revision", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_revision_label", htmlLabelResIdName = "tasker_var_ash_revision_description")
+    public String getRecoveryRevision() { return recoveryRevision; }
+    public void setRecoveryRevision(String value) { recoveryRevision = value; }
+
+    @TaskerOutputVariable(name = "ash_risk", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_risk_label", htmlLabelResIdName = "tasker_var_ash_risk_description")
+    public String getRisk() { return risk; }
+    public void setRisk(String value) { risk = value; }
+
+    @TaskerOutputVariable(name = "ash_dry_run", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_dry_run_label", htmlLabelResIdName = "tasker_var_ash_dry_run_description")
+    public boolean isDryRun() { return dryRun; }
+    public void setDryRun(boolean value) { dryRun = value; }
+
+    @TaskerOutputVariable(name = "ash_replayed", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_replayed_label", htmlLabelResIdName = "tasker_var_ash_replayed_description")
+    public boolean isReplayed() { return replayed; }
+    public void setReplayed(boolean value) { replayed = value; }
+
 }

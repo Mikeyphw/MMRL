@@ -74,6 +74,14 @@ fun TaskerScreen() {
                 Title(R.string.settings_tasker_reviewed_installs)
                 Description(R.string.settings_tasker_reviewed_installs_desc)
             }
+            SwitchItem(
+                enabled = enabled,
+                checked = preferences.taskerAllowAshRecovery,
+                onChange = settings::setTaskerAllowAshRecovery,
+            ) {
+                Title(R.string.settings_tasker_ash_recovery)
+                Description(R.string.settings_tasker_ash_recovery_desc)
+            }
         }
 
         Section(title = stringResource(R.string.settings_tasker_approval)) {

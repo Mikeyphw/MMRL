@@ -392,6 +392,7 @@ class SettingsViewModel
         fun setTaskerAllowModuleActions(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowModuleActions(value) }
         fun setTaskerAllowRemovals(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowRemovals(value) }
         fun setTaskerAllowReviewedInstalls(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowReviewedInstalls(value) }
+        fun setTaskerAllowAshRecovery(value: Boolean) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowAshRecovery(value) }
         fun setTaskerApprovalPolicy(value: com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy) = viewModelScope.launch { userPreferencesRepository.setTaskerApprovalPolicy(value) }
         fun setTaskerAllowedModules(value: Set<String>) = viewModelScope.launch { userPreferencesRepository.setTaskerAllowedModules(value) }
 }

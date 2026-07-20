@@ -7,6 +7,15 @@ internal fun taskerRequestInput(
     filename: String? = null,
     forceRefresh: Boolean = false,
     reviewToken: String? = null,
+    ashFilter: String? = null,
+    ashPreset: String? = null,
+    ashFolders: String? = null,
+    ashAutomationToken: String? = null,
+    idempotencyKey: String? = null,
+    dryRun: Boolean = false,
+    recommendationId: String? = null,
+    moduleFolder: String? = null,
+    guidanceOutcome: String? = null,
 ): TaskerRequestInput = TaskerRequestInput().apply {
     this.moduleId = moduleId
     this.operationId = operationId
@@ -14,6 +23,15 @@ internal fun taskerRequestInput(
     this.filename = filename
     this.forceRefresh = forceRefresh
     this.reviewToken = reviewToken
+    this.ashFilter = ashFilter
+    this.ashPreset = ashPreset
+    this.ashFolders = ashFolders
+    this.ashAutomationToken = ashAutomationToken
+    this.idempotencyKey = idempotencyKey
+    this.dryRun = dryRun
+    this.recommendationId = recommendationId
+    this.moduleFolder = moduleFolder
+    this.guidanceOutcome = guidanceOutcome
 }
 
 internal fun taskerEmptyInput(
@@ -57,6 +75,15 @@ internal fun taskerResultOutput(
     moduleNames: Array<String> = emptyArray(),
     versions: Array<String> = emptyArray(),
     states: Array<String> = emptyArray(),
+    protocolVersion: Int = 0,
+    schema: String = "",
+    automationToken: String = "",
+    automationExpiresAt: Long = 0L,
+    planId: String = "",
+    recoveryRevision: String = "",
+    risk: String = "",
+    dryRun: Boolean = false,
+    replayed: Boolean = false,
 ): TaskerResultOutput = TaskerResultOutput().apply {
     this.success = success
     this.status = status
@@ -92,6 +119,15 @@ internal fun taskerResultOutput(
     this.moduleNames = moduleNames
     this.versions = versions
     this.states = states
+    this.protocolVersion = protocolVersion
+    this.schema = schema
+    this.automationToken = automationToken
+    this.automationExpiresAt = automationExpiresAt
+    this.planId = planId
+    this.recoveryRevision = recoveryRevision
+    this.risk = risk
+    this.dryRun = dryRun
+    this.replayed = replayed
 }
 
 internal fun taskerUpdateEvent(

@@ -26,6 +26,15 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
     protected open val showFilename = false
     protected open val showForceRefresh = false
     protected open val showReviewToken = false
+    protected open val showAshFilter = false
+    protected open val showAshPreset = false
+    protected open val showAshFolders = false
+    protected open val showAshAutomationToken = false
+    protected open val showIdempotencyKey = false
+    protected open val showDryRun = false
+    protected open val showRecommendationId = false
+    protected open val showModuleFolder = false
+    protected open val showGuidanceOutcome = false
     protected abstract val screenTitle: String
     protected abstract val screenDescription: String
     protected abstract fun helperOnCreate()
@@ -37,6 +46,15 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
     private lateinit var filename: EditText
     private lateinit var forceRefresh: CheckBox
     private lateinit var reviewToken: EditText
+    private lateinit var ashFilter: EditText
+    private lateinit var ashPreset: EditText
+    private lateinit var ashFolders: EditText
+    private lateinit var ashAutomationToken: EditText
+    private lateinit var idempotencyKey: EditText
+    private lateinit var dryRun: CheckBox
+    private lateinit var recommendationId: EditText
+    private lateinit var moduleFolder: EditText
+    private lateinit var guidanceOutcome: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +77,19 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
         url = field(content, getString(R.string.tasker_field_url), showUrl, InputType.TYPE_TEXT_VARIATION_URI)
         filename = field(content, getString(R.string.tasker_field_filename), showFilename)
         reviewToken = field(content, getString(R.string.tasker_field_review_token), showReviewToken)
+        ashFilter = field(content, getString(R.string.tasker_field_ash_filter), showAshFilter)
+        ashPreset = field(content, getString(R.string.tasker_field_ash_preset), showAshPreset)
+        ashFolders = field(content, getString(R.string.tasker_field_ash_folders), showAshFolders)
+        ashAutomationToken = field(content, getString(R.string.tasker_field_ash_token), showAshAutomationToken)
+        idempotencyKey = field(content, getString(R.string.tasker_field_idempotency_key), showIdempotencyKey)
+        recommendationId = field(content, getString(R.string.tasker_field_recommendation_id), showRecommendationId)
+        moduleFolder = field(content, getString(R.string.tasker_field_module_folder), showModuleFolder)
+        guidanceOutcome = field(content, getString(R.string.tasker_field_guidance_outcome), showGuidanceOutcome)
+        dryRun = CheckBox(this).apply {
+            text = getString(R.string.tasker_field_dry_run)
+            visibility = if (showDryRun) android.view.View.VISIBLE else android.view.View.GONE
+        }
+        content.addView(dryRun, matchWrap())
         forceRefresh = CheckBox(this).apply {
             text = getString(R.string.tasker_force_refresh_repositories)
             visibility = if (showForceRefresh) android.view.View.VISIBLE else android.view.View.GONE
@@ -81,6 +112,15 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
             this@TaskerRequestConfigActivity.filename.setText(filename.orEmpty())
             this@TaskerRequestConfigActivity.forceRefresh.isChecked = forceRefresh
             this@TaskerRequestConfigActivity.reviewToken.setText(reviewToken.orEmpty())
+            this@TaskerRequestConfigActivity.ashFilter.setText(ashFilter.orEmpty())
+            this@TaskerRequestConfigActivity.ashPreset.setText(ashPreset.orEmpty())
+            this@TaskerRequestConfigActivity.ashFolders.setText(ashFolders.orEmpty())
+            this@TaskerRequestConfigActivity.ashAutomationToken.setText(ashAutomationToken.orEmpty())
+            this@TaskerRequestConfigActivity.idempotencyKey.setText(idempotencyKey.orEmpty())
+            this@TaskerRequestConfigActivity.dryRun.isChecked = dryRun
+            this@TaskerRequestConfigActivity.recommendationId.setText(recommendationId.orEmpty())
+            this@TaskerRequestConfigActivity.moduleFolder.setText(moduleFolder.orEmpty())
+            this@TaskerRequestConfigActivity.guidanceOutcome.setText(guidanceOutcome.orEmpty())
         }
     }
 
@@ -137,6 +177,49 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
         action()
     }
 
+
+    protected fun finishRequiringAutomationToken(action: () -> Unit) {
+        if (ashAutomationToken.text?.toString()?.trim().isNullOrEmpty()) {
+            ashAutomationToken.error = getString(R.string.tasker_error_ash_token_required)
+            ashAutomationToken.requestFocus()
+            return
+        }
+        if (idempotencyKey.text?.toString()?.trim().isNullOrEmpty()) {
+            idempotencyKey.error = getString(R.string.tasker_error_idempotency_key_required)
+            idempotencyKey.requestFocus()
+            return
+        }
+        action()
+    }
+
+    protected fun finishRequiringIdempotencyKey(action: () -> Unit) {
+        if (idempotencyKey.text?.toString()?.trim().isNullOrEmpty()) {
+            idempotencyKey.error = getString(R.string.tasker_error_idempotency_key_required)
+            idempotencyKey.requestFocus()
+            return
+        }
+        action()
+    }
+
+    protected fun finishRequiringGuidanceOutcome(action: () -> Unit) {
+        if (recommendationId.text?.toString()?.trim().isNullOrEmpty()) {
+            recommendationId.error = getString(R.string.tasker_error_recommendation_id_required)
+            recommendationId.requestFocus()
+            return
+        }
+        if (guidanceOutcome.text?.toString()?.trim().isNullOrEmpty()) {
+            guidanceOutcome.error = getString(R.string.tasker_error_guidance_outcome_required)
+            guidanceOutcome.requestFocus()
+            return
+        }
+        if (idempotencyKey.text?.toString()?.trim().isNullOrEmpty()) {
+            idempotencyKey.error = getString(R.string.tasker_error_idempotency_key_required)
+            idempotencyKey.requestFocus()
+            return
+        }
+        action()
+    }
+
     override val inputForTasker: TaskerInput<TaskerRequestInput>
         get() = TaskerInput(
             taskerRequestInput(
@@ -146,6 +229,15 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
                 filename = filename.text?.toString()?.trim(),
                 forceRefresh = forceRefresh.isChecked,
                 reviewToken = reviewToken.text?.toString()?.trim(),
+                ashFilter = ashFilter.text?.toString()?.trim(),
+                ashPreset = ashPreset.text?.toString()?.trim(),
+                ashFolders = ashFolders.text?.toString()?.trim(),
+                ashAutomationToken = ashAutomationToken.text?.toString()?.trim(),
+                idempotencyKey = idempotencyKey.text?.toString()?.trim(),
+                dryRun = dryRun.isChecked,
+                recommendationId = recommendationId.text?.toString()?.trim(),
+                moduleFolder = moduleFolder.text?.toString()?.trim(),
+                guidanceOutcome = guidanceOutcome.text?.toString()?.trim(),
             ),
         )
 
@@ -345,4 +437,144 @@ class ExecuteReviewedInstallHelper(config: TaskerPluginConfig<TaskerRequestInput
 class ExecuteReviewedInstallConfigActivity : TaskerRequestConfigActivity() {
     override val showReviewToken = true; override val screenTitle = "Execute reviewed install"; override val screenDescription = "Execute a still-valid reviewed archive after MMRL rechecks its hash and safety result."
     private val helper by lazy { ExecuteReviewedInstallHelper(this) }; override fun helperOnCreate() = helper.onCreate(); override fun helperFinish() = finishRequiringReviewToken { helper.finishForTasker() }
+}
+
+abstract class ImmediateAshConfigActivity<TRunner : com.joaomgcd.taskerpluginlibrary.action.TaskerPluginRunnerAction<TaskerEmptyInput, TaskerResultOutput>> :
+    Activity(), TaskerPluginConfig<TaskerEmptyInput> {
+    override val context: Context get() = applicationContext
+    protected abstract val helper: TaskerPluginConfigHelper<TaskerEmptyInput, TaskerResultOutput, TRunner>
+    override fun assignFromInput(input: TaskerInput<TaskerEmptyInput>) = Unit
+    override val inputForTasker get() = TaskerInput(taskerEmptyInput())
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        helper.finishForTasker()
+    }
+}
+
+class AshCapabilitiesHelper(config: TaskerPluginConfig<TaskerEmptyInput>) :
+    TaskerPluginConfigHelper<TaskerEmptyInput, TaskerResultOutput, AshCapabilitiesRunner>(config) {
+    override val runnerClass = AshCapabilitiesRunner::class.java
+    override val inputClass = TaskerEmptyInput::class.java
+    override val outputClass = TaskerResultOutput::class.java
+    override fun addToStringBlurb(input: TaskerInput<TaskerEmptyInput>, blurbBuilder: StringBuilder) {
+        blurbBuilder.append("Read AshReXcue automation capabilities")
+    }
+}
+class AshCapabilitiesConfigActivity : ImmediateAshConfigActivity<AshCapabilitiesRunner>() {
+    override val helper by lazy { AshCapabilitiesHelper(this) }
+}
+
+class AshRecoveryStatusHelper(config: TaskerPluginConfig<TaskerRequestInput>) :
+    TaskerPluginConfigHelper<TaskerRequestInput, TaskerResultOutput, AshRecoveryStatusRunner>(config) {
+    override val runnerClass = AshRecoveryStatusRunner::class.java
+    override val inputClass = TaskerRequestInput::class.java
+    override val outputClass = TaskerResultOutput::class.java
+    override fun addToStringBlurb(input: TaskerInput<TaskerRequestInput>, blurbBuilder: StringBuilder) {
+        blurbBuilder.append("Read AshReXcue recovery status")
+    }
+}
+class AshRecoveryStatusConfigActivity : TaskerRequestConfigActivity() {
+    override val showForceRefresh = true
+    override val screenTitle = "AshReXcue recovery status"
+    override val screenDescription = "Read live or cached recovery status using the stable external-control JSON schema."
+    private val helper by lazy { AshRecoveryStatusHelper(this) }
+    override fun helperOnCreate() = helper.onCreate()
+    override fun helperFinish() {
+        helper.finishForTasker()
+    }
+}
+
+class AshListEvidenceHelper(config: TaskerPluginConfig<TaskerRequestInput>) :
+    TaskerPluginConfigHelper<TaskerRequestInput, TaskerResultOutput, AshListEvidenceRunner>(config) {
+    override val runnerClass = AshListEvidenceRunner::class.java
+    override val inputClass = TaskerRequestInput::class.java
+    override val outputClass = TaskerResultOutput::class.java
+    override fun addToStringBlurb(input: TaskerInput<TaskerRequestInput>, blurbBuilder: StringBuilder) {
+        blurbBuilder.append("List AshReXcue evidence: ${input.regular.ashFilter.orEmpty().ifBlank { "all" }}")
+    }
+}
+class AshListEvidenceConfigActivity : TaskerRequestConfigActivity() {
+    override val showAshFilter = true
+    override val showForceRefresh = true
+    override val screenTitle = "AshReXcue module evidence"
+    override val screenDescription = "Filter by all, quarantined, suspect, changed, or needs-review."
+    private val helper by lazy { AshListEvidenceHelper(this) }
+    override fun helperOnCreate() = helper.onCreate()
+    override fun helperFinish() {
+        helper.finishForTasker()
+    }
+}
+
+class AshPrepareRecoveryPlanHelper(config: TaskerPluginConfig<TaskerRequestInput>) :
+    TaskerPluginConfigHelper<TaskerRequestInput, TaskerResultOutput, AshPrepareRecoveryPlanRunner>(config) {
+    override val runnerClass = AshPrepareRecoveryPlanRunner::class.java
+    override val inputClass = TaskerRequestInput::class.java
+    override val outputClass = TaskerResultOutput::class.java
+    override fun addToStringBlurb(input: TaskerInput<TaskerRequestInput>, blurbBuilder: StringBuilder) {
+        blurbBuilder.append("Prepare ${input.regular.ashPreset.orEmpty().ifBlank { "conservative" }} AshReXcue plan")
+    }
+}
+class AshPrepareRecoveryPlanConfigActivity : TaskerRequestConfigActivity() {
+    override val showAshPreset = true
+    override val showAshFolders = true
+    override val showIdempotencyKey = true
+    override val showDryRun = true
+    override val screenTitle = "Prepare AshReXcue recovery plan"
+    override val screenDescription = "Preview a conservative, balanced, rapid, or custom plan and issue a short-lived one-shot token."
+    private val helper by lazy { AshPrepareRecoveryPlanHelper(this) }
+    override fun helperOnCreate() = helper.onCreate()
+    override fun helperFinish() = finishRequiringIdempotencyKey { helper.finishForTasker() }
+}
+
+class AshExecuteRecoveryPlanHelper(config: TaskerPluginConfig<TaskerRequestInput>) :
+    TaskerPluginConfigHelper<TaskerRequestInput, TaskerResultOutput, AshExecuteRecoveryPlanRunner>(config) {
+    override val runnerClass = AshExecuteRecoveryPlanRunner::class.java
+    override val inputClass = TaskerRequestInput::class.java
+    override val outputClass = TaskerResultOutput::class.java
+    override fun addToStringBlurb(input: TaskerInput<TaskerRequestInput>, blurbBuilder: StringBuilder) {
+        blurbBuilder.append("Execute guarded AshReXcue recovery plan")
+    }
+}
+class AshExecuteRecoveryPlanConfigActivity : TaskerRequestConfigActivity() {
+    override val showAshAutomationToken = true
+    override val showIdempotencyKey = true
+    override val screenTitle = "Execute AshReXcue recovery plan"
+    override val screenDescription = "Consume a still-valid one-shot plan token. High-risk plans always require MMRL approval."
+    private val helper by lazy { AshExecuteRecoveryPlanHelper(this) }
+    override fun helperOnCreate() = helper.onCreate()
+    override fun helperFinish() = finishRequiringAutomationToken { helper.finishForTasker() }
+}
+
+class AshRecordGuidanceOutcomeHelper(config: TaskerPluginConfig<TaskerRequestInput>) :
+    TaskerPluginConfigHelper<TaskerRequestInput, TaskerResultOutput, AshRecordGuidanceOutcomeRunner>(config) {
+    override val runnerClass = AshRecordGuidanceOutcomeRunner::class.java
+    override val inputClass = TaskerRequestInput::class.java
+    override val outputClass = TaskerResultOutput::class.java
+    override fun addToStringBlurb(input: TaskerInput<TaskerRequestInput>, blurbBuilder: StringBuilder) {
+        blurbBuilder.append("Record AshReXcue guidance outcome")
+    }
+}
+class AshRecordGuidanceOutcomeConfigActivity : TaskerRequestConfigActivity() {
+    override val showRecommendationId = true
+    override val showModuleFolder = true
+    override val showGuidanceOutcome = true
+    override val showIdempotencyKey = true
+    override val screenTitle = "Record AshReXcue guidance outcome"
+    override val screenDescription = "Record helped, failed, or inconclusive for one guidance recommendation."
+    private val helper by lazy { AshRecordGuidanceOutcomeHelper(this) }
+    override fun helperOnCreate() = helper.onCreate()
+    override fun helperFinish() = finishRequiringGuidanceOutcome { helper.finishForTasker() }
+}
+
+class AshRefreshEvidenceHelper(config: TaskerPluginConfig<TaskerEmptyInput>) :
+    TaskerPluginConfigHelper<TaskerEmptyInput, TaskerResultOutput, AshRefreshEvidenceRunner>(config) {
+    override val runnerClass = AshRefreshEvidenceRunner::class.java
+    override val inputClass = TaskerEmptyInput::class.java
+    override val outputClass = TaskerResultOutput::class.java
+    override fun addToStringBlurb(input: TaskerInput<TaskerEmptyInput>, blurbBuilder: StringBuilder) {
+        blurbBuilder.append("Refresh AshReXcue evidence")
+    }
+}
+class AshRefreshEvidenceConfigActivity : ImmediateAshConfigActivity<AshRefreshEvidenceRunner>() {
+    override val helper by lazy { AshRefreshEvidenceHelper(this) }
 }

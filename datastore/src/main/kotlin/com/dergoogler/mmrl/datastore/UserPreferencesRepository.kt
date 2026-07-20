@@ -132,6 +132,7 @@ class UserPreferencesRepository
         suspend fun setTaskerAllowModuleActions(value: Boolean) = userPreferencesDataSource.setTaskerAllowModuleActions(value)
         suspend fun setTaskerAllowRemovals(value: Boolean) = userPreferencesDataSource.setTaskerAllowRemovals(value)
         suspend fun setTaskerAllowReviewedInstalls(value: Boolean) = userPreferencesDataSource.setTaskerAllowReviewedInstalls(value)
+        suspend fun setTaskerAllowAshRecovery(value: Boolean) = userPreferencesDataSource.setTaskerAllowAshRecovery(value)
         suspend fun setTaskerApprovalPolicy(value: com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy) = userPreferencesDataSource.setTaskerApprovalPolicy(value)
         suspend fun setTaskerAllowedModules(value: Set<String>) = userPreferencesDataSource.setTaskerAllowedModules(value)
 
