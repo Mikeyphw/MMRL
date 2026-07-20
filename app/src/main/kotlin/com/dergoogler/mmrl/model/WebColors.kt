@@ -1,7 +1,5 @@
 package com.dergoogler.mmrl.model
 
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -11,7 +9,6 @@ import com.dergoogler.mmrl.ui.component.card.defaultCardColors
 import com.dergoogler.mmrl.ui.theme.SemanticColors
 import com.dergoogler.mmrl.ui.token.surfaceColorAtElevation
 import java.util.Locale
-import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
 
 data class WebColors(
@@ -21,19 +18,11 @@ data class WebColors(
     val filledTonalButtonColors = colorScheme.defaultFilledTonalButtonColors
     val cardColors = colorScheme.defaultCardColors
 
-    val colorSchemeMap: Map<String, Color> =
-        (colorScheme::class as KClass<ColorScheme>).memberProperties
-            .filter { it.returnType.classifier == Color::class }
-            .associateBy({ it.name }, { it.get(colorScheme) as Color })
+    val colorSchemeMap: Map<String, Color> = colorProperties(colorScheme)
 
-    val filledTonalButtonColorsMap =
-        (filledTonalButtonColors::class as KClass<ButtonColors>).memberProperties
-            .filter { it.returnType.classifier == Color::class }
-            .associateBy({ it.name }, { it.get(filledTonalButtonColors) as Color })
+    val filledTonalButtonColorsMap = colorProperties(filledTonalButtonColors)
 
-    val cardColorsMap = (cardColors::class as KClass<CardColors>).memberProperties
-        .filter { it.returnType.classifier == Color::class }
-        .associateBy({ it.name }, { it.get(cardColors) as Color })
+    val cardColorsMap = colorProperties(cardColors)
 
     val allCssColors = buildString {
         appendLine(":root {")
@@ -83,6 +72,13 @@ data class WebColors(
 
         appendLine("}")
     }
+
+    private inline fun <reified T : Any> colorProperties(value: T): Map<String, Color> =
+        T::class.memberProperties
+            .asSequence()
+            .filter { it.returnType.classifier == Color::class }
+            .mapNotNull { property -> (property.get(value) as? Color)?.let { property.name to it } }
+            .toMap()
 
     fun String.capitalize() =
         this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }

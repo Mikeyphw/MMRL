@@ -237,6 +237,7 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                     RecoverySection.Diagnostics -> RecoveryDiagnosticsContent(
                         state = state,
                         onExport = viewModel::exportDiagnostics,
+                        onRepair = viewModel::repairState,
                         onCopyPath = { path -> copyText(context, path) },
                         onOpenActivity = { navigator.navigate(ActivityScreenDestination) },
                         onOpenSettings = { navigator.navigate(BootProtectionScreenDestination) },
@@ -583,6 +584,7 @@ private fun RecoverySessionRow(session: AshRecoverySession, onClick: () -> Unit)
 private fun RecoveryDiagnosticsContent(
     state: AshUiState,
     onExport: () -> Unit,
+    onRepair: () -> Unit,
     onCopyPath: (String) -> Unit,
     onOpenActivity: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -601,6 +603,28 @@ private fun RecoveryDiagnosticsContent(
                 MetricRow("API", state.capabilities.apiVersion.toString())
                 MetricRow("Transport", if (state.lifecycle.compatible) "Compatible typed service" else state.lifecycle.compatibilityMessage)
                 MetricRow("Last refresh", relativeTime(state.lastSuccessfulAt))
+            }
+        }
+        item {
+            RecoveryCard("State health") {
+                MetricRow("Status", state.health.level.name.replaceFirstChar(Char::uppercaseChar))
+                MetricRow("State schema", state.health.module.schemaVersion.toString())
+                MetricRow("Repairs", state.health.module.repairCount.toString())
+                Text(state.health.summary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                state.health.issues.take(6).forEach { issue ->
+                    HorizontalDivider()
+                    Text(issue.title, fontWeight = FontWeight.SemiBold)
+                    Text(issue.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (state.health.repairRecommended) {
+                    Button(
+                        onClick = onRepair,
+                        enabled = !state.readOnly && !state.loading && state.capabilities.supports("state-repair"),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text("Repair recovery state")
+                    }
+                }
             }
         }
         item {

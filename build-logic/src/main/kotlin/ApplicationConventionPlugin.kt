@@ -44,6 +44,7 @@ class ApplicationConventionPlugin : Plugin<Project> {
                         "kotlin.ExperimentalStdlibApi",
                         "kotlinx.coroutines.FlowPreview",
                     )
+                    freeCompilerArgs.add("-Xwarning-level=REDUNDANT_CALL_OF_CONVERSION_METHOD:disabled")
                 }
             }
         }

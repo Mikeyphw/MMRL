@@ -61,9 +61,9 @@ fun CrashHandlerScreen(
 
     val hasHelp = helpMessage != null
     var helperSheet by remember { mutableStateOf(false) }
-    if (helperSheet && hasHelp) {
+    helpMessage?.takeIf { helperSheet }?.let { text ->
         HelpBottomSheet(
-            text = helpMessage!!,
+            text = text,
             onClose = {
                 helperSheet = false
             },

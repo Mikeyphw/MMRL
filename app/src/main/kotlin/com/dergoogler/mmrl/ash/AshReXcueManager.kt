@@ -14,6 +14,7 @@ import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlanEngine
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlanPreset
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
+import com.dergoogler.mmrl.ash.model.AshStateHealthEngine
 import com.dergoogler.mmrl.ash.model.OperationResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +34,7 @@ class AshReXcueManager @Inject constructor(
 ) {
     private val refreshMutex = Mutex()
     private var lastRefreshCompletedAt = 0L
+    private var lastRefreshFailedAt = 0L
     private val _state = MutableStateFlow(AshManagerState())
     val state: StateFlow<AshManagerState> = _state.asStateFlow()
 
@@ -47,6 +49,9 @@ class AshReXcueManager @Inject constructor(
     ): AshManagerState = refreshMutex.withLock {
         val now = System.currentTimeMillis()
         if (!force && _state.value.snapshot != null && now - lastRefreshCompletedAt <= maxAgeMillis) {
+            return@withLock _state.value
+        }
+        if (!force && lastRefreshFailedAt > 0L && now - lastRefreshFailedAt < FAILURE_BACKOFF_MILLIS) {
             return@withLock _state.value
         }
         val bundled = runCatching { bundledModuleProvider.metadata() }
@@ -98,6 +103,7 @@ class AshReXcueManager @Inject constructor(
                             readOnly = !lifecycle.compatible,
                             lastSuccessfulAt = snapshot.generatedAt,
                             liveError = if (lifecycle.compatible) null else lifecycle.compatibilityMessage,
+                            health = AshStateHealthEngine.assess(snapshot, AshSnapshotSource.Live),
                         ),
                     )
                 }.onFailure { error ->
@@ -106,7 +112,8 @@ class AshReXcueManager @Inject constructor(
             }
         }
 
-        val cached = snapshotStore.read()
+        val cachedResult = snapshotStore.read()
+        val cached = cachedResult.entry
         if (cached != null) {
             val cachedState = runCatching {
                 val cachedInstallation = repository.parseModuleInstallation(cached.moduleStateRaw)
@@ -131,9 +138,17 @@ class AshReXcueManager @Inject constructor(
                     readOnly = true,
                     lastSuccessfulAt = cached.savedAt,
                     liveError = liveError ?: "Live AshReXcue status is unavailable",
+                    health = AshStateHealthEngine.assess(
+                        snapshot = snapshot,
+                        source = AshSnapshotSource.Cache,
+                        cacheEvents = cachedResult.events,
+                    ),
                 )
             }.getOrNull()
-            if (cachedState != null) return@withLock publish(cachedState)
+            if (cachedState != null) {
+                if (liveError != null) lastRefreshFailedAt = System.currentTimeMillis()
+                return@withLock publish(cachedState)
+            }
         }
 
         val installation = currentInstallation ?: AshModuleInstallation()
@@ -149,8 +164,9 @@ class AshReXcueManager @Inject constructor(
                 source = AshSnapshotSource.None,
                 readOnly = true,
                 liveError = liveError,
+                health = AshStateHealthEngine.assess(null, AshSnapshotSource.None, cachedResult.events),
             ),
-        )
+        ).also { lastRefreshFailedAt = System.currentTimeMillis() }
     }
 
     suspend fun prepareModuleInstall(mode: AshInstallMode): AshModuleInstaller.PreparedInstall =
@@ -207,6 +223,7 @@ class AshReXcueManager @Inject constructor(
     suspend fun rollbackTrial(): OperationResult = writable(repository::rollbackTrial)
     suspend fun discardPending(): OperationResult = writable(repository::discardPending)
     suspend fun exportDiagnostics(): OperationResult = writable(repository::exportDiagnostics)
+    suspend fun repairState(): OperationResult = writable(repository::repairState)
     suspend fun recordGuidanceOutcome(
         recommendationId: String,
         moduleFolder: String,
@@ -228,6 +245,11 @@ class AshReXcueManager @Inject constructor(
     private fun publish(state: AshManagerState): AshManagerState =
         state.also {
             lastRefreshCompletedAt = System.currentTimeMillis()
+            if (state.source == AshSnapshotSource.Live) lastRefreshFailedAt = 0L
             _state.value = it
         }
+
+    private companion object {
+        const val FAILURE_BACKOFF_MILLIS = 15_000L
+    }
 }

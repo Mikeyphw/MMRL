@@ -17,6 +17,9 @@ LATEST_RESCUE="$RESCUE_DIR/latest.json"
 RESTORE_STATE="$RESCUE_DIR/restore_state.prop"
 RESTORE_TRIAL="$RESCUE_DIR/restore_trial.tsv"
 RESTORE_HISTORY_DIR="$RESCUE_DIR/restore_history"
+STATE_SCHEMA_FILE="$ASHLOOPER_DIR/state-schema.prop"
+STATE_HEALTH_FILE="$ASHLOOPER_DIR/state-health.prop"
+CORRUPT_STATE_DIR="$ASHLOOPER_DIR/corrupt"
 JQ="${ASH_TEST_JQ:-$MODPATH/jq/jq}"
 boot_completed=0
 
@@ -1067,7 +1070,8 @@ _restore_quarantined_modules_unlocked() {
   {
     printf 'state=testing\nmode=%s\ncount=%s\nstarted_at=%s\nboot_id=%s\n' "$mode" "$restored" "$(date +%s 2>/dev/null || echo 0)" "$(current_boot_id)"
     [ -n "$plan_id" ] && printf 'plan_id=%s\nrecovery_revision=%s\n' "$(safe_manifest_value "$plan_id")" "$(safe_manifest_value "$expected_revision")"
-  } > "$state_tmp" && chmod 600 "$state_tmp" 2>/dev/null && mv -f "$state_tmp" "$RESTORE_STATE"
+  } > "$state_tmp" && chmod 600 "$state_tmp" 2>/dev/null && cat "$state_tmp" | atomic_write_file "$RESTORE_STATE" 600
+  rm -f "$state_tmp"
   log "Restoration trial prepared: mode=$mode count=$restored. Reboot required; failed boot will automatically roll back."
   echo "Prepared restoration trial for $restored module(s). Reboot to test them."
 }
@@ -1424,7 +1428,9 @@ validate_settings() {
 }
 
 settings_key_allowed() {
-  case "$1" in mode|timeout|timeout_min|timeout_max|timeout_margin|timeout_history_samples|timeout_decrease_step|threshold|stability_time|failure_threshold|check_interval|restart_limit|boot_ready_consecutive|systemui_process|monitored_processes|missing_process_action|boot_animation_required|ce_storage_required|launcher_check_required|launcher_wait|launcher_focus_required|first_boot_grace|ota_grace_time|extra_stability|whitelist|protected_modules|trusted_modules|suspect_modules) return 0 ;; esac|fail_boot_file_required|fail_boot_file_path|fail_boot_file_wait
+  case "$1" in
+    mode|threshold|timeout|timeout_min|timeout_max|stability_time|failure_threshold|check_interval|restart_limit|boot_ready_consecutive|extra_stability|systemui_process|monitored_processes|missing_process_action|boot_animation_required|ce_storage_required|launcher_check_required|launcher_wait|launcher_focus_required|first_boot_grace|ota_grace_time|whitelist|protected_modules|trusted_modules|suspect_modules|fail_boot_file_required|fail_boot_file_path|fail_boot_file_wait) return 0 ;;
+  esac
   return 1
 }
 
@@ -1693,9 +1699,14 @@ DIAGNOSTICS_DIR="$ASHLOOPER_DIR/diagnostics"
 DIAGNOSTICS_DOWNLOAD_DIR="${ASH_DIAGNOSTICS_DOWNLOAD_DIR:-/sdcard/Download}"
 
 initialize_storage() {
-  mkdir -p "$ASHLOOPER_DIR" "$LOG_DIR" "$RESCUE_HISTORY_DIR" "$QUARANTINE_DIR" "$RESTORE_HISTORY_DIR" "$APPLIED_SETTINGS_DIR" "$DIAGNOSTICS_DIR" 2>/dev/null
-  chmod 700 "$ASHLOOPER_DIR" "$LOG_DIR" "$RESCUE_DIR" "$RESCUE_HISTORY_DIR" "$QUARANTINE_DIR" "$RESTORE_HISTORY_DIR" "$APPLIED_SETTINGS_DIR" "$DIAGNOSTICS_DIR" 2>/dev/null
+  mkdir -p "$ASHLOOPER_DIR" "$LOG_DIR" "$RESCUE_HISTORY_DIR" "$QUARANTINE_DIR" "$RESTORE_HISTORY_DIR" "$APPLIED_SETTINGS_DIR" "$DIAGNOSTICS_DIR" "$CORRUPT_STATE_DIR" 2>/dev/null
+  chmod 700 "$ASHLOOPER_DIR" "$LOG_DIR" "$RESCUE_DIR" "$RESCUE_HISTORY_DIR" "$QUARANTINE_DIR" "$RESTORE_HISTORY_DIR" "$APPLIED_SETTINGS_DIR" "$DIAGNOSTICS_DIR" "$CORRUPT_STATE_DIR" 2>/dev/null
   [ -f "$SETTINGS_CHANGE_LOG" ] || atomic_write_text "$SETTINGS_CHANGE_LOG" 600 ""
+  [ -f "$STATE_SCHEMA_FILE" ] || {
+    printf 'version=2
+migrated_at=%s
+' "$(date +%s 2>/dev/null || echo 0)" | atomic_write_file "$STATE_SCHEMA_FILE" 600
+  }
   if [ -d "$LEGACY_LOG_DIR" ] && [ ! -f "$LOG_DIR/.legacy_migrated" ]; then
     for legacy_log in "$LEGACY_LOG_DIR"/AshReXcueSession-*.log "$LEGACY_LOG_DIR"/looperbug.log; do
       [ -f "$legacy_log" ] || continue
@@ -1951,6 +1962,8 @@ create_diagnostic_export() {
   diagnostic_copy_text "$SETTINGS_REPAIR_LOG" "$work/settings_repairs.log" 1000
   diagnostic_copy_text "$SETTINGS_CHANGE_LOG" "$work/settings_changes.tsv" 1000
   diagnostic_copy_text "$MODULE_LIST" "$work/module.json"
+  diagnostic_copy_text "$STATE_SCHEMA_FILE" "$work/state-schema.prop"
+  diagnostic_copy_text "$STATE_HEALTH_FILE" "$work/state-health.prop"
   list_modules_with_trust_tsv > "$work/module_inventory.tsv"
   dashboard_json > "$work/dashboard.json" 2>/dev/null || true
   pending_settings_json > "$work/pending_settings.json" 2>/dev/null || true
@@ -2082,4 +2095,174 @@ install_companion_app() {
 
 launch_companion_app() {
   am start --user "$(companion_user_id)" -n "$COMPANION_PACKAGE/.MainActivity" >/dev/null 2>&1
+}
+
+
+# --- AshReXcue 11.5: durable state schema, repair, and bounded retention ---
+state_schema_version() {
+  local value
+  value=$(get_prop version "$STATE_SCHEMA_FILE")
+  case "$value" in ''|*[!0-9]*) value=0 ;; esac
+  echo "$value"
+}
+
+prune_newest_files() {
+  local directory="$1" pattern="$2" keep="$3" count=0 file
+  case "$keep" in ''|*[!0-9]*) return 1 ;; esac
+  for file in $(ls -1t "$directory"/$pattern 2>/dev/null); do
+    [ -f "$file" ] || continue
+    count=$((count + 1))
+    [ "$count" -le "$keep" ] || rm -f "$file"
+  done
+}
+
+archive_corrupt_state() {
+  local source="$1" reason="$2" stamp target
+  [ -f "$source" ] || return 0
+  mkdir -p "$CORRUPT_STATE_DIR" 2>/dev/null
+  stamp=$(date '+%Y%m%dT%H%M%S' 2>/dev/null || date +%s)
+  target="$CORRUPT_STATE_DIR/${source##*/}.$stamp.corrupt"
+  atomic_copy_file "$source" "$target" 600 2>/dev/null || cp -f "$source" "$target" 2>/dev/null
+  printf '%s\t%s\t%s\n' "$(date +%s 2>/dev/null || echo 0)" "${source##*/}" "$(safe_manifest_value "$reason")" >> "$CORRUPT_STATE_DIR/index.tsv"
+  prune_newest_files "$CORRUPT_STATE_DIR" '*.corrupt' 10
+}
+
+state_health_write() {
+  local status="$1" issues="$2" repairs="$3" summary="$4" previous_repairs last_repair
+  previous_repairs=$(get_prop repair_count "$STATE_HEALTH_FILE")
+  case "$previous_repairs" in ''|*[!0-9]*) previous_repairs=0 ;; esac
+  if [ "$repairs" -gt 0 ] 2>/dev/null; then
+    previous_repairs=$((previous_repairs + repairs))
+    last_repair=$(date +%s 2>/dev/null || echo 0)
+  else
+    last_repair=$(get_prop last_repair_at "$STATE_HEALTH_FILE")
+    case "$last_repair" in ''|*[!0-9]*) last_repair=0 ;; esac
+  fi
+  {
+    printf 'schema_version=2\n'
+    printf 'status=%s\n' "$status"
+    printf 'issue_count=%s\n' "$issues"
+    printf 'repair_count=%s\n' "$previous_repairs"
+    printf 'last_repair_at=%s\n' "$last_repair"
+    printf 'checked_at=%s\n' "$(date +%s 2>/dev/null || echo 0)"
+    printf 'summary=%s\n' "$(safe_manifest_value "$summary")"
+  } | atomic_write_file "$STATE_HEALTH_FILE" 600
+}
+
+_state_hardening_check_unlocked() {
+  local repair="${1:-false}" issues=0 repairs=0 summary='State validation completed' schema folder marker marker_folder
+  schema=$(state_schema_version)
+  if [ "$schema" -lt 2 ] 2>/dev/null; then
+    if [ "$repair" = true ]; then
+      printf 'version=2\nmigrated_at=%s\n' "$(date +%s 2>/dev/null || echo 0)" | atomic_write_file "$STATE_SCHEMA_FILE" 600
+      repairs=$((repairs + 1))
+    else
+      issues=$((issues + 1))
+    fi
+  fi
+
+  if [ -s "$RESTORE_TRIAL" ] && [ "$(get_prop state "$RESTORE_STATE")" != testing ]; then
+    issues=$((issues + 1))
+    if [ "$repair" = true ]; then
+      while IFS="$(printf '\t')" read -r folder _; do
+        case "$folder" in ''|*/*|.|..|*[!A-Za-z0-9._-]*) continue ;; esac
+        [ -d "$mdir/$folder" ] && touch "$mdir/$folder/disable" 2>/dev/null
+      done < "$RESTORE_TRIAL"
+      archive_corrupt_state "$RESTORE_TRIAL" 'orphan restoration trial'
+      rm -f "$RESTORE_TRIAL"
+      repairs=$((repairs + 1))
+    fi
+  fi
+
+  if [ "$(get_prop state "$RESTORE_STATE")" = testing ] && [ ! -s "$RESTORE_TRIAL" ]; then
+    issues=$((issues + 1))
+    if [ "$repair" = true ]; then
+      archive_corrupt_state "$RESTORE_STATE" 'testing state without trial modules'
+      rm -f "$RESTORE_STATE"
+      repairs=$((repairs + 1))
+    fi
+  fi
+
+  for marker in "$QUARANTINE_DIR"/*.prop; do
+    [ -f "$marker" ] || continue
+    marker_folder=$(get_prop folder "$marker")
+    case "$marker_folder" in
+      ''|*/*|.|..|*[!A-Za-z0-9._-]*)
+        issues=$((issues + 1))
+        if [ "$repair" = true ]; then
+          archive_corrupt_state "$marker" 'invalid quarantine marker folder'
+          rm -f "$marker"
+          repairs=$((repairs + 1))
+        fi
+        ;;
+      *)
+        [ "${marker##*/}" = "$marker_folder.prop" ] || {
+          issues=$((issues + 1))
+          if [ "$repair" = true ]; then
+            archive_corrupt_state "$marker" 'quarantine filename mismatch'
+            rm -f "$marker"
+            repairs=$((repairs + 1))
+          fi
+        }
+        ;;
+    esac
+  done
+
+  for marker in "$ASHLOOPER_DIR"/*.tmp.* "$RESCUE_DIR"/*.tmp.* "$QUARANTINE_DIR"/*.tmp.*; do
+    [ -f "$marker" ] || continue
+    folder=${marker##*.tmp.}; folder=${folder%%.*}
+    case "$folder" in ''|*[!0-9]*) continue ;; esac
+    if [ ! -d "/proc/$folder" ]; then
+      issues=$((issues + 1))
+      if [ "$repair" = true ]; then rm -f "$marker"; repairs=$((repairs + 1)); fi
+    fi
+  done
+
+  if [ "$repair" = true ]; then
+    prune_newest_files "$RESCUE_HISTORY_DIR" '*.json' 100
+    prune_newest_files "$RESTORE_HISTORY_DIR" '*.prop' 100
+    prune_newest_files "$DIAGNOSTICS_DIR" 'AshReXcue-diagnostics-*' 5
+  fi
+
+  if [ "$issues" -gt 0 ] 2>/dev/null && [ "$repairs" -eq 0 ]; then
+    state_health_write repair-required "$issues" 0 'Durable recovery state requires repair'
+  elif [ "$issues" -gt "$repairs" ] 2>/dev/null; then
+    state_health_write degraded "$((issues - repairs))" "$repairs" 'State repaired with remaining review items'
+  else
+    state_health_write healthy 0 "$repairs" 'Durable recovery state is consistent'
+  fi
+  [ "$issues" -eq 0 ] || [ "$repair" = true ]
+}
+
+state_hardening_check() {
+  local repair="${1:-false}" rc
+  state_lock_acquire || { echo 'Recovery state is busy.'; return 3; }
+  _state_hardening_check_unlocked "$repair"; rc=$?
+  state_lock_release
+  return "$rc"
+}
+
+state_health_json() {
+  local schema status issues repairs last_repair checked summary
+  state_hardening_check false >/dev/null 2>&1 || true
+  schema=$(get_prop schema_version "$STATE_HEALTH_FILE"); status=$(get_prop status "$STATE_HEALTH_FILE")
+  issues=$(get_prop issue_count "$STATE_HEALTH_FILE"); repairs=$(get_prop repair_count "$STATE_HEALTH_FILE")
+  last_repair=$(get_prop last_repair_at "$STATE_HEALTH_FILE"); checked=$(get_prop checked_at "$STATE_HEALTH_FILE")
+  summary=$(get_prop summary "$STATE_HEALTH_FILE")
+  case "$schema" in ''|*[!0-9]*) schema=0 ;; esac
+  case "$issues" in ''|*[!0-9]*) issues=0 ;; esac
+  case "$repairs" in ''|*[!0-9]*) repairs=0 ;; esac
+  case "$last_repair" in ''|*[!0-9]*) last_repair=0 ;; esac
+  case "$checked" in ''|*[!0-9]*) checked=0 ;; esac
+  [ -n "$status" ] || status=unknown
+  if [ -x "$JQ" ]; then
+    "$JQ" -cn --argjson schemaVersion "$schema" --arg status "$status" --argjson issueCount "$issues" --argjson repairCount "$repairs" --argjson lastRepairAt "$last_repair" --argjson checkedAt "$checked" --arg summary "$summary" '{schemaVersion:$schemaVersion,status:$status,issueCount:$issueCount,repairCount:$repairCount,lastRepairAt:$lastRepairAt,checkedAt:$checkedAt,summary:$summary}'
+  else
+    printf '{"schemaVersion":%s,"status":"%s","issueCount":%s,"repairCount":%s,"lastRepairAt":%s,"checkedAt":%s,"summary":"%s"}\n' "$schema" "$(json_escape "$status")" "$issues" "$repairs" "$last_repair" "$checked" "$(json_escape "$summary")"
+  fi
+}
+
+repair_recovery_state() {
+  state_hardening_check true || return $?
+  echo 'AshReXcue durable state was validated and repaired.'
 }

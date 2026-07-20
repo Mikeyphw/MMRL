@@ -25,6 +25,7 @@ class AshRootService : RootService() {
         override fun rollbackTrial(): String = executor.rollbackTrial()
         override fun discardPendingSettings(): String = executor.discardPendingSettings()
         override fun exportDiagnostics(): String = executor.exportDiagnostics()
+        override fun repairState(): String = executor.repairState()
     }
 
     override fun onBind(intent: Intent): IBinder = binder

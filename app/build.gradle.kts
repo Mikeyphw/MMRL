@@ -2,6 +2,7 @@
 
 import com.android.build.api.variant.impl.VariantOutputImpl
 import org.gradle.api.tasks.bundling.Zip
+import org.gradle.api.tasks.compile.JavaCompile
 
 plugins {
     alias(libs.plugins.self.application)
@@ -336,4 +337,16 @@ configurations.all {
 
 tasks.register("version") {
     println(appVersion)
+}
+
+
+// Moshi code generation runs through KSP. Hilt's Java aggregation task must not also
+// load Moshi's processor from the KSP configuration, otherwise Moshi emits its KAPT
+// deprecation warning even though no KAPT configuration exists in this project.
+tasks.withType<JavaCompile>().configureEach {
+    if (name.startsWith("hiltJavaCompile")) {
+        options.annotationProcessorPath = options.annotationProcessorPath?.filter { file ->
+            !file.name.startsWith("moshi-kotlin-codegen-")
+        }
+    }
 }

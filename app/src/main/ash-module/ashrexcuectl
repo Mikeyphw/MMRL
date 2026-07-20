@@ -157,9 +157,9 @@ capabilities_json() {
     "$JQ_BIN" -cn \
       --arg version "$version" \
       --argjson versionCode "$version_code" \
-      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency"]}'
+      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency","state-health","state-repair","snapshot-schema-2"]}'
   else
-    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency"]}\n' \
+    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency","state-health","state-repair","snapshot-schema-2"]}\n' \
       "$(json_escape "$version")" "$version_code"
   fi
 }
@@ -195,6 +195,7 @@ snapshot_json() {
   activity_json "$limit" > "$work/activity.json" || rc=1
   settings_json > "$work/settings.json" || rc=1
   pending_settings_json > "$work/pending.json" || rc=1
+  state_health_json > "$work/health.json" || rc=1
   if [ "$rc" -ne 0 ]; then
     rm -rf "$work"
     json_error "Unable to assemble a consistent AshReXcue snapshot."
@@ -213,9 +214,10 @@ snapshot_json() {
     --slurpfile activity "$work/activity.json" \
     --slurpfile settings "$work/settings.json" \
     --slurpfile pending "$work/pending.json" \
+    --slurpfile health "$work/health.json" \
     '{
       ok:true,
-      schemaVersion:1,
+      schemaVersion:2,
       generatedAt:$generatedAt,
       recoveryRevision:$recoveryRevision,
       capabilities:($capabilities[0] // {}),
@@ -224,7 +226,8 @@ snapshot_json() {
       quarantine:(($quarantine[0] // {}).items // []),
       activity:(($activity[0] // {}).items // []),
       settings:(($settings[0] // {}).items // []),
-      pendingSettings:(($pending[0] // {}).items // [])
+      pendingSettings:(($pending[0] // {}).items // []),
+      health:($health[0] // {})
     }'
   rc=$?
   rm -rf "$work"
@@ -238,6 +241,8 @@ case "$command" in
   automation) ash_external_dispatch "$@" ;;
   capabilities) capabilities_json ;;
   snapshot) snapshot_json "$1" ;;
+  health) state_health_json ;;
+  repair-state) capture_mutation repair_recovery_state ;;
   status) dashboard_json ;;
   modules) modules_json ;;
   quarantine) quarantine_json ;;

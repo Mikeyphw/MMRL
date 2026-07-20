@@ -18,4 +18,5 @@ interface IAshReXcueService {
     String rollbackTrial();
     String discardPendingSettings();
     String exportDiagnostics();
+    String repairState();
 }

@@ -37,8 +37,7 @@ fun RebootBottomSheet(onClose: () -> Unit) =
 
             val pm = LocalContext.current.getSystemService(Context.POWER_SERVICE) as PowerManager?
 
-            val hasSoftReboot =
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && pm?.isRebootingUserspaceSupported == true
+            val hasSoftReboot = supportsUserspaceReboot(pm)
 
             RebootItem(
                 enabled = hasSoftReboot,
@@ -96,3 +95,9 @@ private fun ListScope.RebootItem(
         content()
     }
 }
+
+
+@Suppress("DEPRECATION")
+private fun supportsUserspaceReboot(powerManager: PowerManager?): Boolean =
+    Build.VERSION.SDK_INT in Build.VERSION_CODES.R until Build.VERSION_CODES.VANILLA_ICE_CREAM &&
+        powerManager?.isRebootingUserspaceSupported == true

@@ -1,5 +1,6 @@
 package com.dergoogler.mmrl.ui.screens.settings.appearance.screens
 
+import android.content.ClipData
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,12 +25,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ui.component.ScaffoldDefaults
@@ -48,13 +50,15 @@ import com.dergoogler.mmrl.ui.theme.ThemeRegistry
 import com.dergoogler.mmrl.ui.theme.ThemeSurfaceStyle
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import kotlinx.coroutines.launch
 
 @Destination<RootGraph>
 @Composable
 fun AppThemeScreen() {
     val preferences = LocalUserPreferences.current
     val viewModel = LocalSettings.current
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     var preview by remember { mutableStateOf<ThemeDefinition?>(null) }
     var previewSource by remember { mutableStateOf<ThemeColorSource?>(null) }
@@ -165,7 +169,11 @@ fun AppThemeScreen() {
                 OutlinedButton(
                     onClick = {
                         val text = preferences.customThemeJson.ifBlank { CustomThemeDocument().encode() }
-                        clipboard.setText(AnnotatedString(text))
+                        coroutineScope.launch {
+                            clipboard.setClipEntry(
+                                ClipEntry(ClipData.newPlainText("MMRL theme", text)),
+                            )
+                        }
                     },
                 ) { Text("Copy JSON") }
                 OutlinedButton(onClick = { exportFileLauncher.launch("mmrl-theme.json") }) {

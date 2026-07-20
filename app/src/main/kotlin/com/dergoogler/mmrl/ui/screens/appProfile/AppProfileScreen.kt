@@ -211,7 +211,7 @@ fun AppProfileScreen(appInfo: SuperUserViewModel.AppInfo) =
     }
 
 private enum class Mode(
-    @StringRes private val res: Int,
+    @param:StringRes private val res: Int,
 ) {
     Default(R.string.profile_default),
     Custom(R.string.profile_custom),

@@ -19,7 +19,7 @@ import javax.inject.Singleton
 class UpdateRollbackStore
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) {
         private val root: File get() = File(context.filesDir, "update-rollbacks").apply { mkdirs() }
 
@@ -75,7 +75,9 @@ class UpdateRollbackStore
 
         suspend fun delete(path: String?) =
             withContext(Dispatchers.IO) {
-                if (isManagedBackup(path)) runCatching { File(path!!).delete() }
+                path?.takeIf(::isManagedBackup)?.let { managedPath ->
+                    runCatching { File(managedPath).delete() }
+                }
             }
 
         private fun prune() {

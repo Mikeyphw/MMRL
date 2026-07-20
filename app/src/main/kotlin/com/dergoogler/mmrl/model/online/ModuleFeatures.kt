@@ -4,8 +4,8 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import kotlinx.serialization.Serializable
 
+/** Legacy structured feature flags retained alongside the newer permissions list. */
 @Serializable
-@Deprecated("Use permissions instead")
 @JsonClass(generateAdapter = true)
 data class ModuleFeatures(
     val service: Boolean? = null,

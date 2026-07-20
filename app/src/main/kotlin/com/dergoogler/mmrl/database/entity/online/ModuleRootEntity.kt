@@ -3,7 +3,7 @@ package com.dergoogler.mmrl.database.entity.online
 import androidx.room.Entity
 import com.dergoogler.mmrl.model.online.ModuleRoot
 
-@Deprecated("ModuleRootEntity is replaced by ModuleManagerEntity")
+/** Legacy repository root-version constraints retained for schema and feed compatibility. */
 @Entity(tableName = "root")
 data class ModuleRootEntity(
     val magisk: String? = null,

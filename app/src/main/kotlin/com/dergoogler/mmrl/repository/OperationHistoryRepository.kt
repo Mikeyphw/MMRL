@@ -20,7 +20,7 @@ class OperationHistoryRepository
     @Inject
     constructor(
         private val dao: OperationHistoryDao,
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) {
         fun observeAll(): Flow<List<OperationHistoryEntity>> = dao.observeAll()
 

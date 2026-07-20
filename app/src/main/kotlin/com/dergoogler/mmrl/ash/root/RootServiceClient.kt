@@ -8,6 +8,7 @@ import android.os.IBinder
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ipc.RootService
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -67,6 +68,7 @@ class RootServiceClient @Inject constructor(
     suspend fun rollbackTrial(): String = call { it.rollbackTrial() }
     suspend fun discardPendingSettings(): String = call { it.discardPendingSettings() }
     suspend fun exportDiagnostics(): String = call(EXPORT_TIMEOUT_MS) { it.exportDiagnostics() }
+    suspend fun repairState(): String = call(REPAIR_TIMEOUT_MS) { it.repairState() }
 
     private suspend fun call(
         timeoutMs: Long = CALL_TIMEOUT_MS,
@@ -75,17 +77,32 @@ class RootServiceClient @Inject constructor(
         withTimeout(timeoutMs) {
             callMutex.withLock {
                 withContext(Dispatchers.IO) {
-                    val service = service()
-                    runCatching { block(service) }.getOrElse { error ->
-                        remote = null
-                        throw error
+                    var lastError: Throwable? = null
+                    repeat(MAX_CALL_ATTEMPTS) { attempt ->
+                        try {
+                            return@withContext block(service())
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            lastError = error
+                            invalidateConnection()
+                            if (attempt + 1 < MAX_CALL_ATTEMPTS) return@repeat
+                        }
                     }
+                    throw requireNotNull(lastError)
                 }
             }
         }
     } catch (error: TimeoutCancellationException) {
-        remote = null
+        invalidateConnection()
         """{"ok":false,"message":"AshReXcue root call timed out"}"""
+    }
+
+    private fun invalidateConnection() {
+        remote = null
+        activeConnection?.let { connection ->
+            activeConnection = null
+            runCatching { RootService.unbind(connection) }
+        }
     }
 
     private suspend fun service(): IAshReXcueService = remote ?: bindMutex.withLock {
@@ -148,5 +165,7 @@ class RootServiceClient @Inject constructor(
         const val SNAPSHOT_TIMEOUT_MS = 90_000L
         const val CALL_TIMEOUT_MS = 40_000L
         const val EXPORT_TIMEOUT_MS = 135_000L
+        const val REPAIR_TIMEOUT_MS = 90_000L
+        const val MAX_CALL_ATTEMPTS = 2
     }
 }

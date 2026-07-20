@@ -156,6 +156,7 @@ data class AshSnapshot(
     val activity: List<ActivityItem> = emptyList(),
     val settings: List<SettingItem> = emptyList(),
     val pendingSettings: List<PendingSetting> = emptyList(),
+    val health: AshModuleHealth = AshModuleHealth(),
 )
 
 data class AshManagerState(
@@ -166,6 +167,7 @@ data class AshManagerState(
     val readOnly: Boolean = true,
     val lastSuccessfulAt: Long = 0,
     val liveError: String? = null,
+    val health: AshStateHealth = AshStateHealth(),
 )
 
 enum class AshInstallMode {

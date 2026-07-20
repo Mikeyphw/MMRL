@@ -18,7 +18,7 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "ashrexcue.db")
-            .fallbackToDestructiveMigration(true)
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
 
     @Provides

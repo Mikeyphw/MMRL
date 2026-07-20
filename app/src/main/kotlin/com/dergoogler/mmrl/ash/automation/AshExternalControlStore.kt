@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.ash.automation
 
 import android.content.Context
+import android.util.AtomicFile
 import com.dergoogler.mmrl.ash.model.AshRecoveryGuard
 import com.dergoogler.mmrl.ash.model.AshRecoveryGuardSeverity
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
@@ -132,7 +133,7 @@ internal class AshExternalControlStore(context: Context) {
     fun receipt(idempotencyKeyValue: String): AshExternalReceipt? {
         val idempotencyKey = AshExternalControlPolicy.requireIdempotencyKey(idempotencyKeyValue)
         val file = receiptFile(idempotencyKey)
-        return runCatching { receiptFromJson(JSONObject(file.readText())) }.getOrNull()
+        return readJson(file)?.let(::receiptFromJson)
     }
 
     @Synchronized
@@ -182,14 +183,22 @@ internal class AshExternalControlStore(context: Context) {
     @Synchronized
     fun prune(nowMillis: Long = System.currentTimeMillis()) {
         tokenDirectory.listFiles().orEmpty().forEach { source ->
-            val record = runCatching { tokenRecordFromJson(JSONObject(source.readText())) }.getOrNull()
+            val record = runCatching { readJson(source)?.let(::tokenRecordFromJson) }.getOrNull()
             if (record == null || record.prepared.expiresAt <= nowMillis) source.delete()
         }
+        tokenDirectory.listFiles().orEmpty()
+            .sortedByDescending(File::lastModified)
+            .drop(MAX_TOKEN_FILES)
+            .forEach(File::delete)
         val receiptCutoff = nowMillis - RECEIPT_RETENTION_MILLIS
         receiptDirectory.listFiles().orEmpty().forEach { source ->
-            val receipt = runCatching { receiptFromJson(JSONObject(source.readText())) }.getOrNull()
+            val receipt = runCatching { readJson(source)?.let(::receiptFromJson) }.getOrNull()
             if (receipt == null || receipt.completedAt < receiptCutoff) source.delete()
         }
+        receiptDirectory.listFiles().orEmpty()
+            .sortedByDescending(File::lastModified)
+            .drop(MAX_RECEIPT_FILES)
+            .forEach(File::delete)
     }
 
     private fun existingToken(idempotencyKey: String): AshExternalTokenRecord? = tokenDirectory
@@ -197,7 +206,7 @@ internal class AshExternalControlStore(context: Context) {
         .orEmpty()
         .asSequence()
         .mapNotNull { source ->
-            runCatching { tokenRecordFromJson(JSONObject(source.readText())) }.getOrNull()
+            runCatching { readJson(source)?.let(::tokenRecordFromJson) }.getOrNull()
         }
         .firstOrNull { it.prepared.idempotencyKey == idempotencyKey }
 
@@ -214,33 +223,36 @@ internal class AshExternalControlStore(context: Context) {
         require(!record.prepared.dryRun) { "Dry-run previews cannot be executed" }
     }
 
-    private fun readToken(token: String): AshExternalTokenRecord? = runCatching {
-        tokenRecordFromJson(JSONObject(tokenFile(token).readText()))
-    }.getOrNull()
+    private fun readToken(token: String): AshExternalTokenRecord? =
+        readJson(tokenFile(token))?.let(::tokenRecordFromJson)
 
     private fun tokenFile(token: String): File = File(tokenDirectory, safe(token) + ".json")
     private fun receiptFile(idempotencyKey: String): File = File(receiptDirectory, safe(idempotencyKey) + ".json")
     private fun safe(value: String): String = value.replace(Regex("[^A-Za-z0-9._-]"), "_")
 
+    private fun readJson(target: File): JSONObject? = runCatching {
+        JSONObject(AtomicFile(target).readFully().toString(Charsets.UTF_8))
+    }.getOrNull()
+
     private fun writeAtomic(target: File, content: String) {
         target.parentFile?.mkdirs()
-        val temporary = File(target.parentFile, ".${target.name}.${UUID.randomUUID()}.tmp")
-        temporary.writeText(content)
-        if (target.exists()) {
-            check(target.delete()) {
-                temporary.delete()
-                "Unable to replace AshReXcue automation state"
-            }
-        }
-        check(temporary.renameTo(target)) {
-            temporary.delete()
-            "Unable to persist AshReXcue automation state"
+        val atomicFile = AtomicFile(target)
+        val output = atomicFile.startWrite()
+        try {
+            output.write(content.toByteArray(Charsets.UTF_8))
+            output.flush()
+            atomicFile.finishWrite(output)
+        } catch (error: Throwable) {
+            atomicFile.failWrite(output)
+            throw error
         }
     }
 
     private companion object {
         const val PREFERENCES = "ash_external_control"
         const val RECEIPT_RETENTION_MILLIS = 7L * 24L * 60L * 60L * 1_000L
+        const val MAX_TOKEN_FILES = 64
+        const val MAX_RECEIPT_FILES = 256
     }
 }
 

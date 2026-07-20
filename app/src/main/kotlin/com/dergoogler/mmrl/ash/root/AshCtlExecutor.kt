@@ -102,6 +102,7 @@ internal class AshCtlExecutor(
     fun rollbackTrial(): String = execute("rollback-trial")
     fun discardPendingSettings(): String = execute("discard-pending-settings")
     fun exportDiagnostics(): String = execute("diagnostic-export", timeoutSeconds = 120)
+    fun repairState(): String = execute("repair-state", timeoutSeconds = 70)
 
     private fun execute(
         command: String,

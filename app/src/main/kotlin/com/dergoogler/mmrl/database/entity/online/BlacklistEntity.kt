@@ -13,7 +13,7 @@ data class BlacklistEntity(
     @param:Json(name = "id") @PrimaryKey val blId: String,
     @param:Json(name = "source") val blSource: String,
     @param:Json(name = "notes") val blNotes: String? = null,
-    @TypeConverters @param:Json(name = "antifeatures")
+    @field:TypeConverters @param:Json(name = "antifeatures")
     val blAntiFeatures: List<String>? = null,
 ) {
     constructor(original: Blacklist) : this(

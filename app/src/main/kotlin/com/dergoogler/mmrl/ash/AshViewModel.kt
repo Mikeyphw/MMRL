@@ -12,6 +12,7 @@ import com.dergoogler.mmrl.ash.model.AshModuleIntelligence
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
+import com.dergoogler.mmrl.ash.model.AshStateHealth
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.ModuleItem
 import com.dergoogler.mmrl.ash.model.OperationResult
@@ -57,6 +58,7 @@ data class AshUiState(
     val quarantine: List<QuarantineItem> = emptyList(),
     val activity: List<ActivityItem> = emptyList(),
     val settings: List<SettingItem> = emptyList(),
+    val health: AshStateHealth = AshStateHealth(),
     val lastOperation: OperationResult? = null,
     val message: String? = null,
 )
@@ -141,6 +143,7 @@ class AshViewModel @Inject constructor(
                 quarantine = snapshot?.quarantine.orEmpty(),
                 activity = snapshot?.activity.orEmpty(),
                 settings = snapshot?.settings.orEmpty(),
+                health = managerState.health,
             )
         }
     }
@@ -174,6 +177,7 @@ class AshViewModel @Inject constructor(
     fun rollbackTrial() = operate(manager::rollbackTrial)
     fun discardPending() = operate(manager::discardPending)
     fun exportDiagnostics() = operate(manager::exportDiagnostics)
+    fun repairState() = operate(manager::repairState)
     fun recordGuidanceOutcome(
         recommendationId: String,
         moduleFolder: String,

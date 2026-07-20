@@ -5,6 +5,7 @@ import com.dergoogler.mmrl.ash.database.ActivityEntity
 import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.ash.model.AshCapabilities
 import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
+import com.dergoogler.mmrl.ash.model.AshModuleHealth
 import com.dergoogler.mmrl.ash.model.AshModuleInstallation
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
 import com.dergoogler.mmrl.ash.model.AshSnapshot
@@ -51,7 +52,7 @@ class AshRepository @Inject constructor(
     suspend fun parseSnapshot(raw: String): AshSnapshot {
         val root = parse(raw)
         val schemaVersion = root.optInt("schemaVersion")
-        require(schemaVersion == SUPPORTED_SNAPSHOT_SCHEMA) {
+        require(schemaVersion in SUPPORTED_SNAPSHOT_SCHEMA_MIN..SUPPORTED_SNAPSHOT_SCHEMA_MAX) {
             "Unsupported AshReXcue snapshot schema $schemaVersion"
         }
 
@@ -78,6 +79,7 @@ class AshRepository @Inject constructor(
                 pendingByKey,
             ),
             pendingSettings = pendingSettings,
+            health = parseHealth(root.optJSONObject("health") ?: JSONObject()),
         )
     }
 
@@ -153,6 +155,11 @@ class AshRepository @Inject constructor(
     suspend fun exportDiagnostics(): OperationResult =
         mutation("diagnostics", "Exported diagnostics", "Sanitized diagnostic archive") {
             rootClient.exportDiagnostics()
+        }
+
+    suspend fun repairState(): OperationResult =
+        mutation("state-repair", "Repaired AshReXcue state", "Validated and repaired durable recovery state") {
+            rootClient.repairState()
         }
 
     suspend fun recordGuidanceOutcome(
@@ -235,6 +242,15 @@ class AshRepository @Inject constructor(
             throw IllegalStateException(json.optString("message", "AshReXcue operation failed"))
         }
     }
+
+    private fun parseHealth(root: JSONObject): AshModuleHealth = AshModuleHealth(
+        schemaVersion = root.optInt("schemaVersion"),
+        status = root.optString("status", "unknown"),
+        issueCount = root.optInt("issueCount"),
+        repairCount = root.optInt("repairCount"),
+        lastRepairAt = root.optLong("lastRepairAt"),
+        summary = root.optString("summary"),
+    )
 
     private fun parseCapabilities(root: JSONObject): AshCapabilities {
         val features = root.optJSONArray("features") ?: JSONArray()
@@ -391,6 +407,7 @@ class AshRepository @Inject constructor(
     )
 
     private companion object {
-        const val SUPPORTED_SNAPSHOT_SCHEMA = 1
+        const val SUPPORTED_SNAPSHOT_SCHEMA_MIN = 1
+        const val SUPPORTED_SNAPSHOT_SCHEMA_MAX = 2
     }
 }
