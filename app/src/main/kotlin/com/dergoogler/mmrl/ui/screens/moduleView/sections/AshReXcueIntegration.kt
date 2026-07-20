@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dergoogler.mmrl.ash.AshOperationKind
 import com.dergoogler.mmrl.ash.AshViewModel
 import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
@@ -35,6 +36,15 @@ internal fun AshReXcueIntegrationCard(viewModel: AshViewModel = hiltViewModel())
     val context = LocalContext.current
     val navigator = LocalDestinationsNavigator.current
     val lifecycle = state.lifecycle
+    val preparingUpdate = state.isOperationRunning(
+        AshOperationKind.PrepareModuleInstall,
+        AshInstallMode.Update.name,
+    )
+    val preparingReinstall = state.isOperationRunning(
+        AshOperationKind.PrepareModuleInstall,
+        AshInstallMode.Reinstall.name,
+    )
+    val preparingModule = state.isOperationRunning(AshOperationKind.PrepareModuleInstall)
 
     LaunchedEffect(viewModel, context) {
         viewModel.moduleInstalls.collect { prepared ->
@@ -70,17 +80,29 @@ internal fun AshReXcueIntegrationCard(viewModel: AshViewModel = hiltViewModel())
                 if (lifecycle.updateAvailable || lifecycle.state == AshModuleLifecycleState.Outdated) {
                     OutlinedButton(
                         onClick = { viewModel.prepareModuleInstall(AshInstallMode.Update) },
-                        enabled = !state.loading,
+                        enabled = !preparingModule,
                     ) {
-                        Text("Update bundled module")
+                        Text(
+                            if (preparingUpdate) {
+                                "Preparing update…"
+                            } else {
+                                "Update bundled module"
+                            },
+                        )
                     }
                 }
                 if (lifecycle.reinstallRecommended || lifecycle.state == AshModuleLifecycleState.Broken) {
                     OutlinedButton(
                         onClick = { viewModel.prepareModuleInstall(AshInstallMode.Reinstall) },
-                        enabled = !state.loading,
+                        enabled = !preparingModule,
                     ) {
-                        Text("Reinstall module")
+                        Text(
+                            if (preparingReinstall) {
+                                "Preparing reinstall…"
+                            } else {
+                                "Reinstall module"
+                            },
+                        )
                     }
                 }
             }

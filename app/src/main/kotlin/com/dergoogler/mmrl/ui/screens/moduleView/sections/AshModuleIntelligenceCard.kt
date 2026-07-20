@@ -14,14 +14,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dergoogler.mmrl.ash.AshOperationKind
 import com.dergoogler.mmrl.ash.AshViewModel
 import com.dergoogler.mmrl.ash.model.AshModuleIntelligence
 import com.dergoogler.mmrl.ash.model.AshModuleIntelligenceEngine
@@ -77,6 +82,7 @@ internal fun AshModuleIntelligenceCard(viewModel: AshViewModel = hiltViewModel()
     val riskColor = riskColor(intelligence.riskBand)
     val safetyColor = riskColor(safety.riskBand)
     val writable = !state.readOnly && state.snapshotSource == AshSnapshotSource.Live
+    var expanded by rememberSaveable(intelligence.folder) { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -119,38 +125,51 @@ internal fun AshModuleIntelligenceCard(viewModel: AshViewModel = hiltViewModel()
                 fontWeight = FontWeight.SemiBold,
             )
 
-            if (intelligence.factors.isNotEmpty()) {
-                Text("Evidence", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-                intelligence.factors.take(3).forEach { factor ->
-                    Text(
-                        "• ${factor.title}: ${factor.detail}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            val hasDetails = intelligence.factors.isNotEmpty() ||
+                version.versionCode > local.versionCode || safety.shouldReviewBeforeInstall
+            if (hasDetails) {
+                TextButton(
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(if (expanded) "Hide details" else "Show details")
                 }
             }
 
-            if (version.versionCode > local.versionCode || safety.shouldReviewBeforeInstall) {
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("Update safety", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-                        IntelligenceTag("${safety.riskBand.name} · ${safety.riskScore}/100", safetyColor)
-                    }
-                    Text(safety.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        safety.summary,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    safety.reasons.take(3).forEach { reason ->
+            if (expanded) {
+                if (intelligence.factors.isNotEmpty()) {
+                    Text("Evidence", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                    intelligence.factors.take(3).forEach { factor ->
                         Text(
-                            "• $reason",
+                            "• ${factor.title}: ${factor.detail}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                }
+
+                if (version.versionCode > local.versionCode || safety.shouldReviewBeforeInstall) {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text("Update safety", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                            IntelligenceTag("${safety.riskBand.name} · ${safety.riskScore}/100", safetyColor)
+                        }
+                        Text(safety.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            safety.summary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        safety.reasons.take(3).forEach { reason ->
+                            Text(
+                                "• $reason",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -162,15 +181,21 @@ internal fun AshModuleIntelligenceCard(viewModel: AshViewModel = hiltViewModel()
                 Button(onClick = { navigator.navigate(AshScreenDestination) }) {
                     Text("Open Recovery Center")
                 }
-                OutlinedButton(onClick = viewModel::refreshAll, enabled = !state.loading) {
-                    Text("Refresh evidence")
+                OutlinedButton(onClick = viewModel::refreshAll, enabled = !state.refreshing) {
+                    Text(if (state.refreshing) "Refreshing…" else "Refresh evidence")
                 }
                 if (writable && intelligence.riskBand >= AshModuleRiskBand.High && intelligence.trust != "suspect") {
                     OutlinedButton(
                         onClick = { viewModel.setTrust(intelligence.folder, "suspect") },
-                        enabled = !state.loading,
+                        enabled = !state.isOperationRunning(AshOperationKind.SetTrust, intelligence.folder),
                     ) {
-                        Text("Mark suspect")
+                        Text(
+                            if (state.isOperationRunning(AshOperationKind.SetTrust, intelligence.folder)) {
+                                "Marking…"
+                            } else {
+                                "Mark suspect"
+                            },
+                        )
                     }
                 }
             }

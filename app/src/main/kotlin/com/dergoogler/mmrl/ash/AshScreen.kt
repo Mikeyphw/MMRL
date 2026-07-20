@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,11 +21,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -60,10 +59,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.none
+import com.dergoogler.mmrl.ash.model.AshGuidanceEngine
 import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshManagerState
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
 import com.dergoogler.mmrl.ash.model.AshRecoveryOverview
+import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
+import com.dergoogler.mmrl.ash.model.AshRecoveryPlanEngine
+import com.dergoogler.mmrl.ash.model.AshSnapshot
 import com.dergoogler.mmrl.ash.model.AshRecoverySession
 import com.dergoogler.mmrl.ash.model.AshRecoverySessionKind
 import com.dergoogler.mmrl.ash.model.AshReleaseCheckState
@@ -88,12 +91,13 @@ import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDes
 import com.ramcosta.composedestinations.generated.destinations.BootProtectionScreenDestination
 import java.util.Locale
 
-private enum class RecoverySection(val label: String) {
-    Overview("Overview"),
-    Guidance("Guidance"),
-    Quarantine("Quarantine"),
-    Sessions("Sessions"),
-    Diagnostics("Diagnostics"),
+private enum class RecoveryTask(val label: String) {
+    Status("Check status"),
+    Restore("Restore modules"),
+    Investigate("Find culprit"),
+    Trial("Review trial"),
+    History("History"),
+    Advanced("Advanced"),
 }
 
 private enum class RecoveryConfirmation {
@@ -111,9 +115,19 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
         val context = LocalContext.current
         val bottomPadding = LocalMainScreenInnerPaddings.current.mainContentBottomPadding()
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-        var section by rememberSaveable { mutableStateOf(RecoverySection.Overview) }
+        var task by rememberSaveable { mutableStateOf(RecoveryTask.Status) }
         var confirmation by remember { mutableStateOf<RecoveryConfirmation?>(null) }
         var selectedSession by remember { mutableStateOf<AshRecoverySession?>(null) }
+        var pendingPlan by remember { mutableStateOf<AshRecoveryPlan?>(null) }
+        val recoverySnapshot = remember(
+            state.snapshotGeneratedAt,
+            state.recoveryRevision,
+            state.capabilities,
+            state.dashboard,
+            state.modules,
+            state.quarantine,
+            state.activity,
+        ) { state.asRecoverySnapshot() }
 
         LaunchedEffect(viewModel, context) {
             viewModel.moduleInstalls.collect { prepared ->
@@ -143,6 +157,19 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
         selectedSession?.let { session ->
             RecoverySessionDialog(session = session, onDismiss = { selectedSession = null })
         }
+        pendingPlan?.let { plan ->
+            RecoveryPlanPreviewDialog(
+                plan = plan,
+                moduleNames = plan.affectedFolders.map { folder ->
+                    state.modules.firstOrNull { it.folder == folder }?.name ?: folder
+                },
+                onDismiss = { pendingPlan = null },
+                onConfirm = {
+                    pendingPlan = null
+                    viewModel.executeRecoveryPlan(plan)
+                },
+            )
+        }
 
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -155,7 +182,7 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                         )
                     },
                     actions = {
-                        IconButton(onClick = viewModel::refreshAll, enabled = !state.loading) {
+                        IconButton(onClick = viewModel::refreshAll, enabled = !state.refreshing) {
                             Icon(
                                 painter = painterResource(R.drawable.refresh),
                                 contentDescription = stringResource(R.string.recovery_center_refresh),
@@ -168,7 +195,7 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
             contentWindowInsets = WindowInsets.none,
         ) { innerPadding ->
             Column(modifier = Modifier.fillMaxSize()) {
-                if (state.loading) {
+                if (state.refreshing) {
                     LinearProgressIndicator(
                         modifier =
                             Modifier
@@ -179,11 +206,12 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                     Spacer(Modifier.height(innerPadding.calculateTopPadding()))
                 }
 
-                RecoverySectionPicker(
-                    selected = section,
+                RecoveryTaskPicker(
+                    selected = task,
                     quarantineCount = state.quarantine.size,
                     sessionCount = state.snapshotSessions.size,
-                    onSelected = { section = it },
+                    trialActive = state.dashboard.restoreState.equals("testing", ignoreCase = true),
+                    onSelected = { task = it },
                 )
 
                 LifecycleBanner(
@@ -193,18 +221,29 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                     onReinstall = { viewModel.prepareModuleInstall(AshInstallMode.Reinstall) },
                 )
 
-                when (section) {
-                    RecoverySection.Overview -> RecoveryOverviewContent(
+                when (task) {
+                    RecoveryTask.Status -> RecoveryOverviewContent(
                         state = state,
-                        onShowQuarantine = { section = RecoverySection.Quarantine },
-                        onShowSessions = { section = RecoverySection.Sessions },
+                        onShowQuarantine = { task = RecoveryTask.Restore },
+                        onShowSessions = { task = RecoveryTask.History },
                         onCompleteTrial = { confirmation = RecoveryConfirmation.CompleteTrial },
                         onRollbackTrial = { confirmation = RecoveryConfirmation.RollbackTrial },
                         onSessionClick = { selectedSession = it },
                         bottomPadding = bottomPadding,
                     )
 
-                    RecoverySection.Guidance -> GuidedRecoveryContent(
+                    RecoveryTask.Restore -> QuarantineContent(
+                        snapshot = recoverySnapshot,
+                        readOnly = state.readOnly,
+                        anyPlanRunning = state.isOperationRunning(AshOperationKind.ExecuteRecoveryPlan),
+                        isPlanRunning = { planId ->
+                            state.isOperationRunning(AshOperationKind.ExecuteRecoveryPlan, planId)
+                        },
+                        onPreviewPlan = { pendingPlan = it },
+                        bottomPadding = bottomPadding,
+                    )
+
+                    RecoveryTask.Investigate -> GuidedRecoveryContent(
                         state = state,
                         onExecutePlan = viewModel::executeRecoveryPlan,
                         onMarkSuspect = { folder -> viewModel.setTrust(folder, "suspect") },
@@ -212,32 +251,26 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                         onRollbackTrial = viewModel::rollbackTrial,
                         onOutcome = viewModel::recordGuidanceOutcome,
                         bottomPadding = bottomPadding,
+                        showPlanningTools = false,
                     )
 
-                    RecoverySection.Quarantine -> QuarantineContent(
-                        items = state.quarantine,
-                        readOnly = state.readOnly,
-                        loading = state.loading,
-                        onRestoreOne = viewModel::restoreOne,
-                        onRestoreHalf = {
-                            section = RecoverySection.Guidance
-                            viewModel.showMessage("Review the balanced guarded plan before restoring a batch")
-                        },
-                        onRestoreAll = {
-                            section = RecoverySection.Guidance
-                            viewModel.showMessage("Review the rapid guarded plan and type its confirmation phrase")
-                        },
+                    RecoveryTask.Trial -> RecoveryTrialContent(
+                        state = state,
+                        onCompleteTrial = { confirmation = RecoveryConfirmation.CompleteTrial },
+                        onRollbackTrial = { confirmation = RecoveryConfirmation.RollbackTrial },
+                        onOpenRestore = { task = RecoveryTask.Restore },
+                        onSessionClick = { selectedSession = it },
                         bottomPadding = bottomPadding,
                     )
 
-                    RecoverySection.Sessions -> RecoverySessionsContent(
+                    RecoveryTask.History -> RecoverySessionsContent(
                         sessions = state.snapshotSessions,
                         onSessionClick = { selectedSession = it },
                         onOpenActivity = { navigator.navigate(ActivityScreenDestination) },
                         bottomPadding = bottomPadding,
                     )
 
-                    RecoverySection.Diagnostics -> RecoveryDiagnosticsContent(
+                    RecoveryTask.Advanced -> RecoveryDiagnosticsContent(
                         state = state,
                         onExport = viewModel::exportDiagnostics,
                         onRepair = viewModel::repairState,
@@ -253,33 +286,42 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
     }
 
 private val AshUiState.snapshotSessions: List<AshRecoverySession>
-    get() = com.dergoogler.mmrl.ash.model.AshSnapshot(
-        activity = activity,
-        dashboard = dashboard,
-    ).recoverySessions()
+    get() = asRecoverySnapshot().recoverySessions()
+
+private fun AshUiState.asRecoverySnapshot() = AshSnapshot(
+    generatedAt = snapshotGeneratedAt,
+    recoveryRevision = recoveryRevision,
+    capabilities = capabilities,
+    dashboard = dashboard,
+    modules = modules,
+    quarantine = quarantine,
+    activity = activity,
+)
 
 @Composable
-private fun RecoverySectionPicker(
-    selected: RecoverySection,
+private fun RecoveryTaskPicker(
+    selected: RecoveryTask,
     quarantineCount: Int,
     sessionCount: Int,
-    onSelected: (RecoverySection) -> Unit,
+    trialActive: Boolean,
+    onSelected: (RecoveryTask) -> Unit,
 ) {
     FlowRow(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        RecoverySection.entries.forEach { section ->
-            val suffix = when (section) {
-                RecoverySection.Quarantine -> " · $quarantineCount"
-                RecoverySection.Sessions -> " · $sessionCount"
+        RecoveryTask.entries.forEach { task ->
+            val suffix = when (task) {
+                RecoveryTask.Restore -> " · $quarantineCount"
+                RecoveryTask.Trial -> if (trialActive) " · Active" else ""
+                RecoveryTask.History -> " · $sessionCount"
                 else -> ""
             }
             FilterChip(
-                selected = selected == section,
-                onClick = { onSelected(section) },
-                label = { Text(section.label + suffix) },
+                selected = selected == task,
+                onClick = { onSelected(task) },
+                label = { Text(task.label + suffix) },
             )
         }
     }
@@ -293,13 +335,13 @@ private fun LifecycleBanner(
     onReinstall: () -> Unit,
 ) {
     val lifecycle = state.lifecycle
-    val action: Pair<String, () -> Unit>? = when (lifecycle.state) {
-        AshModuleLifecycleState.Missing -> "Install bundled module" to onInstall
-        AshModuleLifecycleState.Outdated -> "Update module" to onUpdate
+    val action: Triple<String, AshInstallMode, () -> Unit>? = when (lifecycle.state) {
+        AshModuleLifecycleState.Missing -> Triple("Install bundled module", AshInstallMode.Install, onInstall)
+        AshModuleLifecycleState.Outdated -> Triple("Update module", AshInstallMode.Update, onUpdate)
         AshModuleLifecycleState.Broken,
         AshModuleLifecycleState.Incompatible,
         AshModuleLifecycleState.Disabled,
-        -> "Reinstall module" to onReinstall
+        -> Triple("Reinstall module", AshInstallMode.Reinstall, onReinstall)
         else -> null
     }
     if (state.connection == ConnectionState.Ready && !state.readOnly && action == null) return
@@ -318,8 +360,11 @@ private fun LifecycleBanner(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            action?.let { (label, callback) ->
-                FilledTonalButton(onClick = callback, enabled = !state.loading) { Text(label) }
+            action?.let { (label, mode, callback) ->
+                val running = state.isOperationRunning(AshOperationKind.PrepareModuleInstall, mode.name)
+                FilledTonalButton(onClick = callback, enabled = !running) {
+                    RecoveryActionLabel(running, label)
+                }
             }
         }
     }
@@ -338,11 +383,7 @@ private fun RecoveryOverviewContent(
     val managerState = AshManagerState(
         rootAvailable = state.connection != ConnectionState.RootDenied,
         lifecycle = state.lifecycle,
-        snapshot = com.dergoogler.mmrl.ash.model.AshSnapshot(
-            dashboard = state.dashboard,
-            activity = state.activity,
-            quarantine = state.quarantine,
-        ),
+        snapshot = state.asRecoverySnapshot(),
         source = state.snapshotSource,
         readOnly = state.readOnly,
         lastSuccessfulAt = state.lastSuccessfulAt,
@@ -359,7 +400,8 @@ private fun RecoveryOverviewContent(
                 RestorationTrialCard(
                     overview = overview,
                     readOnly = state.readOnly,
-                    loading = state.loading,
+                    completing = state.isOperationRunning(AshOperationKind.CompleteTrial),
+                    rollingBack = state.isOperationRunning(AshOperationKind.RollbackTrial),
                     onComplete = onCompleteTrial,
                     onRollback = onRollbackTrial,
                 )
@@ -421,7 +463,7 @@ private fun IncidentHero(overview: AshRecoveryOverview, readOnly: Boolean) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                AssistChip(onClick = {}, label = { Text(if (readOnly) "Read only" else overview.bootState.title()) })
+                StatusPill(if (readOnly) "Read only" else overview.bootState.title())
             }
             Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (overview.failureThreshold > 0) {
@@ -442,7 +484,8 @@ private fun IncidentHero(overview: AshRecoveryOverview, readOnly: Boolean) {
 private fun RestorationTrialCard(
     overview: AshRecoveryOverview,
     readOnly: Boolean,
-    loading: Boolean,
+    completing: Boolean,
+    rollingBack: Boolean,
     onComplete: () -> Unit,
     onRollback: () -> Unit,
 ) {
@@ -454,11 +497,11 @@ private fun RestorationTrialCard(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onComplete, enabled = !readOnly && !loading, modifier = Modifier.weight(1f)) {
-                Text("Complete trial")
+            Button(onClick = onComplete, enabled = !readOnly && !completing && !rollingBack, modifier = Modifier.weight(1f)) {
+                RecoveryActionLabel(completing, "Complete trial")
             }
-            OutlinedButton(onClick = onRollback, enabled = !readOnly && !loading, modifier = Modifier.weight(1f)) {
-                Text("Rollback")
+            OutlinedButton(onClick = onRollback, enabled = !readOnly && !rollingBack && !completing, modifier = Modifier.weight(1f)) {
+                RecoveryActionLabel(rollingBack, "Rollback")
             }
         }
     }
@@ -477,28 +520,37 @@ private fun RecoveryMetrics(overview: AshRecoveryOverview) {
 
 @Composable
 private fun QuarantineContent(
-    items: List<QuarantineItem>,
+    snapshot: AshSnapshot,
     readOnly: Boolean,
-    loading: Boolean,
-    onRestoreOne: (String) -> Unit,
-    onRestoreHalf: () -> Unit,
-    onRestoreAll: () -> Unit,
+    anyPlanRunning: Boolean,
+    isPlanRunning: (String) -> Boolean,
+    onPreviewPlan: (AshRecoveryPlan) -> Unit,
     bottomPadding: Dp,
 ) {
+    val guidance = remember(snapshot) { AshGuidanceEngine.build(snapshot) }
+    val presetPlans = remember(snapshot, guidance) {
+        AshRecoveryPlanEngine.presets(snapshot, guidance)
+    }
+    val items = snapshot.quarantine
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = bottomPadding),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            RecoveryCard("Controlled restoration") {
-                Text("Restore one module for a targeted trial, or restore a batch to perform a faster binary search.")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onRestoreHalf, enabled = items.size > 1 && !readOnly && !loading, modifier = Modifier.weight(1f)) {
-                        Text("Restore half")
-                    }
-                    OutlinedButton(onClick = onRestoreAll, enabled = items.isNotEmpty() && !readOnly && !loading, modifier = Modifier.weight(1f)) {
-                        Text("Restore all")
+            RecoveryCard("Choose a guarded restoration") {
+                Text(
+                    "Every restoration opens its safety preflight here. Plans are bound to the current quarantine revision and are checked again before execution.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                presetPlans.forEach { plan ->
+                    FilledTonalButton(
+                        onClick = { onPreviewPlan(plan) },
+                        enabled = !readOnly && !anyPlanRunning,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        RecoveryActionLabel(isPlanRunning(plan.id), "Review ${plan.title.lowercase(Locale.ROOT)}")
                     }
                 }
             }
@@ -506,30 +558,111 @@ private fun QuarantineContent(
         if (items.isEmpty()) {
             item { EmptyRecoveryCard("Quarantine is empty. No isolated modules require restoration.") }
         } else {
+            item {
+                SectionHeader(
+                    title = "Quarantined modules",
+                    subtitle = "Open an exact one-module guarded plan, or use a preset above for a controlled batch.",
+                )
+            }
             items(items, key = QuarantineItem::folder) { item ->
-                Card(shape = RoundedCornerShape(16.dp)) {
+                val plan = remember(snapshot, item.folder) {
+                    AshRecoveryPlanEngine.custom(snapshot, listOf(item.folder))
+                }
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Column(Modifier.weight(1f)) {
                                 Text(item.name.ifBlank { item.id }, fontWeight = FontWeight.SemiBold)
                                 Text(item.folder, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
                             }
-                            AssistChip(onClick = {}, label = { Text(if (item.isStale) "Stale" else item.trust.title()) })
+                            StatusPill(
+                                text = if (item.isStale) "Stale" else item.trust.title(),
+                                color = if (item.isStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            )
                         }
                         Text(
-                            if (item.isStale) "The quarantine record no longer matches an existing disabled module." else "Rescue ${item.rescueId.ifBlank { "unknown" }} · ${relativeTime(item.disabledAt)}",
+                            if (item.isStale) {
+                                "The quarantine record no longer matches an existing disabled module."
+                            } else {
+                                "Rescue ${item.rescueId.ifBlank { "unknown" }} · ${relativeTime(item.disabledAt)}"
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Button(
-                            onClick = { onRestoreOne(item.folder) },
-                            enabled = !readOnly && !loading && !item.isStale,
+                        FilledTonalButton(
+                            onClick = { onPreviewPlan(plan) },
+                            enabled = !readOnly && !anyPlanRunning,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Start restoration trial")
+                            RecoveryActionLabel(isPlanRunning(plan.id), "Review one-module trial")
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecoveryTrialContent(
+    state: AshUiState,
+    onCompleteTrial: () -> Unit,
+    onRollbackTrial: () -> Unit,
+    onOpenRestore: () -> Unit,
+    onSessionClick: (AshRecoverySession) -> Unit,
+    bottomPadding: Dp,
+) {
+    val managerState = AshManagerState(
+        rootAvailable = state.connection != ConnectionState.RootDenied,
+        lifecycle = state.lifecycle,
+        snapshot = state.asRecoverySnapshot(),
+        source = state.snapshotSource,
+        readOnly = state.readOnly,
+        lastSuccessfulAt = state.lastSuccessfulAt,
+    )
+    val overview = managerState.recoveryOverview()
+    val trialSessions = state.snapshotSessions.filter { it.kind == AshRecoverySessionKind.Restoration }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = bottomPadding),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (overview.restorationTrialActive) {
+            item {
+                RestorationTrialCard(
+                    overview = overview,
+                    readOnly = state.readOnly,
+                    completing = state.isOperationRunning(AshOperationKind.CompleteTrial),
+                    rollingBack = state.isOperationRunning(AshOperationKind.RollbackTrial),
+                    onComplete = onCompleteTrial,
+                    onRollback = onRollbackTrial,
+                )
+            }
+        } else {
+            item {
+                RecoveryActionCard(
+                    title = "No trial awaiting review",
+                    description = "Start a guarded restoration from quarantine. After the next boot, return here to keep the tested modules or roll them back.",
+                    actionLabel = "Restore modules",
+                    onAction = onOpenRestore,
+                )
+            }
+        }
+        item {
+            SectionHeader(
+                title = "Recent trial outcomes",
+                subtitle = "Use these results to compare stable and failed restoration batches.",
+            )
+        }
+        if (trialSessions.isEmpty()) {
+            item { EmptyRecoveryCard("No restoration trials have been recorded.") }
+        } else {
+            items(trialSessions, key = { "trial:${it.id}:${it.timestamp}" }) { session ->
+                RecoverySessionRow(session = session, onClick = { onSessionClick(session) })
             }
         }
     }
@@ -576,9 +709,9 @@ private fun RecoverySessionRow(session: AshRecoverySession, onClick: () -> Unit)
             }
             Text(session.summary.ifBlank { session.status.title() }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                AssistChip(onClick = {}, label = { Text(session.kind.label) })
-                AssistChip(onClick = {}, label = { Text(session.status.title()) })
-                if (session.active) AssistChip(onClick = {}, label = { Text("Active") })
+                StatusPill(session.kind.label)
+                StatusPill(session.status.title(), statusColor(session.status))
+                if (session.active) StatusPill("Active", MaterialTheme.colorScheme.tertiary)
             }
         }
     }
@@ -635,7 +768,7 @@ private fun RecoveryDiagnosticsContent(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(check.title, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                            AssistChip(onClick = {}, label = { Text(check.state.name) })
+                            StatusPill(check.state.name, releaseCheckColor(check.state))
                         }
                         Text(
                             check.detail,
@@ -646,14 +779,10 @@ private fun RecoveryDiagnosticsContent(
                 }
                 Button(
                     onClick = onRunReleaseGate,
-                    enabled = !state.loading,
+                    enabled = !state.refreshing,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    if (state.loading) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("Run final release gate")
-                    }
+                    RecoveryActionLabel(state.refreshing, "Run final release gate")
                 }
             }
         }
@@ -671,10 +800,15 @@ private fun RecoveryDiagnosticsContent(
                 if (state.health.repairRecommended) {
                     Button(
                         onClick = onRepair,
-                        enabled = !state.readOnly && !state.loading && state.capabilities.supports("state-repair"),
+                        enabled = !state.readOnly &&
+                            !state.isOperationRunning(AshOperationKind.RepairState) &&
+                            state.capabilities.supports("state-repair"),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text("Repair recovery state")
+                        RecoveryActionLabel(
+                            state.isOperationRunning(AshOperationKind.RepairState),
+                            "Repair recovery state",
+                        )
                     }
                 }
             }
@@ -682,8 +816,9 @@ private fun RecoveryDiagnosticsContent(
         item {
             RecoveryCard("Sanitized diagnostic export") {
                 Text("Creates a redacted archive containing module state, rescue manifests, restoration history, and recent logs.")
-                Button(onClick = onExport, enabled = !state.readOnly && !state.loading, modifier = Modifier.fillMaxWidth()) {
-                    if (state.loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text("Export diagnostics")
+                val exporting = state.isOperationRunning(AshOperationKind.ExportDiagnostics)
+                Button(onClick = onExport, enabled = !state.readOnly && !exporting, modifier = Modifier.fillMaxWidth()) {
+                    RecoveryActionLabel(exporting, "Export diagnostics")
                 }
                 state.lastOperation?.path?.let { path ->
                     HorizontalDivider()
@@ -766,9 +901,10 @@ private fun RecoveryConfirmationDialog(
         RecoveryConfirmation.RollbackTrial -> Triple("Rollback restoration trial?", "The tested modules will be disabled and returned to quarantine.", "Rollback")
     }
     AlertDialog(
+        modifier = Modifier.imePadding(),
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { Text(description) },
+        text = { ScrollableRecoveryDialogContent { Text(description) } },
         confirmButton = { TextButton(onClick = onConfirm) { Text(confirm) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
@@ -777,10 +913,11 @@ private fun RecoveryConfirmationDialog(
 @Composable
 private fun RecoverySessionDialog(session: AshRecoverySession, onDismiss: () -> Unit) {
     AlertDialog(
+        modifier = Modifier.imePadding(),
         onDismissRequest = onDismiss,
         title = { Text(session.title.ifBlank { session.kind.label }) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ScrollableRecoveryDialogContent {
                 MetricRow("Status", session.status.title())
                 MetricRow("Time", relativeTime(session.timestamp))
                 if (session.summary.isNotBlank()) Text(session.summary)
@@ -792,6 +929,13 @@ private fun RecoverySessionDialog(session: AshRecoverySession, onDismiss: () -> 
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
+}
+
+@Composable
+private fun releaseCheckColor(state: AshReleaseCheckState): Color = when (state) {
+    AshReleaseCheckState.Pass -> MaterialTheme.colorScheme.primary
+    AshReleaseCheckState.Warning -> MaterialTheme.colorScheme.tertiary
+    AshReleaseCheckState.Blocker -> MaterialTheme.colorScheme.error
 }
 
 private fun releaseGateStatusTitle(status: AshReleaseGateStatus): String = when (status) {

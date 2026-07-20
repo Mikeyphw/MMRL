@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -55,6 +56,7 @@ internal fun GuidedRecoveryContent(
     onRollbackTrial: () -> Unit,
     onOutcome: (String, String, AshGuidanceOutcome) -> Unit,
     bottomPadding: Dp,
+    showPlanningTools: Boolean = true,
 ) {
     val snapshot = remember(
         state.snapshotGeneratedAt,
@@ -112,16 +114,19 @@ internal fun GuidedRecoveryContent(
 
     trialDecision?.let { decision ->
         AlertDialog(
+            modifier = Modifier.imePadding(),
             onDismissRequest = { trialDecision = null },
             title = { Text(if (decision == AshGuidanceOutcome.Helped) "Complete restoration trial?" else "Roll back restoration trial?") },
             text = {
-                Text(
-                    if (decision == AshGuidanceOutcome.Helped) {
-                        "Complete only after confirming the restored batch survived the stability window."
-                    } else {
-                        "The tested modules will be disabled and returned to quarantine."
-                    },
-                )
+                ScrollableRecoveryDialogContent {
+                    Text(
+                        if (decision == AshGuidanceOutcome.Helped) {
+                            "Complete only after confirming the restored batch survived the stability window."
+                        } else {
+                            "The tested modules will be disabled and returned to quarantine."
+                        },
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
@@ -141,7 +146,7 @@ internal fun GuidedRecoveryContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            GuidanceCard("Guided recovery") {
+            GuidanceCard(if (showPlanningTools) "Guided recovery" else "Investigate boot failures") {
                 Text(
                     if (guidance.activeIncident) {
                         "Evidence is ranked from the current incident, stable-snapshot changes, quarantine ownership, and recovery history."
@@ -151,66 +156,69 @@ internal fun GuidedRecoveryContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    "Phase F binds every plan to the exact live recovery revision and rechecks it before module state changes.",
+                    "Every proposed action is tied to the current recovery revision and rechecked before module state changes.",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
 
-        item {
-            Text("Recovery plans", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(
-                "Plans are previews, not automation. A failed test boot re-quarantines only the tested batch.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        items(recoveryPlans, key = AshRecoveryPlan::id) { plan ->
-            RecoveryPlanCard(
-                plan = plan,
-                readOnly = state.readOnly,
-                loading = state.loading,
-                onPreview = { pendingPlan = plan },
-            )
-        }
-
-        if (state.quarantine.isNotEmpty()) {
+        if (showPlanningTools) {
             item {
-                GuidanceCard("Custom plan") {
-                    Text(
-                        "Select an exact batch. Protected, missing, stale, oversized, or changed-state plans are blocked during preview and again at execution.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        state.quarantine.forEach { item ->
-                            val module = state.modules.firstOrNull { it.folder == item.folder }
-                            val unavailable = !item.exists || !item.disablePresent ||
-                                module?.baseTrust.equals("protected", ignoreCase = true)
-                            FilterChip(
-                                selected = item.folder in selectedFolders,
-                                enabled = !unavailable && !state.loading,
-                                onClick = {
-                                    selectedFolders = if (item.folder in selectedFolders) {
-                                        selectedFolders - item.folder
-                                    } else {
-                                        selectedFolders + item.folder
-                                    }
-                                },
-                                label = { Text(module?.name ?: item.name.ifBlank { item.folder }) },
-                            )
+                Text("Recovery plans", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Plans are previews, not automation. A failed test boot re-quarantines only the tested batch.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            items(recoveryPlans, key = AshRecoveryPlan::id) { plan ->
+                RecoveryPlanCard(
+                    plan = plan,
+                    readOnly = state.readOnly,
+                    running = state.isOperationRunning(AshOperationKind.ExecuteRecoveryPlan, plan.id),
+                    anotherPlanRunning = state.isOperationRunning(AshOperationKind.ExecuteRecoveryPlan),
+                    onPreview = { pendingPlan = plan },
+                )
+            }
+
+            if (state.quarantine.isNotEmpty()) {
+                item {
+                    GuidanceCard("Custom plan") {
+                        Text(
+                            "Select an exact batch. Protected, missing, stale, oversized, or changed-state plans are blocked during preview and again at execution.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            state.quarantine.forEach { item ->
+                                val module = state.modules.firstOrNull { it.folder == item.folder }
+                                val unavailable = !item.exists || !item.disablePresent ||
+                                    module?.baseTrust.equals("protected", ignoreCase = true)
+                                FilterChip(
+                                    selected = item.folder in selectedFolders,
+                                    enabled = !unavailable && !state.isOperationRunning(AshOperationKind.ExecuteRecoveryPlan),
+                                    onClick = {
+                                        selectedFolders = if (item.folder in selectedFolders) {
+                                            selectedFolders - item.folder
+                                        } else {
+                                            selectedFolders + item.folder
+                                        }
+                                    },
+                                    label = { Text(module?.name ?: item.name.ifBlank { item.folder }) },
+                                )
+                            }
                         }
+                        FilledTonalButton(
+                            onClick = {
+                                pendingPlan = AshRecoveryPlanEngine.custom(snapshot, selectedFolders.sorted())
+                            },
+                            enabled = selectedFolders.isNotEmpty() && !state.readOnly && !state.isOperationRunning(AshOperationKind.ExecuteRecoveryPlan),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Preview custom plan") }
                     }
-                    FilledTonalButton(
-                        onClick = {
-                            pendingPlan = AshRecoveryPlanEngine.custom(snapshot, selectedFolders.sorted())
-                        },
-                        enabled = selectedFolders.isNotEmpty() && !state.readOnly && !state.loading,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Preview custom plan") }
                 }
             }
         }
@@ -222,7 +230,15 @@ internal fun GuidedRecoveryContent(
             RecommendationCard(
                 recommendation = recommendation,
                 readOnly = state.readOnly,
-                loading = state.loading,
+                actionRunning = recommendation.affectedFolders.any { folder ->
+                    state.isOperationRunning(AshOperationKind.SetTrust, folder)
+                } || state.isOperationRunning(AshOperationKind.ExecuteRecoveryPlan),
+                feedbackRunning = state.isOperationRunning(
+                    AshOperationKind.RecordGuidanceOutcome,
+                    recommendation.id,
+                ),
+                completingTrial = state.isOperationRunning(AshOperationKind.CompleteTrial),
+                rollingBackTrial = state.isOperationRunning(AshOperationKind.RollbackTrial),
                 recordedOutcome = guidance.feedback[recommendation.id]?.outcome,
                 onPreview = {
                     if (recommendation.kind == AshRecoveryRecommendationKind.RestoreSelected) {
@@ -269,14 +285,15 @@ internal fun GuidedRecoveryContent(
 private fun RecoveryPlanCard(
     plan: AshRecoveryPlan,
     readOnly: Boolean,
-    loading: Boolean,
+    running: Boolean,
+    anotherPlanRunning: Boolean,
     onPreview: () -> Unit,
 ) {
     GuidanceCard(plan.title) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(onClick = {}, label = { Text(plan.risk.label) })
-            AssistChip(onClick = {}, label = { Text("${plan.affectedFolders.size} module(s)") })
-            if (!plan.canExecute) AssistChip(onClick = {}, label = { Text("Blocked") })
+            StatusPill(plan.risk.label, riskColor(plan.risk))
+            StatusPill("${plan.affectedFolders.size} module(s)")
+            if (!plan.canExecute) StatusPill("Blocked", MaterialTheme.colorScheme.error)
         }
         Text(plan.summary)
         plan.guards.take(3).forEach { guard ->
@@ -288,9 +305,9 @@ private fun RecoveryPlanCard(
         }
         FilledTonalButton(
             onClick = onPreview,
-            enabled = !readOnly && !loading,
+            enabled = !readOnly && !anotherPlanRunning,
             modifier = Modifier.fillMaxWidth(),
-        ) { Text(if (plan.canExecute) "Preview plan" else "Review blockers") }
+        ) { RecoveryActionLabel(running, if (plan.canExecute) "Preview plan" else "Review blockers") }
     }
 }
 
@@ -298,7 +315,10 @@ private fun RecoveryPlanCard(
 private fun RecommendationCard(
     recommendation: AshRecoveryRecommendation,
     readOnly: Boolean,
-    loading: Boolean,
+    actionRunning: Boolean,
+    feedbackRunning: Boolean,
+    completingTrial: Boolean,
+    rollingBackTrial: Boolean,
     recordedOutcome: AshGuidanceOutcome?,
     onPreview: () -> Unit,
     onCompleteTrial: () -> Unit,
@@ -307,9 +327,9 @@ private fun RecommendationCard(
 ) {
     GuidanceCard(recommendation.title) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(onClick = {}, label = { Text(recommendation.riskLabel) })
+            StatusPill(recommendation.riskLabel)
             if (recommendation.affectedFolders.isNotEmpty()) {
-                AssistChip(onClick = {}, label = { Text("${recommendation.affectedFolders.size} module(s)") })
+                StatusPill("${recommendation.affectedFolders.size} module(s)")
             }
         }
         Text(recommendation.summary)
@@ -318,16 +338,25 @@ private fun RecommendationCard(
         when (recommendation.kind) {
             AshRecoveryRecommendationKind.ReviewTrial -> {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onCompleteTrial, enabled = !readOnly && !loading, modifier = Modifier.weight(1f)) { Text("Stable") }
-                    OutlinedButton(onClick = onRollbackTrial, enabled = !readOnly && !loading, modifier = Modifier.weight(1f)) { Text("Failed") }
+                    Button(onClick = onCompleteTrial, enabled = !readOnly && !completingTrial && !rollingBackTrial, modifier = Modifier.weight(1f)) {
+                        RecoveryActionLabel(completingTrial, "Stable")
+                    }
+                    OutlinedButton(onClick = onRollbackTrial, enabled = !readOnly && !rollingBackTrial && !completingTrial, modifier = Modifier.weight(1f)) {
+                        RecoveryActionLabel(rollingBackTrial, "Failed")
+                    }
                 }
             }
             AshRecoveryRecommendationKind.Observe -> Unit
             else -> FilledTonalButton(
                 onClick = onPreview,
-                enabled = !readOnly && !loading,
+                enabled = !readOnly && !actionRunning,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(if (recommendation.kind == AshRecoveryRecommendationKind.RestoreSelected) "Build guarded plan" else "Preview action") }
+            ) {
+                RecoveryActionLabel(
+                    actionRunning,
+                    if (recommendation.kind == AshRecoveryRecommendationKind.RestoreSelected) "Build guarded plan" else "Preview action",
+                )
+            }
         }
 
         HorizontalDivider()
@@ -336,7 +365,7 @@ private fun RecommendationCard(
             AshGuidanceOutcome.entries.forEach { outcome ->
                 AssistChip(
                     onClick = { onOutcome(outcome) },
-                    enabled = !loading,
+                    enabled = !feedbackRunning,
                     label = { Text(if (recordedOutcome == outcome) "✓ ${outcome.label}" else outcome.label) },
                 )
             }
@@ -353,8 +382,8 @@ private fun CulpritCandidateCard(candidate: AshCulpritCandidate) {
         }
         LinearProgressIndicator(progress = { candidate.score / 100f }, modifier = Modifier.fillMaxWidth())
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (candidate.quarantined) AssistChip(onClick = {}, label = { Text("Quarantined") })
-            if (candidate.protected) AssistChip(onClick = {}, label = { Text("Protected") })
+            if (candidate.quarantined) StatusPill("Quarantined", MaterialTheme.colorScheme.error)
+            if (candidate.protected) StatusPill("Protected", MaterialTheme.colorScheme.primary)
         }
         candidate.evidence.take(4).forEach { evidence ->
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -374,7 +403,7 @@ private fun CulpritCandidateCard(candidate: AshCulpritCandidate) {
 }
 
 @Composable
-private fun RecoveryPlanPreviewDialog(
+internal fun RecoveryPlanPreviewDialog(
     plan: AshRecoveryPlan,
     moduleNames: List<String>,
     onDismiss: () -> Unit,
@@ -383,10 +412,11 @@ private fun RecoveryPlanPreviewDialog(
     var confirmation by remember(plan.id) { mutableStateOf("") }
     val phraseAccepted = plan.confirmationPhrase.isBlank() || confirmation == plan.confirmationPhrase
     AlertDialog(
+        modifier = Modifier.imePadding(),
         onDismissRequest = onDismiss,
         title = { Text(plan.title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ScrollableRecoveryDialogContent {
                 Text(plan.summary)
                 Text("Risk: ${plan.risk.label}", fontWeight = FontWeight.SemiBold)
                 if (moduleNames.isNotEmpty()) {
@@ -407,6 +437,7 @@ private fun RecoveryPlanPreviewDialog(
                         value = confirmation,
                         onValueChange = { confirmation = it },
                         singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
                         label = { Text("Confirmation phrase") },
                     )
                 }
@@ -429,10 +460,11 @@ private fun RecommendationPreviewDialog(
     onConfirm: () -> Unit,
 ) {
     AlertDialog(
+        modifier = Modifier.imePadding(),
         onDismissRequest = onDismiss,
         title = { Text("Preview recovery action") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ScrollableRecoveryDialogContent {
                 Text(recommendation.title, fontWeight = FontWeight.SemiBold)
                 Text(recommendation.rationale)
                 if (moduleNames.isNotEmpty()) {
@@ -474,6 +506,15 @@ private val AshGuidanceConfidence.label: String
         AshGuidanceConfidence.High -> "High confidence"
         AshGuidanceConfidence.VeryHigh -> "Very high confidence"
     }
+
+@Composable
+private fun riskColor(risk: AshRecoveryPlanRisk) = when (risk) {
+    AshRecoveryPlanRisk.Low -> MaterialTheme.colorScheme.primary
+    AshRecoveryPlanRisk.Moderate -> MaterialTheme.colorScheme.tertiary
+    AshRecoveryPlanRisk.High,
+    AshRecoveryPlanRisk.Blocked,
+    -> MaterialTheme.colorScheme.error
+}
 
 private val AshRecoveryPlanRisk.label: String
     get() = when (this) {

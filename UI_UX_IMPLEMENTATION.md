@@ -218,3 +218,15 @@ See `TASKER_SUPPORT.md` for the action, event, and variable contract.
 - Persistent one-time migration from positional theme IDs to stable palette IDs.
 - Semantic status colors and stable WebUI CSS variables.
 - Fork application ID `com.mikeyphw.mmrl` with distinct launcher/APK naming and fork-specific intent actions.
+
+## UI/UX Phase 2 — task-oriented recovery workflow
+
+- Replaced Recovery Center's internal Overview/Guidance/Quarantine/Sessions/Diagnostics categories with Check status, Restore modules, Find culprit, Review trial, History, and Advanced tasks.
+- Moved technical compatibility, release-gate, state-repair, export, and audit controls behind Advanced.
+- Quarantine now opens conservative, balanced, rapid, and one-module guarded plan previews directly instead of redirecting to Guidance.
+- Added keyed operation state so refresh, install preparation, recovery plans, trial decisions, trust changes, settings, repair, export, and guidance feedback report progress independently.
+- Made recovery confirmation and preview dialogs bounded, scrollable, and IME-safe.
+- Replaced inert AshReXcue `AssistChip` status decorations with noninteractive `StatusPill` surfaces.
+- Made module intelligence compact by default with expandable evidence and update-safety details.
+- Added focused unit tests for independent operation targets and refresh isolation.
+- Reworked `TaskerRootRequest` persistence to round-trip Ash automation tokens and idempotency keys through Kotlin serialization JSON instead of mockable Android `org.json` during host unit tests.

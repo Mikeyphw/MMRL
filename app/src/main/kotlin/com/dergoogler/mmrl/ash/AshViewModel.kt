@@ -7,8 +7,8 @@ import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.ash.model.AshCapabilities
 import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
 import com.dergoogler.mmrl.ash.model.AshInstallMode
-import com.dergoogler.mmrl.ash.model.AshModuleLifecycle
 import com.dergoogler.mmrl.ash.model.AshModuleIntelligence
+import com.dergoogler.mmrl.ash.model.AshModuleLifecycle
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
 import com.dergoogler.mmrl.ash.model.AshReleaseGateReport
@@ -17,18 +17,19 @@ import com.dergoogler.mmrl.ash.model.AshStateHealth
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.ModuleItem
 import com.dergoogler.mmrl.ash.model.OperationResult
-import com.dergoogler.mmrl.ash.model.moduleIntelligence
 import com.dergoogler.mmrl.ash.model.QuarantineItem
 import com.dergoogler.mmrl.ash.model.SettingItem
+import com.dergoogler.mmrl.ash.model.moduleIntelligence
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 sealed interface ConnectionState {
     data object Checking : ConnectionState
@@ -43,9 +44,28 @@ sealed interface ConnectionState {
     data class Error(val message: String) : ConnectionState
 }
 
+enum class AshOperationKind {
+    Refresh,
+    PrepareModuleInstall,
+    SaveSettings,
+    SetTrust,
+    RestoreModule,
+    ExecuteRecoveryPlan,
+    CompleteTrial,
+    RollbackTrial,
+    DiscardPending,
+    ExportDiagnostics,
+    RepairState,
+    RecordGuidanceOutcome,
+}
+
+data class AshOperation(
+    val kind: AshOperationKind,
+    val target: String = "",
+)
+
 data class AshUiState(
     val connection: ConnectionState = ConnectionState.Checking,
-    val loading: Boolean = false,
     val readOnly: Boolean = true,
     val snapshotSource: AshSnapshotSource = AshSnapshotSource.None,
     val lastSuccessfulAt: Long = 0,
@@ -62,8 +82,21 @@ data class AshUiState(
     val health: AshStateHealth = AshStateHealth(),
     val releaseGate: AshReleaseGateReport = AshReleaseGateReport(),
     val lastOperation: OperationResult? = null,
+    val activeOperations: Set<AshOperation> = emptySet(),
     val message: String? = null,
-)
+) {
+    /** Compatibility for older surfaces. New recovery UI should query a specific operation. */
+    val loading: Boolean
+        get() = activeOperations.isNotEmpty()
+
+    val refreshing: Boolean
+        get() = isOperationRunning(AshOperationKind.Refresh)
+
+    fun isOperationRunning(kind: AshOperationKind, target: String? = null): Boolean =
+        activeOperations.any { operation ->
+            operation.kind == kind && (target == null || operation.target == target)
+        }
+}
 
 @HiltViewModel
 class AshViewModel @Inject constructor(
@@ -83,54 +116,163 @@ class AshViewModel @Inject constructor(
     }
 
     fun refreshAll() {
+        val operation = AshOperation(AshOperationKind.Refresh)
         viewModelScope.launch {
-            _state.value = _state.value.copy(
-                loading = true,
-                message = null,
-                connection = ConnectionState.Checking,
-            )
-
-            val managerState = runCatching { manager.refresh() }
-                .getOrElse { error ->
-                    _state.value = _state.value.copy(
-                        loading = false,
+            if (!begin(operation)) return@launch
+            _state.update { it.copy(connection = ConnectionState.Checking, message = null) }
+            try {
+                refreshFromManager()
+            } catch (error: Throwable) {
+                _state.update {
+                    it.copy(
                         connection = ConnectionState.Error(
                             error.message ?: "Unable to refresh AshReXcue",
                         ),
                     )
-                    return@launch
                 }
-
-            val snapshot = managerState.snapshot
-            val connection = when {
-                snapshot != null && managerState.source == AshSnapshotSource.Cache ->
-                    ConnectionState.Cached(
-                        managerState.liveError ?: "Showing the last successful AshReXcue snapshot",
-                    )
-                snapshot != null -> ConnectionState.Ready
-                !managerState.rootAvailable -> ConnectionState.RootDenied
-                else -> when (managerState.lifecycle.state) {
-                    AshModuleLifecycleState.Missing -> ConnectionState.ModuleMissing
-                    AshModuleLifecycleState.Disabled -> ConnectionState.ModuleDisabled
-                    AshModuleLifecycleState.RebootPending -> ConnectionState.RebootPending(
-                        "AshReXcue has a staged module change. Reboot before using live controls.",
-                    )
-                    AshModuleLifecycleState.Outdated -> ConnectionState.ModuleOutdated(
-                        managerState.lifecycle.compatibilityMessage,
-                    )
-                    AshModuleLifecycleState.Incompatible,
-                    AshModuleLifecycleState.Broken,
-                    -> ConnectionState.ModuleIncompatible(
-                        managerState.lifecycle.compatibilityMessage,
-                    )
-                    else -> ConnectionState.Error(
-                        managerState.liveError ?: "AshReXcue live status is unavailable",
-                    )
-                }
+            } finally {
+                end(operation)
             }
+        }
+    }
 
-            _state.value = _state.value.copy(
-                loading = false,
+    fun prepareModuleInstall(mode: AshInstallMode) {
+        val operation = AshOperation(AshOperationKind.PrepareModuleInstall, mode.name)
+        viewModelScope.launch {
+            if (!begin(operation)) return@launch
+            _state.update { it.copy(message = null) }
+            try {
+                val prepared = manager.prepareModuleInstall(mode)
+                _moduleInstalls.emit(prepared)
+            } catch (error: Throwable) {
+                _state.update {
+                    it.copy(message = error.message ?: "Unable to prepare the AshReXcue module")
+                }
+            } finally {
+                end(operation)
+            }
+        }
+    }
+
+    fun setSetting(key: String, value: String) =
+        operate(AshOperation(AshOperationKind.SaveSettings, key)) { manager.setSetting(key, value) }
+
+    fun setProtectionSettings(values: Map<String, String>) =
+        operate(AshOperation(AshOperationKind.SaveSettings, "protection")) { manager.setSettings(values) }
+
+    fun setTrust(folder: String, trust: String) =
+        operate(AshOperation(AshOperationKind.SetTrust, folder)) { manager.setTrust(folder, trust) }
+
+    fun restoreOne(folder: String) =
+        operate(AshOperation(AshOperationKind.RestoreModule, folder)) { manager.restoreOne(folder) }
+
+    fun restoreHalf() =
+        operate(AshOperation(AshOperationKind.ExecuteRecoveryPlan, "legacy-half"), manager::restoreHalf)
+
+    fun restoreBatch(folders: List<String>) =
+        operate(AshOperation(AshOperationKind.ExecuteRecoveryPlan, folders.sorted().joinToString("|"))) {
+            manager.restoreBatch(folders)
+        }
+
+    fun restoreAll() =
+        operate(AshOperation(AshOperationKind.ExecuteRecoveryPlan, "legacy-all"), manager::restoreAll)
+
+    fun executeRecoveryPlan(plan: AshRecoveryPlan) =
+        operate(AshOperation(AshOperationKind.ExecuteRecoveryPlan, plan.id)) {
+            manager.executeRecoveryPlan(plan)
+        }
+
+    fun completeTrial() =
+        operate(AshOperation(AshOperationKind.CompleteTrial), manager::completeTrial)
+
+    fun rollbackTrial() =
+        operate(AshOperation(AshOperationKind.RollbackTrial), manager::rollbackTrial)
+
+    fun discardPending() =
+        operate(AshOperation(AshOperationKind.DiscardPending), manager::discardPending)
+
+    fun exportDiagnostics() =
+        operate(AshOperation(AshOperationKind.ExportDiagnostics), manager::exportDiagnostics)
+
+    fun repairState() =
+        operate(AshOperation(AshOperationKind.RepairState), manager::repairState)
+
+    fun recordGuidanceOutcome(
+        recommendationId: String,
+        moduleFolder: String,
+        outcome: AshGuidanceOutcome,
+    ) = operate(AshOperation(AshOperationKind.RecordGuidanceOutcome, recommendationId)) {
+        manager.recordGuidanceOutcome(recommendationId, moduleFolder, outcome)
+    }
+
+    fun clearMessage() {
+        _state.update { it.copy(message = null) }
+    }
+
+    fun showMessage(message: String) {
+        _state.update { it.copy(message = message) }
+    }
+
+    private fun operate(
+        operation: AshOperation,
+        block: suspend () -> OperationResult,
+    ) {
+        viewModelScope.launch {
+            if (!begin(operation)) return@launch
+            _state.update { it.copy(message = null) }
+            try {
+                val result = block()
+                _state.update {
+                    it.copy(
+                        lastOperation = result,
+                        message = result.message,
+                    )
+                }
+                refreshFromManager()
+            } catch (error: Throwable) {
+                _state.update { it.copy(message = error.message ?: "Operation failed") }
+            } finally {
+                end(operation)
+            }
+        }
+    }
+
+    private suspend fun refreshFromManager() {
+        val managerState = manager.refresh()
+        val snapshot = managerState.snapshot
+        val connection = when {
+            snapshot != null && managerState.source == AshSnapshotSource.Cache ->
+                ConnectionState.Cached(
+                    managerState.liveError ?: "Showing the last successful AshReXcue snapshot",
+                )
+
+            snapshot != null -> ConnectionState.Ready
+            !managerState.rootAvailable -> ConnectionState.RootDenied
+            else -> when (managerState.lifecycle.state) {
+                AshModuleLifecycleState.Missing -> ConnectionState.ModuleMissing
+                AshModuleLifecycleState.Disabled -> ConnectionState.ModuleDisabled
+                AshModuleLifecycleState.RebootPending -> ConnectionState.RebootPending(
+                    "AshReXcue has a staged module change. Reboot before using live controls.",
+                )
+
+                AshModuleLifecycleState.Outdated -> ConnectionState.ModuleOutdated(
+                    managerState.lifecycle.compatibilityMessage,
+                )
+
+                AshModuleLifecycleState.Incompatible,
+                AshModuleLifecycleState.Broken,
+                -> ConnectionState.ModuleIncompatible(
+                    managerState.lifecycle.compatibilityMessage,
+                )
+
+                else -> ConnectionState.Error(
+                    managerState.liveError ?: "AshReXcue live status is unavailable",
+                )
+            }
+        }
+
+        _state.update {
+            it.copy(
                 connection = connection,
                 readOnly = managerState.readOnly,
                 snapshotSource = managerState.source,
@@ -151,69 +293,13 @@ class AshViewModel @Inject constructor(
         }
     }
 
-    fun prepareModuleInstall(mode: AshInstallMode) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, message = null)
-            runCatching { manager.prepareModuleInstall(mode) }
-                .onSuccess { prepared ->
-                    _state.value = _state.value.copy(loading = false)
-                    _moduleInstalls.emit(prepared)
-                }
-                .onFailure { error ->
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        message = error.message ?: "Unable to prepare the AshReXcue module",
-                    )
-                }
-        }
+    private fun begin(operation: AshOperation): Boolean {
+        if (operation in _state.value.activeOperations) return false
+        _state.update { it.copy(activeOperations = it.activeOperations + operation) }
+        return true
     }
 
-    fun setSetting(key: String, value: String) = operate { manager.setSetting(key, value) }
-    fun setProtectionSettings(values: Map<String, String>) = operate { manager.setSettings(values) }
-    fun setTrust(folder: String, trust: String) = operate { manager.setTrust(folder, trust) }
-    fun restoreOne(folder: String) = operate { manager.restoreOne(folder) }
-    fun restoreHalf() = operate(manager::restoreHalf)
-    fun restoreBatch(folders: List<String>) = operate { manager.restoreBatch(folders) }
-    fun restoreAll() = operate(manager::restoreAll)
-    fun executeRecoveryPlan(plan: AshRecoveryPlan) = operate { manager.executeRecoveryPlan(plan) }
-    fun completeTrial() = operate(manager::completeTrial)
-    fun rollbackTrial() = operate(manager::rollbackTrial)
-    fun discardPending() = operate(manager::discardPending)
-    fun exportDiagnostics() = operate(manager::exportDiagnostics)
-    fun repairState() = operate(manager::repairState)
-    fun recordGuidanceOutcome(
-        recommendationId: String,
-        moduleFolder: String,
-        outcome: AshGuidanceOutcome,
-    ) = operate { manager.recordGuidanceOutcome(recommendationId, moduleFolder, outcome) }
-
-    fun clearMessage() {
-        _state.value = _state.value.copy(message = null)
+    private fun end(operation: AshOperation) {
+        _state.update { it.copy(activeOperations = it.activeOperations - operation) }
     }
-
-    fun showMessage(message: String) {
-        _state.value = _state.value.copy(message = message)
-    }
-
-    private fun operate(block: suspend () -> OperationResult) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, message = null)
-            runCatching { block() }
-                .onSuccess { result ->
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        lastOperation = result,
-                        message = result.message,
-                    )
-                    refreshAll()
-                }
-                .onFailure { error ->
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        message = error.message ?: "Operation failed",
-                    )
-                }
-        }
-    }
-
 }

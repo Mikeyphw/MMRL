@@ -14,6 +14,13 @@ import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy
 import com.dergoogler.mmrl.datastore.model.UserPreferences
 import com.dergoogler.mmrl.model.ModuleIdentity
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.put
 import org.json.JSONObject
 import java.io.File
 import java.util.UUID
@@ -127,31 +134,48 @@ data class TaskerRootRequest(
     val idempotencyKey: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
 ) {
-    fun toJson() = JSONObject()
-        .put("id", id)
-        .put("operation_id", operationId)
-        .put("command", command)
-        .put("module_id", moduleId)
-        .put("module_name", moduleName)
-        .put("review_token", reviewToken)
-        .put("target_operation_id", targetOperationId)
-        .put("ash_automation_token", ashAutomationToken)
-        .put("idempotency_key", idempotencyKey)
-        .put("created_at", createdAt)
+    fun toJson(): String = buildJsonObject {
+        put("id", id)
+        put("operation_id", operationId)
+        put("command", command)
+        put("module_id", moduleId)
+        put("module_name", moduleName)
+        reviewToken?.let { put("review_token", it) }
+        targetOperationId?.let { put("target_operation_id", it) }
+        ashAutomationToken?.let { put("ash_automation_token", it) }
+        idempotencyKey?.let { put("idempotency_key", it) }
+        put("created_at", createdAt)
+    }.toString()
 
     companion object {
-        fun fromJson(value: JSONObject) = TaskerRootRequest(
-            id = value.getString("id"),
-            operationId = value.getString("operation_id"),
-            command = value.getString("command"),
-            moduleId = value.getString("module_id"),
-            moduleName = value.optString("module_name"),
-            reviewToken = value.optString("review_token").takeIf(String::isNotBlank),
-            targetOperationId = value.optString("target_operation_id").takeIf(String::isNotBlank),
-            ashAutomationToken = value.optString("ash_automation_token").takeIf(String::isNotBlank),
-            idempotencyKey = value.optString("idempotency_key").takeIf(String::isNotBlank),
-            createdAt = value.optLong("created_at"),
-        )
+        private val rootRequestJson = Json { ignoreUnknownKeys = true }
+
+        fun fromJson(value: String): TaskerRootRequest {
+            val root = rootRequestJson.parseToJsonElement(value).jsonObject
+            fun requiredString(name: String): String = root[name]
+                ?.jsonPrimitive
+                ?.contentOrNull
+                ?: error("Missing Tasker root request field: $name")
+            fun optionalString(name: String): String? = root[name]
+                ?.jsonPrimitive
+                ?.contentOrNull
+                ?.takeIf(String::isNotBlank)
+
+            return TaskerRootRequest(
+                id = requiredString("id"),
+                operationId = requiredString("operation_id"),
+                command = requiredString("command"),
+                moduleId = requiredString("module_id"),
+                moduleName = optionalString("module_name").orEmpty(),
+                reviewToken = optionalString("review_token"),
+                targetOperationId = optionalString("target_operation_id"),
+                ashAutomationToken = optionalString("ash_automation_token"),
+                idempotencyKey = optionalString("idempotency_key"),
+                createdAt = root["created_at"]?.jsonPrimitive?.longOrNull ?: 0L,
+            )
+        }
+
+        fun fromJson(value: JSONObject): TaskerRootRequest = fromJson(value.toString())
     }
 }
 
@@ -164,11 +188,11 @@ internal object TaskerRootRequestStore {
 
     fun put(context: Context, request: TaskerRootRequest) {
         prune(context)
-        file(context, request.id).writeText(request.toJson().toString())
+        file(context, request.id).writeText(request.toJson())
     }
 
     fun get(context: Context, id: String): TaskerRootRequest? = runCatching {
-        TaskerRootRequest.fromJson(JSONObject(file(context, id).readText()))
+        TaskerRootRequest.fromJson(file(context, id).readText())
     }.getOrNull()
 
     fun findByOperationId(context: Context, operationId: String): TaskerRootRequest? {
@@ -178,7 +202,7 @@ internal object TaskerRootRequestStore {
             .orEmpty()
             .asSequence()
             .mapNotNull { source ->
-                runCatching { TaskerRootRequest.fromJson(JSONObject(source.readText())) }.getOrNull()
+                runCatching { TaskerRootRequest.fromJson(source.readText()) }.getOrNull()
             }
             .firstOrNull { request -> request.operationId == operationId }
     }

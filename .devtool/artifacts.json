@@ -2272,6 +2272,358 @@
         ]
       },
       "history_id": "0b75524856a64e898b89b89dbd250383"
+    },
+    {
+      "applied_at": "2026-07-20T17:22:39.918262Z",
+      "artifact": "/home/mike/Downloads/mmrl_ui_ux_phase_2_recovery_workflow_overlay.zip",
+      "artifact_name": "mmrl_ui_ux_phase_2_recovery_workflow_overlay.zip",
+      "type": "overlay",
+      "sha256": "a0368488ff11d616ded37aee54c03a063c6327ba824522bc96a6cd0f0a243db3",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Implement task-oriented recovery workflow",
+      "commit_hash": "",
+      "file_count": 10,
+      "change_counts": {
+        "add": 3,
+        "modify": 7
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL UI/UX Phase 2 recovery workflow redesign",
+        "description": "Reorganizes Recovery Center around user tasks, opens guarded plans directly from quarantine, adds independent operation progress, scrollable IME-safe dialogs, compact module intelligence, noninteractive status pills, trial review, and an Advanced diagnostics destination.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "UI_UX_IMPLEMENTATION.md",
+              "action": "modify",
+              "sha256": "3608e987a1b5788c7598fae5e66fff4847fd00bc69547b3bd9e94ecefb4b174a",
+              "size": 15003,
+              "source_sha256": "3c8bc03c198491e3609c7d209c24c26a68911193558df7a693625cdc32541ea5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+              "action": "modify",
+              "sha256": "c14735acd18e8e499792df135af9b7e1c86a37e4e7ea0be4ba8179db4a965358",
+              "size": 44985,
+              "source_sha256": "cffd2c310de1371ace8117536a25fc07974cb4d60a1284498424e643b36411aa"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshViewModel.kt",
+              "action": "modify",
+              "sha256": "902f3269be5fb58c3f34f08b8e2e93e6aa68d8157543ebd1e302684bf4c1ac4b",
+              "size": 11871,
+              "source_sha256": "8e87730f93415f56526d63dc211e3d535e7a7a1f5e23da405422e09ae64d25b7"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/GuidedRecoveryContent.kt",
+              "action": "modify",
+              "sha256": "2e61aa72076a2ba2e75cafd0a041ecb7d792628a7b84fee9f770721f1713a931",
+              "size": 23943,
+              "source_sha256": "5e7480ca9eed23ee5117b5605fe0e15a4ebb8e626fbf225b2e295b6e6bc514b4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/RecoveryUiComponents.kt",
+              "action": "add",
+              "sha256": "904d89d912e97096f5ef5d8e94a9a380d0b48eab2f43080e8b93b99cde319d5f",
+              "size": 2386
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshModuleIntelligenceCard.kt",
+              "action": "modify",
+              "sha256": "7bb74dbedfefdbbbc835712f95d19456d7056c65035aedfabfca6e430a98b7c4",
+              "size": 11406,
+              "source_sha256": "ed6fe388cbea330170cda6a11d1ba143f03606856ddc0027d1b4a05118a75c5a"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshReXcueIntegration.kt",
+              "action": "modify",
+              "sha256": "75d4aa612728dfaf4a06cd313c95469cec658ff1667f45b982b0c4ac625fec79",
+              "size": 5476,
+              "source_sha256": "6ba627c84996ff247dec418c74e26f38f14af66a6b4c810dc4cd73611b888910"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/bootProtection/BootProtectionScreen.kt",
+              "action": "modify",
+              "sha256": "9866f0eb355c15e574a823328993b2b53aee6b1bc00185835ce30bfab79bfc1b",
+              "size": 18255,
+              "source_sha256": "e4f581f9e46506807f93242ca7e7b792213f3c3fcd664e3e11cfc6ed01162654"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/AshOperationStateTest.kt",
+              "action": "add",
+              "sha256": "a5499a8f6c622225e3c21d36507c3b8e8669fa4912b579a2c069d890bc457cdd",
+              "size": 1312
+            },
+            {
+              "path": "docs/UI_UX_PHASE_2.md",
+              "action": "add",
+              "sha256": "293f60dcdcc15e6c3dbea5b68d8470425e10723b3d8a6e011430527adbc08121",
+              "size": 2346
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Implement task-oriented recovery workflow"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "986326757881419696f9e03a7e00cbe7"
+    },
+    {
+      "applied_at": "2026-07-20T17:35:31.084809Z",
+      "artifact": "/home/mike/Downloads/mmrl_ui_ux_phase_2_recovery_workflow_overlay.zip",
+      "artifact_name": "mmrl_ui_ux_phase_2_recovery_workflow_overlay.zip",
+      "type": "overlay",
+      "sha256": "a5f6ce44d62db8c928a2aea9e7e310cb75e5f81e66b3993dfc9b2e9d6f68d075",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Implement task-oriented recovery workflow",
+      "commit_hash": "",
+      "file_count": 10,
+      "change_counts": {
+        "add": 3,
+        "modify": 7
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL UI/UX Phase 2 recovery workflow redesign",
+        "description": "Reorganizes Recovery Center around user tasks, opens guarded plans directly from quarantine, adds independent operation progress, scrollable IME-safe dialogs, compact module intelligence, noninteractive status pills, trial review, and an Advanced diagnostics destination while leaving Tasker/Ash authorization serialization untouched.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "UI_UX_IMPLEMENTATION.md",
+              "action": "modify",
+              "sha256": "3608e987a1b5788c7598fae5e66fff4847fd00bc69547b3bd9e94ecefb4b174a",
+              "size": 15003,
+              "source_sha256": "3c8bc03c198491e3609c7d209c24c26a68911193558df7a693625cdc32541ea5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+              "action": "modify",
+              "sha256": "c14735acd18e8e499792df135af9b7e1c86a37e4e7ea0be4ba8179db4a965358",
+              "size": 44985,
+              "source_sha256": "cffd2c310de1371ace8117536a25fc07974cb4d60a1284498424e643b36411aa"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshViewModel.kt",
+              "action": "modify",
+              "sha256": "902f3269be5fb58c3f34f08b8e2e93e6aa68d8157543ebd1e302684bf4c1ac4b",
+              "size": 11871,
+              "source_sha256": "8e87730f93415f56526d63dc211e3d535e7a7a1f5e23da405422e09ae64d25b7"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/GuidedRecoveryContent.kt",
+              "action": "modify",
+              "sha256": "2e61aa72076a2ba2e75cafd0a041ecb7d792628a7b84fee9f770721f1713a931",
+              "size": 23943,
+              "source_sha256": "5e7480ca9eed23ee5117b5605fe0e15a4ebb8e626fbf225b2e295b6e6bc514b4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/RecoveryUiComponents.kt",
+              "action": "add",
+              "sha256": "904d89d912e97096f5ef5d8e94a9a380d0b48eab2f43080e8b93b99cde319d5f",
+              "size": 2386
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshModuleIntelligenceCard.kt",
+              "action": "modify",
+              "sha256": "7bb74dbedfefdbbbc835712f95d19456d7056c65035aedfabfca6e430a98b7c4",
+              "size": 11406,
+              "source_sha256": "ed6fe388cbea330170cda6a11d1ba143f03606856ddc0027d1b4a05118a75c5a"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshReXcueIntegration.kt",
+              "action": "modify",
+              "sha256": "75d4aa612728dfaf4a06cd313c95469cec658ff1667f45b982b0c4ac625fec79",
+              "size": 5476,
+              "source_sha256": "6ba627c84996ff247dec418c74e26f38f14af66a6b4c810dc4cd73611b888910"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/bootProtection/BootProtectionScreen.kt",
+              "action": "modify",
+              "sha256": "9866f0eb355c15e574a823328993b2b53aee6b1bc00185835ce30bfab79bfc1b",
+              "size": 18255,
+              "source_sha256": "e4f581f9e46506807f93242ca7e7b792213f3c3fcd664e3e11cfc6ed01162654"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/AshOperationStateTest.kt",
+              "action": "add",
+              "sha256": "a5499a8f6c622225e3c21d36507c3b8e8669fa4912b579a2c069d890bc457cdd",
+              "size": 1312
+            },
+            {
+              "path": "docs/UI_UX_PHASE_2.md",
+              "action": "add",
+              "sha256": "669aa3d7df7aee0fbb750398f8f8c0b3b1b67bf2fc274ea55992f93f9ae6b2c6",
+              "size": 2652
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Implement task-oriented recovery workflow"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "d53adf34f03e4fe1a245817cead795aa"
+    },
+    {
+      "applied_at": "2026-07-20T17:47:35.501708Z",
+      "artifact": "/home/mike/Downloads/mmrl_ui_ux_phase_2_recovery_workflow_overlay.zip",
+      "artifact_name": "mmrl_ui_ux_phase_2_recovery_workflow_overlay.zip",
+      "type": "overlay",
+      "sha256": "574757462efbe94393a7b8c0dc248d2714b86ee069f9317645881e4accf79f95",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Implement task-oriented recovery workflow",
+      "commit_hash": "",
+      "file_count": 11,
+      "change_counts": {
+        "add": 3,
+        "modify": 8
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL UI/UX Phase 2 recovery workflow redesign",
+        "description": "Reorganizes Recovery Center around user tasks, opens guarded plans directly from quarantine, adds independent operation progress, scrollable IME-safe dialogs, compact module intelligence, noninteractive status pills, trial review, an Advanced diagnostics destination, and fixes TaskerRootRequest host-unit-test JSON round-tripping without changing the Ash authorization contract.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "UI_UX_IMPLEMENTATION.md",
+              "action": "modify",
+              "sha256": "67e6d7ac5c29d4a4e80e0b055ceba424011a9e840b6d99f5666d4974e5c57d65",
+              "size": 15200,
+              "source_sha256": "3c8bc03c198491e3609c7d209c24c26a68911193558df7a693625cdc32541ea5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+              "action": "modify",
+              "sha256": "c14735acd18e8e499792df135af9b7e1c86a37e4e7ea0be4ba8179db4a965358",
+              "size": 44985,
+              "source_sha256": "cffd2c310de1371ace8117536a25fc07974cb4d60a1284498424e643b36411aa"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshViewModel.kt",
+              "action": "modify",
+              "sha256": "902f3269be5fb58c3f34f08b8e2e93e6aa68d8157543ebd1e302684bf4c1ac4b",
+              "size": 11871,
+              "source_sha256": "8e87730f93415f56526d63dc211e3d535e7a7a1f5e23da405422e09ae64d25b7"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/GuidedRecoveryContent.kt",
+              "action": "modify",
+              "sha256": "2e61aa72076a2ba2e75cafd0a041ecb7d792628a7b84fee9f770721f1713a931",
+              "size": 23943,
+              "source_sha256": "5e7480ca9eed23ee5117b5605fe0e15a4ebb8e626fbf225b2e295b6e6bc514b4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/RecoveryUiComponents.kt",
+              "action": "add",
+              "sha256": "904d89d912e97096f5ef5d8e94a9a380d0b48eab2f43080e8b93b99cde319d5f",
+              "size": 2386
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAuthorization.kt",
+              "action": "modify",
+              "sha256": "ffadb6aabdcefe4621e8f25060ec48f590cae1fc1d68a27f65dd3d9bd4aae751",
+              "size": 12141,
+              "source_sha256": "b0253fd661b852dafa525fdbc42b6a46ca4b18e76d23b9891a60ed26e07aab87"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshModuleIntelligenceCard.kt",
+              "action": "modify",
+              "sha256": "7bb74dbedfefdbbbc835712f95d19456d7056c65035aedfabfca6e430a98b7c4",
+              "size": 11406,
+              "source_sha256": "ed6fe388cbea330170cda6a11d1ba143f03606856ddc0027d1b4a05118a75c5a"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshReXcueIntegration.kt",
+              "action": "modify",
+              "sha256": "75d4aa612728dfaf4a06cd313c95469cec658ff1667f45b982b0c4ac625fec79",
+              "size": 5476,
+              "source_sha256": "6ba627c84996ff247dec418c74e26f38f14af66a6b4c810dc4cd73611b888910"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/bootProtection/BootProtectionScreen.kt",
+              "action": "modify",
+              "sha256": "9866f0eb355c15e574a823328993b2b53aee6b1bc00185835ce30bfab79bfc1b",
+              "size": 18255,
+              "source_sha256": "e4f581f9e46506807f93242ca7e7b792213f3c3fcd664e3e11cfc6ed01162654"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/AshOperationStateTest.kt",
+              "action": "add",
+              "sha256": "a5499a8f6c622225e3c21d36507c3b8e8669fa4912b579a2c069d890bc457cdd",
+              "size": 1312
+            },
+            {
+              "path": "docs/UI_UX_PHASE_2.md",
+              "action": "add",
+              "sha256": "37ce754e9bb2ef31f10eea95e570c2abef73c416c8ff834e17277c79e4c80e21",
+              "size": 3378
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Implement task-oriented recovery workflow"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "93fb7a36dca04336a64ef2435bd770df"
     }
   ]
 }

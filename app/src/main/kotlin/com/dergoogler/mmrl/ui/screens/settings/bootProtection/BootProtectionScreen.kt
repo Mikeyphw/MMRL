@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.ash.AshOperationKind
 import com.dergoogler.mmrl.ash.AshViewModel
 import com.dergoogler.mmrl.ash.model.SettingItem
 import com.dergoogler.mmrl.ext.none
@@ -105,7 +106,8 @@ fun BootProtectionScreen(viewModel: AshViewModel = hiltViewModel()) =
                 settings = state.settings,
                 readOnly = state.readOnly,
                 lifecycleText = state.lifecycle.compatibilityMessage,
-                loading = state.loading,
+                saving = state.isOperationRunning(AshOperationKind.SaveSettings, "protection"),
+                discarding = state.isOperationRunning(AshOperationKind.DiscardPending),
                 healthChecksEnabled = preferences.ashHealthChecksEnabled,
                 healthCheckIntervalHours = preferences.ashHealthCheckIntervalHours,
                 incidentNotifications = preferences.ashIncidentNotifications,
@@ -134,7 +136,8 @@ private fun BootProtectionContent(
     settings: List<SettingItem>,
     readOnly: Boolean,
     lifecycleText: String,
-    loading: Boolean,
+    saving: Boolean,
+    discarding: Boolean,
     healthChecksEnabled: Boolean,
     healthCheckIntervalHours: Long,
     incidentNotifications: Boolean,
@@ -240,8 +243,8 @@ private fun BootProtectionContent(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                OutlinedButton(onClick = onDiscardPending, enabled = !readOnly && !loading) {
-                    Text("Discard queued changes")
+                OutlinedButton(onClick = onDiscardPending, enabled = !readOnly && !discarding && !saving) {
+                    Text(if (discarding) "Discarding…" else "Discard queued changes")
                 }
             }
         }
@@ -307,10 +310,10 @@ private fun BootProtectionContent(
                         ),
                     )
                 },
-                enabled = !readOnly && !loading && errors.isEmpty(),
+                enabled = !readOnly && !saving && !discarding && errors.isEmpty(),
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (pending.isEmpty()) "Save settings" else "Update queued settings")
+                Text(if (saving) "Saving…" else if (pending.isEmpty()) "Save settings" else "Update queued settings")
             }
             OutlinedButton(
                 onClick = {
@@ -325,7 +328,7 @@ private fun BootProtectionContent(
                     otaGrace = recommendedDefaults.getValue("ota_grace_time")
                     monitoredProcesses = recommendedDefaults.getValue("monitored_processes")
                 },
-                enabled = !readOnly && !loading,
+                enabled = !readOnly,
             ) {
                 Text("Recommended defaults")
             }
