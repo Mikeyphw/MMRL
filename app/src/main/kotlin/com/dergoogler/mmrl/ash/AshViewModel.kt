@@ -8,12 +8,14 @@ import com.dergoogler.mmrl.ash.model.AshCapabilities
 import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
 import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycle
+import com.dergoogler.mmrl.ash.model.AshModuleIntelligence
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.ModuleItem
 import com.dergoogler.mmrl.ash.model.OperationResult
+import com.dergoogler.mmrl.ash.model.moduleIntelligence
 import com.dergoogler.mmrl.ash.model.QuarantineItem
 import com.dergoogler.mmrl.ash.model.SettingItem
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,6 +53,7 @@ data class AshUiState(
     val capabilities: AshCapabilities = AshCapabilities(),
     val dashboard: Dashboard = Dashboard(),
     val modules: List<ModuleItem> = emptyList(),
+    val moduleIntelligence: Map<String, AshModuleIntelligence> = emptyMap(),
     val quarantine: List<QuarantineItem> = emptyList(),
     val activity: List<ActivityItem> = emptyList(),
     val settings: List<SettingItem> = emptyList(),
@@ -134,6 +137,7 @@ class AshViewModel @Inject constructor(
                 capabilities = snapshot?.capabilities ?: AshCapabilities(),
                 dashboard = snapshot?.dashboard ?: Dashboard(),
                 modules = snapshot?.modules.orEmpty(),
+                moduleIntelligence = managerState.moduleIntelligence(),
                 quarantine = snapshot?.quarantine.orEmpty(),
                 activity = snapshot?.activity.orEmpty(),
                 settings = snapshot?.settings.orEmpty(),

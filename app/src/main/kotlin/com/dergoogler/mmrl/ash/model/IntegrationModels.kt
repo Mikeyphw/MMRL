@@ -27,6 +27,8 @@ data class AshProtectionSummary(
 
 enum class AshModuleFilter {
     All,
+    NeedsReview,
+    Changed,
     Protected,
     Trusted,
     Normal,
@@ -40,9 +42,21 @@ data class AshModuleProtection(
     val trust: String,
     val quarantined: Boolean,
     val enabled: Boolean,
+    val changedSinceStable: Boolean = false,
+    val riskScore: Int = 0,
+    val riskBand: AshModuleRiskBand = AshModuleRiskBand.Low,
+    val intelligenceSummary: String = "",
 ) {
+    val needsReview: Boolean
+        get() = quarantined || changedSinceStable || riskBand >= AshModuleRiskBand.High || trust == "suspect"
+
     val label: String
-        get() = if (quarantined) "Quarantined" else trust.replaceFirstChar(Char::uppercaseChar)
+        get() = when {
+            quarantined -> "Quarantined"
+            riskBand >= AshModuleRiskBand.High -> "${riskBand.name} risk · $riskScore"
+            changedSinceStable -> "Changed since stable"
+            else -> trust.replaceFirstChar(Char::uppercaseChar)
+        }
 }
 
 fun AshManagerState.protectionSummary(): AshProtectionSummary {
@@ -105,11 +119,16 @@ fun AshManagerState.protectionSummary(): AshProtectionSummary {
     )
 }
 
-fun AshManagerState.moduleProtections(): Map<String, AshModuleProtection> =
-    snapshot
+fun AshManagerState.moduleProtections(): Map<String, AshModuleProtection> {
+    val intelligence = moduleIntelligence()
+    return snapshot
         ?.modules
         .orEmpty()
         .flatMap { module ->
+            val insight = sequenceOf(module.id, module.folder)
+                .map(ModuleIdentity::normalize)
+                .mapNotNull(intelligence::get)
+                .firstOrNull()
             val protection =
                 AshModuleProtection(
                     folder = module.folder,
@@ -117,19 +136,26 @@ fun AshManagerState.moduleProtections(): Map<String, AshModuleProtection> =
                     trust = module.trust.ifBlank { "normal" },
                     quarantined = module.quarantined,
                     enabled = module.enabled,
+                    changedSinceStable = module.changedSinceStable,
+                    riskScore = insight?.riskScore ?: 0,
+                    riskBand = insight?.riskBand ?: AshModuleRiskBand.Low,
+                    intelligenceSummary = insight?.summary.orEmpty(),
                 )
             buildList {
                 ModuleIdentity.normalize(module.id).takeIf(String::isNotBlank)?.let { add(it to protection) }
                 ModuleIdentity.normalize(module.folder).takeIf(String::isNotBlank)?.let { add(it to protection) }
             }
         }.toMap()
+}
 
 fun AshModuleProtection?.matches(filter: AshModuleFilter): Boolean =
     when (filter) {
         AshModuleFilter.All -> true
+        AshModuleFilter.NeedsReview -> this?.needsReview == true
+        AshModuleFilter.Changed -> this?.changedSinceStable == true
         AshModuleFilter.Protected -> this?.trust == "protected"
         AshModuleFilter.Trusted -> this?.trust == "trusted"
-        AshModuleFilter.Normal -> this?.trust == "normal" && !this.quarantined
+        AshModuleFilter.Normal -> this?.trust == "normal" && !this.quarantined && !this.needsReview
         AshModuleFilter.Suspect -> this?.trust == "suspect"
         AshModuleFilter.Quarantined -> this?.quarantined == true
     }

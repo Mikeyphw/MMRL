@@ -54,6 +54,7 @@ import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ash.model.AshManagerState
 import com.dergoogler.mmrl.ash.model.AshModuleFilter
 import com.dergoogler.mmrl.ash.model.AshModuleProtection
+import com.dergoogler.mmrl.ash.model.AshModuleRiskBand
 import com.dergoogler.mmrl.ash.model.moduleProtections
 import com.dergoogler.mmrl.ext.isPackageInstalled
 import com.dergoogler.mmrl.model.ModuleIdentity
@@ -297,9 +298,11 @@ private fun AshProtectionFilters(
 ) {
     val counts =
         mapOf(
+            AshModuleFilter.NeedsReview to protections.count(AshModuleProtection::needsReview),
+            AshModuleFilter.Changed to protections.count(AshModuleProtection::changedSinceStable),
             AshModuleFilter.Protected to protections.count { it.trust == "protected" },
             AshModuleFilter.Trusted to protections.count { it.trust == "trusted" },
-            AshModuleFilter.Normal to protections.count { it.trust == "normal" && !it.quarantined },
+            AshModuleFilter.Normal to protections.count { it.trust == "normal" && !it.quarantined && !it.needsReview },
             AshModuleFilter.Suspect to protections.count { it.trust == "suspect" },
             AshModuleFilter.Quarantined to protections.count { it.quarantined },
         )
@@ -320,7 +323,7 @@ private fun AshProtectionFilters(
                 androidx.compose.material3.FilterChip(
                     selected = selected == filter,
                     onClick = { onSelected(filter) },
-                    label = { Text("${filter.name} ($count)") },
+                    label = { Text("${filter.displayLabel()} ($count)") },
                 )
             }
         }
@@ -510,6 +513,8 @@ private fun CompactInstalledModuleRow(
                                 color =
                                     when {
                                         protection.quarantined -> MaterialTheme.colorScheme.error
+                                        protection.riskBand >= AshModuleRiskBand.High -> MaterialTheme.colorScheme.error
+                                        protection.changedSinceStable -> MaterialTheme.colorScheme.tertiary
                                         protection.trust == "suspect" -> MaterialTheme.colorScheme.error
                                         protection.trust == "protected" -> MaterialTheme.colorScheme.primary
                                         protection.trust == "trusted" -> MaterialTheme.colorScheme.tertiary
@@ -663,6 +668,17 @@ private fun CompactInstalledModuleRow(
             }
         }
     }
+}
+
+private fun AshModuleFilter.displayLabel(): String = when (this) {
+    AshModuleFilter.All -> "All"
+    AshModuleFilter.NeedsReview -> "Needs review"
+    AshModuleFilter.Changed -> "Changed"
+    AshModuleFilter.Protected -> "Protected"
+    AshModuleFilter.Trusted -> "Trusted"
+    AshModuleFilter.Normal -> "Normal"
+    AshModuleFilter.Suspect -> "Suspect"
+    AshModuleFilter.Quarantined -> "Quarantined"
 }
 
 @Composable

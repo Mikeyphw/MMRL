@@ -1,0 +1,41 @@
+{
+  "applied_at": "2026-07-20T01:35:38.022067Z",
+  "artifact": "/home/mike/Downloads/mmrl_ashrexcue_phase_g_overlay.zip",
+  "artifact_name": "mmrl_ashrexcue_phase_g_overlay.zip",
+  "type": "overlay",
+  "sha256": "8ff0a6c12d4fe915c8cbcfebae2ee9bc2a789682b9d21efd94cc1e9b1b79ee02",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Add AshReXcue module intelligence integration",
+  "commit_hash": "",
+  "file_count": 9,
+  "change_counts": {
+    "add": 4,
+    "modify": 5
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add AshReXcue module intelligence integration"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": false,
+      "test": false,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "c8d996a1fdfd4762b5beb4d81a70409a"
+}

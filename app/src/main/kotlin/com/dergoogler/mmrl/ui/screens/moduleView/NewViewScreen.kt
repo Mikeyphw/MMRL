@@ -65,6 +65,7 @@ import com.dergoogler.mmrl.ui.screens.moduleView.items.ViewTrackBottomSheet
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalModuleViewDownloader
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalModuleViewModel
 import com.dergoogler.mmrl.ui.screens.moduleView.providable.LocalRequireModules
+import com.dergoogler.mmrl.ui.screens.moduleView.sections.AshModuleIntelligenceCard
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.AshReXcueIntegrationCard
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.Header
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.Toolbar
@@ -338,6 +339,8 @@ fun NewViewScreen(
                         Header()
                         if (ModuleIdentity.matches(module.id, "AshLooper")) {
                             AshReXcueIntegrationCard()
+                        } else {
+                            AshModuleIntelligenceCard()
                         }
                         ModuleDecisionSummary()
                         ModuleDetailsTabs()

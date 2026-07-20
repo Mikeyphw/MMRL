@@ -53,6 +53,7 @@ import com.dergoogler.mmrl.platform.content.LocalModule.Companion.config
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasModConf
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasWebUI
 import com.dergoogler.mmrl.platform.file.SuFile
+import com.dergoogler.mmrl.platform.file.SuFileInputStream
 import com.dergoogler.mmrl.platform.file.SuFile.Companion.toFormattedFileSize
 import com.dergoogler.mmrl.platform.model.ModId.Companion.moduleDir
 import com.dergoogler.mmrl.ui.component.BottomSheet
@@ -173,7 +174,7 @@ fun ModuleItem(
                                         endY = 0f,
                                     ),
                             ),
-                        inputStream = it.newInputStream(),
+                        inputStream = SuFileInputStream(it),
                     )
                 }
             }
