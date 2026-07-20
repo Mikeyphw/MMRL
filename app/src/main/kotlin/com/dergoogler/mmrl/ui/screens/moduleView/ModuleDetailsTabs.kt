@@ -9,19 +9,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -90,6 +94,7 @@ internal fun ModuleDecisionSummary() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ModuleDetailsTabs() {
     val pages = DetailsPage.entries
@@ -99,8 +104,9 @@ internal fun ModuleDetailsTabs() {
         stringResource(R.string.module_details_files),
         stringResource(R.string.module_details_details),
     )
-    var selected by remember { mutableIntStateOf(0) }
+    var selected by rememberSaveable { mutableIntStateOf(0) }
     val wide = LocalConfiguration.current.screenWidthDp >= 840
+    val largeText = LocalDensity.current.fontScale >= 1.3f
 
     if (wide) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -121,7 +127,7 @@ internal fun ModuleDetailsTabs() {
             }
         }
     } else {
-        TabRow(selectedTabIndex = selected, divider = {}) {
+        val tabs: @Composable () -> Unit = {
             labels.forEachIndexed { index, label ->
                 Tab(
                     selected = selected == index,
@@ -129,6 +135,16 @@ internal fun ModuleDetailsTabs() {
                     text = { Text(label, maxLines = 1) },
                 )
             }
+        }
+        if (largeText) {
+            PrimaryScrollableTabRow(
+                selectedTabIndex = selected,
+                edgePadding = 16.dp,
+                divider = {},
+                tabs = tabs,
+            )
+        } else {
+            TabRow(selectedTabIndex = selected, divider = {}, tabs = tabs)
         }
         Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
             DetailsPageContent(pages[selected])

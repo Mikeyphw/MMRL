@@ -2,6 +2,7 @@ package com.dergoogler.mmrl.ui.screens.moduleView.sections
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -127,36 +128,29 @@ internal fun Header() {
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    Row(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    val stateButton: @Composable (Modifier) -> Unit = { modifier ->
         local.isValid {
-            val ops = remember(
-                userPreferences.useShellForModuleStateChange,
-                it,
-                it.state,
-            ) {
-                viewModel.createModuleOps(
+            val ops =
+                remember(
                     userPreferences.useShellForModuleStateChange,
                     it,
-                )
-            }
+                    it.state,
+                ) {
+                    viewModel.createModuleOps(
+                        userPreferences.useShellForModuleStateChange,
+                        it,
+                    )
+                }
 
             OutlinedButton(
                 enabled =
                     viewModel.isProviderAlive &&
-                        (!userPreferences.useShellForModuleStateChange || it.state != com.dergoogler.mmrl.model.local.State.REMOVE),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
+                        (!userPreferences.useShellForModuleStateChange || it.state != State.REMOVE),
+                modifier = modifier,
                 onClick = ops.change,
             ) {
                 val style = LocalTextStyle.current
-                val progressSize =
-                    with(density) { style.fontSize.toDp() * 1.0f }
+                val progressSize = with(density) { style.fontSize.toDp() }
 
                 if (ops.isOpsRunning) {
                     CircularProgressIndicator(
@@ -180,7 +174,9 @@ internal fun Header() {
                 }
             }
         }
+    }
 
+    val installButton: @Composable (Modifier) -> Unit = { modifier ->
         val buttonTextResId =
             when {
                 local.isEmpty -> R.string.module_install
@@ -190,10 +186,7 @@ internal fun Header() {
 
         Button(
             enabled = viewModel.isProviderAlive && !lastVersionItem.isEmpty && !isBlacklisted,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+            modifier = modifier,
             onClick = {
                 viewModel.installConfirm = true
             },
@@ -202,6 +195,33 @@ internal fun Header() {
                 text = stringResource(id = buttonTextResId),
                 maxLines = 1,
             )
+        }
+    }
+
+    BoxWithConstraints(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+    ) {
+        val stackActions = density.fontScale >= 1.3f || maxWidth < 360.dp
+        if (stackActions) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                stateButton(Modifier.fillMaxWidth())
+                installButton(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                stateButton(Modifier.weight(1f))
+                installButton(Modifier.weight(1f))
+            }
         }
     }
 }

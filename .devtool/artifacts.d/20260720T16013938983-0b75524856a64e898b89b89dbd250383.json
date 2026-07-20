@@ -1,0 +1,140 @@
+{
+  "applied_at": "2026-07-20T16:01:39.389839Z",
+  "artifact": "/home/mike/Downloads/mmrl_ui_ux_phase1_typography_adaptive_shell_overlay.zip",
+  "artifact_name": "mmrl_ui_ux_phase1_typography_adaptive_shell_overlay.zip",
+  "type": "overlay",
+  "sha256": "c30918cedd3e7b2c0dceeceee977078b77c4e663bff863ce41e26700af6f0d1d",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Implement adaptive navigation and typography foundation",
+  "commit_hash": "",
+  "file_count": 12,
+  "change_counts": {
+    "modify": 12
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "MMRL UI/UX Phase 1 typography and adaptive shell",
+    "description": "Implements a complete Material typography scale, removes undersized and direct text-size overrides, activates compact/medium/expanded navigation shells, limits compact navigation to five items with a More sheet, preserves recovery and module-detail selection state, and adds large-font layout fallbacks.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+          "action": "modify",
+          "sha256": "cffd2c310de1371ace8117536a25fc07974cb4d60a1284498424e643b36411aa",
+          "size": 38825,
+          "source_sha256": "34b2e84a7f149ade18c949ee386af8099a164dfad262b67086c5d58fbbfef06a"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/SetupScreen.kt",
+          "action": "modify",
+          "sha256": "37fd894f80781886e81bea6a1d862bdc8eda026c38c89c49202ebd4541fa876e",
+          "size": 17091,
+          "source_sha256": "58ff80ed0d495d4e416d3fad7929434ac2e7a628af75ead0971dfa17db012261"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/exploreRepositories/items/HeadlineCard.kt",
+          "action": "modify",
+          "sha256": "acba8d189a9005af17fb63b4fcd09cc20f65f2af2a13b5e45761408147a6d737",
+          "size": 4174,
+          "source_sha256": "5d95da50ea7ccfd1487e3bf52c8f77dcca8b6444520938ab8316d8d2454184c4"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/main/MainScreen.kt",
+          "action": "modify",
+          "sha256": "6f8c24fd477596a24779de3cd6d5602ace3e5daa2d206e4d08ff442972975b47",
+          "size": 18863,
+          "source_sha256": "1bdd10f3e93ad6a6275ff55090540b7dabb415c24363b78b6dcab3a6d38436e1"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/ModuleDetailsTabs.kt",
+          "action": "modify",
+          "sha256": "38c799f96ba672c6650ea5c3361e66a33ae0df6ebd4c770f8b2ca1626b279256",
+          "size": 11858,
+          "source_sha256": "d474c1ce8ec7e9db13a5b8a673eca08d039252c6e9d8a34d995a7f4ef9484ca1"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/Header.kt",
+          "action": "modify",
+          "sha256": "61443234b200aadfba4292700255947bda7871f2e2257e69f8460cd4361907f8",
+          "size": 8723,
+          "source_sha256": "ee97f79849cdde6686d9c70d3b5e90582b94eca4bac44b070fc6356dada1e38a"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repository/RepositoryScreen.kt",
+          "action": "modify",
+          "sha256": "20616cfd8aafa6b18a984a470395331804cdbdf2257de3f213be155aecf1cdfe",
+          "size": 24403,
+          "source_sha256": "5eea829e9f798e8f77e76b97696a9fc57bfce2f5498b0ccf0971e7b0851af4be"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "909800ed68f8cc2f5f753e8f379d67f6192d48c4be48e7259e4a798c7aef6b58",
+          "size": 69611,
+          "source_sha256": "5d1810334548abff552011097eb668734c88de46edd318d7b7382c406f7d2665"
+        },
+        {
+          "path": "ui/src/main/kotlin/com/dergoogler/mmrl/ui/component/LabelItem.kt",
+          "action": "modify",
+          "sha256": "94b0ac625d93cb81b73158bcdf907cd7ece1f063d1c8488706a96fde136e89e4",
+          "size": 7625,
+          "source_sha256": "cd1f2f4a3638c09c6909c9f240e080f4ce999569ecac24563a05b6d8edb4a743"
+        },
+        {
+          "path": "ui/src/main/kotlin/com/dergoogler/mmrl/ui/component/PageIndicator.kt",
+          "action": "modify",
+          "sha256": "357a9a91bfabc2785ba2af7474c1d0e5b7c485e00bac39ec73dd5d3b4cfdcd76",
+          "size": 4339,
+          "source_sha256": "8ec989aa4d1c8ff5808ba48608aa988fd706e382c6f6f2dd26e4b0de82bf9f3e"
+        },
+        {
+          "path": "ui/src/main/kotlin/com/dergoogler/mmrl/ui/component/scaffold/ResponsiveScaffold.kt",
+          "action": "modify",
+          "sha256": "242988d459bf4913e32e1fc064a831efe6942438f2cbf7e2d530a43a6010c1aa",
+          "size": 2479,
+          "source_sha256": "d4d809cb25c22961090dde4f714b315ee693769f271a6ab545cc3726b1f58037"
+        },
+        {
+          "path": "ui/src/main/kotlin/com/dergoogler/mmrl/ui/theme/Type.kt",
+          "action": "modify",
+          "sha256": "71b4ffe24dbd2b70561bb73eff531b8f9eac404c0594bc7072d36b16aafb9513",
+          "size": 960,
+          "source_sha256": "122e99f213699ae8acd180a7c099d838c4232f852792d87002457b12d2f881f3"
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Implement adaptive navigation and typography foundation"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": false,
+      "test": false,
+      "rollback_on_failure": true
+    },
+    "notes": [
+      "Compact layouts use Home, Repository, Modules, Recovery, and a More sheet for Superuser, Activity, and Settings.",
+      "Medium layouts use a physical navigation rail beside content; expanded layouts use a permanent navigation drawer.",
+      "All 15 Material typography roles now use the existing MMRL typography tokens; the former 8sp label style now uses the 11sp labelSmall token.",
+      "Recovery section and module-details tab selections survive configuration and process recreation through rememberSaveable.",
+      "Large-font layouts collapse crowded bottom labels, stack module actions, and switch module-detail tabs to a scrollable row.",
+      "Room schemas, database version, DAO surfaces, Gradle dependencies, AIDL, native/CMake sources, and AshReXcue module payloads are unchanged.",
+      "Validation is intentionally focused on the ui and app modules; the manifest does not force full APK assembly."
+    ]
+  },
+  "history_id": "0b75524856a64e898b89b89dbd250383"
+}

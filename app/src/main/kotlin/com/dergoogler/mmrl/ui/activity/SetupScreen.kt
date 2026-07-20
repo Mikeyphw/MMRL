@@ -62,7 +62,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.model.WorkingMode
 import com.dergoogler.mmrl.ext.fadingEdge
@@ -246,7 +245,7 @@ private fun HeaderSection() {
 
         Text(
             text = stringResource(R.string.welcome),
-            fontSize = 32.sp,
+            style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -256,10 +255,9 @@ private fun HeaderSection() {
 
         Text(
             text = stringResource(R.string.select_your_platform),
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            lineHeight = 22.sp,
         )
     }
 }
@@ -339,7 +337,7 @@ private fun ManagerCard(
 
             Text(
                 text = manager.name,
-                fontSize = 18.sp,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color =
                     if (isSelected) {
@@ -421,7 +419,7 @@ private fun BottomSection(
                         } else {
                             stringResource(R.string.select)
                         },
-                    fontSize = 16.sp,
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
             }

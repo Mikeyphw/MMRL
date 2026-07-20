@@ -21,7 +21,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.dergoogler.mmrl.ext.iconSize
 import com.dergoogler.mmrl.ext.nullable
 import com.dergoogler.mmrl.ui.R
@@ -120,7 +119,7 @@ fun LabelItem(
  * ```
  * LabelItem(text = "My Label", icon = R.drawable.ic_my_icon)
  *
- * LabelItem(text = "Another Label", style = LabelItemStyle(Color.Blue, TextStyle(fontSize = 16.sp)), upperCase = false)
+ * LabelItem(text = "Another Label", style = LabelItemStyle(Color.Blue, MaterialTheme.typography.labelMedium), upperCase = false)
  *
  * LabelItem(text = "Simple Label")
  * ```
@@ -258,6 +257,6 @@ object LabelItemDefaults {
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(3.dp),
-                textStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                textStyle = MaterialTheme.typography.labelSmall,
             )
 }

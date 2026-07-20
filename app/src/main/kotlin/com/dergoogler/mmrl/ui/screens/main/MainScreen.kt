@@ -7,17 +7,25 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationRail
@@ -26,20 +34,25 @@ import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
-import com.dergoogler.mmrl.ext.currentScreenWidth
+import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ui.component.TopAppBar
 import com.dergoogler.mmrl.ui.component.TopAppBarEventIcon
@@ -55,6 +68,7 @@ import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.LocalNavController
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
+import com.dergoogler.mmrl.ui.providable.LocalWindowSizeClass
 import com.dergoogler.mmrl.ui.remember.rememberUpdatableModuleCount
 import com.dergoogler.mmrl.utils.initPlatform
 import com.dergoogler.mmrl.viewmodel.ActivityViewModel
@@ -65,10 +79,27 @@ import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AshScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModuleUpdatesScreenDestination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
+private val compactDestinations =
+    listOf(
+        MainDestination.Home,
+        MainDestination.Repository,
+        MainDestination.Modules,
+        MainDestination.Ash,
+    )
+
+private val overflowDestinations =
+    listOf(
+        MainDestination.SuperUser,
+        MainDestination.Activity,
+        MainDestination.Settings,
+    )
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     openActivityOnLaunch: Boolean = false,
@@ -78,11 +109,12 @@ fun MainScreen(
     onUpdatesOpened: () -> Unit = {},
     onRecoveryOpened: () -> Unit = {},
 ) {
-//    val width = currentScreenWidth()
     val userPrefs = LocalUserPreferences.current
     val navigator = LocalDestinationsNavigator.current
     val context = LocalContext.current
+    val windowWidth = LocalWindowSizeClass.current.widthSizeClass
     val updates by rememberUpdatableModuleCount()
+    var moreDestinationsOpen by rememberSaveable { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val bulkInstallViewModel: BulkInstallViewModel = hiltViewModel()
@@ -127,94 +159,105 @@ fun MainScreen(
         LocalSnackbarHost provides snackbarHostState,
         LocalBulkInstall provides bulkInstallViewModel,
     ) {
-        /*if (width.isLarge) {
-            Scaffold(
-                contentWindowInsets = WindowInsets.none,
-            ) { paddingValues ->
-                val navController = LocalNavController.current
+        if (moreDestinationsOpen) {
+            MoreDestinationsSheet(
+                updates = updates,
+                pendingReboots = pendingReboots,
+                onDismiss = { moreDestinationsOpen = false },
+            )
+        }
 
-                PermanentNavigationDrawer(
-                    drawerContent = {
-                        PermanentDrawerSheet(
-                            modifier =
-                                Modifier
-                                    .width(240.dp),
-                        ) {
-                            TopAppBar(
-                                title = {
-                                    TopAppBarEventIcon()
-                                },
-                            )
-
-                            LazyColumn(
-                                contentPadding = PaddingValues(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                items(
-                                    items = MainDestination.entries,
-                                    key = { it.name },
-                                ) { screen ->
-                                    val isSelected by navController.isRouteOnBackStackAsState(screen.direction)
-
-                                    if (!screen.isAccessible) return@items
-
-                                    NavigationDrawerItem(
-                                        icon = {
-                                            BaseNavIcon(screen, isSelected, updates, pendingReboots)
-                                        },
-                                        label = {
-                                            Text(
-                                                text = stringResource(id = screen.label),
-                                                style = MaterialTheme.typography.labelLarge,
-                                            )
-                                        },
-                                        selected = isSelected,
-                                        onClick = {
-                                            if (isSelected) {
-                                                navigator.popBackStack(screen.direction, false)
-                                            }
-                                            navigator.navigate(screen.direction) {
-                                                popUpTo(NavGraphs.root) {
-                                                    saveState = true
-                                                }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        },
-                                    )
-                                }
-                            }
-                        }
+        when (windowWidth) {
+            WindowWidthSizeClass.Compact -> {
+                ResponsiveScaffold(
+                    bottomBar = {
+                        BottomNav(
+                            updates = updates,
+                            pendingReboots = pendingReboots,
+                            onMoreClick = { moreDestinationsOpen = true },
+                        )
                     },
-                ) {
+                    contentWindowInsets = WindowInsets.none,
+                ) { paddingValues ->
                     CompositionLocalProvider(
                         LocalMainScreenInnerPaddings provides paddingValues,
                     ) {
                         CurrentNavHost(
-                            Modifier.padding(paddingValues),
+                            modifier = Modifier.hazeSource(hazeState),
                         )
                     }
                 }
             }
 
-            return@CompositionLocalProvider
-        }*/
+            WindowWidthSizeClass.Medium -> {
+                ResponsiveScaffold(
+                    railBar = {
+                        RailNav(updates = updates, pendingReboots = pendingReboots)
+                    },
+                    contentWindowInsets = WindowInsets.none,
+                ) { paddingValues ->
+                    CompositionLocalProvider(
+                        LocalMainScreenInnerPaddings provides paddingValues,
+                    ) {
+                        CurrentNavHost(
+                            modifier = Modifier.hazeSource(hazeState),
+                        )
+                    }
+                }
+            }
 
-        ResponsiveScaffold(
-            bottomBar = {
-                BottomNav(updates, pendingReboots)
-            },
-            railBar = {
-//                RailNav(updates)
-            },
-            contentWindowInsets = WindowInsets.none,
-        ) { paddingValues ->
+            else -> {
+                ExpandedMainLayout(
+                    updates = updates,
+                    pendingReboots = pendingReboots,
+                    contentModifier = Modifier.hazeSource(hazeState),
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpandedMainLayout(
+    updates: Int,
+    pendingReboots: Int,
+    contentModifier: Modifier,
+) {
+    PermanentNavigationDrawer(
+        drawerContent = {
+            PermanentDrawerSheet(
+                modifier = Modifier.width(280.dp),
+            ) {
+                TopAppBar(
+                    title = {
+                        TopAppBarEventIcon()
+                    },
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxHeight(),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(
+                        items = MainDestination.entries,
+                        key = { it.name },
+                    ) { screen ->
+                        DrawerDestinationItem(
+                            screen = screen,
+                            updates = updates,
+                            pendingReboots = pendingReboots,
+                        )
+                    }
+                }
+            }
+        },
+    ) {
+        Scaffold(contentWindowInsets = WindowInsets.none) { paddingValues ->
             CompositionLocalProvider(
                 LocalMainScreenInnerPaddings provides paddingValues,
             ) {
-                CurrentNavHost(
-                    modifier = Modifier.hazeSource(hazeState),
-                )
+                CurrentNavHost(modifier = contentModifier)
             }
         }
     }
@@ -241,19 +284,22 @@ private fun CurrentNavHost(modifier: Modifier = Modifier) {
 private fun BottomNav(
     updates: Int,
     pendingReboots: Int,
+    onMoreClick: () -> Unit,
 ) {
     val prefs = LocalUserPreferences.current
     val navigator = LocalDestinationsNavigator.current
     val navController = LocalNavController.current
+    val largeText = LocalDensity.current.fontScale >= 1.3f
+    val superUserSelected by navController.isRouteOnBackStackAsState(MainDestination.SuperUser.direction)
+    val activitySelected by navController.isRouteOnBackStackAsState(MainDestination.Activity.direction)
+    val settingsSelected by navController.isRouteOnBackStackAsState(MainDestination.Settings.direction)
+    val moreSelected = superUserSelected || activitySelected || settingsSelected
 
     BlurBottomToolbar(
-        modifier =
-            Modifier
-                .imePadding(),
+        modifier = Modifier.imePadding(),
     ) {
-        MainDestination.entries.forEach { screen ->
+        compactDestinations.forEach { screen ->
             val isSelected by navController.isRouteOnBackStackAsState(screen.direction)
-
             if (!screen.isAccessible) return@forEach
 
             NavigationBarItem(
@@ -263,72 +309,165 @@ private fun BottomNav(
                 label = {
                     Text(
                         text = stringResource(id = screen.label),
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelSmall,
                     )
                 },
-                alwaysShowLabel = !prefs.hideBottomBarLabels,
+                alwaysShowLabel = !prefs.hideBottomBarLabels && !largeText,
                 selected = isSelected,
                 onClick = {
-                    if (isSelected) {
-                        navigator.popBackStack(screen.direction, false)
-                    }
-                    navigator.navigate(screen.direction) {
-                        popUpTo(NavGraphs.root) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    navigator.navigateMainDestination(screen, isSelected)
                 },
             )
         }
+
+        NavigationBarItem(
+            icon = {
+                Icon(
+                    painter = painterResource(R.drawable.dots_vertical),
+                    contentDescription = stringResource(R.string.page_more),
+                )
+            },
+            label = {
+                Text(
+                    text = stringResource(R.string.page_more),
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            },
+            alwaysShowLabel = !prefs.hideBottomBarLabels && !largeText,
+            selected = moreSelected,
+            onClick = onMoreClick,
+        )
     }
 }
-/*
+
 @Composable
-private fun RailNav(updates: Int) {
+private fun RailNav(
+    updates: Int,
+    pendingReboots: Int,
+) {
     val prefs = LocalUserPreferences.current
     val navigator = LocalDestinationsNavigator.current
     val navController = LocalNavController.current
 
     NavigationRail(
+        modifier = Modifier.fillMaxHeight(),
         header = {
             TopAppBarEventIcon()
         },
     ) {
-        MainDestination.entries.forEach { screen ->
-            val isSelected by navController.isRouteOnBackStackAsState(screen.direction)
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            items(
+                items = MainDestination.entries,
+                key = { it.name },
+            ) { screen ->
+                val isSelected by navController.isRouteOnBackStackAsState(screen.direction)
+                if (!screen.isAccessible) return@items
 
-            if (!screen.isAccessible) return@forEach
-
-            NavigationRailItem(
-                icon = {
-                    BaseNavIcon(screen, isSelected, updates, pendingReboots)
-                },
-                label = {
-                    Text(
-                        text = stringResource(id = screen.label),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                },
-                alwaysShowLabel = !prefs.hideBottomBarLabels,
-                selected = isSelected,
-                onClick = {
-                    if (isSelected) {
-                        navigator.popBackStack(screen.direction, false)
-                    }
-                    navigator.navigate(screen.direction) {
-                        popUpTo(NavGraphs.root) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-            )
+                NavigationRailItem(
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = {
+                        BaseNavIcon(screen, isSelected, updates, pendingReboots)
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(id = screen.label),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    },
+                    alwaysShowLabel = !prefs.hideBottomBarLabels,
+                    selected = isSelected,
+                    onClick = {
+                        navigator.navigateMainDestination(screen, isSelected)
+                    },
+                )
+            }
         }
     }
-}*/
+}
+
+@Composable
+private fun DrawerDestinationItem(
+    screen: MainDestination,
+    updates: Int,
+    pendingReboots: Int,
+    onNavigate: (() -> Unit)? = null,
+) {
+    val navigator = LocalDestinationsNavigator.current
+    val navController = LocalNavController.current
+    val isSelected by navController.isRouteOnBackStackAsState(screen.direction)
+    if (!screen.isAccessible) return
+
+    NavigationDrawerItem(
+        icon = {
+            BaseNavIcon(screen, isSelected, updates, pendingReboots)
+        },
+        label = {
+            Text(
+                text = stringResource(id = screen.label),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        },
+        selected = isSelected,
+        onClick = {
+            onNavigate?.invoke()
+            navigator.navigateMainDestination(screen, isSelected)
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MoreDestinationsSheet(
+    updates: Int,
+    pendingReboots: Int,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.page_more),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+            overflowDestinations.forEach { screen ->
+                DrawerDestinationItem(
+                    screen = screen,
+                    updates = updates,
+                    pendingReboots = pendingReboots,
+                    onNavigate = onDismiss,
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+        }
+    }
+}
+
+private fun DestinationsNavigator.navigateMainDestination(
+    screen: MainDestination,
+    isSelected: Boolean,
+) {
+    if (isSelected) {
+        popBackStack(screen.direction, false)
+    }
+    navigate(screen.direction) {
+        popUpTo(NavGraphs.root) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
 
 @Composable
 private fun BaseNavIcon(

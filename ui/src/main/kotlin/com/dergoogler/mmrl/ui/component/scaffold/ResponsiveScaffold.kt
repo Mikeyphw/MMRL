@@ -1,11 +1,14 @@
 package com.dergoogler.mmrl.ui.component.scaffold
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.contentColorFor
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,26 +28,36 @@ fun ResponsiveScaffold(
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     content: @Composable (ScaffoldScope.(PaddingValues) -> Unit),
 ) {
-    val windowSizeClass = LocalWindowSizeClass.current
+    val compact = LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact
 
-    Scaffold(
-        modifier = modifier,
-        floatingActionButtonPosition = floatingActionButtonPosition,
-        topBar = topBar,
-        bottomBar = {
-// TODO: Fix screen size bug
-//            if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact)
-            bottomBar()
-        },
-        snackbarHost = snackbarHost,
-        contentWindowInsets = contentWindowInsets,
-        floatingActionButton = floatingActionButton,
-        railBar = {
-// TODO: see above
-            // if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Medium) railBar()
-        },
-        containerColor = containerColor,
-        contentColor = contentColor,
-        content = content,
-    )
+    if (compact) {
+        Scaffold(
+            modifier = modifier,
+            floatingActionButtonPosition = floatingActionButtonPosition,
+            topBar = topBar,
+            bottomBar = bottomBar,
+            snackbarHost = snackbarHost,
+            contentWindowInsets = contentWindowInsets,
+            floatingActionButton = floatingActionButton,
+            containerColor = containerColor,
+            contentColor = contentColor,
+            content = content,
+        )
+        return
+    }
+
+    Row(modifier = modifier.fillMaxSize()) {
+        railBar()
+        Scaffold(
+            modifier = Modifier.weight(1f),
+            floatingActionButtonPosition = floatingActionButtonPosition,
+            topBar = topBar,
+            snackbarHost = snackbarHost,
+            contentWindowInsets = contentWindowInsets,
+            floatingActionButton = floatingActionButton,
+            containerColor = containerColor,
+            contentColor = contentColor,
+            content = content,
+        )
+    }
 }

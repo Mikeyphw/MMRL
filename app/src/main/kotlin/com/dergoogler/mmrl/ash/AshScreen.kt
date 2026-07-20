@@ -42,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,7 +111,7 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
         val context = LocalContext.current
         val bottomPadding = LocalMainScreenInnerPaddings.current.mainContentBottomPadding()
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-        var section by remember { mutableStateOf(RecoverySection.Overview) }
+        var section by rememberSaveable { mutableStateOf(RecoverySection.Overview) }
         var confirmation by remember { mutableStateOf<RecoveryConfirmation?>(null) }
         var selectedSession by remember { mutableStateOf<AshRecoverySession?>(null) }
 
