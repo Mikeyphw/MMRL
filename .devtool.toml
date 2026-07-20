@@ -24,6 +24,7 @@ version = "9.5.0"
 max_workers = 4
 structured_events = false
 no_daemon = false
+fail_fast=true
 daemon_idle_timeout_ms = 900000
 offline = false
 
