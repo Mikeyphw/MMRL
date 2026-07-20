@@ -66,6 +66,7 @@ import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.LocalNavController
+import com.dergoogler.mmrl.ui.providable.LocalReducedMotion
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.providable.LocalWindowSizeClass
@@ -266,6 +267,7 @@ private fun ExpandedMainLayout(
 @Composable
 private fun CurrentNavHost(modifier: Modifier = Modifier) {
     val navController = LocalNavController.current
+    val reducedMotion = LocalReducedMotion.current
     DestinationsNavHost(
         modifier = modifier,
         navGraph = NavGraphs.root,
@@ -273,9 +275,9 @@ private fun CurrentNavHost(modifier: Modifier = Modifier) {
         defaultTransitions =
             object : NavHostAnimatedDestinationStyle() {
                 override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition
-                    get() = { fadeIn(animationSpec = tween(340)) }
+                    get() = { if (reducedMotion) EnterTransition.None else fadeIn(animationSpec = tween(340)) }
                 override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition
-                    get() = { fadeOut(animationSpec = tween(340)) }
+                    get() = { if (reducedMotion) ExitTransition.None else fadeOut(animationSpec = tween(340)) }
             },
     )
 }

@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
@@ -101,31 +102,32 @@ internal fun AshProtectionCard(
                 verticalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 ProtectionMetric(
-                    text = "Failed boots ${summary.failedBoots}/${summary.failureThreshold}",
+                    text = stringResource(R.string.ash_metric_failed_boots, summary.failedBoots, summary.failureThreshold),
                     color = if (summary.failedBoots > 0) MaterialTheme.colorScheme.error else statusColor,
                 )
                 ProtectionMetric(
-                    text = "${summary.quarantinedModules} quarantined",
+                    text = stringResource(R.string.ash_metric_quarantined, summary.quarantinedModules),
                     color = if (summary.quarantinedModules > 0) MaterialTheme.colorScheme.error else statusColor,
                 )
                 ProtectionMetric(
-                    text = "${summary.protectedModules} protected",
+                    text = stringResource(R.string.ash_metric_protected, summary.protectedModules),
                     color = statusColor,
                 )
                 if (summary.readOnly) {
-                    ProtectionMetric(text = "Read only", color = MaterialTheme.colorScheme.tertiary)
+                    ProtectionMetric(text = stringResource(R.string.recovery_read_only_state), color = MaterialTheme.colorScheme.tertiary)
                 }
             }
 
             if (summary.lastSuccessfulAt > 0) {
                 Text(
-                    text =
-                        "Last checked " +
-                            DateUtils.getRelativeTimeSpanString(
-                                summary.lastSuccessfulAt.asMilliseconds(),
-                                System.currentTimeMillis(),
-                                DateUtils.MINUTE_IN_MILLIS,
-                            ),
+                    text = stringResource(
+                        R.string.ash_last_checked_relative,
+                        DateUtils.getRelativeTimeSpanString(
+                            summary.lastSuccessfulAt.asMilliseconds(),
+                            System.currentTimeMillis(),
+                            DateUtils.MINUTE_IN_MILLIS,
+                        ),
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -23,6 +23,7 @@ import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.providable.LocalBulkInstall
 import com.dergoogler.mmrl.ui.providable.LocalNavController
+import com.dergoogler.mmrl.ui.providable.LocalReducedMotion
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.utils.initPlatform
@@ -38,6 +39,7 @@ fun RootScreen() {
     val bulkInstallViewModel: BulkInstallViewModel = hiltViewModel()
     val context = LocalContext.current
     val userPreferences = LocalUserPreferences.current
+    val reducedMotion = LocalReducedMotion.current
 
     LaunchedEffect(Unit) {
         initPlatform(context, userPreferences.workingMode.toPlatform())
@@ -58,9 +60,9 @@ fun RootScreen() {
                 defaultTransitions =
                     object : NavHostAnimatedDestinationStyle() {
                         override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition
-                            get() = { fadeIn(animationSpec = tween(340)) }
+                            get() = { if (reducedMotion) EnterTransition.None else fadeIn(animationSpec = tween(340)) }
                         override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition
-                            get() = { fadeOut(animationSpec = tween(340)) }
+                            get() = { if (reducedMotion) ExitTransition.None else fadeOut(animationSpec = tween(340)) }
                     },
             )
         }

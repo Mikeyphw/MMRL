@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -36,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,9 +53,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -64,14 +72,18 @@ import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.database.entity.history.OperationStatus
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ui.component.BottomSheet
+import com.dergoogler.mmrl.ui.component.FlatSectionCard
+import com.dergoogler.mmrl.ui.component.MetadataRow
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.PageIndicator
+import com.dergoogler.mmrl.ui.component.StatusPill
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
+import com.dergoogler.mmrl.ui.providable.LocalWindowSizeClass
 import com.dergoogler.mmrl.ui.theme.LocalSemanticColors
 import com.dergoogler.mmrl.ui.theme.LocalMMRLSurfaces
 import com.dergoogler.mmrl.viewmodel.ActivityFilter
@@ -93,6 +105,7 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
         val filter by viewModel.filter.collectAsStateWithLifecycle()
         val pendingReboots by viewModel.pendingRebootCount.collectAsStateWithLifecycle()
         val bottomPadding = LocalMainScreenInnerPaddings.current.mainContentBottomPadding()
+        val expandedLayout = LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Expanded
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
         var selectedEntry by remember { mutableStateOf<OperationHistoryEntity?>(null) }
@@ -126,36 +139,38 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
         }
 
         selectedEntry?.let { entry ->
-            ActivityDetailsSheet(
-                entry = entry,
-                onClose = { selectedEntry = null },
-                onRetry = {
-                    selectedEntry = null
-                    viewModel.retry(context, entry)
-                },
-                onRollback = {
-                    selectedEntry = null
-                    viewModel.rollback(context, entry)
-                },
-                onCancel = {
-                    selectedEntry = null
-                    viewModel.cancel(context, entry)
-                },
-                onApproveTasker = {
-                    selectedEntry = null
-                    viewModel.approveTaskerRequest(context, entry)
-                },
-                onDenyTasker = {
-                    selectedEntry = null
-                    viewModel.denyTaskerRequest(context, entry)
-                },
-                onDelete = {
-                    selectedEntry = null
-                    viewModel.delete(entry)
-                },
-                onCopyLog = { copyLog(context, entry) },
-                onShareLog = { shareLog(context, entry) },
-            )
+            if (!expandedLayout) {
+                ActivityDetailsSheet(
+                    entry = entry,
+                    onClose = { selectedEntry = null },
+                    onRetry = {
+                        selectedEntry = null
+                        viewModel.retry(context, entry)
+                    },
+                    onRollback = {
+                        selectedEntry = null
+                        viewModel.rollback(context, entry)
+                    },
+                    onCancel = {
+                        selectedEntry = null
+                        viewModel.cancel(context, entry)
+                    },
+                    onApproveTasker = {
+                        selectedEntry = null
+                        viewModel.approveTaskerRequest(context, entry)
+                    },
+                    onDenyTasker = {
+                        selectedEntry = null
+                        viewModel.denyTaskerRequest(context, entry)
+                    },
+                    onDelete = {
+                        selectedEntry = null
+                        viewModel.delete(entry)
+                    },
+                    onCopyLog = { copyLog(context, entry) },
+                    onShareLog = { shareLog(context, entry) },
+                )
+            }
         }
 
         Scaffold(
@@ -205,31 +220,91 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
                     return@Column
                 }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding =
-                        PaddingValues(
-                            top = 6.dp,
-                            bottom = bottomPadding,
-                        ),
-                    verticalArrangement = Arrangement.spacedBy(1.dp),
-                ) {
-                    itemsIndexed(
-                        items = entries,
-                        key = { _, entry -> entry.id },
-                    ) { index, entry ->
-                        if (index == 0 || !isSameDay(entries[index - 1].startedAt, entry.startedAt)) {
-                            ActivityDayHeader(entry.startedAt)
-                        }
-                        ActivityRow(
-                            entry = entry,
-                            onClick = { selectedEntry = entry },
+                if (expandedLayout) {
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        ActivityHistoryList(
+                            entries = entries,
+                            bottomPadding = bottomPadding,
+                            onEntryClick = { selectedEntry = it },
+                            modifier = Modifier.weight(0.44f),
                         )
+                        Surface(
+                            modifier = Modifier.weight(0.56f).fillMaxSize().padding(top = 6.dp, bottom = bottomPadding),
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shape = RoundedCornerShape(12.dp),
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                        ) {
+                            selectedEntry?.let { entry ->
+                                ActivityDetailsContent(
+                                    entry = entry,
+                                    onRetry = { viewModel.retry(context, entry) },
+                                    onRollback = { viewModel.rollback(context, entry) },
+                                    onCancel = { viewModel.cancel(context, entry) },
+                                    onApproveTasker = { viewModel.approveTaskerRequest(context, entry) },
+                                    onDenyTasker = { viewModel.denyTaskerRequest(context, entry) },
+                                    onDelete = {
+                                        selectedEntry = null
+                                        viewModel.delete(entry)
+                                    },
+                                    onCopyLog = { copyLog(context, entry) },
+                                    onShareLog = { shareLog(context, entry) },
+                                )
+                            } ?: FlatSectionCard(
+                                title = stringResource(R.string.activity_select_entry_title),
+                                modifier = Modifier.padding(18.dp),
+                            ) {
+                                Text(
+                                    stringResource(R.string.activity_select_entry_desc),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
+                } else {
+                    ActivityHistoryList(
+                        entries = entries,
+                        bottomPadding = bottomPadding,
+                        onEntryClick = { selectedEntry = it },
+                    )
                 }
             }
         }
     }
+
+@Composable
+private fun ActivityHistoryList(
+    entries: List<OperationHistoryEntity>,
+    bottomPadding: Dp,
+    onEntryClick: (OperationHistoryEntity) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding =
+            PaddingValues(
+                top = 6.dp,
+                bottom = bottomPadding,
+            ),
+        verticalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        itemsIndexed(
+            items = entries,
+            key = { _, entry -> entry.id },
+        ) { index, entry ->
+            if (index == 0 || !isSameDay(entries[index - 1].startedAt, entry.startedAt)) {
+                ActivityDayHeader(entry.startedAt)
+            }
+            ActivityRow(
+                entry = entry,
+                onClick = { onEntryClick(entry) },
+            )
+        }
+    }
+}
 
 @Composable
 private fun ActivityFilters(
@@ -261,6 +336,10 @@ private fun ActivityFilters(
             FilterChip(
                 selected = selected == filter,
                 onClick = { onSelected(filter) },
+                modifier = Modifier.semantics {
+                    role = Role.Tab
+                    this.selected = selected == filter
+                },
                 label = { Text(label) },
             )
         }
@@ -307,7 +386,7 @@ private fun PendingRebootBanner(
 private fun ActivityDayHeader(timestamp: Long) {
     Text(
         text = dayLabel(timestamp),
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp).semantics { heading() },
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         fontWeight = FontWeight.SemiBold,
@@ -324,7 +403,7 @@ private fun ActivityRow(
     val color = entry.statusColor()
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sizeIn(minHeight = 48.dp),
         color = surfaces.row,
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
@@ -432,20 +511,7 @@ private fun ActivityTag(
     text: String,
     color: Color,
 ) {
-    Surface(
-        color = color.copy(alpha = 0.12f),
-        contentColor = color,
-        shape = RoundedCornerShape(6.dp),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-    }
+    StatusPill(text = text, color = color)
 }
 
 @Composable
@@ -461,9 +527,34 @@ private fun ActivityDetailsSheet(
     onCopyLog: () -> Unit,
     onShareLog: () -> Unit,
 ) = BottomSheet(onDismissRequest = onClose) {
+    ActivityDetailsContent(
+        entry = entry,
+        onRetry = onRetry,
+        onRollback = onRollback,
+        onCancel = onCancel,
+        onApproveTasker = onApproveTasker,
+        onDenyTasker = onDenyTasker,
+        onDelete = onDelete,
+        onCopyLog = onCopyLog,
+        onShareLog = onShareLog,
+    )
+}
+
+@Composable
+private fun ActivityDetailsContent(
+    entry: OperationHistoryEntity,
+    onRetry: () -> Unit,
+    onRollback: () -> Unit,
+    onCancel: () -> Unit,
+    onApproveTasker: () -> Unit,
+    onDenyTasker: () -> Unit,
+    onDelete: () -> Unit,
+    onCopyLog: () -> Unit,
+    onShareLog: () -> Unit,
+) {
     Text(
         text = entry.displayTitle(),
-        modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
+        modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp).semantics { heading() },
         style = MaterialTheme.typography.headlineSmall,
     )
     Text(
@@ -480,7 +571,7 @@ private fun ActivityDetailsSheet(
                 stringResource(R.string.activity_origin),
                 when (origin) {
                     "TASKER" -> stringResource(R.string.activity_source_tasker)
-                    "ashrexcue" -> "AshReXcue"
+                    "ashrexcue" -> stringResource(R.string.activity_source_ashrexcue)
                     else -> origin
                 },
             )
@@ -599,19 +690,7 @@ private fun DetailLine(
     label: String,
     value: String,
 ) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(0.38f),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            modifier = Modifier.weight(0.62f),
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
+    MetadataRow(label = label, value = value, modifier = Modifier.padding(vertical = 5.dp))
 }
 
 @Composable

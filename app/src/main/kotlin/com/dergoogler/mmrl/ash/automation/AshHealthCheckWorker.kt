@@ -43,7 +43,7 @@ class AshHealthCheckWorker(
                 rebootReminders = preferences.ashRebootReminders,
                 restorationReminders = preferences.ashRestorationReminders,
             )
-            val signals = state.automationSignals(config)
+            val signals = state.automationSignals(applicationContext, config)
             val managedKinds = if (state.source == AshSnapshotSource.Live) {
                 AshAlertKind.entries.toSet()
             } else {
@@ -58,7 +58,7 @@ class AshHealthCheckWorker(
             store.recordSuccess(
                 now,
                 "$reason · " + if (signals.isEmpty()) {
-                    "No recovery action required"
+                    applicationContext.getString(com.dergoogler.mmrl.R.string.ash_alert_no_recovery_action)
                 } else {
                     signals.joinToString { it.kind.name }
                 },

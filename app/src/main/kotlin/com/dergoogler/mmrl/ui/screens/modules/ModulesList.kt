@@ -44,7 +44,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -308,7 +311,7 @@ private fun AshProtectionFilters(
         )
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
         Text(
-            text = "AshReXcue protection",
+            text = stringResource(R.string.ash_protection_filter_title),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -323,7 +326,11 @@ private fun AshProtectionFilters(
                 androidx.compose.material3.FilterChip(
                     selected = selected == filter,
                     onClick = { onSelected(filter) },
-                    label = { Text("${filter.displayLabel()} ($count)") },
+                    modifier = Modifier.semantics {
+                        role = Role.Tab
+                        this.selected = selected == filter
+                    },
+                    label = { Text(stringResource(R.string.label_with_count, filter.displayLabel(), count)) },
                 )
             }
         }
@@ -509,7 +516,7 @@ private fun CompactInstalledModuleRow(
                         }
                         ashProtection?.let { protection ->
                             StatusDot(
-                                text = protection.label,
+                                text = protection.displayLabel(),
                                 color =
                                     when {
                                         protection.quarantined -> MaterialTheme.colorScheme.error
@@ -595,7 +602,7 @@ private fun CompactInstalledModuleRow(
                         ashProtection?.let { protection ->
                             if (protection.quarantined) {
                                 DropdownMenuItem(
-                                    text = { Text("Test restore next boot") },
+                                    text = { Text(stringResource(R.string.ash_test_restore_next_boot)) },
                                     leadingIcon = { Icon(painterResource(R.drawable.reload), null) },
                                     enabled = ashWritable,
                                     onClick = {
@@ -605,13 +612,13 @@ private fun CompactInstalledModuleRow(
                                 )
                             }
                             listOf(
-                                "protected" to "Protect with AshReXcue",
-                                "trusted" to "Mark trusted",
-                                "normal" to "Mark normal",
-                                "suspect" to "Mark suspect",
+                                "protected" to R.string.ash_protect_with_ashrexcue,
+                                "trusted" to R.string.ash_mark_trusted,
+                                "normal" to R.string.ash_mark_normal,
+                                "suspect" to R.string.ash_mark_suspect,
                             ).forEach { (trust, label) ->
                                 DropdownMenuItem(
-                                    text = { Text(label) },
+                                    text = { Text(stringResource(label)) },
                                     leadingIcon = {
                                         Icon(
                                             painterResource(
@@ -670,15 +677,37 @@ private fun CompactInstalledModuleRow(
     }
 }
 
+@Composable
 private fun AshModuleFilter.displayLabel(): String = when (this) {
-    AshModuleFilter.All -> "All"
-    AshModuleFilter.NeedsReview -> "Needs review"
-    AshModuleFilter.Changed -> "Changed"
-    AshModuleFilter.Protected -> "Protected"
-    AshModuleFilter.Trusted -> "Trusted"
-    AshModuleFilter.Normal -> "Normal"
-    AshModuleFilter.Suspect -> "Suspect"
-    AshModuleFilter.Quarantined -> "Quarantined"
+    AshModuleFilter.All -> stringResource(R.string.ash_filter_all)
+    AshModuleFilter.NeedsReview -> stringResource(R.string.ash_filter_needs_review)
+    AshModuleFilter.Changed -> stringResource(R.string.ash_filter_changed)
+    AshModuleFilter.Protected -> stringResource(R.string.ash_filter_protected)
+    AshModuleFilter.Trusted -> stringResource(R.string.ash_filter_trusted)
+    AshModuleFilter.Normal -> stringResource(R.string.ash_filter_normal)
+    AshModuleFilter.Suspect -> stringResource(R.string.ash_filter_suspect)
+    AshModuleFilter.Quarantined -> stringResource(R.string.recovery_quarantined)
+}
+
+@Composable
+private fun AshModuleProtection.displayLabel(): String = when {
+    quarantined -> stringResource(R.string.recovery_quarantined)
+    riskBand >= AshModuleRiskBand.High -> stringResource(R.string.ash_protection_risk_score, riskBand.displayLabel(), riskScore)
+    changedSinceStable -> stringResource(R.string.ash_changed_since_stable)
+    trust == "protected" -> stringResource(R.string.ash_filter_protected)
+    trust == "trusted" -> stringResource(R.string.ash_filter_trusted)
+    trust == "suspect" -> stringResource(R.string.ash_filter_suspect)
+    trust == "normal" -> stringResource(R.string.ash_filter_normal)
+    else -> trust.replaceFirstChar(Char::uppercaseChar)
+}
+
+@Composable
+private fun AshModuleRiskBand.displayLabel(): String = when (this) {
+    AshModuleRiskBand.Unknown -> stringResource(R.string.ash_risk_band_unknown)
+    AshModuleRiskBand.Low -> stringResource(R.string.ash_risk_band_low)
+    AshModuleRiskBand.Elevated -> stringResource(R.string.ash_risk_band_elevated)
+    AshModuleRiskBand.High -> stringResource(R.string.ash_risk_band_high)
+    AshModuleRiskBand.Critical -> stringResource(R.string.ash_risk_band_critical)
 }
 
 @Composable

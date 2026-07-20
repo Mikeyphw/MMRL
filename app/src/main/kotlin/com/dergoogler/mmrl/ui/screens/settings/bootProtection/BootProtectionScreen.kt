@@ -11,12 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -44,6 +41,7 @@ import com.dergoogler.mmrl.ash.AshOperationKind
 import com.dergoogler.mmrl.ash.AshViewModel
 import com.dergoogler.mmrl.ash.model.SettingItem
 import com.dergoogler.mmrl.ext.none
+import com.dergoogler.mmrl.ui.component.FlatSectionCard
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurNavigateUpToolbar
@@ -170,121 +168,125 @@ private fun BootProtectionContent(
 
     val errors =
         listOfNotNull(
-            numericError(threshold, NumericRule(1..5), "Failed boots"),
-            numericError(timeout, NumericRule(60..300), "Boot timeout"),
-            numericError(stability, NumericRule(30..600), "Stability window"),
-            numericError(firstBootGrace, NumericRule(0..600), "First-boot grace"),
-            numericError(otaGrace, NumericRule(0..900), "OTA grace"),
-            monitoredProcesses.takeIf { it.contains('\n') }?.let { "Monitored processes must be comma separated" },
+            numericError(threshold, NumericRule(1..5), stringResource(R.string.boot_protection_failed_boots)),
+            numericError(timeout, NumericRule(60..300), stringResource(R.string.boot_protection_boot_timeout)),
+            numericError(stability, NumericRule(30..600), stringResource(R.string.boot_protection_stability_window)),
+            numericError(firstBootGrace, NumericRule(0..600), stringResource(R.string.boot_protection_first_boot_grace)),
+            numericError(otaGrace, NumericRule(0..900), stringResource(R.string.boot_protection_ota_grace)),
+            monitoredProcesses.takeIf { it.contains('\n') }?.let { stringResource(R.string.boot_protection_processes_comma_error) },
         )
     val pending = settings.filter { it.queuedValue != null }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ProtectionSection("Integration status") {
-            Text(lifecycleText.ifBlank { "AshReXcue status unavailable" })
+        ProtectionSection(stringResource(R.string.boot_protection_integration_status)) {
+            Text(lifecycleText.ifBlank { stringResource(R.string.boot_protection_status_unavailable) })
             Text(
-                if (readOnly) "Live controls are unavailable; cached values are read only." else "Changes are validated by AshReXcue before they are applied.",
+                if (readOnly) {
+                    stringResource(R.string.boot_protection_read_only_desc)
+                } else {
+                    stringResource(R.string.boot_protection_live_validation_desc)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        ProtectionSection("Proactive recovery") {
+        ProtectionSection(stringResource(R.string.boot_protection_proactive_recovery)) {
             BooleanSetting(
-                title = "Background health checks",
+                title = stringResource(R.string.boot_protection_background_health_checks),
                 checked = healthChecksEnabled,
                 enabled = true,
                 onCheckedChange = onHealthChecksEnabled,
             )
             Text(
-                "Checks reuse MMRL's typed AshReXcue snapshot and only notify when recovery action is required.",
+                stringResource(R.string.boot_protection_background_health_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text("Check interval", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.boot_protection_check_interval), fontWeight = FontWeight.SemiBold)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(1L, 3L, 6L, 12L, 24L).forEach { hours ->
                     FilterChip(
                         selected = healthCheckIntervalHours == hours,
                         onClick = { onHealthCheckInterval(hours) },
                         enabled = healthChecksEnabled,
-                        label = { Text(if (hours == 1L) "1 hour" else "$hours hours") },
+                        label = { Text(stringResource(if (hours == 1L) R.string.boot_protection_one_hour else R.string.boot_protection_hours, hours)) },
                     )
                 }
             }
             BooleanSetting(
-                title = "Recovery incident alerts",
+                title = stringResource(R.string.boot_protection_incident_alerts),
                 checked = incidentNotifications,
                 enabled = healthChecksEnabled,
                 onCheckedChange = onIncidentNotifications,
             )
             BooleanSetting(
-                title = "Reboot-state reminders",
+                title = stringResource(R.string.boot_protection_reboot_reminders),
                 checked = rebootReminders,
                 enabled = healthChecksEnabled,
                 onCheckedChange = onRebootReminders,
             )
             BooleanSetting(
-                title = "Restoration-trial reminders",
+                title = stringResource(R.string.boot_protection_restoration_reminders),
                 checked = restorationReminders,
                 enabled = healthChecksEnabled,
                 onCheckedChange = onRestorationReminders,
             )
             OutlinedButton(onClick = onCheckNow, enabled = healthChecksEnabled) {
-                Text("Check now")
+                Text(stringResource(R.string.boot_protection_check_now))
             }
         }
 
         if (pending.isNotEmpty()) {
-            ProtectionSection("Queued for next boot") {
+            ProtectionSection(stringResource(R.string.boot_protection_queued_next_boot)) {
                 pending.forEach { setting ->
                     Text(
-                        "${setting.key}: ${setting.value} → ${setting.queuedValue}",
+                        stringResource(R.string.boot_protection_queued_setting, setting.key, setting.value, setting.queuedValue.orEmpty()),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
                 OutlinedButton(onClick = onDiscardPending, enabled = !readOnly && !discarding && !saving) {
-                    Text(if (discarding) "Discarding…" else "Discard queued changes")
+                    Text(if (discarding) stringResource(R.string.discarding) else stringResource(R.string.boot_protection_discard_queued))
                 }
             }
         }
 
-        ProtectionSection("Rescue thresholds") {
-            NumericField("Failed boots before rescue", threshold, 1..5, !readOnly) { threshold = it }
-            NumericField("Boot timeout (seconds)", timeout, 60..300, !readOnly) { timeout = it }
-            NumericField("Stability window (seconds)", stability, 30..600, !readOnly) { stability = it }
+        ProtectionSection(stringResource(R.string.boot_protection_rescue_thresholds)) {
+            NumericField(stringResource(R.string.boot_protection_failed_boots_before_rescue), threshold, 1..5, !readOnly) { threshold = it }
+            NumericField(stringResource(R.string.boot_protection_boot_timeout_seconds), timeout, 60..300, !readOnly) { timeout = it }
+            NumericField(stringResource(R.string.boot_protection_stability_window_seconds), stability, 30..600, !readOnly) { stability = it }
         }
 
-        ProtectionSection("Boot readiness") {
-            BooleanSetting("Require boot animation completion", bootAnimationRequired, !readOnly) { bootAnimationRequired = it }
-            BooleanSetting("Require credential-encrypted storage", ceStorageRequired, !readOnly) { ceStorageRequired = it }
-            BooleanSetting("Extra process monitoring", extraStability, !readOnly) { extraStability = it }
-            NumericField("First-boot grace (seconds)", firstBootGrace, 0..600, !readOnly) { firstBootGrace = it }
-            NumericField("OTA grace (seconds)", otaGrace, 0..900, !readOnly) { otaGrace = it }
+        ProtectionSection(stringResource(R.string.boot_protection_boot_readiness)) {
+            BooleanSetting(stringResource(R.string.boot_protection_require_boot_animation), bootAnimationRequired, !readOnly) { bootAnimationRequired = it }
+            BooleanSetting(stringResource(R.string.boot_protection_require_ce_storage), ceStorageRequired, !readOnly) { ceStorageRequired = it }
+            BooleanSetting(stringResource(R.string.boot_protection_extra_process_monitoring), extraStability, !readOnly) { extraStability = it }
+            NumericField(stringResource(R.string.boot_protection_first_boot_grace_seconds), firstBootGrace, 0..600, !readOnly) { firstBootGrace = it }
+            NumericField(stringResource(R.string.boot_protection_ota_grace_seconds), otaGrace, 0..900, !readOnly) { otaGrace = it }
             OutlinedTextField(
                 value = monitoredProcesses,
                 onValueChange = { monitoredProcesses = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Monitored processes") },
-                supportingText = { Text("Comma-separated process names") },
+                label = { Text(stringResource(R.string.boot_protection_monitored_processes)) },
+                supportingText = { Text(stringResource(R.string.boot_protection_monitored_processes_desc)) },
                 enabled = !readOnly,
                 singleLine = true,
             )
-            Text("Missing process action", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.boot_protection_missing_process_action), fontWeight = FontWeight.SemiBold)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("warn", "rescue").forEach { action ->
                     FilterChip(
                         selected = missingProcessAction == action,
                         onClick = { missingProcessAction = action },
                         enabled = !readOnly,
-                        label = { Text(action.replaceFirstChar(Char::uppercaseChar)) },
+                        label = { Text(missingProcessActionLabel(action)) },
                     )
                 }
             }
         }
 
         if (errors.isNotEmpty()) {
-            ProtectionSection("Fix before saving") {
+            ProtectionSection(stringResource(R.string.boot_protection_fix_before_saving)) {
                 errors.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         }
@@ -313,7 +315,15 @@ private fun BootProtectionContent(
                 enabled = !readOnly && !saving && !discarding && errors.isEmpty(),
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (saving) "Saving…" else if (pending.isEmpty()) "Save settings" else "Update queued settings")
+                Text(
+                    if (saving) {
+                        stringResource(R.string.saving)
+                    } else if (pending.isEmpty()) {
+                        stringResource(R.string.save_settings)
+                    } else {
+                        stringResource(R.string.boot_protection_update_queued)
+                    },
+                )
             }
             OutlinedButton(
                 onClick = {
@@ -330,7 +340,7 @@ private fun BootProtectionContent(
                 },
                 enabled = !readOnly,
             ) {
-                Text("Recommended defaults")
+                Text(stringResource(R.string.boot_protection_recommended_defaults))
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -342,18 +352,7 @@ private fun ProtectionSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        shape = RoundedCornerShape(14.dp),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            content()
-        }
-    }
+    FlatSectionCard(title = title, content = content)
 }
 
 @Composable
@@ -371,7 +370,7 @@ private fun NumericField(
         onValueChange = { candidate -> if (candidate.all(Char::isDigit)) onChange(candidate) },
         modifier = Modifier.fillMaxWidth(),
         label = { Text(label) },
-        supportingText = { Text("Allowed: ${range.first}–${range.last}") },
+        supportingText = { Text(stringResource(R.string.boot_protection_allowed_range, range.first, range.last)) },
         isError = invalid,
         enabled = enabled,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -392,11 +391,19 @@ private fun BooleanSetting(
     }
 }
 
+@Composable
 private fun numericError(value: String, rule: NumericRule, label: String): String? {
     val parsed = value.toIntOrNull()
     return if (parsed == null || parsed !in rule.range) {
-        "$label must be between ${rule.range.first} and ${rule.range.last}"
+        stringResource(R.string.boot_protection_numeric_error, label, rule.range.first, rule.range.last)
     } else {
         null
     }
+}
+
+@Composable
+private fun missingProcessActionLabel(action: String): String = when (action) {
+    "warn" -> stringResource(R.string.boot_protection_action_warn)
+    "rescue" -> stringResource(R.string.boot_protection_action_rescue)
+    else -> action.replaceFirstChar(Char::uppercaseChar)
 }

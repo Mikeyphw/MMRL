@@ -11,12 +11,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -32,9 +29,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ash.model.AshCulpritCandidate
 import com.dergoogler.mmrl.ash.model.AshGuidanceConfidence
 import com.dergoogler.mmrl.ash.model.AshGuidanceEngine
@@ -46,6 +45,7 @@ import com.dergoogler.mmrl.ash.model.AshRecoveryPlanRisk
 import com.dergoogler.mmrl.ash.model.AshRecoveryRecommendation
 import com.dergoogler.mmrl.ash.model.AshRecoveryRecommendationKind
 import com.dergoogler.mmrl.ash.model.AshSnapshot
+import com.dergoogler.mmrl.ui.component.FlatSectionCard
 
 @Composable
 internal fun GuidedRecoveryContent(
@@ -116,14 +116,14 @@ internal fun GuidedRecoveryContent(
         AlertDialog(
             modifier = Modifier.imePadding(),
             onDismissRequest = { trialDecision = null },
-            title = { Text(if (decision == AshGuidanceOutcome.Helped) "Complete restoration trial?" else "Roll back restoration trial?") },
+            title = { Text(if (decision == AshGuidanceOutcome.Helped) stringResource(R.string.recovery_complete_trial_title) else stringResource(R.string.recovery_rollback_trial_title)) },
             text = {
                 ScrollableRecoveryDialogContent {
                     Text(
                         if (decision == AshGuidanceOutcome.Helped) {
-                            "Complete only after confirming the restored batch survived the stability window."
+                            stringResource(R.string.guidance_complete_trial_confirm_desc)
                         } else {
-                            "The tested modules will be disabled and returned to quarantine."
+                            stringResource(R.string.recovery_rollback_trial_desc)
                         },
                     )
                 }
@@ -134,9 +134,9 @@ internal fun GuidedRecoveryContent(
                         trialDecision = null
                         if (decision == AshGuidanceOutcome.Helped) onCompleteTrial() else onRollbackTrial()
                     },
-                ) { Text(if (decision == AshGuidanceOutcome.Helped) "Complete" else "Rollback") }
+                ) { Text(if (decision == AshGuidanceOutcome.Helped) stringResource(R.string.recovery_complete) else stringResource(R.string.recovery_rollback)) }
             },
-            dismissButton = { TextButton(onClick = { trialDecision = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { trialDecision = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -146,17 +146,17 @@ internal fun GuidedRecoveryContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            GuidanceCard(if (showPlanningTools) "Guided recovery" else "Investigate boot failures") {
+            GuidanceCard(if (showPlanningTools) stringResource(R.string.guidance_title) else stringResource(R.string.guidance_investigate_title)) {
                 Text(
                     if (guidance.activeIncident) {
-                        "Evidence is ranked from the current incident, stable-snapshot changes, quarantine ownership, and recovery history."
+                        stringResource(R.string.guidance_active_incident_desc)
                     } else {
-                        "No active rescue is reported. Guidance remains available for quarantine and restoration decisions."
+                        stringResource(R.string.guidance_no_active_incident_desc)
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    "Every proposed action is tied to the current recovery revision and rechecked before module state changes.",
+                    stringResource(R.string.guidance_revision_recheck_desc),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -164,9 +164,9 @@ internal fun GuidedRecoveryContent(
 
         if (showPlanningTools) {
             item {
-                Text("Recovery plans", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.guidance_recovery_plans), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(
-                    "Plans are previews, not automation. A failed test boot re-quarantines only the tested batch.",
+                    stringResource(R.string.guidance_recovery_plans_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -183,9 +183,9 @@ internal fun GuidedRecoveryContent(
 
             if (state.quarantine.isNotEmpty()) {
                 item {
-                    GuidanceCard("Custom plan") {
+                    GuidanceCard(stringResource(R.string.guidance_custom_plan)) {
                         Text(
-                            "Select an exact batch. Protected, missing, stale, oversized, or changed-state plans are blocked during preview and again at execution.",
+                            stringResource(R.string.guidance_custom_plan_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -217,14 +217,14 @@ internal fun GuidedRecoveryContent(
                             },
                             enabled = selectedFolders.isNotEmpty() && !state.readOnly && !state.isOperationRunning(AshOperationKind.ExecuteRecoveryPlan),
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Preview custom plan") }
+                        ) { Text(stringResource(R.string.guidance_preview_custom_plan)) }
                     }
                 }
             }
         }
 
         item {
-            Text("Recommended next steps", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.guidance_recommended_steps), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
         items(guidance.recommendations, key = AshRecoveryRecommendation::id) { recommendation ->
             RecommendationCard(
@@ -260,17 +260,17 @@ internal fun GuidedRecoveryContent(
         }
 
         item {
-            Text("Likely culprits", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.guidance_likely_culprits), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(
-                "Ranking is explanatory evidence, not proof. Protected modules are deliberately penalized and excluded from guided mutations.",
+                stringResource(R.string.guidance_likely_culprits_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (guidance.candidates.isEmpty()) {
             item {
-                GuidanceCard("Not enough evidence") {
-                    Text("Another failed boot, rescue manifest, or module fingerprint change is needed before ranking modules.")
+                GuidanceCard(stringResource(R.string.guidance_not_enough_evidence)) {
+                    Text(stringResource(R.string.guidance_not_enough_evidence_desc))
                 }
             }
         } else {
@@ -291,9 +291,9 @@ private fun RecoveryPlanCard(
 ) {
     GuidanceCard(plan.title) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatusPill(plan.risk.label, riskColor(plan.risk))
-            StatusPill("${plan.affectedFolders.size} module(s)")
-            if (!plan.canExecute) StatusPill("Blocked", MaterialTheme.colorScheme.error)
+            StatusPill(plan.risk.labelText(), riskColor(plan.risk))
+            StatusPill(stringResource(R.string.module_count, plan.affectedFolders.size))
+            if (!plan.canExecute) StatusPill(stringResource(R.string.recovery_blocked), MaterialTheme.colorScheme.error)
         }
         Text(plan.summary)
         plan.guards.take(3).forEach { guard ->
@@ -307,7 +307,7 @@ private fun RecoveryPlanCard(
             onClick = onPreview,
             enabled = !readOnly && !anotherPlanRunning,
             modifier = Modifier.fillMaxWidth(),
-        ) { RecoveryActionLabel(running, if (plan.canExecute) "Preview plan" else "Review blockers") }
+        ) { RecoveryActionLabel(running, if (plan.canExecute) stringResource(R.string.guidance_preview_plan) else stringResource(R.string.guidance_review_blockers)) }
     }
 }
 
@@ -339,10 +339,10 @@ private fun RecommendationCard(
             AshRecoveryRecommendationKind.ReviewTrial -> {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = onCompleteTrial, enabled = !readOnly && !completingTrial && !rollingBackTrial, modifier = Modifier.weight(1f)) {
-                        RecoveryActionLabel(completingTrial, "Stable")
+                        RecoveryActionLabel(completingTrial, stringResource(R.string.guidance_stable))
                     }
                     OutlinedButton(onClick = onRollbackTrial, enabled = !readOnly && !rollingBackTrial && !completingTrial, modifier = Modifier.weight(1f)) {
-                        RecoveryActionLabel(rollingBackTrial, "Failed")
+                        RecoveryActionLabel(rollingBackTrial, stringResource(R.string.install_failure))
                     }
                 }
             }
@@ -354,19 +354,22 @@ private fun RecommendationCard(
             ) {
                 RecoveryActionLabel(
                     actionRunning,
-                    if (recommendation.kind == AshRecoveryRecommendationKind.RestoreSelected) "Build guarded plan" else "Preview action",
+                    if (recommendation.kind == AshRecoveryRecommendationKind.RestoreSelected) stringResource(R.string.guidance_build_guarded_plan) else stringResource(R.string.guidance_preview_action),
                 )
             }
         }
 
         HorizontalDivider()
-        Text("Did this recommendation help?", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.guidance_feedback_question), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             AshGuidanceOutcome.entries.forEach { outcome ->
                 AssistChip(
                     onClick = { onOutcome(outcome) },
                     enabled = !feedbackRunning,
-                    label = { Text(if (recordedOutcome == outcome) "✓ ${outcome.label}" else outcome.label) },
+                    label = {
+                        val label = outcome.labelText()
+                        Text(if (recordedOutcome == outcome) stringResource(R.string.guidance_recorded_outcome, label) else label)
+                    },
                 )
             }
         }
@@ -378,12 +381,19 @@ private fun CulpritCandidateCard(candidate: AshCulpritCandidate) {
     GuidanceCard(candidate.name) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(candidate.moduleId.ifBlank { candidate.folder }, style = MaterialTheme.typography.bodySmall)
-            Text("${candidate.score}/100 · ${candidate.confidence.label}", fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(
+                    R.string.guidance_candidate_score_confidence,
+                    candidate.score,
+                    candidate.confidence.labelText(),
+                ),
+                fontWeight = FontWeight.SemiBold,
+            )
         }
         LinearProgressIndicator(progress = { candidate.score / 100f }, modifier = Modifier.fillMaxWidth())
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (candidate.quarantined) StatusPill("Quarantined", MaterialTheme.colorScheme.error)
-            if (candidate.protected) StatusPill("Protected", MaterialTheme.colorScheme.primary)
+            if (candidate.quarantined) StatusPill(stringResource(R.string.recovery_quarantined), MaterialTheme.colorScheme.error)
+            if (candidate.protected) StatusPill(stringResource(R.string.ash_filter_protected), MaterialTheme.colorScheme.primary)
         }
         candidate.evidence.take(4).forEach { evidence ->
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -418,37 +428,37 @@ internal fun RecoveryPlanPreviewDialog(
         text = {
             ScrollableRecoveryDialogContent {
                 Text(plan.summary)
-                Text("Risk: ${plan.risk.label}", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.recovery_risk_value, plan.risk.labelText()), fontWeight = FontWeight.SemiBold)
                 if (moduleNames.isNotEmpty()) {
                     HorizontalDivider()
-                    Text("Exact restoration batch", style = MaterialTheme.typography.labelLarge)
-                    moduleNames.forEach { Text("• $it") }
+                    Text(stringResource(R.string.recovery_exact_restoration_batch), style = MaterialTheme.typography.labelLarge)
+                    moduleNames.forEach { Text(stringResource(R.string.bullet_text, it)) }
                 }
                 HorizontalDivider()
-                Text("Safety preflight", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.recovery_safety_preflight), style = MaterialTheme.typography.labelLarge)
                 plan.guards.forEach { guard ->
-                    Text("${guard.severity.symbol} ${guard.title}: ${guard.detail}", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.recovery_guard_line, guard.severity.symbol, guard.title, guard.detail), style = MaterialTheme.typography.bodySmall)
                 }
-                Text("Rollback", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.recovery_rollback), style = MaterialTheme.typography.labelLarge)
                 Text(plan.rollbackStrategy, style = MaterialTheme.typography.bodySmall)
                 if (plan.confirmationPhrase.isNotBlank()) {
-                    Text("Type ${plan.confirmationPhrase} to unlock this high-risk plan.")
+                    Text(stringResource(R.string.recovery_type_phrase, plan.confirmationPhrase))
                     OutlinedTextField(
                         value = confirmation,
                         onValueChange = { confirmation = it },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Confirmation phrase") },
+                        label = { Text(stringResource(R.string.recovery_confirmation_phrase)) },
                     )
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = plan.canExecute && phraseAccepted) {
-                Text(if (plan.canExecute) "Start trial" else "Blocked")
+                Text(if (plan.canExecute) stringResource(R.string.recovery_start_trial) else stringResource(R.string.recovery_blocked))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
@@ -462,21 +472,21 @@ private fun RecommendationPreviewDialog(
     AlertDialog(
         modifier = Modifier.imePadding(),
         onDismissRequest = onDismiss,
-        title = { Text("Preview recovery action") },
+        title = { Text(stringResource(R.string.guidance_preview_recovery_action)) },
         text = {
             ScrollableRecoveryDialogContent {
                 Text(recommendation.title, fontWeight = FontWeight.SemiBold)
                 Text(recommendation.rationale)
                 if (moduleNames.isNotEmpty()) {
                     HorizontalDivider()
-                    Text("Affected modules", style = MaterialTheme.typography.labelLarge)
-                    moduleNames.forEach { Text("• $it") }
+                    Text(stringResource(R.string.guidance_affected_modules), style = MaterialTheme.typography.labelLarge)
+                    moduleNames.forEach { Text(stringResource(R.string.bullet_text, it)) }
                 }
-                Text("Risk: ${recommendation.riskLabel}", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.recovery_risk_value, recommendation.riskLabel), style = MaterialTheme.typography.bodySmall)
             }
         },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Run action") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.guidance_run_action)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
@@ -485,27 +495,23 @@ private fun GuidanceCard(
     title: String,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            content()
-        }
-    }
+    FlatSectionCard(title = title, content = content)
 }
 
-private val AshGuidanceOutcome.label: String
-    get() = name.replaceFirstChar(Char::uppercaseChar)
+@Composable
+private fun AshGuidanceOutcome.labelText(): String = when (this) {
+    AshGuidanceOutcome.Helped -> stringResource(R.string.guidance_outcome_helped)
+    AshGuidanceOutcome.Failed -> stringResource(R.string.guidance_outcome_failed)
+    AshGuidanceOutcome.Inconclusive -> stringResource(R.string.guidance_outcome_inconclusive)
+}
 
-private val AshGuidanceConfidence.label: String
-    get() = when (this) {
-        AshGuidanceConfidence.Low -> "Low confidence"
-        AshGuidanceConfidence.Medium -> "Medium confidence"
-        AshGuidanceConfidence.High -> "High confidence"
-        AshGuidanceConfidence.VeryHigh -> "Very high confidence"
-    }
+@Composable
+private fun AshGuidanceConfidence.labelText(): String = when (this) {
+    AshGuidanceConfidence.Low -> stringResource(R.string.guidance_confidence_low)
+    AshGuidanceConfidence.Medium -> stringResource(R.string.guidance_confidence_medium)
+    AshGuidanceConfidence.High -> stringResource(R.string.guidance_confidence_high)
+    AshGuidanceConfidence.VeryHigh -> stringResource(R.string.guidance_confidence_very_high)
+}
 
 @Composable
 private fun riskColor(risk: AshRecoveryPlanRisk) = when (risk) {
@@ -516,13 +522,13 @@ private fun riskColor(risk: AshRecoveryPlanRisk) = when (risk) {
     -> MaterialTheme.colorScheme.error
 }
 
-private val AshRecoveryPlanRisk.label: String
-    get() = when (this) {
-        AshRecoveryPlanRisk.Low -> "Low risk"
-        AshRecoveryPlanRisk.Moderate -> "Moderate risk"
-        AshRecoveryPlanRisk.High -> "High risk"
-        AshRecoveryPlanRisk.Blocked -> "Blocked"
-    }
+@Composable
+private fun AshRecoveryPlanRisk.labelText(): String = when (this) {
+    AshRecoveryPlanRisk.Low -> stringResource(R.string.recovery_plan_risk_low)
+    AshRecoveryPlanRisk.Moderate -> stringResource(R.string.recovery_plan_risk_moderate)
+    AshRecoveryPlanRisk.High -> stringResource(R.string.recovery_plan_risk_high)
+    AshRecoveryPlanRisk.Blocked -> stringResource(R.string.recovery_blocked)
+}
 
 private val AshRecoveryGuardSeverity.symbol: String
     get() = when (this) {

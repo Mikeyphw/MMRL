@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import com.dergoogler.mmrl.ui.providable.LocalHazeState
+import com.dergoogler.mmrl.ui.providable.LocalReducedMotion
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.utils.BlurUtil
 import dev.chrisbanes.haze.hazeEffect
@@ -38,6 +39,7 @@ fun BlurToolbar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
     val prefs = LocalUserPreferences.current
+    val reducedMotion = LocalReducedMotion.current
     val state = scrollBehavior?.state
 
     val isBlurEnabled =
@@ -59,7 +61,7 @@ fun BlurToolbar(
         targetValue = targetAlpha,
         animationSpec =
             tween(
-                durationMillis = 10,
+                durationMillis = if (reducedMotion) 0 else 10,
                 easing = FastOutSlowInEasing,
             ),
         label = "toolbar_alpha",

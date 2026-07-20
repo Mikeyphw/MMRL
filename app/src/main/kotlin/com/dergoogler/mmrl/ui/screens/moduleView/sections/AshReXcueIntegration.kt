@@ -3,13 +3,9 @@ package com.dergoogler.mmrl.ui.screens.moduleView.sections
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -18,15 +14,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ash.AshOperationKind
 import com.dergoogler.mmrl.ash.AshViewModel
 import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
 import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
+import com.dergoogler.mmrl.ui.component.FlatSectionCard
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.AshScreenDestination
 
@@ -52,19 +50,19 @@ internal fun AshReXcueIntegrationCard(viewModel: AshViewModel = hiltViewModel())
         }
     }
 
-    Card(
+    FlatSectionCard(
+        title = stringResource(R.string.ash_integration_title),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        shape = RoundedCornerShape(14.dp),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp),
-        ) {
-            Text("AshReXcue integration", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
             Text(
-                "Installed ${lifecycle.installation.version.ifBlank { "unknown" }} (${lifecycle.installation.versionCode}) • " +
-                    "Bundled ${lifecycle.bundled.version.ifBlank { "unknown" }} (${lifecycle.bundled.versionCode})",
+                stringResource(
+                    R.string.ash_integration_versions,
+                    lifecycle.installation.version.ifBlank { stringResource(R.string.unknown) },
+                    lifecycle.installation.versionCode,
+                    lifecycle.bundled.version.ifBlank { stringResource(R.string.unknown) },
+                    lifecycle.bundled.versionCode,
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -75,7 +73,7 @@ internal fun AshReXcueIntegrationCard(viewModel: AshViewModel = hiltViewModel())
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { navigator.navigate(AshScreenDestination) }) {
-                    Text("Open Recovery Center")
+                    Text(stringResource(R.string.recovery_open_center))
                 }
                 if (lifecycle.updateAvailable || lifecycle.state == AshModuleLifecycleState.Outdated) {
                     OutlinedButton(
@@ -84,9 +82,9 @@ internal fun AshReXcueIntegrationCard(viewModel: AshViewModel = hiltViewModel())
                     ) {
                         Text(
                             if (preparingUpdate) {
-                                "Preparing update…"
+                                stringResource(R.string.ash_preparing_update)
                             } else {
-                                "Update bundled module"
+                                stringResource(R.string.ash_update_bundled_module)
                             },
                         )
                     }
@@ -98,9 +96,9 @@ internal fun AshReXcueIntegrationCard(viewModel: AshViewModel = hiltViewModel())
                     ) {
                         Text(
                             if (preparingReinstall) {
-                                "Preparing reinstall…"
+                                stringResource(R.string.ash_preparing_reinstall)
                             } else {
-                                "Reinstall module"
+                                stringResource(R.string.recovery_reinstall_module)
                             },
                         )
                     }
@@ -108,7 +106,7 @@ internal fun AshReXcueIntegrationCard(viewModel: AshViewModel = hiltViewModel())
             }
             if (lifecycle.rebootRequired) {
                 Text(
-                    "Reboot required before live protection controls are available.",
+                    stringResource(R.string.ash_reboot_required_controls),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.tertiary,
                 )

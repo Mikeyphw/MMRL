@@ -49,14 +49,6 @@ data class AshModuleProtection(
 ) {
     val needsReview: Boolean
         get() = quarantined || changedSinceStable || riskBand >= AshModuleRiskBand.High || trust == "suspect"
-
-    val label: String
-        get() = when {
-            quarantined -> "Quarantined"
-            riskBand >= AshModuleRiskBand.High -> "${riskBand.name} risk · $riskScore"
-            changedSinceStable -> "Changed since stable"
-            else -> trust.replaceFirstChar(Char::uppercaseChar)
-        }
 }
 
 fun AshManagerState.protectionSummary(): AshProtectionSummary {

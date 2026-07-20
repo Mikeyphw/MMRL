@@ -230,3 +230,14 @@ See `TASKER_SUPPORT.md` for the action, event, and variable contract.
 - Made module intelligence compact by default with expandable evidence and update-safety details.
 - Added focused unit tests for independent operation targets and refresh isolation.
 - Reworked `TaskerRootRequest` persistence to round-trip Ash automation tokens and idempotency keys through Kotlin serialization JSON instead of mockable Android `org.json` during host unit tests.
+
+## UI/UX Phases 3 and 4 — accessibility, localization, and adaptive polish
+
+- Moved the main Recovery Center, Guided Recovery, AshReXcue module-detail cards, and Installed Ash protection filter copy into Android resources.
+- Added shared flat UI primitives for section cards, clickable rows, status pills, metadata rows, and scrollable dialog content.
+- Added selected/tab semantics to Recovery, Activity, and Installed Ash filter chips; headings to section/day/detail titles; noninteractive status semantics to status pills; and minimum 48dp row targets for compact Activity rows.
+- Added a reduced-motion composition local based on Android animator-duration scale and applied it to app navigation transitions and toolbar alpha animation.
+- Added expanded-width list/detail layouts for Recovery session history and Activity operation details while preserving dialogs/sheets on compact layouts.
+- Consolidated Recovery, Activity, Ash module intelligence, and Ash integration cards onto the shared flat/status components and semantic status colors where status meaning is known.
+
+Screenshot regression testing and Fastlane screenshot replacement are still pending because this project does not currently include a screenshot-test framework, `app/src/androidTest`, or Roborazzi/Paparazzi dependencies. Adding that harness should be handled as a separate build/dependency change.

@@ -33,10 +33,12 @@ import com.dergoogler.mmrl.ui.providable.LocalLifecycle
 import com.dergoogler.mmrl.ui.providable.LocalLifecycleScope
 import com.dergoogler.mmrl.ui.providable.LocalMainNavController
 import com.dergoogler.mmrl.ui.providable.LocalNavController
+import com.dergoogler.mmrl.ui.providable.LocalReducedMotion
 import com.dergoogler.mmrl.ui.providable.LocalSettings
 import com.dergoogler.mmrl.ui.providable.LocalSuperUserViewModel
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.providable.LocalWindowSizeClass
+import com.dergoogler.mmrl.ui.providable.prefersReducedMotion
 import com.dergoogler.mmrl.ui.theme.ThemeRegistry
 import com.dergoogler.mmrl.ui.theme.MMRLAppTheme
 import com.dergoogler.mmrl.viewmodel.SettingsViewModel
@@ -244,6 +246,7 @@ fun BaseContent(
         providerValues =
             arrayOf(
                 LocalWindowSizeClass provides windowSizeClass,
+                LocalReducedMotion provides context.prefersReducedMotion(),
                 LocalDestinationsNavigator provides navigator,
                 LocalActivity provides activity,
                 LocalSuperUserViewModel provides hiltViewModel<SuperUserViewModel>(activity),

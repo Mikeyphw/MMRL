@@ -1,5 +1,7 @@
 package com.dergoogler.mmrl.ash.data
 
+import android.content.Context
+import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ash.database.ActivityDao
 import com.dergoogler.mmrl.ash.database.ActivityEntity
 import com.dergoogler.mmrl.ash.model.ActivityItem
@@ -20,6 +22,7 @@ import com.dergoogler.mmrl.ash.model.PendingSetting
 import com.dergoogler.mmrl.ash.model.QuarantineItem
 import com.dergoogler.mmrl.ash.model.SettingItem
 import com.dergoogler.mmrl.ash.root.RootServiceClient
+import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
@@ -28,6 +31,7 @@ import javax.inject.Singleton
 
 @Singleton
 class AshRepository @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val rootClient: RootServiceClient,
     private val activityDao: ActivityDao,
 ) {
@@ -114,34 +118,34 @@ class AshRepository @Inject constructor(
     }
 
     suspend fun setSetting(key: String, value: String): OperationResult =
-        mutation("setting", "Updated $key", "$key=$value") { rootClient.setSetting(key, value) }
+        mutation("setting", context.getString(R.string.ash_activity_updated_setting, key), "$key=$value") { rootClient.setSetting(key, value) }
 
     suspend fun setSettings(values: Map<String, String>): OperationResult =
         mutation(
             type = "settings",
-            title = "Updated protection settings",
+            title = context.getString(R.string.ash_activity_updated_protection_settings),
             details = values.entries.joinToString("\n") { (key, value) -> "$key=$value" },
         ) { rootClient.setSettings(values) }
 
     suspend fun setTrust(folder: String, trust: String): OperationResult =
-        mutation("trust", "Changed module trust", "$folder → $trust") {
+        mutation("trust", context.getString(R.string.ash_activity_changed_module_trust), "$folder → $trust") {
             rootClient.setTrust(folder, trust)
         }
 
     suspend fun restoreOne(folder: String): OperationResult =
-        mutation("restoration", "Started restoration trial", folder) {
+        mutation("restoration", context.getString(R.string.ash_activity_started_restoration_trial), folder) {
             rootClient.restoreOne(folder)
         }
 
     suspend fun restoreHalf(): OperationResult =
-        mutation("restoration", "Started half restoration trial", "Binary-search batch") {
+        mutation("restoration", context.getString(R.string.ash_activity_started_half_restoration_trial), context.getString(R.string.ash_activity_binary_search_batch)) {
             rootClient.restoreHalf()
         }
 
     suspend fun restoreBatch(folders: List<String>): OperationResult =
         mutation(
             "restoration",
-            "Started guided restoration trial",
+            context.getString(R.string.ash_activity_started_guided_restoration_trial),
             folders.joinToString("\n"),
         ) {
             rootClient.restoreBatch(folders)
@@ -150,7 +154,7 @@ class AshRepository @Inject constructor(
     suspend fun executeRecoveryPlan(plan: AshRecoveryPlan): OperationResult =
         mutation(
             "recovery-plan",
-            "Started ${plan.title}",
+            context.getString(R.string.ash_activity_started_plan, plan.title),
             buildString {
                 append("plan=").append(plan.id).append('\n')
                 append("preset=").append(plan.preset.name.lowercase()).append('\n')
@@ -163,32 +167,32 @@ class AshRepository @Inject constructor(
         }
 
     suspend fun restoreAll(): OperationResult =
-        mutation("restoration", "Started full restoration trial", "All quarantined modules") {
+        mutation("restoration", context.getString(R.string.ash_activity_started_full_restoration_trial), context.getString(R.string.ash_activity_all_quarantined_modules)) {
             rootClient.restoreAll()
         }
 
     suspend fun completeTrial(): OperationResult =
-        mutation("restoration", "Completed restoration trial", "Restored batch accepted") {
+        mutation("restoration", context.getString(R.string.ash_activity_completed_restoration_trial), context.getString(R.string.ash_activity_restored_batch_accepted)) {
             rootClient.completeTrial()
         }
 
     suspend fun rollbackTrial(): OperationResult =
-        mutation("restoration", "Rolled back restoration trial", "Restored batch re-quarantined") {
+        mutation("restoration", context.getString(R.string.ash_activity_rolled_back_restoration_trial), context.getString(R.string.ash_activity_restored_batch_requarantined)) {
             rootClient.rollbackTrial()
         }
 
     suspend fun discardPending(): OperationResult =
-        mutation("settings", "Discarded queued settings", "Pending changes removed") {
+        mutation("settings", context.getString(R.string.ash_activity_discarded_queued_settings), context.getString(R.string.ash_activity_pending_changes_removed)) {
             rootClient.discardPendingSettings()
         }
 
     suspend fun exportDiagnostics(): OperationResult =
-        mutation("diagnostics", "Exported diagnostics", "Sanitized diagnostic archive") {
+        mutation("diagnostics", context.getString(R.string.ash_activity_exported_diagnostics), context.getString(R.string.ash_activity_sanitized_diagnostic_archive)) {
             rootClient.exportDiagnostics()
         }
 
     suspend fun repairState(): OperationResult =
-        mutation("state-repair", "Repaired AshReXcue state", "Validated and repaired durable recovery state") {
+        mutation("state-repair", context.getString(R.string.ash_activity_repaired_state), context.getString(R.string.ash_activity_repaired_state_detail)) {
             rootClient.repairState()
         }
 
@@ -209,8 +213,8 @@ class AshRepository @Inject constructor(
                 id = "guidance-${UUID.randomUUID()}",
                 timestamp = now,
                 type = "guidance",
-                title = "Recovery guidance outcome",
-                subtitle = outcome.wireValue.replaceFirstChar(Char::uppercaseChar),
+                title = context.getString(R.string.ash_activity_recovery_guidance_outcome),
+                subtitle = context.getString(outcome.titleResource),
                 status = outcome.wireValue,
                 details = buildString {
                     append("recommendation=").append(recommendationId).append('\n')
@@ -222,7 +226,7 @@ class AshRepository @Inject constructor(
         activityDao.trim(300)
         return OperationResult(
             ok = true,
-            message = "Guidance outcome recorded as ${outcome.wireValue}.",
+            message = context.getString(R.string.ash_activity_guidance_recorded_message, outcome.wireValue),
         )
     }
 
@@ -237,7 +241,7 @@ class AshRepository @Inject constructor(
             ok = root.optBoolean("ok"),
             message = root.optString(
                 "message",
-                if (root.optBoolean("ok")) "Completed" else "Operation failed",
+                if (root.optBoolean("ok")) context.getString(R.string.completed) else context.getString(R.string.operation_failed),
             ),
             path = root.optString("path").takeIf(String::isNotBlank),
         )
@@ -447,6 +451,13 @@ class AshRepository @Inject constructor(
         status = status,
         details = details,
     )
+
+    private val AshGuidanceOutcome.titleResource: Int
+        get() = when (this) {
+            AshGuidanceOutcome.Helped -> R.string.guidance_outcome_helped
+            AshGuidanceOutcome.Failed -> R.string.guidance_outcome_failed
+            AshGuidanceOutcome.Inconclusive -> R.string.guidance_outcome_inconclusive
+        }
 
     private companion object {
         const val SUPPORTED_SNAPSHOT_SCHEMA_MIN = 1
