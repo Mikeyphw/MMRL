@@ -1,0 +1,15 @@
+{
+  "applied_at": "2026-07-20T14:52:39.046199Z",
+  "artifact": "/mnt/extra/home/Downloads/mmrl_ashrexcue_phase_j_overlay.zip",
+  "artifact_name": "mmrl_ashrexcue_phase_j_overlay.zip",
+  "type": "overlay",
+  "sha256": "",
+  "status": "failed",
+  "validation_status": "ok",
+  "commit_message": "",
+  "commit_hash": "",
+  "file_count": 0,
+  "change_counts": {},
+  "manifest": {},
+  "history_id": "213933a34f404cf6aadc2585c871825a"
+}

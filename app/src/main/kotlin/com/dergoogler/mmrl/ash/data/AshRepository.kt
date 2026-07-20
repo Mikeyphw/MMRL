@@ -7,7 +7,11 @@ import com.dergoogler.mmrl.ash.model.AshCapabilities
 import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
 import com.dergoogler.mmrl.ash.model.AshModuleHealth
 import com.dergoogler.mmrl.ash.model.AshModuleInstallation
+import com.dergoogler.mmrl.ash.model.AshModuleReleaseGate
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
+import com.dergoogler.mmrl.ash.model.AshReleaseCheck
+import com.dergoogler.mmrl.ash.model.AshReleaseCheckState
+import com.dergoogler.mmrl.ash.model.AshReleaseGateStatus
 import com.dergoogler.mmrl.ash.model.AshSnapshot
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.ModuleItem
@@ -30,6 +34,7 @@ class AshRepository @Inject constructor(
     suspend fun rootAvailable(): Boolean = rootClient.rootAvailable()
     suspend fun moduleStateRaw(): String = rootClient.moduleState()
     suspend fun snapshotRaw(activityLimit: Int = 150): String = rootClient.snapshot(activityLimit)
+    suspend fun releaseGateRaw(): String = rootClient.releaseGate()
 
     fun parseModuleInstallation(raw: String): AshModuleInstallation {
         val root = parse(raw)
@@ -46,6 +51,31 @@ class AshRepository @Inject constructor(
             disabled = root.optBoolean("disabled"),
             removalPending = root.optBoolean("removalPending"),
             updatePending = root.optBoolean("updatePending"),
+        )
+    }
+
+    fun parseReleaseGate(raw: String): AshModuleReleaseGate {
+        val root = parse(raw)
+        val checks = root.optJSONArray("checks") ?: JSONArray()
+        return AshModuleReleaseGate(
+            protocolVersion = root.optString("protocolVersion"),
+            generatedAt = root.optLong("generatedAt"),
+            moduleVersion = root.optString("moduleVersion"),
+            moduleVersionCode = root.optInt("moduleVersionCode"),
+            status = parseReleaseStatus(root.optString("status")),
+            checks = buildList {
+                for (index in 0 until checks.length()) {
+                    val item = checks.optJSONObject(index) ?: continue
+                    add(
+                        AshReleaseCheck(
+                            id = item.optString("id"),
+                            title = item.optString("title"),
+                            state = parseReleaseCheckState(item.optString("state")),
+                            detail = item.optString("detail"),
+                        ),
+                    )
+                }
+            },
         )
     }
 
@@ -241,6 +271,18 @@ class AshRepository @Inject constructor(
         if (json.optBoolean("ok", true).not()) {
             throw IllegalStateException(json.optString("message", "AshReXcue operation failed"))
         }
+    }
+
+    private fun parseReleaseStatus(value: String): AshReleaseGateStatus = when (value.lowercase()) {
+        "ready" -> AshReleaseGateStatus.Ready
+        "ready-with-warnings", "ready_with_warnings", "warning" -> AshReleaseGateStatus.ReadyWithWarnings
+        else -> AshReleaseGateStatus.Blocked
+    }
+
+    private fun parseReleaseCheckState(value: String): AshReleaseCheckState = when (value.lowercase()) {
+        "pass", "passed", "ok" -> AshReleaseCheckState.Pass
+        "warning", "warn" -> AshReleaseCheckState.Warning
+        else -> AshReleaseCheckState.Blocker
     }
 
     private fun parseHealth(root: JSONObject): AshModuleHealth = AshModuleHealth(

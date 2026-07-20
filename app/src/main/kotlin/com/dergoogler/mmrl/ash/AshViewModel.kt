@@ -11,6 +11,7 @@ import com.dergoogler.mmrl.ash.model.AshModuleLifecycle
 import com.dergoogler.mmrl.ash.model.AshModuleIntelligence
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
+import com.dergoogler.mmrl.ash.model.AshReleaseGateReport
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
 import com.dergoogler.mmrl.ash.model.AshStateHealth
 import com.dergoogler.mmrl.ash.model.Dashboard
@@ -59,6 +60,7 @@ data class AshUiState(
     val activity: List<ActivityItem> = emptyList(),
     val settings: List<SettingItem> = emptyList(),
     val health: AshStateHealth = AshStateHealth(),
+    val releaseGate: AshReleaseGateReport = AshReleaseGateReport(),
     val lastOperation: OperationResult? = null,
     val message: String? = null,
 )
@@ -144,6 +146,7 @@ class AshViewModel @Inject constructor(
                 activity = snapshot?.activity.orEmpty(),
                 settings = snapshot?.settings.orEmpty(),
                 health = managerState.health,
+                releaseGate = managerState.releaseGate,
             )
         }
     }

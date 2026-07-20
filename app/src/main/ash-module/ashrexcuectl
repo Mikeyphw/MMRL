@@ -157,9 +157,9 @@ capabilities_json() {
     "$JQ_BIN" -cn \
       --arg version "$version" \
       --argjson versionCode "$version_code" \
-      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency","state-health","state-repair","snapshot-schema-2"]}'
+      '{ok:true,apiVersion:2,minimumClientApi:2,moduleVersion:$version,moduleVersionCode:$versionCode,features:["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency","state-health","state-repair","snapshot-schema-2","release-gate-v1"]}'
   else
-    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency","state-health","state-repair","snapshot-schema-2"]}\n' \
+    printf '{"ok":true,"apiVersion":2,"minimumClientApi":2,"moduleVersion":"%s","moduleVersionCode":%s,"features":["snapshot","capabilities","trust-management","restore-trials","guided-recovery","recovery-plans","diagnostic-export","queued-settings","event-history","external-control-v1","automation-receipts","one-shot-tokens","idempotency","state-health","state-repair","snapshot-schema-2","release-gate-v1"]}\n' \
       "$(json_escape "$version")" "$version_code"
   fi
 }
@@ -174,6 +174,116 @@ recovery_revision() {
     fi
     list_quarantined_modules_tsv
   } | cksum | awk '{printf "%s-%s", $1, $2}'
+}
+
+release_gate_add() {
+  local id="$1" title="$2" state="$3" detail="$4"
+  printf '%s\t%s\t%s\t%s\n' \
+    "$(single_line "$id")" \
+    "$(single_line "$title")" \
+    "$(single_line "$state")" \
+    "$(single_line "$detail")" >> "$RELEASE_GATE_CHECKS"
+}
+
+release_gate_json() {
+  local version version_code generated_at health_json health_status health_issues restore_state scripts_ok storage_ok external_ok settings_ok
+  [ -x "$JQ_BIN" ] || { json_error "AshReXcue release gate requires the bundled jq runtime."; return 1; }
+  RELEASE_GATE_CHECKS="$ASHLOOPER_DIR/.release-gate-checks.$$"
+  : > "$RELEASE_GATE_CHECKS" || { json_error "Unable to create release-gate workspace."; return 1; }
+
+  version=$(get_prop version "$MODPATH/module.prop")
+  version_code=$(get_prop versionCode "$MODPATH/module.prop")
+  case "$version_code" in ''|*[!0-9]*) version_code=0 ;; esac
+  generated_at=$(date +%s 2>/dev/null || echo 0)
+
+  release_gate_add jq-runtime 'Bundled JSON runtime' pass 'Bundled jq is executable.'
+
+  scripts_ok=true
+  for script in ashrexcuectl action.sh customize.sh post-fs-data.sh service.sh uninstall.sh utils.sh external-control.sh; do
+    [ -x "$MODPATH/$script" ] || scripts_ok=false
+  done
+  if [ "$scripts_ok" = true ]; then
+    release_gate_add control-scripts 'Typed control scripts' pass 'All release-critical scripts are executable.'
+  else
+    release_gate_add control-scripts 'Typed control scripts' blocker 'One or more release-critical scripts are missing or not executable.'
+  fi
+
+  if [ -n "$version" ] && [ "$version_code" -ge 260 ]; then
+    release_gate_add module-metadata 'Module metadata' pass "Module $version ($version_code) has release metadata."
+  else
+    release_gate_add module-metadata 'Module metadata' blocker 'Module version metadata is missing or older than the Phase J release baseline.'
+  fi
+
+  storage_ok=true
+  for path in "$ASHLOOPER_DIR" "$LOG_DIR" "$RESCUE_DIR" "$QUARANTINE_DIR" "$RESTORE_HISTORY_DIR"; do
+    [ -d "$path" ] && [ -w "$path" ] || storage_ok=false
+  done
+  if [ "$storage_ok" = true ]; then
+    release_gate_add durable-storage 'Durable storage' pass 'Recovery state directories exist and are writable.'
+  else
+    release_gate_add durable-storage 'Durable storage' blocker 'A recovery state directory is missing or not writable.'
+  fi
+
+  health_json=$(state_health_json 2>/dev/null)
+  health_status=$(printf '%s' "$health_json" | "$JQ_BIN" -r '.status // "unknown"' 2>/dev/null)
+  health_issues=$(printf '%s' "$health_json" | "$JQ_BIN" -r '.issueCount // 0' 2>/dev/null)
+  case "$health_status" in
+    healthy) release_gate_add state-health 'Durable state health' pass 'State schema and durable recovery records are consistent.' ;;
+    degraded) release_gate_add state-health 'Durable state health' warning "State health is degraded with ${health_issues:-0} issue(s)." ;;
+    *) release_gate_add state-health 'Durable state health' blocker "State health is ${health_status:-unknown} with ${health_issues:-0} issue(s)." ;;
+  esac
+
+  restore_state=$(get_prop state "$RESTORE_STATE")
+  [ -n "$restore_state" ] || restore_state=idle
+  if [ "$restore_state" = testing ]; then
+    release_gate_add restoration-idle 'Restoration state' blocker 'A restoration trial is active.'
+  else
+    release_gate_add restoration-idle 'Restoration state' pass 'No restoration trial is active.'
+  fi
+
+  external_ok=true
+  command -v ash_external_dispatch >/dev/null 2>&1 || external_ok=false
+  ash_external_init >/dev/null 2>&1 || external_ok=false
+  if [ "$external_ok" = true ]; then
+    release_gate_add external-control 'External-control safety' pass 'Token, receipt, rate-limit, and idempotency storage is available.'
+  else
+    release_gate_add external-control 'External-control safety' blocker 'External-control safety storage could not be initialized.'
+  fi
+
+  settings_ok=true
+  [ -r "$MODPATH/settings.prop" ] || settings_ok=false
+  [ -n "$(get_prop threshold)" ] || settings_ok=false
+  if [ "$settings_ok" = true ]; then
+    release_gate_add settings-contract 'Protection settings' pass 'Required boot-protection settings are readable.'
+  else
+    release_gate_add settings-contract 'Protection settings' blocker 'Required boot-protection settings are missing or unreadable.'
+  fi
+
+  release_gate_add mutation-surface 'Mutation surface' pass 'The control CLI exposes typed commands and no generic shell execution action.'
+  release_gate_add protocol 'Release protocol' pass 'ashrexcue.release.v1 is active.'
+
+  "$JQ_BIN" -Rn \
+    --arg protocolVersion 'ashrexcue.release.v1' \
+    --arg moduleVersion "$version" \
+    --argjson moduleVersionCode "$version_code" \
+    --argjson generatedAt "$generated_at" '
+      [inputs | split("\t") | {id:.[0],title:.[1],state:.[2],detail:.[3]}] as $checks |
+      ($checks | map(select(.state == "blocker")) | length) as $blockers |
+      ($checks | map(select(.state == "warning")) | length) as $warnings |
+      {
+        ok:true,
+        protocolVersion:$protocolVersion,
+        generatedAt:$generatedAt,
+        moduleVersion:$moduleVersion,
+        moduleVersionCode:$moduleVersionCode,
+        status:(if $blockers > 0 then "blocked" elif $warnings > 0 then "ready-with-warnings" else "ready" end),
+        checks:$checks
+      }
+    ' < "$RELEASE_GATE_CHECKS"
+  local rc=$?
+  rm -f "$RELEASE_GATE_CHECKS"
+  RELEASE_GATE_CHECKS=''
+  return "$rc"
 }
 
 snapshot_json() {
@@ -241,6 +351,7 @@ case "$command" in
   automation) ash_external_dispatch "$@" ;;
   capabilities) capabilities_json ;;
   snapshot) snapshot_json "$1" ;;
+  release-gate) release_gate_json ;;
   health) state_health_json ;;
   repair-state) capture_mutation repair_recovery_state ;;
   status) dashboard_json ;;

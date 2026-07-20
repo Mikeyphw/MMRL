@@ -12,6 +12,7 @@ class AshRootService : RootService() {
         override fun serviceInfo(): String = executor.serviceInfo()
         override fun capabilities(): String = executor.capabilities()
         override fun snapshot(activityLimit: Int): String = executor.snapshot(activityLimit)
+        override fun releaseGate(): String = executor.releaseGate()
         override fun setSetting(key: String, value: String): String = executor.setSetting(key, value)
         override fun setSettings(keys: Array<out String>, values: Array<out String>): String = executor.setSettings(keys, values)
         override fun setTrust(folder: String, trust: String): String = executor.setTrust(folder, trust)

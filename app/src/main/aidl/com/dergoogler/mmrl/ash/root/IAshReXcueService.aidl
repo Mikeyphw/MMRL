@@ -6,6 +6,7 @@ interface IAshReXcueService {
     String serviceInfo();
     String capabilities();
     String snapshot(int activityLimit);
+    String releaseGate();
     String setSetting(String key, String value);
     String setSettings(in String[] keys, in String[] values);
     String setTrust(String folder, String trust);

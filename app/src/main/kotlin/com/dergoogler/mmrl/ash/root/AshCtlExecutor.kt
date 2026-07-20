@@ -40,6 +40,7 @@ internal class AshCtlExecutor(
     fun capabilities(): String = execute("capabilities", timeoutSeconds = 10)
     fun snapshot(activityLimit: Int): String =
         execute("snapshot", activityLimit.coerceIn(1, 200).toString(), timeoutSeconds = 70)
+    fun releaseGate(): String = execute("release-gate", timeoutSeconds = 30)
     fun status(): String = execute("status", timeoutSeconds = 70)
     fun modules(): String = execute("modules")
     fun quarantine(): String = execute("quarantine")

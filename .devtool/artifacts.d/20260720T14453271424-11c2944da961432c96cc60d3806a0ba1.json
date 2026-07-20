@@ -1,0 +1,168 @@
+{
+  "applied_at": "2026-07-20T14:45:32.714242Z",
+  "artifact": "/home/mike/mmrl_ashrexcue_phase_j_overlay.zip",
+  "artifact_name": "mmrl_ashrexcue_phase_j_overlay.zip",
+  "type": "overlay",
+  "sha256": "c20bbb5f1c8528ebf33ee0547dd5eb91e2d47ba2e9a0fa02b3703aaebc7abc84",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Complete AshReXcue release and final parity gate",
+  "commit_hash": "",
+  "file_count": 17,
+  "change_counts": {
+    "add": 6,
+    "modify": 11
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "MMRL AshReXcue Phase J release and final parity gate",
+    "description": "Completes the AshReXcue roadmap with a typed app-and-module release-readiness protocol, live parity and safety checks, Recovery Center release reporting, reproducible focused/full validation lanes, release documentation, and the final security and device-matrix checklist.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/aidl/com/dergoogler/mmrl/ash/root/IAshReXcueService.aidl",
+          "action": "modify",
+          "sha256": "4a62e6f7172a80424cd52acf29826c7da10d2d6e33fb943df68456d9fc3c4362",
+          "size": 839,
+          "source_sha256": "12c2a4618f0f386da1ba2f22e2d44d78c8c41b9945a23457431fdfc154ed36f4"
+        },
+        {
+          "path": "app/src/main/ash-module/ashrexcuectl",
+          "action": "modify",
+          "sha256": "e288c74e087506a11f6f0aaf2b3730315599f9306b2908ff3dc53b24917f280b",
+          "size": 19404,
+          "source_sha256": "a8662e02a8094ef719de9952314bb45ecc9f94cacb70e219220f7f13542cfebd"
+        },
+        {
+          "path": "app/src/main/ash-module/module.prop",
+          "action": "modify",
+          "sha256": "0eca3d7d8989aa40fa87a62f18aff5b22258ff1bdc350944ebb129be4ae1381e",
+          "size": 467,
+          "source_sha256": "3e531cfb232297d4d81aff6da1f69a91afe9c3861bac67f59f22dd6c343d4776"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshReXcueManager.kt",
+          "action": "modify",
+          "sha256": "40555c5023aa5d204ea354301c7c93c4440e8f782c3ac0ea9883d49caccb8f86",
+          "size": 13847,
+          "source_sha256": "79677fb2d8eda4107dd8cbc328e607bfe7ee4316dab5899fbdb163e1f5760a1f"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+          "action": "modify",
+          "sha256": "34b2e84a7f149ade18c949ee386af8099a164dfad262b67086c5d58fbbfef06a",
+          "size": 38759,
+          "source_sha256": "2222ca5228ab7d1da891b7ee295f2a90e8e08efe89db585275d879cf83c0db29"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshViewModel.kt",
+          "action": "modify",
+          "sha256": "8e87730f93415f56526d63dc211e3d535e7a7a1f5e23da405422e09ae64d25b7",
+          "size": 9667,
+          "source_sha256": "ef1479cdbbec1e9b6d9b06bd1eeea98e80999d6a1c0e4e28191ed0148c7931e9"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshRepository.kt",
+          "action": "modify",
+          "sha256": "3104de9ae4d07ddc4379855e379c028ed5e96af928233a66d2fd5860b8c426fd",
+          "size": 19424,
+          "source_sha256": "858618af5c66cf2d6abab2e40c045383229ebafbd840aa2a2ca9fa77bdd2a90f"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/AshReleaseGateModels.kt",
+          "action": "add",
+          "sha256": "30947d01481db7765224634d8836d79b022030588c99202b138cd182da4c8e38",
+          "size": 16424
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/Models.kt",
+          "action": "modify",
+          "sha256": "d65e8a5458588e9b7870c8bea6780de87f4e6209cba59c20f41da6db2702c8e5",
+          "size": 8364,
+          "source_sha256": "2d4b1304cc6f5c26c8700776a6c675f2846990dd5347ca8cfb760c0210522a67"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshCtlExecutor.kt",
+          "action": "modify",
+          "sha256": "ffb9fb8ab818c9cfcb427518273ddc8f27ecb4f6deba62bef3b480adb7e2ef28",
+          "size": 8497,
+          "source_sha256": "e10f4c68c18c5f32e4b22882f978f9522ad02c1091df81744c442a098f526f4d"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshRootService.kt",
+          "action": "modify",
+          "sha256": "81f0531a5b30bfbe71a2923804dde330f8a0ff8b7a8feacd370aa9d3b096fba8",
+          "size": 1959,
+          "source_sha256": "33666f6dbdce83db1aa779ccd7c00296c257420e927a667cbce060742b5b0aff"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootServiceClient.kt",
+          "action": "modify",
+          "sha256": "ef622d5da715542160755cf4a35575f3e703c7c960465f3ac19f91bd7adf1b09",
+          "size": 7548,
+          "source_sha256": "9710cd7b917a6ba747a42e949c94c21b4f39cfc2131e78cb2019277982f90d65"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshReleaseGateEngineTest.kt",
+          "action": "add",
+          "sha256": "aa13e64fdcf7e1658b411e9257a8f60e63570ba50c5e21b03350078f75be2334",
+          "size": 5654
+        },
+        {
+          "path": "docs/ASHREXCUE_11_6_RELEASE_NOTES.md",
+          "action": "add",
+          "sha256": "670707d129a74a0ed444278d4ccb3e955295c597b62baaa33c79bd103ec987a2",
+          "size": 935
+        },
+        {
+          "path": "docs/ASHREXCUE_PHASE_J.md",
+          "action": "add",
+          "sha256": "4e57b1620f5530e4e6cb6e5f2eaccb15ea162771e0643220b1b157ccf4ae169a",
+          "size": 2772
+        },
+        {
+          "path": "docs/ASHREXCUE_RELEASE_CHECKLIST.md",
+          "action": "add",
+          "sha256": "1c167d06ad076733d94fb44889936208632ecc1d3fb34fd669088cf9dd17a23c",
+          "size": 2196
+        },
+        {
+          "path": "scripts/validate-ashrexcue-release.sh",
+          "action": "add",
+          "sha256": "34cc263702e0cca362fc3940411e900e953b2b17d233c66313e9499a5951ab63",
+          "size": 4653
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Complete AshReXcue release and final parity gate"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": false,
+      "test": false,
+      "rollback_on_failure": true
+    },
+    "notes": [
+      "AshReXcue module 11.6.0 (260) adds the ashrexcue.release.v1 read-only self-test and release-gate-v1 capability.",
+      "MMRL merges the module self-test with live API, schema, state-health, automation, quarantine, recovery, freshness, and performance checks.",
+      "Room schemas, database version, Gradle dependencies, and native/CMake sources are unchanged.",
+      "Validation is intentionally focused; full APK assembly is available through scripts/validate-ashrexcue-release.sh --with-apk on a host-compatible NDK toolchain.",
+      "The experimental Android AAPT2 override notice is external to MMRL source and may remain."
+    ]
+  },
+  "history_id": "11c2944da961432c96cc60d3806a0ba1"
+}

@@ -168,6 +168,7 @@ data class AshManagerState(
     val lastSuccessfulAt: Long = 0,
     val liveError: String? = null,
     val health: AshStateHealth = AshStateHealth(),
+    val releaseGate: AshReleaseGateReport = AshReleaseGateReport(),
 )
 
 enum class AshInstallMode {

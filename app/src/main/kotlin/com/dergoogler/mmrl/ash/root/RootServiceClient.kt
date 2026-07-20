@@ -45,6 +45,7 @@ class RootServiceClient @Inject constructor(
     suspend fun serviceInfo(): String = call { it.serviceInfo() }
     suspend fun capabilities(): String = call(CAPABILITIES_TIMEOUT_MS) { it.capabilities() }
     suspend fun snapshot(activityLimit: Int = 150): String = call(SNAPSHOT_TIMEOUT_MS) { it.snapshot(activityLimit) }
+    suspend fun releaseGate(): String = call(RELEASE_GATE_TIMEOUT_MS) { it.releaseGate() }
     suspend fun setSetting(key: String, value: String): String = call { it.setSetting(key, value) }
 
     suspend fun setSettings(values: Map<String, String>): String {
@@ -163,6 +164,7 @@ class RootServiceClient @Inject constructor(
         const val MODULE_STATE_TIMEOUT_MS = 25_000L
         const val CAPABILITIES_TIMEOUT_MS = 25_000L
         const val SNAPSHOT_TIMEOUT_MS = 90_000L
+        const val RELEASE_GATE_TIMEOUT_MS = 35_000L
         const val CALL_TIMEOUT_MS = 40_000L
         const val EXPORT_TIMEOUT_MS = 135_000L
         const val REPAIR_TIMEOUT_MS = 90_000L

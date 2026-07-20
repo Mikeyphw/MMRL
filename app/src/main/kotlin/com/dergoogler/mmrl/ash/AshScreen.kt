@@ -65,6 +65,8 @@ import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
 import com.dergoogler.mmrl.ash.model.AshRecoveryOverview
 import com.dergoogler.mmrl.ash.model.AshRecoverySession
 import com.dergoogler.mmrl.ash.model.AshRecoverySessionKind
+import com.dergoogler.mmrl.ash.model.AshReleaseCheckState
+import com.dergoogler.mmrl.ash.model.AshReleaseGateStatus
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
 import com.dergoogler.mmrl.ash.model.QuarantineItem
 import com.dergoogler.mmrl.ash.model.isStale
@@ -238,6 +240,7 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                         state = state,
                         onExport = viewModel::exportDiagnostics,
                         onRepair = viewModel::repairState,
+                        onRunReleaseGate = viewModel::refreshAll,
                         onCopyPath = { path -> copyText(context, path) },
                         onOpenActivity = { navigator.navigate(ActivityScreenDestination) },
                         onOpenSettings = { navigator.navigate(BootProtectionScreenDestination) },
@@ -585,6 +588,7 @@ private fun RecoveryDiagnosticsContent(
     state: AshUiState,
     onExport: () -> Unit,
     onRepair: () -> Unit,
+    onRunReleaseGate: () -> Unit,
     onCopyPath: (String) -> Unit,
     onOpenActivity: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -603,6 +607,53 @@ private fun RecoveryDiagnosticsContent(
                 MetricRow("API", state.capabilities.apiVersion.toString())
                 MetricRow("Transport", if (state.lifecycle.compatible) "Compatible typed service" else state.lifecycle.compatibilityMessage)
                 MetricRow("Last refresh", relativeTime(state.lastSuccessfulAt))
+            }
+        }
+        item {
+            RecoveryCard("Release readiness") {
+                MetricRow("Status", releaseGateStatusTitle(state.releaseGate.status))
+                MetricRow("Passed", state.releaseGate.passedCount.toString())
+                MetricRow("Warnings", state.releaseGate.warningCount.toString())
+                MetricRow("Blockers", state.releaseGate.blockerCount.toString())
+                Text(state.releaseGate.summary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val visibleChecks = state.releaseGate.checks
+                    .filter { check -> check.state != AshReleaseCheckState.Pass }
+                    .take(8)
+                if (visibleChecks.isEmpty()) {
+                    Text(
+                        "All app and embedded-module release checks passed.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    visibleChecks.forEach { check ->
+                        HorizontalDivider()
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(check.title, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            AssistChip(onClick = {}, label = { Text(check.state.name) })
+                        }
+                        Text(
+                            check.detail,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Button(
+                    onClick = onRunReleaseGate,
+                    enabled = !state.loading,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (state.loading) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Run final release gate")
+                    }
+                }
             }
         }
         item {
@@ -740,6 +791,12 @@ private fun RecoverySessionDialog(session: AshRecoverySession, onDismiss: () -> 
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
+}
+
+private fun releaseGateStatusTitle(status: AshReleaseGateStatus): String = when (status) {
+    AshReleaseGateStatus.Ready -> "Ready"
+    AshReleaseGateStatus.ReadyWithWarnings -> "Ready with warnings"
+    AshReleaseGateStatus.Blocked -> "Blocked"
 }
 
 private fun connectionSubtitle(state: AshUiState): String = when {

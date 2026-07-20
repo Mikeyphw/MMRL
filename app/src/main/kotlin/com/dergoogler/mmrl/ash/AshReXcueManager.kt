@@ -13,6 +13,7 @@ import com.dergoogler.mmrl.ash.model.AshRecoveryGuardSeverity
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlanEngine
 import com.dergoogler.mmrl.ash.model.AshRecoveryPlanPreset
+import com.dergoogler.mmrl.ash.model.AshReleaseGateEngine
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
 import com.dergoogler.mmrl.ash.model.AshStateHealthEngine
 import com.dergoogler.mmrl.ash.model.OperationResult
@@ -85,9 +86,20 @@ class AshReXcueManager @Inject constructor(
                         bundled = bundled,
                         capabilities = snapshot.capabilities,
                     )
-                    Triple(snapshotRaw, snapshot, lifecycle)
+                    val moduleGate = if (snapshot.capabilities.supports("release-gate-v1")) {
+                        runCatching {
+                            repository.parseReleaseGate(repository.releaseGateRaw())
+                        }.getOrNull()
+                    } else {
+                        null
+                    }
+                    LiveRefresh(snapshotRaw, snapshot, lifecycle, moduleGate)
                 }
-                live.onSuccess { (snapshotRaw, snapshot, lifecycle) ->
+                live.onSuccess { result ->
+                    val snapshotRaw = result.snapshotRaw
+                    val snapshot = result.snapshot
+                    val lifecycle = result.lifecycle
+                    val health = AshStateHealthEngine.assess(snapshot, AshSnapshotSource.Live)
                     if (lifecycle.compatible) {
                         snapshotStore.write(
                             moduleStateRaw = requireNotNull(currentModuleStateRaw),
@@ -103,7 +115,15 @@ class AshReXcueManager @Inject constructor(
                             readOnly = !lifecycle.compatible,
                             lastSuccessfulAt = snapshot.generatedAt,
                             liveError = if (lifecycle.compatible) null else lifecycle.compatibilityMessage,
-                            health = AshStateHealthEngine.assess(snapshot, AshSnapshotSource.Live),
+                            health = health,
+                            releaseGate = AshReleaseGateEngine.assess(
+                                rootAvailable = true,
+                                lifecycle = lifecycle,
+                                snapshot = snapshot,
+                                source = AshSnapshotSource.Live,
+                                health = health,
+                                moduleGate = result.moduleGate,
+                            ),
                         ),
                     )
                 }.onFailure { error ->
@@ -130,6 +150,11 @@ class AshReXcueManager @Inject constructor(
                     capabilities = capabilities,
                     liveError = liveError,
                 )
+                val health = AshStateHealthEngine.assess(
+                    snapshot = snapshot,
+                    source = AshSnapshotSource.Cache,
+                    cacheEvents = cachedResult.events,
+                )
                 AshManagerState(
                     rootAvailable = rootAvailable,
                     lifecycle = lifecycle,
@@ -138,10 +163,14 @@ class AshReXcueManager @Inject constructor(
                     readOnly = true,
                     lastSuccessfulAt = cached.savedAt,
                     liveError = liveError ?: "Live AshReXcue status is unavailable",
-                    health = AshStateHealthEngine.assess(
+                    health = health,
+                    releaseGate = AshReleaseGateEngine.assess(
+                        rootAvailable = rootAvailable,
+                        lifecycle = lifecycle,
                         snapshot = snapshot,
                         source = AshSnapshotSource.Cache,
-                        cacheEvents = cachedResult.events,
+                        health = health,
+                        moduleGate = null,
                     ),
                 )
             }.getOrNull()
@@ -152,19 +181,29 @@ class AshReXcueManager @Inject constructor(
         }
 
         val installation = currentInstallation ?: AshModuleInstallation()
+        val lifecycle = AshModuleLifecycleResolver.resolve(
+            installation = installation,
+            bundled = bundled,
+            capabilities = null,
+            liveError = liveError,
+        )
+        val health = AshStateHealthEngine.assess(null, AshSnapshotSource.None, cachedResult.events)
         publish(
             AshManagerState(
                 rootAvailable = rootAvailable,
-                lifecycle = AshModuleLifecycleResolver.resolve(
-                    installation = installation,
-                    bundled = bundled,
-                    capabilities = null,
-                    liveError = liveError,
-                ),
+                lifecycle = lifecycle,
                 source = AshSnapshotSource.None,
                 readOnly = true,
                 liveError = liveError,
-                health = AshStateHealthEngine.assess(null, AshSnapshotSource.None, cachedResult.events),
+                health = health,
+                releaseGate = AshReleaseGateEngine.assess(
+                    rootAvailable = rootAvailable,
+                    lifecycle = lifecycle,
+                    snapshot = null,
+                    source = AshSnapshotSource.None,
+                    health = health,
+                    moduleGate = null,
+                ),
             ),
         ).also { lastRefreshFailedAt = System.currentTimeMillis() }
     }
@@ -248,6 +287,13 @@ class AshReXcueManager @Inject constructor(
             if (state.source == AshSnapshotSource.Live) lastRefreshFailedAt = 0L
             _state.value = it
         }
+
+    private data class LiveRefresh(
+        val snapshotRaw: String,
+        val snapshot: com.dergoogler.mmrl.ash.model.AshSnapshot,
+        val lifecycle: com.dergoogler.mmrl.ash.model.AshModuleLifecycle,
+        val moduleGate: com.dergoogler.mmrl.ash.model.AshModuleReleaseGate?,
+    )
 
     private companion object {
         const val FAILURE_BACKOFF_MILLIS = 15_000L
