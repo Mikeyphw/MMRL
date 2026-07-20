@@ -6,6 +6,7 @@ import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.ash.model.AshCapabilities
 import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
 import com.dergoogler.mmrl.ash.model.AshModuleInstallation
+import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
 import com.dergoogler.mmrl.ash.model.AshSnapshot
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.ModuleItem
@@ -63,6 +64,7 @@ class AshRepository @Inject constructor(
         return AshSnapshot(
             schemaVersion = schemaVersion,
             generatedAt = root.optLong("generatedAt"),
+            recoveryRevision = root.optString("recoveryRevision"),
             capabilities = capabilities,
             dashboard = parseDashboard(root.optJSONObject("dashboard") ?: JSONObject()),
             modules = parseModules(root.optJSONArray("modules") ?: JSONArray()),
@@ -111,6 +113,21 @@ class AshRepository @Inject constructor(
             folders.joinToString("\n"),
         ) {
             rootClient.restoreBatch(folders)
+        }
+
+    suspend fun executeRecoveryPlan(plan: AshRecoveryPlan): OperationResult =
+        mutation(
+            "recovery-plan",
+            "Started ${plan.title}",
+            buildString {
+                append("plan=").append(plan.id).append('\n')
+                append("preset=").append(plan.preset.name.lowercase()).append('\n')
+                append("revision=").append(plan.recoveryRevision).append('\n')
+                append("modules=").append(plan.affectedFolders.joinToString(",")).append('\n')
+                append("rollback=").append(plan.rollbackStrategy)
+            },
+        ) {
+            rootClient.executeRecoveryPlan(plan.id, plan.recoveryRevision, plan.affectedFolders)
         }
 
     suspend fun restoreAll(): OperationResult =

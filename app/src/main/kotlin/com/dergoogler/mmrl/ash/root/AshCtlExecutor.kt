@@ -84,6 +84,19 @@ internal class AshCtlExecutor(
         folders.forEach(::requireSafeFolder)
         return execute("restore", "selected", folders.joinToString(","))
     }
+    fun executeRecoveryPlan(
+        planId: String,
+        recoveryRevision: String,
+        folders: Array<out String>,
+    ): String {
+        require(PLAN_ID_PATTERN.matches(planId)) { "Invalid recovery plan identifier" }
+        require(REVISION_PATTERN.matches(recoveryRevision)) { "Invalid recovery revision" }
+        require(folders.isNotEmpty()) { "No recovery plan modules were supplied" }
+        require(folders.size <= MAX_RECOVERY_PLAN_MODULES) { "Recovery plan exceeds the safety limit" }
+        require(folders.toSet().size == folders.size) { "Recovery plan contains duplicate modules" }
+        folders.forEach(::requireSafeFolder)
+        return execute("restore", "planned", planId, recoveryRevision, folders.joinToString(","))
+    }
     fun restoreAll(): String = execute("restore", "all")
     fun completeTrial(): String = execute("complete-trial")
     fun rollbackTrial(): String = execute("rollback-trial")
@@ -149,7 +162,10 @@ internal class AshCtlExecutor(
 
     private companion object {
         const val SYSTEM_SHELL = "/system/bin/sh"
+        const val MAX_RECOVERY_PLAN_MODULES = 8
         val FOLDER_PATTERN = Regex("^[A-Za-z0-9._-]{1,128}$")
+        val PLAN_ID_PATTERN = Regex("^[A-Za-z0-9._-]{1,128}$")
+        val REVISION_PATTERN = Regex("^[A-Za-z0-9._:-]{1,128}$")
         val TRUST_VALUES = setOf("protected", "trusted", "normal", "suspect")
         val SETTING_KEYS = setOf(
             "mode",

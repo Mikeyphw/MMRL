@@ -148,6 +148,7 @@ enum class AshSnapshotSource {
 data class AshSnapshot(
     val schemaVersion: Int = 0,
     val generatedAt: Long = 0,
+    val recoveryRevision: String = "",
     val capabilities: AshCapabilities = AshCapabilities(),
     val dashboard: Dashboard = Dashboard(),
     val modules: List<ModuleItem> = emptyList(),

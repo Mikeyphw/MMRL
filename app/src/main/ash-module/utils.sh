@@ -998,8 +998,17 @@ _complete_restore_trial_unlocked() {
 }
 
 _restore_quarantined_modules_unlocked() {
-  local mode="$1" value="$2" all_file selected_file count take folder id name trust rescue_id disabled_at tmp state_tmp restored=0 old_ifs token match missing=0
+  local mode="$1" value="$2" expected_revision="${3:-}" plan_id="${4:-}"
+  local all_file selected_file count take folder id name trust rescue_id disabled_at exists disable_present
+  local tmp state_tmp restored=0 old_ifs token match missing=0 current_revision selected_count
   restore_trial_active && { echo "A restoration trial is already active."; return 2; }
+  if [ "$mode" = planned ]; then
+    current_revision=$(recovery_revision)
+    [ -n "$expected_revision" ] && [ "$current_revision" = "$expected_revision" ] || {
+      echo "Recovery state changed after the plan was created. Refresh and review a new plan."
+      return 1
+    }
+  fi
   all_file="$RESCUE_DIR/quarantine_all.$$"; selected_file="$RESCUE_DIR/quarantine_selected.$$"
   list_quarantined_modules_tsv > "$all_file"; count=$(wc -l < "$all_file" | tr -d ' ')
   [ "$count" -gt 0 ] 2>/dev/null || { rm -f "$all_file"; echo "No quarantined modules."; return 1; }
@@ -1007,7 +1016,7 @@ _restore_quarantined_modules_unlocked() {
     individual) awk -F '\t' -v token="$value" '$1==token || $2==token {print; exit}' "$all_file" > "$selected_file" ;;
     next|one) head -n 1 "$all_file" > "$selected_file" ;;
     batch) case "$value" in ''|*[!0-9]*) value=1 ;; esac; [ "$value" -lt 1 ] && value=1; head -n "$value" "$all_file" > "$selected_file" ;;
-    selected)
+    selected|planned)
       : > "$selected_file"
       old_ifs="$IFS"; IFS=','
       for token in $value; do
@@ -1028,8 +1037,20 @@ _restore_quarantined_modules_unlocked() {
   esac
   rm -f "$all_file"
   [ -s "$selected_file" ] || { rm -f "$selected_file"; echo "Requested quarantined module was not found."; return 1; }
+  if [ "$mode" = planned ]; then
+    selected_count=$(wc -l < "$selected_file" | tr -d ' ')
+    [ "$selected_count" -le 8 ] 2>/dev/null || { rm -f "$selected_file"; echo "Recovery plan exceeds the safety limit."; return 2; }
+    while IFS="$(printf '\t')" read -r folder id name trust rescue_id disabled_at exists disable_present; do
+      [ "$trust" != protected ] || { rm -f "$selected_file"; echo "Protected modules cannot be restored by a recovery plan."; return 2; }
+      [ "$exists" = true ] && [ "$disable_present" = true ] || {
+        rm -f "$selected_file"
+        echo "Recovery plan contains stale quarantine state. Refresh before retrying."
+        return 1
+      }
+    done < "$selected_file"
+  fi
   tmp="$RESTORE_TRIAL.tmp.$$"; : > "$tmp"
-  while IFS="$(printf '\t')" read -r folder id name trust rescue_id disabled_at; do
+  while IFS="$(printf '\t')" read -r folder id name trust rescue_id disabled_at exists disable_present; do
     [ -n "$folder" ] || continue
     case "$folder" in ''|*/*|.|..|*[!A-Za-z0-9._-]*) continue ;; esac
     [ -f "$QUARANTINE_DIR/$folder.prop" ] || continue
@@ -1043,7 +1064,10 @@ _restore_quarantined_modules_unlocked() {
   [ "$restored" -gt 0 ] || { rm -f "$tmp"; echo "No available modules could be restored."; return 1; }
   chmod 600 "$tmp" 2>/dev/null; sync_path "$tmp"; mv -f "$tmp" "$RESTORE_TRIAL"
   state_tmp="$RESTORE_STATE.tmp.$$"
-  { printf 'state=testing\nmode=%s\ncount=%s\nstarted_at=%s\nboot_id=%s\n' "$mode" "$restored" "$(date +%s 2>/dev/null || echo 0)" "$(current_boot_id)"; } > "$state_tmp" && chmod 600 "$state_tmp" 2>/dev/null && mv -f "$state_tmp" "$RESTORE_STATE"
+  {
+    printf 'state=testing\nmode=%s\ncount=%s\nstarted_at=%s\nboot_id=%s\n' "$mode" "$restored" "$(date +%s 2>/dev/null || echo 0)" "$(current_boot_id)"
+    [ -n "$plan_id" ] && printf 'plan_id=%s\nrecovery_revision=%s\n' "$(safe_manifest_value "$plan_id")" "$(safe_manifest_value "$expected_revision")"
+  } > "$state_tmp" && chmod 600 "$state_tmp" 2>/dev/null && mv -f "$state_tmp" "$RESTORE_STATE"
   log "Restoration trial prepared: mode=$mode count=$restored. Reboot required; failed boot will automatically roll back."
   echo "Prepared restoration trial for $restored module(s). Reboot to test them."
 }

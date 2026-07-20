@@ -9,6 +9,10 @@ import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshManagerState
 import com.dergoogler.mmrl.ash.model.AshModuleInstallation
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleResolver
+import com.dergoogler.mmrl.ash.model.AshRecoveryGuardSeverity
+import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
+import com.dergoogler.mmrl.ash.model.AshRecoveryPlanEngine
+import com.dergoogler.mmrl.ash.model.AshRecoveryPlanPreset
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
 import com.dergoogler.mmrl.ash.model.OperationResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -164,23 +168,41 @@ class AshReXcueManager @Inject constructor(
         repository.setTrust(folder, trust)
     }
 
-    suspend fun restoreOne(folder: String): OperationResult = writable {
-        repository.restoreOne(folder)
+    suspend fun restoreOne(folder: String): OperationResult =
+        executeRecoveryPlan(AshRecoveryPlanEngine.custom(requireCurrentSnapshot(), listOf(folder)))
+
+    suspend fun restoreHalf(): OperationResult {
+        val snapshot = requireCurrentSnapshot()
+        val plan = AshRecoveryPlanEngine.presets(snapshot)
+            .firstOrNull { it.preset == AshRecoveryPlanPreset.Balanced }
+            ?: AshRecoveryPlanEngine.presets(snapshot).first()
+        return executeRecoveryPlan(plan)
     }
 
-    suspend fun restoreHalf(): OperationResult = writable(repository::restoreHalf)
-    suspend fun restoreBatch(folders: List<String>): OperationResult = writable {
-        require(folders.isNotEmpty()) { "No restoration modules were supplied" }
-        if (folders.size == 1) {
-            repository.restoreOne(folders.single())
-        } else {
-            check(_state.value.snapshot?.capabilities?.supports("guided-recovery") == true) {
-                "Update AshReXcue before starting an explicit guided batch"
-            }
-            repository.restoreBatch(folders)
-        }
+    suspend fun restoreBatch(folders: List<String>): OperationResult =
+        executeRecoveryPlan(AshRecoveryPlanEngine.custom(requireCurrentSnapshot(), folders))
+
+    suspend fun restoreAll(): OperationResult {
+        val snapshot = requireCurrentSnapshot()
+        val plan = AshRecoveryPlanEngine.presets(snapshot)
+            .firstOrNull { it.preset == AshRecoveryPlanPreset.Rapid }
+            ?: AshRecoveryPlanEngine.custom(snapshot, snapshot.quarantine.map { it.folder })
+        return executeRecoveryPlan(plan)
     }
-    suspend fun restoreAll(): OperationResult = writable(repository::restoreAll)
+
+    suspend fun executeRecoveryPlan(plan: AshRecoveryPlan): OperationResult {
+        val current = refresh()
+        check(current.source == AshSnapshotSource.Live && !current.readOnly && current.lifecycle.compatible) {
+            "Live compatible AshReXcue access is required for this action"
+        }
+        val snapshot = requireNotNull(current.snapshot) { "Refresh AshReXcue before executing a recovery plan" }
+        val blockers = AshRecoveryPlanEngine.executionGuards(plan, snapshot)
+            .filter { it.severity == AshRecoveryGuardSeverity.Blocker }
+        check(blockers.isEmpty()) {
+            blockers.joinToString(" ") { guard -> "${guard.title}: ${guard.detail}" }
+        }
+        return repository.executeRecoveryPlan(plan)
+    }
     suspend fun completeTrial(): OperationResult = writable(repository::completeTrial)
     suspend fun rollbackTrial(): OperationResult = writable(repository::rollbackTrial)
     suspend fun discardPending(): OperationResult = writable(repository::discardPending)
@@ -190,6 +212,10 @@ class AshReXcueManager @Inject constructor(
         moduleFolder: String,
         outcome: AshGuidanceOutcome,
     ): OperationResult = repository.recordGuidanceOutcome(recommendationId, moduleFolder, outcome)
+
+    private fun requireCurrentSnapshot() = requireNotNull(_state.value.snapshot) {
+        "Refresh AshReXcue before creating a recovery plan"
+    }
 
     private suspend fun writable(block: suspend () -> OperationResult): OperationResult {
         val current = _state.value

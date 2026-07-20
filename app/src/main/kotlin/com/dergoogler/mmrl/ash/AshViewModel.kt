@@ -9,6 +9,7 @@ import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
 import com.dergoogler.mmrl.ash.model.AshInstallMode
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycle
 import com.dergoogler.mmrl.ash.model.AshModuleLifecycleState
+import com.dergoogler.mmrl.ash.model.AshRecoveryPlan
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
 import com.dergoogler.mmrl.ash.model.Dashboard
 import com.dergoogler.mmrl.ash.model.ModuleItem
@@ -44,6 +45,8 @@ data class AshUiState(
     val readOnly: Boolean = true,
     val snapshotSource: AshSnapshotSource = AshSnapshotSource.None,
     val lastSuccessfulAt: Long = 0,
+    val snapshotGeneratedAt: Long = 0,
+    val recoveryRevision: String = "",
     val lifecycle: AshModuleLifecycle = AshModuleLifecycle(),
     val capabilities: AshCapabilities = AshCapabilities(),
     val dashboard: Dashboard = Dashboard(),
@@ -125,6 +128,8 @@ class AshViewModel @Inject constructor(
                 readOnly = managerState.readOnly,
                 snapshotSource = managerState.source,
                 lastSuccessfulAt = managerState.lastSuccessfulAt,
+                snapshotGeneratedAt = snapshot?.generatedAt ?: 0L,
+                recoveryRevision = snapshot?.recoveryRevision.orEmpty(),
                 lifecycle = managerState.lifecycle,
                 capabilities = snapshot?.capabilities ?: AshCapabilities(),
                 dashboard = snapshot?.dashboard ?: Dashboard(),
@@ -160,6 +165,7 @@ class AshViewModel @Inject constructor(
     fun restoreHalf() = operate(manager::restoreHalf)
     fun restoreBatch(folders: List<String>) = operate { manager.restoreBatch(folders) }
     fun restoreAll() = operate(manager::restoreAll)
+    fun executeRecoveryPlan(plan: AshRecoveryPlan) = operate { manager.executeRecoveryPlan(plan) }
     fun completeTrial() = operate(manager::completeTrial)
     fun rollbackTrial() = operate(manager::rollbackTrial)
     fun discardPending() = operate(manager::discardPending)

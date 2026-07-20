@@ -94,8 +94,6 @@ private enum class RecoverySection(val label: String) {
 }
 
 private enum class RecoveryConfirmation {
-    RestoreHalf,
-    RestoreAll,
     CompleteTrial,
     RollbackTrial,
 }
@@ -133,8 +131,6 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                 onConfirm = {
                     confirmation = null
                     when (action) {
-                        RecoveryConfirmation.RestoreHalf -> viewModel.restoreHalf()
-                        RecoveryConfirmation.RestoreAll -> viewModel.restoreAll()
                         RecoveryConfirmation.CompleteTrial -> viewModel.completeTrial()
                         RecoveryConfirmation.RollbackTrial -> viewModel.rollbackTrial()
                     }
@@ -207,7 +203,7 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
 
                     RecoverySection.Guidance -> GuidedRecoveryContent(
                         state = state,
-                        onRestoreBatch = viewModel::restoreBatch,
+                        onExecutePlan = viewModel::executeRecoveryPlan,
                         onMarkSuspect = { folder -> viewModel.setTrust(folder, "suspect") },
                         onCompleteTrial = viewModel::completeTrial,
                         onRollbackTrial = viewModel::rollbackTrial,
@@ -220,8 +216,14 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                         readOnly = state.readOnly,
                         loading = state.loading,
                         onRestoreOne = viewModel::restoreOne,
-                        onRestoreHalf = { confirmation = RecoveryConfirmation.RestoreHalf },
-                        onRestoreAll = { confirmation = RecoveryConfirmation.RestoreAll },
+                        onRestoreHalf = {
+                            section = RecoverySection.Guidance
+                            viewModel.showMessage("Review the balanced guarded plan before restoring a batch")
+                        },
+                        onRestoreAll = {
+                            section = RecoverySection.Guidance
+                            viewModel.showMessage("Review the rapid guarded plan and type its confirmation phrase")
+                        },
                         bottomPadding = bottomPadding,
                     )
 
@@ -684,8 +686,6 @@ private fun RecoveryConfirmationDialog(
     onConfirm: () -> Unit,
 ) {
     val (title, description, confirm) = when (action) {
-        RecoveryConfirmation.RestoreHalf -> Triple("Restore half of quarantine?", "AshReXcue will enable a controlled batch for the next stability trial.", "Restore half")
-        RecoveryConfirmation.RestoreAll -> Triple("Restore every quarantined module?", "This is faster but makes it harder to identify which module caused the failed boot.", "Restore all")
         RecoveryConfirmation.CompleteTrial -> Triple("Complete restoration trial?", "The currently tested modules will remain enabled and leave quarantine.", "Complete")
         RecoveryConfirmation.RollbackTrial -> Triple("Rollback restoration trial?", "The tested modules will be disabled and returned to quarantine.", "Rollback")
     }

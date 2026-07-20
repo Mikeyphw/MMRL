@@ -1,0 +1,15 @@
+{
+  "applied_at": "2026-07-19T23:59:04.103423Z",
+  "artifact": "/home/mike/Downloads/mmrl_ashrexcue_phase_e_focused_validation_overlay.zip",
+  "artifact_name": "mmrl_ashrexcue_phase_e_focused_validation_overlay.zip",
+  "type": "overlay",
+  "sha256": "",
+  "status": "failed",
+  "validation_status": "ok",
+  "commit_message": "",
+  "commit_hash": "",
+  "file_count": 0,
+  "change_counts": {},
+  "manifest": {},
+  "history_id": "e9e811607bcc4322908f6909f431e4d8"
+}

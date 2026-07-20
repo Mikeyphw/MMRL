@@ -415,7 +415,7 @@ private const val ASH_ORIGIN = "ashrexcue"
 private fun ActivityItem.toHistoryEntry(): OperationHistoryEntity {
     val operationKind =
         when (type.lowercase()) {
-            "restoration", "restore", "trial" -> OperationKind.ASH_RESTORATION
+            "restoration", "restore", "trial", "recovery-plan" -> OperationKind.ASH_RESTORATION
             "settings", "setting", "trust" -> OperationKind.ASH_SETTINGS
             "diagnostics" -> OperationKind.ASH_DIAGNOSTICS
             else -> OperationKind.ASH_RESCUE

@@ -109,7 +109,8 @@ object AshGuidanceEngine {
                 }
 
                 val failedTrialMentions = activity.count { item ->
-                    item.type.equals("restoration", ignoreCase = true) &&
+                    (item.type.equals("restoration", ignoreCase = true) ||
+                        item.type.equals("recovery-plan", ignoreCase = true)) &&
                         item.status.lowercase(Locale.ROOT) in FAILED_STATUSES &&
                         item.containsAny(aliases)
                 }

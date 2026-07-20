@@ -12,6 +12,7 @@ interface IAshReXcueService {
     String restoreOne(String folder);
     String restoreHalf();
     String restoreBatch(in String[] folders);
+    String executeRecoveryPlan(String planId, String recoveryRevision, in String[] folders);
     String restoreAll();
     String completeTrial();
     String rollbackTrial();

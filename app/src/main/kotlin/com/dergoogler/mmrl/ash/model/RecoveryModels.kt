@@ -61,7 +61,7 @@ fun AshSnapshot.recoverySessions(): List<AshRecoverySession> {
         .map { item ->
             val kind = when (item.type.lowercase()) {
                 "rescue" -> AshRecoverySessionKind.Rescue
-                "restoration", "restore", "trial" -> AshRecoverySessionKind.Restoration
+                "restoration", "restore", "trial", "recovery-plan" -> AshRecoverySessionKind.Restoration
                 "diagnostics" -> AshRecoverySessionKind.Diagnostics
                 "settings", "setting", "trust" -> AshRecoverySessionKind.Configuration
                 else -> AshRecoverySessionKind.Other

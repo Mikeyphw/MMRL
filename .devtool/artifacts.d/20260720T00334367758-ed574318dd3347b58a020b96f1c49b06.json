@@ -1,0 +1,41 @@
+{
+  "applied_at": "2026-07-20T00:33:43.677584Z",
+  "artifact": "/home/mike/Downloads/mmrl_ashrexcue_phase_f_overlay.zip",
+  "artifact_name": "mmrl_ashrexcue_phase_f_overlay.zip",
+  "type": "overlay",
+  "sha256": "3b022298b927153dea6cae33dce28f292bd8effad69ed698497593fcca06f312",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Add AshReXcue recovery plans and safety guardrails",
+  "commit_hash": "",
+  "file_count": 19,
+  "change_counts": {
+    "add": 3,
+    "modify": 16
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add AshReXcue recovery plans and safety guardrails"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": false,
+      "test": false,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "ed574318dd3347b58a020b96f1c49b06"
+}

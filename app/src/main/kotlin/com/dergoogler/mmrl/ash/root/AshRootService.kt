@@ -18,6 +18,8 @@ class AshRootService : RootService() {
         override fun restoreOne(folder: String): String = executor.restoreOne(folder)
         override fun restoreHalf(): String = executor.restoreHalf()
         override fun restoreBatch(folders: Array<out String>): String = executor.restoreBatch(folders)
+        override fun executeRecoveryPlan(planId: String, recoveryRevision: String, folders: Array<out String>): String =
+            executor.executeRecoveryPlan(planId, recoveryRevision, folders)
         override fun restoreAll(): String = executor.restoreAll()
         override fun completeTrial(): String = executor.completeTrial()
         override fun rollbackTrial(): String = executor.rollbackTrial()
