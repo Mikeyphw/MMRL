@@ -3131,6 +3131,21 @@
         }
       },
       "history_id": "f9811618a54148de80eb85653c5f221b"
+    },
+    {
+      "applied_at": "2026-07-22T18:21:49.057211Z",
+      "artifact": "/home/mike/Downloads/mmrl_ui_screenshot_jq_service_hotfix_overlay.zip",
+      "artifact_name": "mmrl_ui_screenshot_jq_service_hotfix_overlay.zip",
+      "type": "overlay",
+      "sha256": "",
+      "status": "failed",
+      "validation_status": "ok",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 0,
+      "change_counts": {},
+      "manifest": {},
+      "history_id": "6e75b489ff4c4974b6247a8ebe2b63c3"
     }
   ]
 }

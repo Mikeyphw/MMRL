@@ -33,3 +33,9 @@ app/playstore/*
 
 # MacOS
 .DS_Store
+
+# Devtool runtime state
+.devtool/cache/
+.devtool/reports/
+.devtool/test-history.json
+.devtool/tmp/
