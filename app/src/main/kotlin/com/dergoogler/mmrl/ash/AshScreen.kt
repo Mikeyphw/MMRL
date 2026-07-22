@@ -90,6 +90,7 @@ import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
 import com.dergoogler.mmrl.ui.component.MetadataRow
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
+import com.dergoogler.mmrl.ui.component.HomeNavigationButton
 import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
@@ -199,6 +200,9 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
                             title = stringResource(R.string.recovery_center_title),
                             subtitle = connectionSubtitle(state),
                         )
+                    },
+                    navigationIcon = {
+                        HomeNavigationButton()
                     },
                     actions = {
                         IconButton(onClick = viewModel::refreshAll, enabled = !state.refreshing) {

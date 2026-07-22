@@ -55,7 +55,7 @@ import androidx.navigation.NavBackStackEntry
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ui.component.TopAppBar
-import com.dergoogler.mmrl.ui.component.TopAppBarEventIcon
+import com.dergoogler.mmrl.ui.component.HomeNavigationButton
 import com.dergoogler.mmrl.ui.component.scaffold.ResponsiveScaffold
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurBottomToolbar
@@ -87,18 +87,20 @@ import dev.chrisbanes.haze.rememberHazeState
 
 private val compactDestinations =
     listOf(
-        MainDestination.Home,
         MainDestination.Repository,
         MainDestination.Modules,
         MainDestination.Ash,
+        MainDestination.Activity,
     )
 
 private val overflowDestinations =
     listOf(
         MainDestination.SuperUser,
-        MainDestination.Activity,
         MainDestination.Settings,
     )
+
+private val expandedDestinations =
+    compactDestinations + overflowDestinations
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -231,8 +233,14 @@ private fun ExpandedMainLayout(
                 modifier = Modifier.width(280.dp),
             ) {
                 TopAppBar(
+                    navigationIcon = {
+                        HomeNavigationButton()
+                    },
                     title = {
-                        TopAppBarEventIcon()
+                        Text(
+                            text = stringResource(R.string.navigation_home_button_title),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
                     },
                 )
                 LazyColumn(
@@ -241,7 +249,7 @@ private fun ExpandedMainLayout(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(
-                        items = MainDestination.entries,
+                        items = expandedDestinations,
                         key = { it.name },
                     ) { screen ->
                         DrawerDestinationItem(
@@ -293,9 +301,8 @@ private fun BottomNav(
     val navController = LocalNavController.current
     val largeText = LocalDensity.current.fontScale >= 1.3f
     val superUserSelected by navController.isRouteOnBackStackAsState(MainDestination.SuperUser.direction)
-    val activitySelected by navController.isRouteOnBackStackAsState(MainDestination.Activity.direction)
     val settingsSelected by navController.isRouteOnBackStackAsState(MainDestination.Settings.direction)
-    val moreSelected = superUserSelected || activitySelected || settingsSelected
+    val moreSelected = superUserSelected || settingsSelected
 
     BlurBottomToolbar(
         modifier = Modifier.imePadding(),
@@ -354,7 +361,7 @@ private fun RailNav(
     NavigationRail(
         modifier = Modifier.fillMaxHeight(),
         header = {
-            TopAppBarEventIcon()
+            HomeNavigationButton()
         },
     ) {
         LazyColumn(
@@ -363,7 +370,7 @@ private fun RailNav(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(
-                items = MainDestination.entries,
+                items = expandedDestinations,
                 key = { it.name },
             ) { screen ->
                 val isSelected by navController.isRouteOnBackStackAsState(screen.direction)

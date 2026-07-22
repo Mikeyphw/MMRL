@@ -70,6 +70,7 @@ import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.PageIndicator
 import com.dergoogler.mmrl.ui.component.dialog.TextFieldDialog
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
+import com.dergoogler.mmrl.ui.component.HomeNavigationButton
 import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalBulkInstall
@@ -530,6 +531,9 @@ private fun TopBar(
         scrollBehavior = scrollBehavior,
         title = {
             ToolbarTitle(title = stringResource(R.string.page_repos))
+        },
+        navigationIcon = {
+            HomeNavigationButton()
         },
         fadeDistance = 50f,
         fade = true,

@@ -1,0 +1,102 @@
+{
+  "applied_at": "2026-07-22T17:51:31.977469Z",
+  "artifact": "/home/mike/Downloads/mmrl_activity_primary_home_topbar_overlay.zip",
+  "artifact_name": "mmrl_activity_primary_home_topbar_overlay.zip",
+  "type": "overlay",
+  "sha256": "b20f549b641d6c65cfd71295ea6ff071da87bc76eb6f79cc1788aec5b4792926",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Promote Activity navigation and move Home to toolbar",
+  "commit_hash": "",
+  "file_count": 8,
+  "change_counts": {
+    "add": 2,
+    "modify": 6
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "MMRL Activity primary navigation and top-left Home access",
+    "description": "Promotes Activity to the compact bottom navigation, removes Home from primary navigation lists, and adds a top-left Home button to root workflow toolbars, navigation rail, and expanded drawer.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/component/HomeNavigationButton.kt",
+          "action": "add",
+          "sha256": "ccc8a8c36611fd864eaffa64fa360c70019ff6f0e678abf11165b3df212b9b0f",
+          "size": 1202
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/main/MainScreen.kt",
+          "action": "modify",
+          "sha256": "d72d5fbaeebcfe7591f4804e94beae0984ef9a296fc5ebbde24ce85fe05135a4",
+          "size": 19273,
+          "source_sha256": "efe97ceb77f74a3f8a2f7e922eff671f4ce9e22099e02731bc5398dff6aeafcf"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+          "action": "modify",
+          "sha256": "d0dc01491618f2cc5a09c6386a19996614f5296d39bc5ef127e38cd64d21613b",
+          "size": 12508,
+          "source_sha256": "b6ea3e72a430bcecd5a5cfa7672942cff5d21399cf4452b2d799b811f5c4b317"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+          "action": "modify",
+          "sha256": "5745f71ea9d23914053698769a1fc44c2da798445337c61deecadaef8136c4c3",
+          "size": 23766,
+          "source_sha256": "a3dc41fa8d582036ff7356354683fe9c21beccaf6283a95d9bff8ed79e4e5fdb"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+          "action": "modify",
+          "sha256": "530107d9ae421a16f8906790b55a2b9e7dcb8a14f2bbe9940f7e7ade8c4b0f58",
+          "size": 51886,
+          "source_sha256": "13cab07cf424f31e38f0dd8becf65c61b2f8684d0d6c48fe3bfe457bc9d06496"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/activity/ActivityScreen.kt",
+          "action": "modify",
+          "sha256": "44a24b7088ee4eb0284f1d2e8cbeb372f4017e1a7a8379f8b7d708e3b20e1380",
+          "size": 37269,
+          "source_sha256": "38bf69843bd07ad6f13b38e3c44365f9ee5d35332f1f03f48619107332570d1a"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "b3e61a07fefeb26069978ad74ea8b99e10dab074613e05c586cac35a5dcb5b43",
+          "size": 97863,
+          "source_sha256": "1511ac541832dad74c7cfbf5844307984bfa18ca0016a66b20cf0b96120f3dfa"
+        },
+        {
+          "path": "docs/NAVIGATION_ACTIVITY_HOME.md",
+          "action": "add",
+          "sha256": "b24ae283ea3d6e158f41aaba92c37ee57fa5144c4d2245357b396ca33ba7bf68",
+          "size": 795
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Promote Activity navigation and move Home to toolbar"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "f9811618a54148de80eb85653c5f221b"
+}

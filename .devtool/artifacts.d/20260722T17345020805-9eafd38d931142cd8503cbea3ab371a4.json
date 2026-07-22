@@ -1,0 +1,15 @@
+{
+  "applied_at": "2026-07-22T17:34:50.208053Z",
+  "artifact": "/home/mike/Downloads/mmrl_ui_screenshot_jq_service_hotfix_overlay.zip",
+  "artifact_name": "mmrl_ui_screenshot_jq_service_hotfix_overlay.zip",
+  "type": "overlay",
+  "sha256": "",
+  "status": "failed",
+  "validation_status": "ok",
+  "commit_message": "",
+  "commit_hash": "",
+  "file_count": 0,
+  "change_counts": {},
+  "manifest": {},
+  "history_id": "9eafd38d931142cd8503cbea3ab371a4"
+}

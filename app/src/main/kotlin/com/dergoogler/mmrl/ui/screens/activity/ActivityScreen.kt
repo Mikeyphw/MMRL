@@ -79,6 +79,7 @@ import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.PageIndicator
 import com.dergoogler.mmrl.ui.component.StatusPill
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
+import com.dergoogler.mmrl.ui.component.HomeNavigationButton
 import com.dergoogler.mmrl.ui.component.toolbar.BlurToolbar
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
@@ -183,6 +184,9 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
                             title = stringResource(R.string.page_activity),
                             subtitle = stringResource(R.string.activity_subtitle),
                         )
+                    },
+                    navigationIcon = {
+                        HomeNavigationButton()
                     },
                     actions = {
                         IconButton(onClick = { confirmClear = true }) {

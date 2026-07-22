@@ -53,6 +53,7 @@ import com.dergoogler.mmrl.ui.component.LocalScreenProvider
 import com.dergoogler.mmrl.ui.component.PageIndicator
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurSearchToolbar
+import com.dergoogler.mmrl.ui.component.HomeNavigationButton
 import com.dergoogler.mmrl.ui.component.toolbar.ToolbarTitle
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
@@ -232,6 +233,9 @@ private fun TopBar(
         },
         title = {
             ToolbarTitle(title = stringResource(R.string.page_modules))
+        },
+        navigationIcon = {
+            HomeNavigationButton()
         },
         actions = {
             if (!isSearch) {
