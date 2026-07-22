@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -313,10 +314,13 @@ private fun ActivityFilters(
     pendingReboots: Int,
     onSelected: (ActivityFilter) -> Unit,
 ) {
-    FlowRow(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         ActivityFilter.entries.forEach { filter ->
             val label =
@@ -356,27 +360,35 @@ private fun PendingRebootBanner(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
         color = MaterialTheme.colorScheme.tertiaryContainer,
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(12.dp),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                painter = painterResource(R.drawable.reload),
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-            )
-            Text(
-                text = pluralStringResource(R.plurals.activity_pending_reboot, count, count),
-                modifier = Modifier.padding(start = 9.dp).weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            FilledTonalButton(onClick = onShow) { Text(stringResource(R.string.activity_view)) }
-            TextButton(onClick = onClear) { Text(stringResource(R.string.activity_mark_rebooted)) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(R.drawable.reload),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = pluralStringResource(R.plurals.activity_pending_reboot, count, count),
+                    modifier = Modifier.padding(start = 9.dp).weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FilledTonalButton(onClick = onShow) { Text(stringResource(R.string.activity_view)) }
+                TextButton(onClick = onClear) { Text(stringResource(R.string.activity_mark_rebooted)) }
+            }
         }
     }
 }

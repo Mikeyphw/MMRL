@@ -40,6 +40,10 @@ class AshRepository @Inject constructor(
     suspend fun snapshotRaw(activityLimit: Int = 150): String = rootClient.snapshot(activityLimit)
     suspend fun releaseGateRaw(): String = rootClient.releaseGate()
 
+    fun releaseRootConnection() {
+        rootClient.release()
+    }
+
     fun parseModuleInstallation(raw: String): AshModuleInstallation {
         val root = parse(raw)
         return AshModuleInstallation(

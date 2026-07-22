@@ -17,7 +17,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -564,7 +564,7 @@ private fun TopBar(
 private fun FloatingButton(onClick: () -> Unit) {
     val paddingValues = LocalMainScreenInnerPaddings.current
 
-    FloatingActionButton(
+    SmallFloatingActionButton(
         modifier =
             Modifier
                 .systemBarsPaddingEnd()

@@ -211,6 +211,10 @@ class AshReXcueManager @Inject constructor(
     suspend fun prepareModuleInstall(mode: AshInstallMode): AshModuleInstaller.PreparedInstall =
         moduleInstaller.prepare(mode)
 
+    fun releaseRootSession() {
+        repository.releaseRootConnection()
+    }
+
     suspend fun setSetting(key: String, value: String): OperationResult = writable {
         repository.setSetting(key, value)
     }

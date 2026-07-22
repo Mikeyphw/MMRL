@@ -1,0 +1,145 @@
+{
+  "applied_at": "2026-07-22T16:20:07.782201Z",
+  "artifact": "/home/mike/Downloads/mmrl_ui_screenshot_jq_service_hotfix_overlay.zip",
+  "artifact_name": "mmrl_ui_screenshot_jq_service_hotfix_overlay.zip",
+  "type": "overlay",
+  "sha256": "e9bd1ed09a9db13c2afc2c3b8075ac4dc775c4408ab8cdf8bbfb33a483ae0a5a",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Fix compact UI crowding and Ash runtime cleanup",
+  "commit_hash": "",
+  "file_count": 14,
+  "change_counts": {
+    "modify": 14
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "MMRL screenshot UI, AshReXcue jq, and root service hotfix",
+    "description": "Fixes visible compact-phone UI crowding from the screenshots, makes Recovery and Activity task filters horizontal instead of multi-row, de-cramps the pending reboot banner, reduces intrusive FAB overlap, repairs AshReXcue bundled jq executable permissions, and releases the Ash root service connection when Ash-backed screens/ViewModels are cleared.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/ash-module/customize.sh",
+          "action": "modify",
+          "sha256": "42f6115fa426c9300977e54e7fe28fc3c1bbed6f01648047bc9be8ef280151f6",
+          "size": 5930,
+          "source_sha256": "eaad25af43a6d42bd5eb15f3a77841e7e550e2c2bc2f86c67a77f45099283d17"
+        },
+        {
+          "path": "app/src/main/ash-module/ashrexcuectl",
+          "action": "modify",
+          "sha256": "120d37b84f3912e6987e26c57fd1d107f817269d07b1126a69fd92b25680dfbb",
+          "size": 19564,
+          "source_sha256": "e288c74e087506a11f6f0aaf2b3730315599f9306b2908ff3dc53b24917f280b"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+          "action": "modify",
+          "sha256": "13cab07cf424f31e38f0dd8becf65c61b2f8684d0d6c48fe3bfe457bc9d06496",
+          "size": 51716,
+          "source_sha256": "aa297f2becbf07dc1df0c0a9a50f27c3ecfdbe0bba231c0e2d9f0ba74e66df14"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshViewModel.kt",
+          "action": "modify",
+          "sha256": "5b40d274ce8d363be10268da4646e449e407a7c8f3b446dcc4b153269f17c2a9",
+          "size": 12039,
+          "source_sha256": "902f3269be5fb58c3f34f08b8e2e93e6aa68d8157543ebd1e302684bf4c1ac4b"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshReXcueManager.kt",
+          "action": "modify",
+          "sha256": "f4e7e24d479ac01b73677e01cf0849ed7bb6473234ed6e8b9d9d70336548ab1d",
+          "size": 13928,
+          "source_sha256": "40555c5023aa5d204ea354301c7c93c4440e8f782c3ac0ea9883d49caccb8f86"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshRepository.kt",
+          "action": "modify",
+          "sha256": "a793bf383f63ea91c2adea2a912f13462654e4976ee870bc062b10cb7cdb057f",
+          "size": 20865,
+          "source_sha256": "cd2aa15b4c778986be024d7b0c8e94a25463f5f239a3ba992d18f4d82e21cdfb"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootServiceClient.kt",
+          "action": "modify",
+          "sha256": "4629f6193c87166d5a16d1212c19ffd6791bbc323802b5772953fbb275fb2441",
+          "size": 7606,
+          "source_sha256": "ef622d5da715542160755cf4a35575f3e703c7c960465f3ac19f91bd7adf1b09"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/activity/ActivityScreen.kt",
+          "action": "modify",
+          "sha256": "38bf69843bd07ad6f13b38e3c44365f9ee5d35332f1f03f48619107332570d1a",
+          "size": 37099,
+          "source_sha256": "9198e6dfffbf037319c15396a636d356c3b3a3bf704a7c462ed7d6473b4a4d64"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+          "action": "modify",
+          "sha256": "dd7e38ffa0fae00b9ca867e08ede7b7b1332627a1e5f39b4e122cce8eb749473",
+          "size": 11956,
+          "source_sha256": "d9a0cfdf7c075f318747140a9a9a49692bd9c88ee43cca39e98ba9199c44f173"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+          "action": "modify",
+          "sha256": "a3dc41fa8d582036ff7356354683fe9c21beccaf6283a95d9bff8ed79e4e5fdb",
+          "size": 23632,
+          "source_sha256": "e38fa8e3a3ba85f8a487c2fcf807c8d1e0152a0f70129d383d4b029dffadd142"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ActivityViewModel.kt",
+          "action": "modify",
+          "sha256": "4246c407b24d72eb03f16495c26d3ee54524cc73ea042b9bf600149073e7b9f0",
+          "size": 19399,
+          "source_sha256": "0f6a0972f5a75122f2af90dbfe4ae43dff5b88608c6ff31b46273c4adf6bc8f5"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/HomeViewModel.kt",
+          "action": "modify",
+          "sha256": "c20b6c3bfff375e8de0fa36a2fc6c4e7a3003d1e477d1fb6d9fa3041b246cccd",
+          "size": 2984,
+          "source_sha256": "f3fcaf78f315192ebf44c7e1b11670001ba08bf998217e963162b2f37fd164bc"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+          "action": "modify",
+          "sha256": "1df3f8c19d56c2f22aae5eb5af0284fdbdf17b51dd800adfaad00a3eef3dd8c9",
+          "size": 30827,
+          "source_sha256": "3938554663c3211efda004ba2dcfa23862ebcb922ca5da9865514e6e2f3751eb"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "f3022a51eff5855cb3c002d19c5fc4bec6604b0dd83a765c96126252257ee1ba",
+          "size": 94523,
+          "source_sha256": "bcef3419be7f856ae3d281f94f3347a737f2a63362b2a8334cd3081100c3978e"
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Fix compact UI crowding and Ash runtime cleanup"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "6967899ae82045c79d44442b75785686"
+}

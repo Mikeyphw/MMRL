@@ -15,10 +15,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -36,6 +38,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -140,6 +143,9 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
             state.activity,
         ) { state.asRecoverySnapshot() }
 
+        DisposableEffect(viewModel) {
+            onDispose { viewModel.releaseRootSession() }
+        }
         LaunchedEffect(viewModel, context) {
             viewModel.moduleInstalls.collect { prepared ->
                 InstallActivity.start(context = context, uri = prepared.uri)
@@ -321,10 +327,13 @@ private fun RecoveryTaskPicker(
     trialActive: Boolean,
     onSelected: (RecoveryTask) -> Unit,
 ) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         RecoveryTask.entries.forEach { task ->
             val suffix = when (task) {
@@ -367,12 +376,22 @@ private fun LifecycleBanner(
     if (state.connection == ConnectionState.Ready && !state.readOnly && action == null) return
 
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
+        shape = RoundedCornerShape(14.dp),
         color = if (state.readOnly) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(connectionTitle(state), fontWeight = FontWeight.SemiBold)
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 11.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    connectionTitle(state),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (state.lifecycle.rebootRequired) {
+                    StatusPill(stringResource(R.string.recovery_reboot_required), MaterialTheme.colorScheme.tertiary)
+                }
+            }
             Text(
                 state.lifecycle.compatibilityMessage.ifBlank {
                     state.message ?: stringResource(R.string.recovery_live_controls_unavailable)

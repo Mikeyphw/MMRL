@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -293,7 +293,7 @@ private fun FloatingButton() {
         }
     }
 
-    FloatingActionButton(
+    SmallFloatingActionButton(
         modifier =
             Modifier
                 .systemBarsPaddingEnd()

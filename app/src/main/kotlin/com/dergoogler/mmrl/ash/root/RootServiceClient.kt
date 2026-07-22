@@ -71,6 +71,10 @@ class RootServiceClient @Inject constructor(
     suspend fun exportDiagnostics(): String = call(EXPORT_TIMEOUT_MS) { it.exportDiagnostics() }
     suspend fun repairState(): String = call(REPAIR_TIMEOUT_MS) { it.repairState() }
 
+    fun release() {
+        invalidateConnection()
+    }
+
     private suspend fun call(
         timeoutMs: Long = CALL_TIMEOUT_MS,
         block: (IAshReXcueService) -> String,

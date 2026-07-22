@@ -157,5 +157,6 @@ ui_print "- Companion UI is provided by the installed MMRL app."
 
 set_perm_recursive "$MODPATH" 0 0 0755 0644
 [ -f "$MODPATH/ashrexcuectl" ] && set_perm "$MODPATH/ashrexcuectl" 0 0 0755
+[ -f "$MODPATH/jq/jq" ] && set_perm "$MODPATH/jq/jq" 0 0 0755
 [ -f "$MODPATH/companion/AshReXcue.apk" ] && set_perm "$MODPATH/companion/AshReXcue.apk" 0 0 0644
 [ -f "$MODPATH/companion/version_code" ] && set_perm "$MODPATH/companion/version_code" 0 0 0644

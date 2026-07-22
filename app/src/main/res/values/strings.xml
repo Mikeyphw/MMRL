@@ -553,7 +553,7 @@
     <string name="back">Back</string>
 
     <string name="page_activity">Activity</string>
-    <string name="activity_subtitle">Downloads, module changes, failures, and technical logs</string>
+    <string name="activity_subtitle">Downloads, changes, failures, logs</string>
     <string name="activity_empty">No operations have been recorded yet</string>
     <string name="activity_filter_empty">No operations match this filter</string>
     <string name="activity_filter_all">All</string>

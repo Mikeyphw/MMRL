@@ -36,6 +36,11 @@ class HomeViewModel
             viewModelScope.launch { ashManager.refresh() }
         }
 
+        override fun onCleared() {
+            ashManager.releaseRootSession()
+            super.onCleared()
+        }
+
         val versionName: String
             get() =
                 PlatformManager.get("") {

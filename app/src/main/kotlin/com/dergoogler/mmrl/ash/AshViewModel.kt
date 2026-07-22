@@ -213,6 +213,15 @@ class AshViewModel @Inject constructor(
         _state.update { it.copy(message = message) }
     }
 
+    fun releaseRootSession() {
+        manager.releaseRootSession()
+    }
+
+    override fun onCleared() {
+        releaseRootSession()
+        super.onCleared()
+    }
+
     private fun operate(
         operation: AshOperation,
         block: suspend () -> OperationResult,

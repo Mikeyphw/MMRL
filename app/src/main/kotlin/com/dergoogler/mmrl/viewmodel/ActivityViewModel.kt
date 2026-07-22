@@ -77,6 +77,11 @@ class ActivityViewModel
             }
         }
 
+        override fun onCleared() {
+            ashManager.releaseRootSession()
+            super.onCleared()
+        }
+
         val visibleHistory =
             combine(allHistory, ashManager.state, filterFlow) { entries, ashState, filter ->
                 val ashEntries = ashState.snapshot?.activity.orEmpty().map { it.toHistoryEntry() }

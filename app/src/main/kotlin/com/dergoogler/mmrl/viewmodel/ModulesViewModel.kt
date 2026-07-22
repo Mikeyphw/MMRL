@@ -436,6 +436,11 @@ class ModulesViewModel
             }
         }
 
+        override fun onCleared() {
+            ashManager.releaseRootSession()
+            super.onCleared()
+        }
+
         fun ashProtection(module: LocalModule): AshModuleProtection? =
             ashManager.state.value.moduleProtections()[ModuleIdentity.normalize(module.id.id)]
 
