@@ -2769,6 +2769,221 @@
         }
       },
       "history_id": "6967899ae82045c79d44442b75785686"
+    },
+    {
+      "applied_at": "2026-07-22T16:59:02.078856Z",
+      "artifact": "/home/mike/Downloads/mmrl_module_governor_ui_overlay.zip",
+      "artifact_name": "mmrl_module_governor_ui_overlay.zip",
+      "type": "overlay",
+      "sha256": "40df8752a2ad432159b42b4181da96565d2fdc4a2ff7702bdf0a60ce3028a118",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Add module version locks, snapshots, and installed modules UI revamp",
+      "commit_hash": "",
+      "file_count": 8,
+      "change_counts": {
+        "add": 4,
+        "modify": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL module governor and installed modules UI revamp",
+        "description": "Adds Installed Modules card revamp with always-visible descriptions, local module version policies, metadata snapshots, snapshot compare/restore plan review, and source tests for policy and snapshot planning.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt",
+              "action": "add",
+              "sha256": "a6ef0d0b00237608386aef305bbd41b27e4371d1dae53414ef91b404070ffee2",
+              "size": 7660
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulePolicyStore.kt",
+              "action": "add",
+              "sha256": "7b220d22c25301e8397ae0c6972ecd6407901262a4a246ca5399a6a1b79899cc",
+              "size": 6597
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "7fa98b945a76a1ef4fb1aec4d630f9101f8a933ba8f34f7fe4abe3569ad89d3a",
+              "size": 48627,
+              "source_sha256": "eadf723d7100729470aac6360b0c090cbec35aa1067c96737ef714e50a0b703f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+              "action": "modify",
+              "sha256": "b6ea3e72a430bcecd5a5cfa7672942cff5d21399cf4452b2d799b811f5c4b317",
+              "size": 12374,
+              "source_sha256": "dd7e38ffa0fae00b9ca867e08ede7b7b1332627a1e5f39b4e122cce8eb749473"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "377db5bc927e09c426c268f83b2cd7d2ab574ec81a5e8d6a7026fd542dfbf52c",
+              "size": 37050,
+              "source_sha256": "1df3f8c19d56c2f22aae5eb5af0284fdbdf17b51dd800adfaad00a3eef3dd8c9"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "1511ac541832dad74c7cfbf5844307984bfa18ca0016a66b20cf0b96120f3dfa",
+              "size": 97801,
+              "source_sha256": "f3022a51eff5855cb3c002d19c5fc4bec6604b0dd83a765c96126252257ee1ba"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicyTest.kt",
+              "action": "add",
+              "sha256": "c8ee49a8e042aa78698dd4ed93c375a58c17dbbdd79252cf8337cc8fa50876a1",
+              "size": 3203
+            },
+            {
+              "path": "docs/MODULE_VERSION_LOCKS_AND_SNAPSHOTS.md",
+              "action": "add",
+              "sha256": "b0aa829035aae39837b341430ca04e03d9de5928b96fe564316210cf8674c2e7",
+              "size": 1461
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add module version locks, snapshots, and installed modules UI revamp"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "0fad51b4949447d485e5ad47f1c9d5d4"
+    },
+    {
+      "applied_at": "2026-07-22T17:05:09.827716Z",
+      "artifact": "/home/mike/Downloads/mmrl_ui_screenshot_jq_service_hotfix_overlay.zip",
+      "artifact_name": "mmrl_ui_screenshot_jq_service_hotfix_overlay.zip",
+      "type": "overlay",
+      "sha256": "",
+      "status": "failed",
+      "validation_status": "ok",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 0,
+      "change_counts": {},
+      "manifest": {},
+      "history_id": "ebfdc6d956fd438eaf1e73258f12b671"
+    },
+    {
+      "applied_at": "2026-07-22T17:17:22.883068Z",
+      "artifact": "/home/mike/Downloads/mmrl_module_governor_ui_overlay.zip",
+      "artifact_name": "mmrl_module_governor_ui_overlay.zip",
+      "type": "overlay",
+      "sha256": "5aac4a61dc5f254072917d45ccf5c7b12463ddfee3bf9c78e22b1c4c380424aa",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Add module version locks, snapshots, and installed modules UI revamp",
+      "commit_hash": "",
+      "file_count": 8,
+      "change_counts": {
+        "add": 4,
+        "modify": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL module governor and installed modules UI revamp",
+        "description": "Adds Installed Modules card revamp with always-visible descriptions, local module version policies, metadata snapshots, snapshot compare/restore plan review, and source tests for policy and snapshot planning.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt",
+              "action": "add",
+              "sha256": "a6ef0d0b00237608386aef305bbd41b27e4371d1dae53414ef91b404070ffee2",
+              "size": 7660
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulePolicyStore.kt",
+              "action": "add",
+              "sha256": "7b220d22c25301e8397ae0c6972ecd6407901262a4a246ca5399a6a1b79899cc",
+              "size": 6597
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "7fa98b945a76a1ef4fb1aec4d630f9101f8a933ba8f34f7fe4abe3569ad89d3a",
+              "size": 48627,
+              "source_sha256": "eadf723d7100729470aac6360b0c090cbec35aa1067c96737ef714e50a0b703f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+              "action": "modify",
+              "sha256": "b6ea3e72a430bcecd5a5cfa7672942cff5d21399cf4452b2d799b811f5c4b317",
+              "size": 12374,
+              "source_sha256": "dd7e38ffa0fae00b9ca867e08ede7b7b1332627a1e5f39b4e122cce8eb749473"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "c1bb293556550941efa1bf238a02d43a988f3d6456e923dc52a7957412921e8d",
+              "size": 37104,
+              "source_sha256": "1df3f8c19d56c2f22aae5eb5af0284fdbdf17b51dd800adfaad00a3eef3dd8c9"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "1511ac541832dad74c7cfbf5844307984bfa18ca0016a66b20cf0b96120f3dfa",
+              "size": 97801,
+              "source_sha256": "f3022a51eff5855cb3c002d19c5fc4bec6604b0dd83a765c96126252257ee1ba"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicyTest.kt",
+              "action": "add",
+              "sha256": "c8ee49a8e042aa78698dd4ed93c375a58c17dbbdd79252cf8337cc8fa50876a1",
+              "size": 3203
+            },
+            {
+              "path": "docs/MODULE_VERSION_LOCKS_AND_SNAPSHOTS.md",
+              "action": "add",
+              "sha256": "b0aa829035aae39837b341430ca04e03d9de5928b96fe564316210cf8674c2e7",
+              "size": 1461
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add module version locks, snapshots, and installed modules UI revamp"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "f32b2822086a4c768e4e612a62b2be69"
     }
   ]
 }

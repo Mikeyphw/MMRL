@@ -30,6 +30,11 @@ import com.dergoogler.mmrl.datastore.model.Option
 import com.dergoogler.mmrl.model.json.UpdateJson
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.LocalModule
+import com.dergoogler.mmrl.model.local.ModuleSnapshot
+import com.dergoogler.mmrl.model.local.ModuleSnapshotItem
+import com.dergoogler.mmrl.model.local.ModuleSnapshotPlanner
+import com.dergoogler.mmrl.model.local.ModuleVersionPolicy
+import com.dergoogler.mmrl.model.local.versionDisplay
 import com.dergoogler.mmrl.model.local.State
 import com.dergoogler.mmrl.model.state.Permissions
 import com.dergoogler.mmrl.service.ModuleService
@@ -43,6 +48,7 @@ import com.dergoogler.mmrl.platform.model.ModId
 import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
+import com.dergoogler.mmrl.repository.ModulePolicyStore
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import com.dergoogler.mmrl.service.DownloadService
 import com.dergoogler.mmrl.utils.Utils
@@ -98,12 +104,15 @@ class ModulesViewModel
             userPreferencesRepository = userPreferencesRepository,
         ) {
         private val historyRepository = operationHistoryRepository
+        private val modulePolicyStore = ModulePolicyStore(application.applicationContext)
 
         val ashState = ashManager.state
         private val ashFilterFlow = MutableStateFlow(AshModuleFilter.All)
         val ashFilter = ashFilterFlow.asStateFlow()
         private val ashMessagesFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
         val ashMessages = ashMessagesFlow.asSharedFlow()
+        val versionPolicies = modulePolicyStore.policies
+        val moduleSnapshots = modulePolicyStore.snapshots
 
         val moduleCompatibility: ModuleCompatibility
             get() =
@@ -210,16 +219,14 @@ class ModulesViewModel
                     initialValue = ModulesScreenState(),
                 )
 
-        val updates: StateFlow<List<ModuleUpdateInfo>> =
+        private val allUpdateCandidates: StateFlow<List<ModuleUpdateInfo>> =
             combine(
                 localRepository.getLocalAllAsFlow(),
                 localRepository.getOnlineAllAsFlow(),
                 localRepository.getRepoAllAsFlow(),
-                localRepository.getUpdatableTagsAsFlow(),
                 localRepository.getLocalSourcesAsFlow(),
-            ) { localModules, onlineModules, repositories, updatableTags, localSources ->
+            ) { localModules, onlineModules, repositories, localSources ->
                 val repoNames = repositories.associate { it.url to it.name }
-                val updateTracking = updatableTags.associate { ModuleIdentity.normalize(it.id) to it.updatable }
                 val sourceTracking = localSources.associateBy { ModuleIdentity.normalize(it.id) }
                 val platform = PlatformManager.platform
                 val rootVersion =
@@ -227,70 +234,15 @@ class ModulesViewModel
                         with(moduleManager) { versionCode }
                     }
 
-                buildList {
-                    localModules.forEach { local ->
-                        val normalizedId = ModuleIdentity.normalize(local.id.id)
-                        if (updateTracking[normalizedId] == false) return@forEach
-                        val source = sourceTracking[normalizedId]
-
-                        val online =
-                            onlineModules
-                                .filter {
-                                    ModuleIdentity.matches(it.id, local.id.id) &&
-                                        (source == null || it.repoUrl == source.repoUrl)
-                                }
-                                .maxByOrNull { it.versionCode }
-
-                        val version =
-                            if (local.updateJson.isNotBlank()) {
-                                UpdateJson.loadToVersionItem(local.updateJson)
-                            } else if (source != null) {
-                                online?.versions?.maxByOrNull { it.versionCode }
-                                    ?: localRepository.getVersionByIdAndUrl(local.id.toString(), source.repoUrl).maxByOrNull { it.versionCode }
-                            } else {
-                                online?.versions?.maxByOrNull { it.versionCode }
-                                    ?: localRepository.getVersionById(local.id.toString()).maxByOrNull { it.versionCode }
-                            }
-
-                        val installedVersionCode = source?.installedVersionCode ?: local.versionCode
-                        if (version == null || version.versionCode <= installedVersionCode) return@forEach
-
-                        val managerCompatible =
-                            online?.manager(platform)?.isCompatible(rootVersion) ?: true
-                        val androidCompatible =
-                            online?.let { module ->
-                                (module.minApi == null || Build.VERSION.SDK_INT >= module.minApi) &&
-                                    (module.maxApi == null || Build.VERSION.SDK_INT <= module.maxApi)
-                            } ?: true
-                        val permissions = online?.permissions.orEmpty()
-                        val features = online?.features
-                        val hasBootScripts =
-                            Permissions.MAGISK_SERVICE in permissions ||
-                                Permissions.MAGISK_POST_FS_DATA in permissions ||
-                                Permissions.KERNELSU_POST_MOUNT in permissions ||
-                                Permissions.KERNELSU_BOOT_COMPLETED in permissions ||
-                                features?.service == true ||
-                                features?.postFsData == true ||
-                                features?.postMount == true ||
-                                features?.bootCompleted == true
-                        val hasSensitiveChanges =
-                            Permissions.MAGISK_SEPOLICY in permissions ||
-                                Permissions.MAGISK_RESETPROP in permissions ||
-                                features?.sepolicy == true ||
-                                features?.resetprop == true
-
-                        add(
-                            ModuleUpdateInfo(
-                                local = local,
-                                version = version,
-                                online = online,
-                                repositoryName = repoNames[online?.repoUrl ?: version.repoUrl],
-                                compatible = managerCompatible && androidCompatible,
-                                hasBootScripts = hasBootScripts,
-                                hasSensitiveChanges = hasSensitiveChanges,
-                            ),
-                        )
-                    }
+                localModules.mapNotNull { local ->
+                    resolveUpdateCandidate(
+                        local = local,
+                        onlineModules = onlineModules,
+                        repoNames = repoNames,
+                        sourceTracking = sourceTracking,
+                        platform = platform,
+                        rootVersion = rootVersion,
+                    )
                 }.sortedWith(
                     compareByDescending<ModuleUpdateInfo> { it.hasSensitiveChanges || it.hasBootScripts }
                         .thenBy { it.local.name.lowercase() },
@@ -300,6 +252,109 @@ class ModulesViewModel
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),
             )
+
+        val updates: StateFlow<List<ModuleUpdateInfo>> =
+            combine(
+                allUpdateCandidates,
+                localRepository.getUpdatableTagsAsFlow(),
+                versionPolicies,
+            ) { candidates, updatableTags, policies ->
+                val updateTracking = updatableTags.associate { ModuleIdentity.normalize(it.id) to it.updatable }
+                candidates.filter { candidate ->
+                    val normalizedId = ModuleIdentity.normalize(candidate.local.id.id)
+                    updateTracking[normalizedId] != false && policies[normalizedId]?.blocks(candidate.version.versionCode) != true
+                }
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
+
+        val lockedUpdates: StateFlow<Map<String, ModuleUpdateInfo>> =
+            combine(
+                allUpdateCandidates,
+                versionPolicies,
+            ) { candidates, policies ->
+                candidates.mapNotNull { candidate ->
+                    val normalizedId = ModuleIdentity.normalize(candidate.local.id.id)
+                    if (policies[normalizedId]?.blocks(candidate.version.versionCode) == true) {
+                        normalizedId to candidate
+                    } else {
+                        null
+                    }
+                }.toMap()
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyMap(),
+            )
+
+        private suspend fun resolveUpdateCandidate(
+            local: LocalModule,
+            onlineModules: List<OnlineModule>,
+            repoNames: Map<String, String>,
+            sourceTracking: Map<String, com.dergoogler.mmrl.database.entity.local.LocalModuleSource>,
+            platform: com.dergoogler.mmrl.platform.Platform,
+            rootVersion: Int,
+        ): ModuleUpdateInfo? {
+            val normalizedId = ModuleIdentity.normalize(local.id.id)
+            val source = sourceTracking[normalizedId]
+
+            val online =
+                onlineModules
+                    .filter {
+                        ModuleIdentity.matches(it.id, local.id.id) &&
+                            (source == null || it.repoUrl == source.repoUrl)
+                    }
+                    .maxByOrNull { it.versionCode }
+
+            val version =
+                if (local.updateJson.isNotBlank()) {
+                    UpdateJson.loadToVersionItem(local.updateJson)
+                } else if (source != null) {
+                    online?.versions?.maxByOrNull { it.versionCode }
+                        ?: localRepository.getVersionByIdAndUrl(local.id.toString(), source.repoUrl).maxByOrNull { it.versionCode }
+                } else {
+                    online?.versions?.maxByOrNull { it.versionCode }
+                        ?: localRepository.getVersionById(local.id.toString()).maxByOrNull { it.versionCode }
+                }
+
+            val installedVersionCode = source?.installedVersionCode ?: local.versionCode
+            if (version == null || version.versionCode <= installedVersionCode) return null
+
+            val managerCompatible = online?.manager(platform)?.isCompatible(rootVersion) ?: true
+            val androidCompatible =
+                online?.let { module ->
+                    (module.minApi == null || Build.VERSION.SDK_INT >= module.minApi) &&
+                        (module.maxApi == null || Build.VERSION.SDK_INT <= module.maxApi)
+                } ?: true
+            val permissions = online?.permissions.orEmpty()
+            val features = online?.features
+            val hasBootScripts =
+                Permissions.MAGISK_SERVICE in permissions ||
+                    Permissions.MAGISK_POST_FS_DATA in permissions ||
+                    Permissions.KERNELSU_POST_MOUNT in permissions ||
+                    Permissions.KERNELSU_BOOT_COMPLETED in permissions ||
+                    features?.service == true ||
+                    features?.postFsData == true ||
+                    features?.postMount == true ||
+                    features?.bootCompleted == true
+            val hasSensitiveChanges =
+                Permissions.MAGISK_SEPOLICY in permissions ||
+                    Permissions.MAGISK_RESETPROP in permissions ||
+                    features?.sepolicy == true ||
+                    features?.resetprop == true
+
+            return ModuleUpdateInfo(
+                local = local,
+                version = version,
+                online = online,
+                repositoryName = repoNames[online?.repoUrl ?: version.repoUrl],
+                compatible = managerCompatible && androidCompatible,
+                hasBootScripts = hasBootScripts,
+                hasSensitiveChanges = hasSensitiveChanges,
+            )
+        }
 
         private fun dataObserver() {
             combine(
@@ -475,6 +530,101 @@ class ModulesViewModel
                     .onFailure { ashMessagesFlow.emit(it.message ?: "Unable to start restoration trial") }
             }
         }
+
+        fun followLatest(module: LocalModule) {
+            viewModelScope.launch {
+                modulePolicyStore.setPolicy(ModuleVersionPolicy.follow(module.id.id))
+                localRepository.insertUpdatableTag(module.id.id, true)
+                userPreferencesRepository.clearNotifiedModuleUpdate(module.id.id)
+                ashMessagesFlow.emit(context.getString(R.string.module_policy_following_latest, module.name))
+            }
+        }
+
+        fun ignoreUpdates(module: LocalModule) {
+            viewModelScope.launch {
+                modulePolicyStore.setPolicy(ModuleVersionPolicy.ignore(module.id.id))
+                setUpdateIgnored(module.id.id, true)
+                ashMessagesFlow.emit(context.getString(R.string.module_policy_updates_ignored, module.name))
+            }
+        }
+
+        fun lockCurrentVersion(module: LocalModule) {
+            viewModelScope.launch {
+                modulePolicyStore.setPolicy(
+                    ModuleVersionPolicy.pinCurrent(
+                        moduleId = module.id.id,
+                        version = module.versionDisplay,
+                        versionCode = module.versionCode,
+                    ),
+                )
+                localRepository.insertUpdatableTag(module.id.id, true)
+                ashMessagesFlow.emit(context.getString(R.string.module_policy_locked_current, module.name, module.versionDisplay))
+            }
+        }
+
+        fun capAtCurrentVersion(module: LocalModule) {
+            viewModelScope.launch {
+                modulePolicyStore.setPolicy(
+                    ModuleVersionPolicy.maxCurrent(
+                        moduleId = module.id.id,
+                        version = module.versionDisplay,
+                        versionCode = module.versionCode,
+                    ),
+                )
+                localRepository.insertUpdatableTag(module.id.id, true)
+                ashMessagesFlow.emit(context.getString(R.string.module_policy_capped_current, module.name, module.versionDisplay))
+            }
+        }
+
+        fun saveCurrentSnapshot(label: String? = null) {
+            viewModelScope.launch {
+                val modules = screenState.value.items
+                if (modules.isEmpty()) {
+                    ashMessagesFlow.emit(context.getString(R.string.module_snapshot_empty))
+                    return@launch
+                }
+                val ashTrustStates = ashState.value.moduleProtections().mapValues { it.value.trust }
+                val snapshot = modulePolicyStore.saveSnapshot(
+                    label = label ?: context.getString(R.string.module_snapshot_default_label),
+                    modules = modules,
+                    platform = platform,
+                    policies = versionPolicies.value,
+                    ashTrustStates = ashTrustStates,
+                )
+                ashMessagesFlow.emit(context.getString(R.string.module_snapshot_saved, snapshot.modules.size))
+            }
+        }
+
+        fun deleteSnapshot(snapshot: ModuleSnapshot) {
+            viewModelScope.launch {
+                modulePolicyStore.deleteSnapshot(snapshot.id)
+                ashMessagesFlow.emit(context.getString(R.string.module_snapshot_deleted, snapshot.label))
+            }
+        }
+
+        fun snapshotPlan(snapshot: ModuleSnapshot): List<com.dergoogler.mmrl.model.local.ModuleSnapshotPlanItem> =
+            ModuleSnapshotPlanner.compare(
+                snapshot = snapshot,
+                current = screenState.value.items.map { it.toSnapshotItem(versionPolicies.value, ashState.value.moduleProtections().mapValues { entry -> entry.value.trust }) },
+            )
+
+        private fun LocalModule.toSnapshotItem(
+            policies: Map<String, ModuleVersionPolicy>,
+            ashTrustStates: Map<String, String>,
+        ) = ModuleSnapshotItem(
+            id = ModuleIdentity.normalize(id.id),
+            name = name,
+            version = version,
+            versionCode = versionCode,
+            author = author,
+            description = description,
+            enabled = state == State.ENABLE || state == State.UPDATE,
+            state = state.name,
+            size = size,
+            lastUpdated = lastUpdated,
+            policy = policies[ModuleIdentity.normalize(id.id)],
+            ashTrustState = ashTrustStates[ModuleIdentity.normalize(id.id)],
+        )
 
         fun createModuleOps(
             useShell: Boolean,
