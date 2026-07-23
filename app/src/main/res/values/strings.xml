@@ -1265,4 +1265,27 @@
     <string name="module_snapshot_status_extra">Extra</string>
     <string name="module_snapshot_status_review">Review</string>
 
+
+    <string name="recovery_task_status_short">Status</string>
+    <string name="recovery_task_restore_short">Restore</string>
+    <string name="recovery_task_investigate_short">Culprit</string>
+    <string name="recovery_task_trial_short">Trial</string>
+    <string name="recovery_task_history_short">History</string>
+    <string name="recovery_task_advanced_short">Advanced</string>
+    <string name="repo_tab_repositories">Repositories</string>
+    <string name="repo_tab_github">GitHub</string>
+    <string name="repo_error_invalid_url">Invalid repository URL</string>
+    <string name="repo_github_error_invalid_url">Invalid GitHub repository URL</string>
+    <string name="repo_github_add_title">Add GitHub source</string>
+    <string name="repo_github_url_label">Repository URL</string>
+    <string name="repo_github_url_placeholder">https://github.com/owner/repo</string>
+    <string name="repo_github_release">Release</string>
+    <string name="repo_github_nightly">Nightly</string>
+    <string name="repo_github_include_prereleases">Include pre-releases</string>
+    <string name="repo_github_file_regex">File regex</string>
+    <string name="repo_github_regex_placeholder">optional, e.g. aarch64|arm64</string>
+    <string name="repo_github_token_saved">GitHub token saved</string>
+    <string name="repo_github_token">GitHub token</string>
+    <string name="repo_github_token_placeholder">optional for private repos</string>
+    <string name="repo_github_clear_token">Clear saved token</string>
 </resources>

@@ -17,9 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -34,7 +32,6 @@ fun StatusPill(
 ) {
     Surface(
         modifier = modifier.semantics {
-            this.role = Role.Image
             this.stateDescription = stateDescription
         },
         color = color.copy(alpha = 0.12f),
@@ -46,7 +43,7 @@ fun StatusPill(
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
         )
     }

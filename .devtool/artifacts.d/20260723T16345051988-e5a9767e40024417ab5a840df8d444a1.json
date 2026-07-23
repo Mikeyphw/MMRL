@@ -1,0 +1,96 @@
+{
+  "applied_at": "2026-07-23T16:34:50.519881Z",
+  "artifact": "/home/mike/Downloads/mmrl_ui_density_consistency_overlay.zip",
+  "artifact_name": "mmrl_ui_density_consistency_overlay.zip",
+  "type": "overlay",
+  "sha256": "1937df0db2b41d84aa57e345e0b4b9ed037d6df9368a66e63fee2c5494b1a983",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Polish UI density, localization, and module card hierarchy",
+  "commit_hash": "",
+  "file_count": 7,
+  "change_counts": {
+    "add": 1,
+    "modify": 6
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "MMRL UI density and consistency pass",
+    "description": "Tightens Recovery, Installed Modules, Home toolbar, Repository tabs, localized repository/GitHub source text, and status-pill accessibility after the module governor/navigation work.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+          "action": "modify",
+          "sha256": "ffc912a5367a00de67498d1139da1d8ac62ad89b1693fa083c2a786ecbae52f0",
+          "size": 52351,
+          "source_sha256": "530107d9ae421a16f8906790b55a2b9e7dcb8a14f2bbe9940f7e7ade8c4b0f58"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/component/FlatUi.kt",
+          "action": "modify",
+          "sha256": "0112c1bf99ebecf64521cef20ab0517ef8323f9644609705dcd4a59d52820079",
+          "size": 4341,
+          "source_sha256": "d9e54a26155937f3a02595ac5a9322c2b536ad69180e60f5548e70ff9d17f823"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/component/HomeNavigationButton.kt",
+          "action": "modify",
+          "sha256": "1bb6a27551d5deba6d763dc93fd044b8f80954e257341a0cdc241a7ebda9513d",
+          "size": 1480,
+          "source_sha256": "b987e0a63edf6045f5c2161833b0ed61298af736622c7f07958dcd3180b0f158"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "628fe6df94b31cb328c247cbbb607bcb58d52560597932330990aca9b1499a9d",
+          "size": 48637,
+          "source_sha256": "893cd53b7d59a4fd87a7d9e46ea150efef2d879c555d1a58b814c88143e9f22c"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+          "action": "modify",
+          "sha256": "10b1a705b0debe086f727a1a646f4f11d060bd368696d6acb96bf4521cdb89e4",
+          "size": 24434,
+          "source_sha256": "5745f71ea9d23914053698769a1fc44c2da798445337c61deecadaef8136c4c3"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "29b6012ff5f118ee2afae84c64c3b5253c48ee8c0a33e8386e4705477468a371",
+          "size": 99370,
+          "source_sha256": "b3e61a07fefeb26069978ad74ea8b99e10dab074613e05c586cac35a5dcb5b43"
+        },
+        {
+          "path": "docs/UI_DENSITY_CONSISTENCY_AUDIT.md",
+          "action": "add",
+          "sha256": "f2380fd9d500a2bf382ca512c9553f799fb8469799fb2451a4b9515538cae5c7",
+          "size": 1131
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Polish UI density, localization, and module card hierarchy"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "e5a9767e40024417ab5a840df8d444a1"
+}

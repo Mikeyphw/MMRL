@@ -8,6 +8,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -276,21 +277,21 @@ fun RepositoriesScreen() =
                     } else {
                         list.filter { it.url.isGitHubSourceUrl() }
                     }
-                Column {
+                Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
                     TabRow(selectedTabIndex = selectedTab) {
                         Tab(
                             selected = selectedTab == 0,
                             onClick = { selectedTab = 0 },
-                            text = { Text("Repositories") },
+                            text = { Text(stringResource(R.string.repo_tab_repositories)) },
                         )
                         Tab(
                             selected = selectedTab == 1,
                             onClick = { selectedTab = 1 },
-                            text = { Text("GitHub") },
+                            text = { Text(stringResource(R.string.repo_tab_github)) },
                         )
                     }
                 this@Scaffold.RepositoriesList(
-                    innerPadding = innerPadding,
+                    innerPadding = PaddingValues(0.dp),
                         list = visibleList,
                     state = listState,
                     delete = viewModel::delete,
@@ -326,6 +327,7 @@ private fun AddDialog(
 ) {
     var repositoryUrl by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    val invalidUrlMessage = stringResource(R.string.repo_error_invalid_url)
 
     val onDone: () -> Unit = {
         runCatching { normalizeRepositoryUrlInput(repositoryUrl) }
@@ -333,7 +335,7 @@ private fun AddDialog(
                 onAdd(normalizedUrl)
                 onClose()
             }.onFailure {
-                error = it.message ?: "Invalid repository URL"
+                error = it.message ?: invalidUrlMessage
             }
     }
 
@@ -415,13 +417,13 @@ private fun GitHubSourceAddDialog(
             onAdd(sourceUrl)
             onClose()
         }.onFailure {
-            error = it.message ?: "Invalid GitHub repository URL"
+            error = it.message ?: context.getString(R.string.repo_github_error_invalid_url)
         }
     }
 
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Add GitHub source") },
+        title = { Text(stringResource(R.string.repo_github_add_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -431,8 +433,8 @@ private fun GitHubSourceAddDialog(
                         repoUrl = it
                         error = null
                     },
-                    label = { Text("Repository URL") },
-                    placeholder = { Text("https://github.com/owner/repo") },
+                    label = { Text(stringResource(R.string.repo_github_url_label)) },
+                    placeholder = { Text(stringResource(R.string.repo_github_url_placeholder)) },
                     singleLine = true,
                     keyboardOptions =
                         KeyboardOptions(
@@ -451,12 +453,12 @@ private fun GitHubSourceAddDialog(
                     FilterChip(
                         selected = mode == GitHubSourceMode.RELEASE,
                         onClick = { mode = GitHubSourceMode.RELEASE },
-                        label = { Text("Release") },
+                        label = { Text(stringResource(R.string.repo_github_release)) },
                     )
                     FilterChip(
                         selected = mode == GitHubSourceMode.NIGHTLY,
                         onClick = { mode = GitHubSourceMode.NIGHTLY },
-                        label = { Text("Nightly") },
+                        label = { Text(stringResource(R.string.repo_github_nightly)) },
                     )
                 }
                 if (mode == GitHubSourceMode.RELEASE) {
@@ -465,7 +467,7 @@ private fun GitHubSourceAddDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Include pre-releases")
+                        Text(stringResource(R.string.repo_github_include_prereleases))
                         Switch(
                             checked = includePreReleases,
                             onCheckedChange = { includePreReleases = it },
@@ -476,8 +478,8 @@ private fun GitHubSourceAddDialog(
                     modifier = Modifier.fillMaxWidth(),
                     value = regex,
                     onValueChange = { regex = it },
-                    label = { Text("File regex") },
-                    placeholder = { Text("optional, e.g. aarch64|arm64") },
+                    label = { Text(stringResource(R.string.repo_github_file_regex)) },
+                    placeholder = { Text(stringResource(R.string.repo_github_regex_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
@@ -485,8 +487,8 @@ private fun GitHubSourceAddDialog(
                     modifier = Modifier.fillMaxWidth(),
                     value = token,
                     onValueChange = { token = it },
-                    label = { Text(if (hasToken) "GitHub token saved" else "GitHub token") },
-                    placeholder = { Text("optional for private repos") },
+                    label = { Text(stringResource(if (hasToken) R.string.repo_github_token_saved else R.string.repo_github_token)) },
+                    placeholder = { Text(stringResource(R.string.repo_github_token_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
@@ -498,7 +500,7 @@ private fun GitHubSourceAddDialog(
                             token = ""
                         },
                     ) {
-                        Text("Clear saved token")
+                        Text(stringResource(R.string.repo_github_clear_token))
                     }
                 }
             }
@@ -508,7 +510,7 @@ private fun GitHubSourceAddDialog(
                 onClick = add,
                 enabled = repoUrl.isNotBlank(),
             ) {
-                Text("Add")
+                Text(stringResource(R.string.repo_add_dialog_add))
             }
         },
         dismissButton = {

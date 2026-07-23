@@ -59,6 +59,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -173,8 +174,6 @@ fun ScaffoldScope.ModulesList(
                     lockedCount = versionPolicies.size,
                     snapshotCount = moduleSnapshots.size,
                     providerAlive = isProviderAlive,
-                    onSaveSnapshot = { viewModel.saveCurrentSnapshot() },
-                    onOpenSnapshots = { snapshotDialogOpen = true },
                 )
             }
 
@@ -275,8 +274,6 @@ private fun DeviceStatusHeader(
     lockedCount: Int,
     snapshotCount: Int,
     providerAlive: Boolean,
-    onSaveSnapshot: () -> Unit,
-    onOpenSnapshots: () -> Unit,
 ) {
     val activeCount = modules.count { it.state == State.ENABLE || it.state == State.UPDATE }
     val rebootRequired = modules.any { it.state == State.UPDATE || it.state == State.REMOVE }
@@ -328,17 +325,6 @@ private fun DeviceStatusHeader(
                 }
             }
 
-            Row(
-                modifier = Modifier.padding(top = 14.dp).horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(onClick = onSaveSnapshot) {
-                    Text(stringResource(R.string.module_snapshot_save_now))
-                }
-                OutlinedButton(onClick = onOpenSnapshots) {
-                    Text(stringResource(R.string.module_snapshot_open))
-                }
-            }
         }
     }
 }
@@ -618,7 +604,7 @@ private fun InstalledModuleCard(
                             }
                         }
                         if (module.hasAction) {
-                            Button(
+                            OutlinedButton(
                                 onClick = { ActionActivity.start(context = context, modId = module.id) },
                                 enabled = actionEnabled,
                             ) {
@@ -648,18 +634,6 @@ private fun InstalledModuleCard(
                         StatusPill(
                             text = stringResource(R.string.module_update_available),
                             color = MaterialTheme.colorScheme.tertiary,
-                        )
-                    }
-                    if (module.hasWebUI || module.hasModConf) {
-                        StatusPill(
-                            text = stringResource(R.string.view_module_features_webui),
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    if (module.hasAction) {
-                        StatusPill(
-                            text = stringResource(R.string.module_action_available),
-                            color = MaterialTheme.colorScheme.secondary,
                         )
                     }
                     ashProtection?.let { protection ->
@@ -1086,6 +1060,7 @@ private fun StatusPill(
     color: Color,
 ) {
     Surface(
+        modifier = Modifier.semantics { stateDescription = text },
         color = color.copy(alpha = 0.12f),
         contentColor = color,
         shape = RoundedCornerShape(999.dp),
@@ -1095,7 +1070,7 @@ private fun StatusPill(
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

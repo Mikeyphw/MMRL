@@ -119,6 +119,15 @@ private enum class RecoveryConfirmation {
     RollbackTrial,
 }
 
+private fun RecoveryTask.shortLabelRes(): Int = when (this) {
+    RecoveryTask.Status -> R.string.recovery_task_status_short
+    RecoveryTask.Restore -> R.string.recovery_task_restore_short
+    RecoveryTask.Investigate -> R.string.recovery_task_investigate_short
+    RecoveryTask.Trial -> R.string.recovery_task_trial_short
+    RecoveryTask.History -> R.string.recovery_task_history_short
+    RecoveryTask.Advanced -> R.string.recovery_task_advanced_short
+}
+
 @Destination<RootGraph>
 @Composable
 fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
@@ -335,8 +344,8 @@ private fun RecoveryTaskPicker(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RecoveryTask.entries.forEach { task ->
@@ -346,7 +355,7 @@ private fun RecoveryTaskPicker(
                 RecoveryTask.History -> stringResource(R.string.recovery_task_suffix_count, sessionCount)
                 else -> ""
             }
-            val label = stringResource(task.labelRes) + suffix
+            val label = stringResource(task.shortLabelRes()) + suffix
             FilterChip(
                 selected = selected == task,
                 onClick = { onSelected(task) },
@@ -380,11 +389,11 @@ private fun LifecycleBanner(
     if (state.connection == ConnectionState.Ready && !state.readOnly && action == null) return
 
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
-        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(12.dp),
         color = if (state.readOnly) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 11.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     connectionTitle(state),
