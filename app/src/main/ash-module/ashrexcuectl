@@ -23,7 +23,27 @@ ensure_jq_runtime() {
   if [ -f "$JQ_BIN" ]; then
     chmod 755 "$JQ_BIN" 2>/dev/null || true
   fi
-  [ -x "$JQ_BIN" ]
+  [ -x "$JQ_BIN" ] && return 0
+
+  # If the user has just staged an AshReXcue update, allow read-only UI calls to
+  # borrow the staged jq binary until the next reboot activates the new module.
+  # This keeps diagnostics/snapshot views useful instead of dead-ending on a
+  # stale active install whose jq was missing or lost its executable bit.
+  case "$MODPATH" in
+    /data/adb/modules/*)
+      local staged_jq="/data/adb/modules_update/$(basename "$MODPATH")/jq/jq"
+      if [ -f "$staged_jq" ]; then
+        chmod 755 "$staged_jq" 2>/dev/null || true
+        if [ -x "$staged_jq" ]; then
+          JQ_BIN="$staged_jq"
+          JQ="$staged_jq"
+          return 0
+        fi
+      fi
+      ;;
+  esac
+
+  return 1
 }
 
 json_result() {
@@ -195,7 +215,7 @@ release_gate_add() {
 
 release_gate_json() {
   local version version_code generated_at health_json health_status health_issues restore_state scripts_ok storage_ok external_ok settings_ok
-  ensure_jq_runtime || { json_error "AshReXcue release gate requires the bundled jq runtime."; return 1; }
+  ensure_jq_runtime || { json_error "AshReXcue needs the bundled jq runtime. Reinstall or update the bundled AshReXcue module from MMRL, then reboot if a staged update is created."; return 1; }
   RELEASE_GATE_CHECKS="$ASHLOOPER_DIR/.release-gate-checks.$$"
   : > "$RELEASE_GATE_CHECKS" || { json_error "Unable to create release-gate workspace."; return 1; }
 
@@ -300,7 +320,7 @@ snapshot_json() {
   case "$limit" in ''|*[!0-9]*) limit=150 ;; esac
   [ "$limit" -gt 200 ] && limit=200
   [ "$limit" -lt 1 ] && limit=1
-  ensure_jq_runtime || { json_error "AshReXcue snapshot requires the bundled jq runtime."; return 1; }
+  ensure_jq_runtime || { json_error "AshReXcue needs the bundled jq runtime. Reinstall or update the bundled AshReXcue module from MMRL, then reboot if a staged update is created."; return 1; }
 
   work="$ASHLOOPER_DIR/.snapshot.$$"
   rm -rf "$work"

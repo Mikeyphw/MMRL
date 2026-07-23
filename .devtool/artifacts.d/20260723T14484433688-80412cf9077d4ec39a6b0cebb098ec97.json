@@ -1,0 +1,82 @@
+{
+  "applied_at": "2026-07-23T14:48:44.336884Z",
+  "artifact": "/home/mike/Downloads/mmrl_home_jq_actions_overlay.zip",
+  "artifact_name": "mmrl_home_jq_actions_overlay.zip",
+  "type": "overlay",
+  "sha256": "975dd028f4beb1ccae1e92c750513a78dfa0c910c04bd69f25a5bf5ea6e5c9f1",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Fix Home access, AshReXcue jq recovery, and module actions",
+  "commit_hash": "",
+  "file_count": 5,
+  "change_counts": {
+    "add": 1,
+    "modify": 4
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "MMRL Home access, AshReXcue jq repair guidance, and visible module quick actions",
+    "description": "Makes Home visible as a text top-left action, bumps/clarifies the bundled AshReXcue module jq repair path, and exposes WebUI/Action buttons directly on installed module cards when available.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/component/HomeNavigationButton.kt",
+          "action": "modify",
+          "sha256": "b987e0a63edf6045f5c2161833b0ed61298af736622c7f07958dcd3180b0f158",
+          "size": 1232,
+          "source_sha256": "ccc8a8c36611fd864eaffa64fa360c70019ff6f0e678abf11165b3df212b9b0f"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "893cd53b7d59a4fd87a7d9e46ea150efef2d879c555d1a58b814c88143e9f22c",
+          "size": 49816,
+          "source_sha256": "7fa98b945a76a1ef4fb1aec4d630f9101f8a933ba8f34f7fe4abe3569ad89d3a"
+        },
+        {
+          "path": "app/src/main/ash-module/ashrexcuectl",
+          "action": "modify",
+          "sha256": "43d8c0b5993d03e4127dfc1c0d03baaf2cc08195e922cf002bbe645b14c82c79",
+          "size": 20437,
+          "source_sha256": "120d37b84f3912e6987e26c57fd1d107f817269d07b1126a69fd92b25680dfbb"
+        },
+        {
+          "path": "app/src/main/ash-module/module.prop",
+          "action": "modify",
+          "sha256": "24a1665437e3fa59dcccc7e21682eca080a098011dbe7f5f016a80b1fe23195f",
+          "size": 467,
+          "source_sha256": "0eca3d7d8989aa40fa87a62f18aff5b22258ff1bdc350944ebb129be4ae1381e"
+        },
+        {
+          "path": "docs/ASHREXCUE_JQ_HOME_MODULE_ACTIONS.md",
+          "action": "add",
+          "sha256": "e3dbf11e60a60de86a1fb2cb8554820ad227b8479a1be4cddb51ee78cf846f56",
+          "size": 1237
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Fix Home access, AshReXcue jq recovery, and module actions"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "80412cf9077d4ec39a6b0cebb098ec97"
+}

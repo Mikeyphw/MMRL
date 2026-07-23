@@ -603,6 +603,31 @@ private fun InstalledModuleCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
+                if (canOpenWebUi || module.hasAction) {
+                    Row(
+                        modifier = Modifier.padding(top = 10.dp).horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (canOpenWebUi) {
+                            OutlinedButton(
+                                onClick = {
+                                    if (webUiXMissing) requiredAppBottomSheet = true else launchWebUi()
+                                },
+                            ) {
+                                Text(stringResource(R.string.view_module_features_webui))
+                            }
+                        }
+                        if (module.hasAction) {
+                            Button(
+                                onClick = { ActionActivity.start(context = context, modId = module.id) },
+                                enabled = actionEnabled,
+                            ) {
+                                Text(stringResource(R.string.module_action))
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     modifier = Modifier.padding(top = 10.dp).horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
