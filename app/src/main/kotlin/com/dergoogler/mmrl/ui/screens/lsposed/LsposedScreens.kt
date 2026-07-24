@@ -61,6 +61,7 @@ import com.dergoogler.mmrl.lsposed.LsposedSnapshot
 import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanItem
 import com.dergoogler.mmrl.lsposed.LsposedUiContract
 import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
+import com.dergoogler.mmrl.ui.activity.terminal.action.ActionActivity
 import com.dergoogler.mmrl.viewmodel.LsposedViewModel
 import kotlinx.coroutines.flow.collectLatest
 
@@ -822,6 +823,7 @@ private fun LsposedEvents(viewModel: LsposedViewModel) {
                     }
                 }
                 is LsposedViewModel.Event.OpenIntent -> context.startActivity(event.intent)
+                is LsposedViewModel.Event.RunProviderAction -> ActionActivity.start(context, event.moduleId)
                 is LsposedViewModel.Event.Message -> Toast.makeText(context, event.text, Toast.LENGTH_LONG).show()
             }
         }

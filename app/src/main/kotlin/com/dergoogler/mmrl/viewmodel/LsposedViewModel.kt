@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.lsposed.LsposedIdentity
 import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
 import com.dergoogler.mmrl.lsposed.LsposedPolicyStore
+import com.dergoogler.mmrl.lsposed.LsposedProviderStatus
 import com.dergoogler.mmrl.lsposed.LsposedSnapshot
 import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanItem
 import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanner
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.dergoogler.mmrl.platform.model.ModId
 import javax.inject.Inject
 
 @HiltViewModel
@@ -36,6 +38,7 @@ class LsposedViewModel @Inject constructor(
         val error: String? = null,
         val installingPackage: String? = null,
         val managerAvailable: Boolean = false,
+        val providerStatus: LsposedProviderStatus = LsposedProviderStatus(),
         val policies: Map<String, LsposedVersionPolicy> = emptyMap(),
         val snapshots: List<LsposedSnapshot> = emptyList(),
         val snapshotPlan: List<LsposedSnapshotPlanItem> = emptyList(),
@@ -44,6 +47,7 @@ class LsposedViewModel @Inject constructor(
     sealed interface Event {
         data class InstallApk(val uri: Uri) : Event
         data class OpenIntent(val intent: android.content.Intent) : Event
+        data class RunProviderAction(val moduleId: ModId) : Event
         data class Message(val text: String) : Event
     }
 
@@ -78,12 +82,14 @@ class LsposedViewModel @Inject constructor(
             runCatching {
                 val modules = repository.loadModules(forceRefresh = force)
                 val installed = repository.installedModules(modules)
+                val providerStatus = repository.providerStatus()
                 stateFlow.update {
                     it.copy(
                         loading = false,
                         modules = modules,
                         installed = installed,
-                        managerAvailable = repository.lsposedManagerIntent() != null,
+                        managerAvailable = providerStatus.canOpen,
+                        providerStatus = providerStatus,
                     )
                 }
             }.onFailure { throwable ->
@@ -168,11 +174,16 @@ class LsposedViewModel @Inject constructor(
 
     fun openLsposed() {
         val intent = repository.lsposedManagerIntent()
-        if (intent == null) {
-            eventsFlow.tryEmit(Event.Message("LSPosed Manager is not installed or is hidden."))
-        } else {
+        if (intent != null) {
             eventsFlow.tryEmit(Event.OpenIntent(intent))
+            return
         }
+        val providerModuleId = repository.lsposedProviderActionModuleId()
+        if (providerModuleId != null) {
+            eventsFlow.tryEmit(Event.RunProviderAction(ModId(providerModuleId)))
+            return
+        }
+        eventsFlow.tryEmit(Event.Message("LSPosed, Vector, or another compatible framework provider is not installed or cannot be opened."))
     }
 
     fun openApp(packageName: String) {

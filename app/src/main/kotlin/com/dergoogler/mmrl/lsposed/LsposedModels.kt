@@ -133,6 +133,36 @@ data class LsposedInstalledModule(
     val sourceMatched: Boolean get() = repoModule != null
 }
 
+data class LsposedProviderStatus(
+    val installed: Boolean = false,
+    val moduleId: String? = null,
+    val folder: String? = null,
+    val name: String? = null,
+    val version: String? = null,
+    val active: Boolean = false,
+    val updatePending: Boolean = false,
+    val disabled: Boolean = false,
+    val actionAvailable: Boolean = false,
+    val managerApkPresent: Boolean = false,
+    val managerPackageInstalled: Boolean = false,
+) {
+    val canOpen: Boolean
+        get() = managerPackageInstalled || actionAvailable
+
+    val displayName: String
+        get() = name?.takeIf { it.isNotBlank() } ?: moduleId ?: folder ?: "LSPosed provider"
+
+    val statusLabel: String
+        get() = when {
+            managerPackageInstalled -> "Manager app installed"
+            actionAvailable -> "Provider action available"
+            managerApkPresent -> "Manager APK bundled"
+            installed -> "Provider installed"
+            else -> "Provider not detected"
+        }
+}
+
+
 object LsposedModulePolicy {
     fun bestInstallAsset(module: LsposedRepoModule): Pair<LsposedRelease, LsposedReleaseAsset>? {
         val releases = module.releases.ifEmpty { module.betaReleases }.ifEmpty { module.snapshotReleases }
@@ -433,8 +463,8 @@ object LsposedSafetyClassifier {
             add(
                 LsposedSafetyNotice(
                     level = LsposedSafetyLevel.ACTION,
-                    title = "LSPosed Manager not detected",
-                    body = "Install or unhide LSPosed Manager before enabling and scoping APK modules.",
+                    title = "LSPosed provider not detected",
+                    body = "Install LSPosed, Vector, or another compatible framework provider before enabling and scoping APK modules.",
                 ),
             )
         }

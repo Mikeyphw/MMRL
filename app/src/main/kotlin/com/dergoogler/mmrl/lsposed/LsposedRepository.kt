@@ -91,12 +91,95 @@ class LsposedRepository(private val context: Context) {
         }.sortedWith(compareByDescending<LsposedInstalledModule> { it.hasUpdate }.thenBy { it.displayName.lowercase() })
     }
 
+    fun providerStatus(): LsposedProviderStatus {
+        val managerInstalled = lsposedManagerIntent() != null
+        val active = findProviderCandidate(PROVIDER_ACTIVE_ROOT, active = true)
+        val staged = findProviderCandidate(PROVIDER_UPDATE_ROOT, active = false)
+        val selected = active ?: staged
+        return LsposedProviderStatus(
+            installed = selected != null,
+            moduleId = selected?.moduleId,
+            folder = selected?.folder,
+            name = selected?.name,
+            version = selected?.version,
+            active = active != null,
+            updatePending = staged != null,
+            disabled = active?.disabled == true,
+            actionAvailable = active?.actionAvailable == true,
+            managerApkPresent = selected?.managerApkPresent == true,
+            managerPackageInstalled = managerInstalled,
+        )
+    }
+
     fun lsposedManagerIntent(): Intent? {
         val pm = context.packageManager
         return LSPOSED_MANAGER_PACKAGES.firstNotNullOfOrNull { pm.getLaunchIntentForPackage(it) }
     }
 
+    fun lsposedProviderActionModuleId(): String? = providerStatus()
+        .takeIf { it.actionAvailable }
+        ?.moduleId
+        ?.takeIf { it.isNotBlank() }
+
     fun launchAppIntent(packageName: String): Intent? = context.packageManager.getLaunchIntentForPackage(packageName)
+
+    private fun findProviderCandidate(root: File, active: Boolean): ProviderCandidate? {
+        if (!root.isDirectory) return null
+
+        PROVIDER_MODULE_IDS.asSequence()
+            .map { id -> File(root, id) }
+            .mapNotNull { directory -> providerCandidateFromDirectory(directory, active) }
+            .firstOrNull()
+            ?.let { return it }
+
+        return runCatching { root.listFiles().orEmpty().toList() }
+            .getOrDefault(emptyList())
+            .asSequence()
+            .filter(File::isDirectory)
+            .sortedBy(File::getAbsolutePath)
+            .mapNotNull { directory -> providerCandidateFromDirectory(directory, active) }
+            .firstOrNull()
+    }
+
+    private fun providerCandidateFromDirectory(directory: File, active: Boolean): ProviderCandidate? {
+        if (!directory.isDirectory) return null
+        val properties = readModuleProperties(File(directory, MODULE_PROP))
+        val id = properties["id"].orEmpty().ifBlank { directory.name }
+        val name = properties["name"].orEmpty()
+        val description = properties["description"].orEmpty()
+        val identity = listOf(id, directory.name, name, description)
+            .joinToString(" ")
+            .lowercase()
+        val hasProviderFiles = File(directory, "manager.apk").isFile ||
+            File(directory, "framework/lspd.dex").isFile ||
+            File(directory, "daemon.apk").isFile
+        val knownProvider = PROVIDER_MODULE_IDS.any { candidate ->
+            id.equals(candidate, ignoreCase = true) || directory.name.equals(candidate, ignoreCase = true)
+        }
+        val nameLooksLikeProvider = ("lsposed" in identity || "xposed-compatible" in identity || "vector" in identity) && hasProviderFiles
+        if (!knownProvider && !nameLooksLikeProvider) return null
+
+        return ProviderCandidate(
+            moduleId = id,
+            folder = directory.name,
+            name = name.ifBlank { id },
+            version = properties["version"].orEmpty(),
+            disabled = File(directory, "disable").isFile,
+            actionAvailable = active && File(directory, "action.sh").isFile,
+            managerApkPresent = File(directory, "manager.apk").isFile,
+        )
+    }
+
+    private fun readModuleProperties(file: File): Map<String, String> {
+        if (!file.isFile) return emptyMap()
+        return runCatching {
+            file.useLines { lines ->
+                lines.map(String::trim)
+                    .filter { line -> line.isNotEmpty() && !line.startsWith('#') && '=' in line }
+                    .associate { line -> line.substringBefore('=').trim() to line.substringAfter('=').trim() }
+            }
+        }.getOrDefault(emptyMap())
+    }
 
     private fun requestText(url: String): String {
         val request = Request.Builder().url(url).get().build()
@@ -122,12 +205,33 @@ class LsposedRepository(private val context: Context) {
         val uri: Uri,
     )
 
+    private data class ProviderCandidate(
+        val moduleId: String,
+        val folder: String,
+        val name: String,
+        val version: String,
+        val disabled: Boolean,
+        val actionAvailable: Boolean,
+        val managerApkPresent: Boolean,
+    )
+
     companion object {
         val LSPOSED_MANAGER_PACKAGES = listOf(
             "org.lsposed.manager",
             "io.github.libxposed.manager",
             "org.lsposed.lspd",
         )
+
+        val PROVIDER_MODULE_IDS = listOf(
+            "zygisk_vector",
+            "zygisk_lsposed",
+            "riru_lsposed",
+            "lsposed",
+        )
+
+        private val PROVIDER_ACTIVE_ROOT = File("/data/adb/modules")
+        private val PROVIDER_UPDATE_ROOT = File("/data/adb/modules_update")
+        private const val MODULE_PROP = "module.prop"
 
         fun packageInstallerIntent(uri: Uri): Intent =
             Intent(Intent.ACTION_VIEW)

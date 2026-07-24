@@ -39,7 +39,7 @@ class LsposedSafetyPolicyTest {
         )
 
         assertTrue(notices.any { it.title == "Scope review needed" })
-        assertTrue(notices.any { it.title == "LSPosed Manager not detected" })
+        assertTrue(notices.any { it.title == "LSPosed provider not detected" })
         assertTrue(notices.any { it.title == "Not in LSPosed repo" })
         assertEquals(LsposedSafetyLevel.ACTION, LsposedSafetyClassifier.highestLevel(notices))
     }

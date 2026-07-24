@@ -260,3 +260,11 @@ Screenshot regression testing and Fastlane screenshot replacement are still pend
 - AshReXcue installed detection accepts legacy/renamed bundled module folder aliases so damaged installs are reported as installed-but-broken instead of missing.
 - Activity is now badged for attention-worthy work: failed, running, and pending-reboot activity across local operations and AshReXcue events.
 - The Recovery tab keeps a pending reboot badge, preserving safety visibility alongside the broader Activity attention badge.
+
+## LSPosed provider detection and Vector support
+
+- LSPosed APK tabs now distinguish APK modules from the framework provider that runs them.
+- Vector root modules are detected via `zygisk_vector`, bundled `manager.apk`, `daemon.apk`, `framework/lspd.dex`, and provider metadata.
+- Open LSPosed prefers an installed manager launch intent and falls back to the provider root module `action.sh` through the existing module-action terminal path.
+- Missing-manager warnings no longer appear when a compatible active provider can be opened through its module action.
+
