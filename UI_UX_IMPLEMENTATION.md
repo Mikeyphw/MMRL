@@ -268,3 +268,15 @@ Screenshot regression testing and Fastlane screenshot replacement are still pend
 - Open LSPosed prefers an installed manager launch intent and falls back to the provider root module `action.sh` through the existing module-action terminal path.
 - Missing-manager warnings no longer appear when a compatible active provider can be opened through its module action.
 
+
+## UI topology and density seal
+
+A follow-up density pass keeps the current information architecture while reducing repeated metadata and vertical waste:
+
+- Root Repository/GitHub list content no longer reapplies toolbar top padding after the tab row.
+- Installed root module cards keep WebUI and Action as explicit buttons and do not repeat them as status pills.
+- Module quick actions wrap instead of hiding in a horizontal scroll row.
+- The modules summary card is metric-focused instead of carrying snapshot actions above the list.
+- Shared status pills expose state descriptions without image semantics.
+- GitHub source dialog labels are resource-backed.
+- LSPosed installed phone layout shows installed modules before guidance and snapshot controls.

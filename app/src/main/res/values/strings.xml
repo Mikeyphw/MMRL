@@ -1340,4 +1340,22 @@
     <string name="lsposed_installed_unmatched">%1$d not matched to repository</string>
     <string name="refresh">Refresh</string>
 
+    <!-- UI topology and density seal -->
+    <string name="github_source_add_title">Add GitHub source</string>
+    <string name="github_source_repository_url">Repository URL</string>
+    <string name="github_source_repository_placeholder">https://github.com/owner/repo</string>
+    <string name="github_source_mode_release">Release</string>
+    <string name="github_source_mode_nightly">Nightly</string>
+    <string name="github_source_mode_nightly_link">Nightly.link</string>
+    <string name="github_source_include_prereleases">Include pre-releases</string>
+    <string name="github_source_file_regex">File regex</string>
+    <string name="github_source_file_regex_placeholder">optional, e.g. aarch64|arm64</string>
+    <string name="github_source_token">GitHub token</string>
+    <string name="github_source_token_saved">GitHub token saved</string>
+    <string name="github_source_token_placeholder">optional for private repos</string>
+    <string name="github_source_token_placeholder_nightly_link">optional; nightly.link handles public artifact downloads</string>
+    <string name="github_source_clear_token">Clear saved token</string>
+    <string name="github_source_add_confirm">Add</string>
+    <string name="github_source_error_invalid_url">Invalid GitHub repository URL</string>
+
 </resources>

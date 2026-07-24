@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -302,7 +303,7 @@ fun RepositoriesScreen() =
                             topPadding = innerPadding.calculateTopPadding(),
                         )
                         this@Scaffold.RepositoriesList(
-                            innerPadding = innerPadding,
+                            innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
                             list = visibleList,
                             state = listState,
                             delete = viewModel::delete,
@@ -462,13 +463,13 @@ private fun GitHubSourceAddDialog(
             onAdd(sourceUrl)
             onClose()
         }.onFailure {
-            error = it.message ?: "Invalid GitHub repository URL"
+            error = it.message ?: context.getString(R.string.github_source_error_invalid_url)
         }
     }
 
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Add GitHub source") },
+        title = { Text(stringResource(R.string.github_source_add_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -478,8 +479,8 @@ private fun GitHubSourceAddDialog(
                         repoUrl = it
                         error = null
                     },
-                    label = { Text("Repository URL") },
-                    placeholder = { Text("https://github.com/owner/repo") },
+                    label = { Text(stringResource(R.string.github_source_repository_url)) },
+                    placeholder = { Text(stringResource(R.string.github_source_repository_placeholder)) },
                     singleLine = true,
                     keyboardOptions =
                         KeyboardOptions(
@@ -498,17 +499,17 @@ private fun GitHubSourceAddDialog(
                     FilterChip(
                         selected = mode == GitHubSourceMode.RELEASE,
                         onClick = { mode = GitHubSourceMode.RELEASE },
-                        label = { Text("Release") },
+                        label = { Text(stringResource(R.string.github_source_mode_release)) },
                     )
                     FilterChip(
                         selected = mode == GitHubSourceMode.NIGHTLY,
                         onClick = { mode = GitHubSourceMode.NIGHTLY },
-                        label = { Text("Nightly") },
+                        label = { Text(stringResource(R.string.github_source_mode_nightly)) },
                     )
                     FilterChip(
                         selected = mode == GitHubSourceMode.NIGHTLY_LINK,
                         onClick = { mode = GitHubSourceMode.NIGHTLY_LINK },
-                        label = { Text("Nightly.link") },
+                        label = { Text(stringResource(R.string.github_source_mode_nightly_link)) },
                     )
                 }
                 if (mode == GitHubSourceMode.RELEASE) {
@@ -517,7 +518,7 @@ private fun GitHubSourceAddDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Include pre-releases")
+                        Text(stringResource(R.string.github_source_include_prereleases))
                         Switch(
                             checked = includePreReleases,
                             onCheckedChange = { includePreReleases = it },
@@ -528,8 +529,8 @@ private fun GitHubSourceAddDialog(
                     modifier = Modifier.fillMaxWidth(),
                     value = regex,
                     onValueChange = { regex = it },
-                    label = { Text("File regex") },
-                    placeholder = { Text("optional, e.g. aarch64|arm64") },
+                    label = { Text(stringResource(R.string.github_source_file_regex)) },
+                    placeholder = { Text(stringResource(R.string.github_source_file_regex_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
@@ -537,8 +538,8 @@ private fun GitHubSourceAddDialog(
                     modifier = Modifier.fillMaxWidth(),
                     value = token,
                     onValueChange = { token = it },
-                    label = { Text(if (hasToken) "GitHub token saved" else "GitHub token") },
-                    placeholder = { Text(if (mode == GitHubSourceMode.NIGHTLY_LINK) "optional; nightly.link handles public artifact downloads" else "optional for private repos") },
+                    label = { Text(stringResource(if (hasToken) R.string.github_source_token_saved else R.string.github_source_token)) },
+                    placeholder = { Text(stringResource(if (mode == GitHubSourceMode.NIGHTLY_LINK) R.string.github_source_token_placeholder_nightly_link else R.string.github_source_token_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
@@ -550,7 +551,7 @@ private fun GitHubSourceAddDialog(
                             token = ""
                         },
                     ) {
-                        Text("Clear saved token")
+                        Text(stringResource(R.string.github_source_clear_token))
                     }
                 }
             }
@@ -560,7 +561,7 @@ private fun GitHubSourceAddDialog(
                 onClick = add,
                 enabled = repoUrl.isNotBlank(),
             ) {
-                Text("Add")
+                Text(stringResource(R.string.github_source_add_confirm))
             }
         },
         dismissButton = {

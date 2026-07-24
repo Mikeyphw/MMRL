@@ -177,6 +177,25 @@ fun LsposedModulesTab(
             )
         },
     ) { railActive ->
+        items(modules, key = { it.packageName }) { module ->
+            val policy = state.policies[LsposedIdentity.normalize(module.packageName)]
+            LsposedInstalledModuleCard(
+                module = module,
+                policy = policy,
+                managerAvailable = state.managerAvailable,
+                installing = state.installingPackage == module.packageName,
+                onOpenApp = { viewModel.openApp(module.packageName) },
+                onOpenLsposed = viewModel::openLsposed,
+                onUpdate = { pendingUpdate = module },
+                onFollowLatest = { viewModel.followLatest(module.packageName) },
+                onIgnoreUpdates = { viewModel.ignoreUpdates(module.packageName) },
+                onPinCurrent = { viewModel.pinCurrent(module) },
+                onMaxCurrent = { viewModel.maxCurrent(module) },
+            )
+        }
+        if (!state.loading && modules.isEmpty()) {
+            item { EmptyLsposedCard(text = stringResource(R.string.lsposed_empty_installed)) }
+        }
         if (!railActive) {
             item {
                 GuidanceCard(
@@ -197,25 +216,6 @@ fun LsposedModulesTab(
                     onDeleteSnapshot = viewModel::deleteSnapshot,
                 )
             }
-        }
-        items(modules, key = { it.packageName }) { module ->
-            val policy = state.policies[LsposedIdentity.normalize(module.packageName)]
-            LsposedInstalledModuleCard(
-                module = module,
-                policy = policy,
-                managerAvailable = state.managerAvailable,
-                installing = state.installingPackage == module.packageName,
-                onOpenApp = { viewModel.openApp(module.packageName) },
-                onOpenLsposed = viewModel::openLsposed,
-                onUpdate = { pendingUpdate = module },
-                onFollowLatest = { viewModel.followLatest(module.packageName) },
-                onIgnoreUpdates = { viewModel.ignoreUpdates(module.packageName) },
-                onPinCurrent = { viewModel.pinCurrent(module) },
-                onMaxCurrent = { viewModel.maxCurrent(module) },
-            )
-        }
-        if (!state.loading && modules.isEmpty()) {
-            item { EmptyLsposedCard(text = stringResource(R.string.lsposed_empty_installed)) }
         }
     }
     pendingUpdate?.let { installed ->

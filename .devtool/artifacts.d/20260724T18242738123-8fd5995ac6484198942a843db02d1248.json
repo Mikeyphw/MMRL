@@ -1,0 +1,111 @@
+{
+  "applied_at": "2026-07-24T18:24:27.381231Z",
+  "artifact": "/home/mike/Downloads/mmrl_ui_topology_density_seal_overlay.zip",
+  "artifact_name": "mmrl_ui_topology_density_seal_overlay.zip",
+  "type": "overlay",
+  "sha256": "79645a834f8159bb80976ee7d344ff9178a7050f71349ddfbc2f75b08fb38848",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Seal UI topology and density contracts",
+  "commit_hash": "",
+  "file_count": 9,
+  "change_counts": {
+    "add": 2,
+    "modify": 7
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_ui_topology_density_seal_overlay",
+    "description": "Tighten root and LSPosed UI topology: remove double tab insets, reduce module card duplication, wrap actions, localize GitHub source dialog, and seal status semantics.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": {
+      "root": "$HOME/Code/MMRL"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "UI_UX_IMPLEMENTATION.md",
+          "action": "modify",
+          "sha256": "4aabadd1d13afb0b020320a351fb979239c64abf79854b1190c49568aba6b220",
+          "size": 19534,
+          "source_sha256": "2f6c1db34ea3feb244d764e12051667fe8fef8fcf57b7b02f639a1dd061cbeed"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/component/FlatUi.kt",
+          "action": "modify",
+          "sha256": "4d44ba77b1beea9f7413d903683e308f03ce6e9afeafb5387ee8e06fa946914b",
+          "size": 4340,
+          "source_sha256": "d9e54a26155937f3a02595ac5a9322c2b536ad69180e60f5548e70ff9d17f823"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/component/HomeNavigationButton.kt",
+          "action": "modify",
+          "sha256": "b2e953abfb9a12c7e7a557f5b2d30f027d9acb7fe6c945f1035c4559279cd47e",
+          "size": 1454,
+          "source_sha256": "b987e0a63edf6045f5c2161833b0ed61298af736622c7f07958dcd3180b0f158"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "914f80a451d6e4ba1d57547f9ffd7affbea795a143deac1b9f2393bcf0a172f4",
+          "size": 52743,
+          "source_sha256": "e61bd1d4ab373404358d3102f2b1bc05512ea87d79038624f324d6db81b5aead"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+          "action": "modify",
+          "sha256": "bcca612a77c1cba7c6b187346561ed6dda4b576c5619b2a6bbb54066a9655150",
+          "size": 27976,
+          "source_sha256": "dae69a121f8e680a65547462257fb147473a75cc608ecb363a369c7200bea72f"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+          "action": "modify",
+          "sha256": "ebb5bb54af79fd302ade78eeb98c820645dee827c56394d1293347c18747680d",
+          "size": 35595,
+          "source_sha256": "88c13cdec421cae70efa61589a8fc768f40900421b4605cc6862b95c0f115531"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "835f0c269f61c45ca6b557dbe4a4eb00d8b70406031ff50fb4b9ef26306f9fd3",
+          "size": 104555,
+          "source_sha256": "d55fcfddd27aa648b0e086ed9719ea83cfe93a4dce04cd51257724fc74cc77ec"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UiTopologyDensitySealTest.kt",
+          "action": "add",
+          "sha256": "da85925da13f5e0b4cbba1ee157f6f9437bc6b757907d5730f2c802904c8ee19",
+          "size": 3078
+        },
+        {
+          "path": "docs/UI_TOPOLOGY_DENSITY_SEAL.md",
+          "action": "add",
+          "sha256": "7d15349761b931a7b2847d2673d1029f33fc722a1cd24dc5bc9e87fa40cc98d0",
+          "size": 730
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Seal UI topology and density contracts"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "8fd5995ac6484198942a843db02d1248"
+}

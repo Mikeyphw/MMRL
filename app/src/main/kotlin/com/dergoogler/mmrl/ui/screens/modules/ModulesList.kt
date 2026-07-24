@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -25,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -178,8 +178,6 @@ fun ScaffoldScope.ModulesList(
                     lockedCount = versionPolicies.size,
                     snapshotCount = moduleSnapshots.size,
                     providerAlive = isProviderAlive,
-                    onSaveSnapshot = { viewModel.saveCurrentSnapshot() },
-                    onOpenSnapshots = { snapshotDialogOpen = true },
                 )
             }
 
@@ -283,8 +281,6 @@ private fun DeviceStatusHeader(
     lockedCount: Int,
     snapshotCount: Int,
     providerAlive: Boolean,
-    onSaveSnapshot: () -> Unit,
-    onOpenSnapshots: () -> Unit,
 ) {
     val activeCount = modules.count { it.state == State.ENABLE || it.state == State.UPDATE }
     val rebootRequired = modules.any { it.state == State.UPDATE || it.state == State.REMOVE }
@@ -336,17 +332,6 @@ private fun DeviceStatusHeader(
                 }
             }
 
-            Row(
-                modifier = Modifier.padding(top = 14.dp).horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(onClick = onSaveSnapshot) {
-                    Text(stringResource(R.string.module_snapshot_save_now))
-                }
-                OutlinedButton(onClick = onOpenSnapshots) {
-                    Text(stringResource(R.string.module_snapshot_open))
-                }
-            }
         }
     }
 }
@@ -628,9 +613,10 @@ private fun InstalledModuleCard(
                 )
 
                 if (canOpenWebUi || module.hasAction) {
-                    Row(
-                        modifier = Modifier.padding(top = 10.dp).horizontalScroll(rememberScrollState()),
+                    FlowRow(
+                        modifier = Modifier.padding(top = 10.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (canOpenWebUi) {
                             OutlinedButton(
@@ -642,7 +628,7 @@ private fun InstalledModuleCard(
                             }
                         }
                         if (module.hasAction) {
-                            Button(
+                            OutlinedButton(
                                 onClick = { ActionActivity.start(context = context, modId = module.id) },
                                 enabled = actionEnabled,
                             ) {
@@ -678,18 +664,6 @@ private fun InstalledModuleCard(
                         StatusPill(
                             text = stringResource(R.string.module_source_mode_status, it.displayModeLabel()),
                             color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    if (module.hasWebUI || module.hasModConf) {
-                        StatusPill(
-                            text = stringResource(R.string.view_module_features_webui),
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    if (module.hasAction) {
-                        StatusPill(
-                            text = stringResource(R.string.module_action_available),
-                            color = MaterialTheme.colorScheme.secondary,
                         )
                     }
                     ashProtection?.let { protection ->
