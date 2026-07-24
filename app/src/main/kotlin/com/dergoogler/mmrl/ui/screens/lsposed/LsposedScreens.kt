@@ -294,7 +294,7 @@ private fun LsposedTabContent(
                         .padding(end = 16.dp, bottom = bottomPadding),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    detailRail?.invoke()
+                    detailRail()
                 }
             }
         } else {

@@ -1,0 +1,76 @@
+{
+  "applied_at": "2026-07-24T17:10:38.640657Z",
+  "artifact": "/home/mike/Downloads/mmrl_lsposed_final_integration_seal_overlay.zip",
+  "artifact_name": "mmrl_lsposed_final_integration_seal_overlay.zip",
+  "type": "overlay",
+  "sha256": "93540415ae675bc5208c139db0ab2533847d971028681524166e8728b76cba40",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Seal LSPosed APK integration contracts",
+  "commit_hash": "",
+  "file_count": 4,
+  "change_counts": {
+    "add": 2,
+    "modify": 2
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_lsposed_final_integration_seal_overlay",
+    "description": "Seal LSPosed APK module integration with navigation/install/governance regression contracts and remove the adaptive polish safe-call warning.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": {
+      "root": "$HOME/Code/MMRL"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "docs/LSPOSED_FINAL_INTEGRATION_SEAL.md",
+          "action": "add",
+          "sha256": "391df6a993acd5d73db260f0e20c4f1ae49420e7b6143187030d2ea39c5cef3b",
+          "size": 1793
+        },
+        {
+          "path": "UI_UX_IMPLEMENTATION.md",
+          "action": "modify",
+          "sha256": "0f6a53dfd8908cab3dc5c6670122c7aa28e676b19c11c915cf394dd249f99335",
+          "size": 17439,
+          "source_sha256": "f0e29e4110859b004609a83a07c70eca19182d2a618dff8cf15aad88f65ae890"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+          "action": "modify",
+          "sha256": "35d6e984211da27277c4ab84d0c9832a1d7967c73bbb60dbb2ed90a0675a4e20",
+          "size": 35416,
+          "source_sha256": "398efb732d4d2b7803e08a5bad132f6ceb35a3717b82ff3076bedf8f08894183"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedFinalIntegrationSealTest.kt",
+          "action": "add",
+          "sha256": "cc44e4f652ae6e13fe85ac6138c63c96173163fec730c715c326806bcf6c0164",
+          "size": 4404
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Seal LSPosed APK integration contracts"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "95d58c4ced7941c68ac1ced046953c79"
+}

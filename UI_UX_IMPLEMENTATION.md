@@ -241,3 +241,14 @@ See `TASKER_SUPPORT.md` for the action, event, and variable contract.
 - Consolidated Recovery, Activity, Ash module intelligence, and Ash integration cards onto the shared flat/status components and semantic status colors where status meaning is known.
 
 Screenshot regression testing and Fastlane screenshot replacement are still pending because this project does not currently include a screenshot-test framework, `app/src/androidTest`, or Roborazzi/Paparazzi dependencies. Adding that harness should be handled as a separate build/dependency change.
+
+## LSPosed APK module integration seal
+
+- Keeps LSPosed APK module support as a parallel ecosystem beside root ZIP modules.
+- Repository exposes Root modules and LSPosed tabs; Modules exposes Root modules and LSPosed tabs.
+- APK install/update remains review-first and hands off to Android package installation.
+- MMRL does not treat APK installation as LSPosed activation; enablement and scope remain inside LSPosed Manager with persistent Open LSPosed guidance.
+- LSPosed APK modules participate in local version policies, metadata snapshots, and snapshot compare/review planning.
+- Safety copy covers unmatched installed Xposed APKs, missing LSPosed Manager, source-link warnings, and policy-blocked updates.
+- Adaptive two-pane LSPosed layouts are contract-tested, and the prior unnecessary nullable safe-call warning in `LsposedScreens.kt` is removed.
+
