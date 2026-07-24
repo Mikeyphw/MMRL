@@ -42,10 +42,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.lsposed.LsposedIdentity
 import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
 import com.dergoogler.mmrl.lsposed.LsposedModulePolicy
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
+import com.dergoogler.mmrl.lsposed.LsposedSnapshot
+import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanItem
+import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
 import com.dergoogler.mmrl.viewmodel.LsposedViewModel
 import kotlinx.coroutines.flow.collectLatest
 
@@ -132,13 +136,29 @@ fun LsposedModulesTab(
                 actionEnabled = state.managerAvailable,
             )
         }
+        item {
+            LsposedSnapshotCard(
+                installedCount = state.installed.size,
+                snapshots = state.snapshots,
+                plan = state.snapshotPlan,
+                onSaveSnapshot = { viewModel.saveSnapshot() },
+                onCompareSnapshot = viewModel::compareSnapshot,
+                onDeleteSnapshot = viewModel::deleteSnapshot,
+            )
+        }
         items(modules, key = { it.packageName }) { module ->
+            val policy = state.policies[LsposedIdentity.normalize(module.packageName)]
             LsposedInstalledModuleCard(
                 module = module,
+                policy = policy,
                 installing = state.installingPackage == module.packageName,
                 onOpenApp = { viewModel.openApp(module.packageName) },
                 onOpenLsposed = viewModel::openLsposed,
                 onUpdate = { viewModel.update(module) },
+                onFollowLatest = { viewModel.followLatest(module.packageName) },
+                onIgnoreUpdates = { viewModel.ignoreUpdates(module.packageName) },
+                onPinCurrent = { viewModel.pinCurrent(module) },
+                onMaxCurrent = { viewModel.maxCurrent(module) },
             )
         }
         if (!state.loading && modules.isEmpty()) {
@@ -316,11 +336,17 @@ private fun LsposedRepoModuleCard(
 @Composable
 private fun LsposedInstalledModuleCard(
     module: LsposedInstalledModule,
+    policy: LsposedVersionPolicy?,
     installing: Boolean,
     onOpenApp: () -> Unit,
     onOpenLsposed: () -> Unit,
     onUpdate: () -> Unit,
+    onFollowLatest: () -> Unit,
+    onIgnoreUpdates: () -> Unit,
+    onPinCurrent: () -> Unit,
+    onMaxCurrent: () -> Unit,
 ) {
+    val updateBlocked = module.hasUpdate && policy?.blocks(module.repoVersion?.versionCode) == true
     ElevatedCard(shape = RoundedCornerShape(22.dp)) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -355,6 +381,8 @@ private fun LsposedInstalledModuleCard(
                 module.installedVersionName?.let { StatusChip(text = it) }
                 module.repoVersion?.let { StatusChip(text = stringResource(R.string.lsposed_repo_version, it.versionName)) }
                 if (module.hasUpdate) StatusChip(text = stringResource(R.string.module_update_available))
+                if (updateBlocked) StatusChip(text = stringResource(R.string.lsposed_update_blocked))
+                policy?.takeIf { it.isLocked }?.let { StatusChip(text = it.statusLabel(module.repoVersion?.versionName)) }
                 if (!module.sourceMatched) StatusChip(text = stringResource(R.string.lsposed_not_in_repo))
                 if (module.detectedByXposedMetadata) StatusChip(text = stringResource(R.string.lsposed_xposed_metadata))
             }
@@ -366,8 +394,82 @@ private fun LsposedInstalledModuleCard(
                     Text(stringResource(R.string.lsposed_open_manager))
                 }
                 if (module.hasUpdate) {
-                    Button(onClick = onUpdate, enabled = !installing) {
-                        Text(stringResource(R.string.lsposed_update_apk))
+                    Button(onClick = onUpdate, enabled = !installing && !updateBlocked) {
+                        Text(if (updateBlocked) stringResource(R.string.lsposed_update_locked) else stringResource(R.string.lsposed_update_apk))
+                    }
+                }
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (policy?.isLocked == true) {
+                    TextButton(onClick = onFollowLatest) { Text(stringResource(R.string.lsposed_follow_latest)) }
+                } else {
+                    TextButton(onClick = onPinCurrent) { Text(stringResource(R.string.lsposed_lock_current)) }
+                    TextButton(onClick = onMaxCurrent) { Text(stringResource(R.string.lsposed_allow_up_to_current)) }
+                    TextButton(onClick = onIgnoreUpdates) { Text(stringResource(R.string.lsposed_ignore_updates)) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LsposedSnapshotCard(
+    installedCount: Int,
+    snapshots: List<LsposedSnapshot>,
+    plan: List<LsposedSnapshotPlanItem>,
+    onSaveSnapshot: () -> Unit,
+    onCompareSnapshot: (LsposedSnapshot) -> Unit,
+    onDeleteSnapshot: (String) -> Unit,
+) {
+    ElevatedCard(shape = RoundedCornerShape(22.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.lsposed_snapshot_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(R.string.lsposed_snapshot_description, installedCount, snapshots.size),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onSaveSnapshot) {
+                    Text(stringResource(R.string.lsposed_save_snapshot))
+                }
+                snapshots.firstOrNull()?.let { latest ->
+                    TextButton(onClick = { onCompareSnapshot(latest) }) {
+                        Text(stringResource(R.string.lsposed_compare_latest_snapshot))
+                    }
+                }
+            }
+            snapshots.firstOrNull()?.let { latest ->
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StatusChip(text = latest.label)
+                    StatusChip(text = stringResource(R.string.lsposed_snapshot_count, latest.installedCount))
+                    TextButton(onClick = { onDeleteSnapshot(latest.id) }) {
+                        Text(stringResource(R.string.delete))
+                    }
+                }
+            }
+            if (plan.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    plan.take(4).forEach { item ->
+                        Text(
+                            text = "${item.title}: ${item.summary}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (plan.size > 4) {
+                        Text(
+                            text = stringResource(R.string.lsposed_snapshot_more_items, plan.size - 4),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }

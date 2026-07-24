@@ -4,7 +4,14 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.dergoogler.mmrl.lsposed.LsposedIdentity
 import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
+import com.dergoogler.mmrl.lsposed.LsposedPolicyStore
+import com.dergoogler.mmrl.lsposed.LsposedSnapshot
+import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanItem
+import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanner
+import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
+import com.dergoogler.mmrl.lsposed.toSnapshotItem
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,6 +19,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,6 +36,9 @@ class LsposedViewModel @Inject constructor(
         val error: String? = null,
         val installingPackage: String? = null,
         val managerAvailable: Boolean = false,
+        val policies: Map<String, LsposedVersionPolicy> = emptyMap(),
+        val snapshots: List<LsposedSnapshot> = emptyList(),
+        val snapshotPlan: List<LsposedSnapshotPlanItem> = emptyList(),
     )
 
     sealed interface Event {
@@ -37,6 +48,7 @@ class LsposedViewModel @Inject constructor(
     }
 
     private val repository = LsposedRepository(application.applicationContext)
+    private val policyStore = LsposedPolicyStore(application.applicationContext)
     private val stateFlow = MutableStateFlow(UiState())
     val state = stateFlow.asStateFlow()
     private val eventsFlow = MutableSharedFlow<Event>(extraBufferCapacity = 1)
@@ -44,6 +56,16 @@ class LsposedViewModel @Inject constructor(
 
     init {
         refresh(force = false)
+        viewModelScope.launch {
+            policyStore.policies.collectLatest { policies ->
+                stateFlow.update { it.copy(policies = policies) }
+            }
+        }
+        viewModelScope.launch {
+            policyStore.snapshots.collectLatest { snapshots ->
+                stateFlow.update { it.copy(snapshots = snapshots) }
+            }
+        }
     }
 
     fun search(query: String) {
@@ -69,6 +91,63 @@ class LsposedViewModel @Inject constructor(
             }
         }
     }
+
+
+    fun followLatest(packageName: String) {
+        viewModelScope.launch {
+            policyStore.setPolicy(LsposedVersionPolicy.follow(packageName))
+            eventsFlow.tryEmit(Event.Message("LSPosed module follows latest updates."))
+        }
+    }
+
+    fun ignoreUpdates(packageName: String) {
+        viewModelScope.launch {
+            policyStore.setPolicy(LsposedVersionPolicy.ignore(packageName))
+            eventsFlow.tryEmit(Event.Message("LSPosed APK updates ignored."))
+        }
+    }
+
+    fun pinCurrent(module: LsposedInstalledModule) {
+        viewModelScope.launch {
+            policyStore.setPolicy(LsposedVersionPolicy.pinCurrent(module))
+            eventsFlow.tryEmit(Event.Message("LSPosed APK version locked."))
+        }
+    }
+
+    fun maxCurrent(module: LsposedInstalledModule) {
+        viewModelScope.launch {
+            policyStore.setPolicy(LsposedVersionPolicy.maxCurrent(module))
+            eventsFlow.tryEmit(Event.Message("LSPosed APK updates limited to current version."))
+        }
+    }
+
+    fun saveSnapshot(label: String = "Known-good LSPosed APK modules") {
+        viewModelScope.launch {
+            val snapshot = policyStore.saveSnapshot(
+                label = label,
+                modules = stateFlow.value.installed,
+                policies = stateFlow.value.policies,
+            )
+            eventsFlow.tryEmit(Event.Message("Saved LSPosed snapshot with ${snapshot.installedCount} APK modules."))
+        }
+    }
+
+    fun deleteSnapshot(snapshotId: String) {
+        viewModelScope.launch {
+            policyStore.deleteSnapshot(snapshotId)
+            stateFlow.update { it.copy(snapshotPlan = emptyList()) }
+            eventsFlow.tryEmit(Event.Message("Deleted LSPosed snapshot."))
+        }
+    }
+
+    fun compareSnapshot(snapshot: LsposedSnapshot) {
+        val current = stateFlow.value.installed.map { module ->
+            val normalizedPackage = LsposedIdentity.normalize(module.packageName)
+            module.toSnapshotItem(policy = stateFlow.value.policies[normalizedPackage])
+        }
+        stateFlow.update { it.copy(snapshotPlan = LsposedSnapshotPlanner.compare(snapshot, current)) }
+    }
+
 
     fun install(module: LsposedRepoModule) {
         viewModelScope.launch {

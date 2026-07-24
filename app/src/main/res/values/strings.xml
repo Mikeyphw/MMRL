@@ -1307,6 +1307,19 @@
     <string name="lsposed_no_apk_installer">No APK installer is available on this device.</string>
     <string name="lsposed_empty_repository">No LSPosed modules match this search.</string>
     <string name="lsposed_empty_installed">No installed LSPosed APK modules were found.</string>
+
+    <string name="lsposed_update_blocked">Update blocked</string>
+    <string name="lsposed_update_locked">Locked</string>
+    <string name="lsposed_follow_latest">Follow latest</string>
+    <string name="lsposed_lock_current">Lock current</string>
+    <string name="lsposed_allow_up_to_current">Allow up to current</string>
+    <string name="lsposed_ignore_updates">Ignore updates</string>
+    <string name="lsposed_snapshot_title">LSPosed snapshots</string>
+    <string name="lsposed_snapshot_description">Metadata-only snapshots for %1$d installed APK modules. %2$d saved.</string>
+    <string name="lsposed_save_snapshot">Save snapshot</string>
+    <string name="lsposed_compare_latest_snapshot">Compare latest</string>
+    <string name="lsposed_snapshot_count">%1$d APK modules</string>
+    <string name="lsposed_snapshot_more_items">+%1$d more differences</string>
     <string name="refresh">Refresh</string>
 
 </resources>

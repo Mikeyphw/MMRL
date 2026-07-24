@@ -1,0 +1,15 @@
+{
+  "applied_at": "2026-07-24T16:03:23.127526Z",
+  "artifact": "/home/mike/Downloads/mmrl_lsposed_apk_tabs_overlay.zip",
+  "artifact_name": "mmrl_lsposed_apk_tabs_overlay.zip",
+  "type": "overlay",
+  "sha256": "",
+  "status": "failed",
+  "validation_status": "ok",
+  "commit_message": "",
+  "commit_hash": "",
+  "file_count": 0,
+  "change_counts": {},
+  "manifest": {},
+  "history_id": "cd3426f4676346ac92485e561e74f983"
+}

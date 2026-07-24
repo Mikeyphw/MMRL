@@ -7,16 +7,22 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.core.content.pm.PackageInfoCompat
+import com.dergoogler.mmrl.app.moshi
 import com.dergoogler.mmrl.network.NetworkUtils
+import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 
 class LsposedRepository(private val context: Context) {
     private val client by lazy { NetworkUtils.createOkHttpClient() }
+    private val moduleListAdapter by lazy {
+        moshi.adapter<List<LsposedRepoModule>>(
+            Types.newParameterizedType(List::class.java, LsposedRepoModule::class.java),
+        )
+    }
+    private val moduleAdapter by lazy { moshi.adapter(LsposedRepoModule::class.java) }
     private val cacheDir by lazy { File(context.cacheDir, "lsposed-repo").apply { mkdirs() } }
 
     suspend fun loadModules(forceRefresh: Boolean = false): List<LsposedRepoModule> = withContext(Dispatchers.IO) {
@@ -27,11 +33,11 @@ class LsposedRepository(private val context: Context) {
             } else {
                 requestText("https://modules.lsposed.org/modules.json").also(cache::writeText)
             }
-        parseModules(body).filterNot { it.hide == true }.sortedBy { it.displayName.lowercase() }
+        moduleListAdapter.fromJson(body).orEmpty().filterNot { it.hide == true }.sortedBy { it.displayName.lowercase() }
     }
 
     suspend fun loadDetail(packageName: String): LsposedRepoModule = withContext(Dispatchers.IO) {
-        parseModule(JSONObject(requestText("https://modules.lsposed.org/module/$packageName.json")))
+        moduleAdapter.fromJson(requestText("https://modules.lsposed.org/module/$packageName.json"))
             ?: error("LSPosed repository returned empty details for $packageName")
     }
 
@@ -64,7 +70,7 @@ class LsposedRepository(private val context: Context) {
         val repoByPackage = index.associateBy { it.packageName }
         val packages = installedPackages(pm)
         return packages.mapNotNull { info ->
-            val packageName = info.packageName ?: return@mapNotNull null
+            val packageName = info.packageName
             val appInfo = info.applicationInfo
             val repoModule = repoByPackage[packageName]
             val isXposed = appInfo?.metaData?.let { meta ->
@@ -101,89 +107,6 @@ class LsposedRepository(private val context: Context) {
             return response.body?.string() ?: error("Unable to load LSPosed repository: empty response")
         }
     }
-
-    private fun parseModules(body: String): List<LsposedRepoModule> {
-        val array = JSONArray(body)
-        return List(array.length()) { index -> parseModule(array.optJSONObject(index)) }.filterNotNull()
-    }
-
-    private fun parseModule(json: JSONObject?): LsposedRepoModule? {
-        if (json == null) return null
-        val name = json.stringOrNull("name") ?: return null
-        return LsposedRepoModule(
-            name = name,
-            description = json.stringOrNull("description"),
-            url = json.stringOrNull("url"),
-            homepageUrl = json.stringOrNull("homepageUrl"),
-            latestRelease = json.stringOrNull("latestRelease"),
-            latestReleaseTime = json.stringOrNull("latestReleaseTime"),
-            latestBetaRelease = json.stringOrNull("latestBetaRelease"),
-            latestBetaReleaseTime = json.stringOrNull("latestBetaReleaseTime"),
-            latestSnapshotRelease = json.stringOrNull("latestSnapshotRelease"),
-            latestSnapshotReleaseTime = json.stringOrNull("latestSnapshotReleaseTime"),
-            releases = json.releaseList("releases"),
-            betaReleases = json.releaseList("betaReleases"),
-            snapshotReleases = json.releaseList("snapshotReleases"),
-            readme = json.stringOrNull("readme"),
-            summary = json.stringOrNull("summary"),
-            scope = json.stringList("scope"),
-            sourceUrl = json.stringOrNull("sourceUrl"),
-            hide = if (json.has("hide")) json.optBoolean("hide") else null,
-            additionalAuthors = json.stringList("additionalAuthors").takeIf { it.isNotEmpty() },
-            updatedAt = json.stringOrNull("updatedAt"),
-            createdAt = json.stringOrNull("createdAt"),
-            stargazerCount = if (json.has("stargazerCount")) json.optInt("stargazerCount") else null,
-        )
-    }
-
-    private fun JSONObject.releaseList(name: String): List<LsposedRelease> {
-        val array = optJSONArray(name) ?: return emptyList()
-        return List(array.length()) { index ->
-            val json = array.optJSONObject(index)
-            if (json == null) {
-                null
-            } else {
-                LsposedRelease(
-                    name = json.stringOrNull("name"),
-                    url = json.stringOrNull("url"),
-                    description = json.stringOrNull("description"),
-                    descriptionHTML = json.stringOrNull("descriptionHTML"),
-                    createdAt = json.stringOrNull("createdAt"),
-                    publishedAt = json.stringOrNull("publishedAt"),
-                    updatedAt = json.stringOrNull("updatedAt"),
-                    tagName = json.stringOrNull("tagName"),
-                    isPrerelease = if (json.has("isPrerelease")) json.optBoolean("isPrerelease") else null,
-                    releaseAssets = json.assetList("releaseAssets"),
-                )
-            }
-        }.filterNotNull()
-    }
-
-    private fun JSONObject.assetList(name: String): List<LsposedReleaseAsset> {
-        val array = optJSONArray(name) ?: return emptyList()
-        return List(array.length()) { index ->
-            val json = array.optJSONObject(index)
-            if (json == null) {
-                null
-            } else {
-                LsposedReleaseAsset(
-                    name = json.stringOrNull("name"),
-                    contentType = json.stringOrNull("contentType"),
-                    downloadUrl = json.stringOrNull("downloadUrl"),
-                    downloadCount = json.optInt("downloadCount", 0),
-                    size = json.optInt("size", 0),
-                )
-            }
-        }.filterNotNull()
-    }
-
-    private fun JSONObject.stringList(name: String): List<String> {
-        val array = optJSONArray(name) ?: return emptyList()
-        return List(array.length()) { index -> array.optString(index).takeIf { it.isNotBlank() } }.filterNotNull()
-    }
-
-    private fun JSONObject.stringOrNull(name: String): String? =
-        optString(name).takeIf { it.isNotBlank() && it != "null" }
 
     @Suppress("DEPRECATION")
     private fun installedPackages(pm: PackageManager): List<PackageInfo> =
