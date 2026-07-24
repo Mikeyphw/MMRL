@@ -9,7 +9,10 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -18,6 +21,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -37,6 +42,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,6 +65,7 @@ import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
+import com.dergoogler.mmrl.ui.screens.lsposed.LsposedModulesTab
 import com.dergoogler.mmrl.viewmodel.ModulesViewModel
 import kotlinx.coroutines.flow.collectLatest
 import com.ramcosta.composedestinations.annotation.Destination
@@ -85,6 +92,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         val ashState by viewModel.ashState.collectAsStateWithLifecycle()
         val ashFilter by viewModel.ashFilter.collectAsStateWithLifecycle()
         val snackbar = LocalSnackbarHost.current
+        var selectedTab by remember { mutableStateOf(ModulesTab.RootModules) }
 
         LaunchedEffect(viewModel) {
             viewModel.ashMessages.collectLatest(snackbar::showSnackbar)
@@ -97,7 +105,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         val isScrollingUp by viewModel.listState.isScrollingUp()
         val showFab by remember {
             derivedStateOf {
-                isScrollingUp && !viewModel.isSearch && viewModel.isProviderAlive
+                isScrollingUp && !viewModel.isSearch && viewModel.isProviderAlive && selectedTab == ModulesTab.RootModules
             }
         }
 
@@ -155,52 +163,94 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                 Loading()
             }
 
-            if (list.isEmpty() && !isLoading) {
+            if (selectedTab == ModulesTab.RootModules && list.isEmpty() && !isLoading) {
                 PageIndicator(
                     icon = R.drawable.keyframes,
                     text = if (viewModel.isSearch) R.string.search_empty else R.string.modules_empty,
                 )
             }
 
-            PullToRefreshBox(
-                state = pullToRefreshState,
-                isRefreshing = state.isRefreshing,
-                onRefresh = viewModel::getLocalAll,
-                indicator = {
-                    Indicator(
-                        modifier =
-                            Modifier.align(Alignment.TopCenter).let {
-                                if (!userPrefs.enableBlur) {
-                                    it.padding(top = innerPadding.calculateTopPadding())
-                                } else {
-                                    it
-                                }
-                            },
-                        isRefreshing = state.isRefreshing,
-                        state = pullToRefreshState,
-                    )
-                },
-            ) {
-                this@Scaffold.ModulesList(
-                    innerPadding = innerPadding,
-                    list = list,
-                    allModules = state.items,
-                    updates = updates,
-                    lockedUpdates = lockedUpdates,
-                    versionPolicies = versionPolicies,
-                    moduleSnapshots = moduleSnapshots,
-                    localSources = localSources,
-                    state = viewModel.listState,
-                    viewModel = viewModel,
-                    onDownload = download,
-                    isProviderAlive = viewModel.isProviderAlive,
-                    ashState = ashState,
-                    ashFilter = ashFilter,
-                    onAshFilterSelected = viewModel::setAshFilter,
+            Column {
+                ModulesTabs(
+                    selectedTab = selectedTab,
+                    onSelected = { selectedTab = it },
+                    topPadding = innerPadding.calculateTopPadding(),
                 )
+                if (selectedTab == ModulesTab.LSPosed) {
+                    LsposedModulesTab(
+                        innerPadding = innerPadding,
+                        contentTopPadding = 0.dp,
+                    )
+                } else {
+                    PullToRefreshBox(
+                        state = pullToRefreshState,
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = viewModel::getLocalAll,
+                        indicator = {
+                            Indicator(
+                                modifier =
+                                    Modifier.align(Alignment.TopCenter).let {
+                                        if (!userPrefs.enableBlur) {
+                                            it.padding(top = innerPadding.calculateTopPadding())
+                                        } else {
+                                            it
+                                        }
+                                    },
+                                isRefreshing = state.isRefreshing,
+                                state = pullToRefreshState,
+                            )
+                        },
+                    ) {
+                        this@Scaffold.ModulesList(
+                            innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+                            list = list,
+                            allModules = state.items,
+                            updates = updates,
+                            lockedUpdates = lockedUpdates,
+                            versionPolicies = versionPolicies,
+                            moduleSnapshots = moduleSnapshots,
+                            localSources = localSources,
+                            state = viewModel.listState,
+                            viewModel = viewModel,
+                            onDownload = download,
+                            isProviderAlive = viewModel.isProviderAlive,
+                            ashState = ashState,
+                            ashFilter = ashFilter,
+                            onAshFilterSelected = viewModel::setAshFilter,
+                        )
+                    }
+                }
             }
         }
     }
+
+private enum class ModulesTab {
+    RootModules,
+    LSPosed,
+}
+
+@Composable
+private fun ModulesTabs(
+    selectedTab: ModulesTab,
+    onSelected: (ModulesTab) -> Unit,
+    topPadding: androidx.compose.ui.unit.Dp,
+) {
+    TabRow(
+        selectedTabIndex = selectedTab.ordinal,
+        modifier = Modifier.fillMaxWidth().padding(top = topPadding),
+    ) {
+        Tab(
+            selected = selectedTab == ModulesTab.RootModules,
+            onClick = { onSelected(ModulesTab.RootModules) },
+            text = { Text(stringResource(R.string.modules_tab_root_modules)) },
+        )
+        Tab(
+            selected = selectedTab == ModulesTab.LSPosed,
+            onClick = { onSelected(ModulesTab.LSPosed) },
+            text = { Text(stringResource(R.string.modules_tab_lsposed)) },
+        )
+    }
+}
 
 @Composable
 private fun TopBar(

@@ -79,6 +79,7 @@ import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.mainContentBottomPadding
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.ui.screens.repositories.items.BulkBottomSheet
+import com.dergoogler.mmrl.ui.screens.lsposed.LsposedRepositoryTab
 import com.dergoogler.mmrl.viewmodel.BulkDownloadException
 import com.dergoogler.mmrl.viewmodel.RepositoriesViewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -128,30 +129,34 @@ fun RepositoriesScreen() =
         }
 
         var add by remember { mutableStateOf(false) }
-        var selectedTab by remember { mutableStateOf(0) }
+        var selectedTab by remember { mutableStateOf(RepositoryTab.RootModules) }
         if (add) {
-            if (selectedTab == 0) {
-                AddDialog(
-                    onClose = { add = false },
-                    onAdd = {
-                        repoUrl = it
-                        viewModel.insert(it) { e ->
-                            failure = true
-                            message = e.stackTraceToString()
-                        }
-                    },
-                )
-            } else {
-                GitHubSourceAddDialog(
-                    onClose = { add = false },
-                    onAdd = {
-                        repoUrl = it
-                        viewModel.insert(it) { e ->
-                            failure = true
-                            message = e.stackTraceToString()
-                        }
-                    },
-                )
+            when (selectedTab) {
+                RepositoryTab.RootModules -> {
+                    AddDialog(
+                        onClose = { add = false },
+                        onAdd = {
+                            repoUrl = it
+                            viewModel.insert(it) { e ->
+                                failure = true
+                                message = e.stackTraceToString()
+                            }
+                        },
+                    )
+                }
+                RepositoryTab.GitHubSources -> {
+                    GitHubSourceAddDialog(
+                        onClose = { add = false },
+                        onAdd = {
+                            repoUrl = it
+                            viewModel.insert(it) { e ->
+                                failure = true
+                                message = e.stackTraceToString()
+                            }
+                        },
+                    )
+                }
+                RepositoryTab.LSPosed -> add = false
             }
         }
 
@@ -213,13 +218,14 @@ fun RepositoriesScreen() =
                 TopBar(
                     setMenu = viewModel::setRepositoriesMenu,
                     onAdd = { add = true },
+                    canAdd = selectedTab != RepositoryTab.LSPosed,
                     scrollBehavior = scrollBehavior,
                 )
             },
             contentWindowInsets = WindowInsets.none,
             floatingActionButton = {
                 AnimatedVisibility(
-                    visible = showFab,
+                    visible = showFab && selectedTab != RepositoryTab.LSPosed,
                     enter =
                         scaleIn(
                             animationSpec = tween(100),
@@ -244,58 +250,65 @@ fun RepositoriesScreen() =
                 Loading()
             }
 
-            if (list.isEmpty() && !viewModel.isLoading) {
+            if (selectedTab != RepositoryTab.LSPosed && list.isEmpty() && !viewModel.isLoading) {
                 PageIndicator(
                     icon = R.drawable.git_pull_request,
                     text = R.string.repo_empty,
                 )
             }
 
-            PullToRefreshBox(
-                state = pullToRefreshState,
-                isRefreshing = state.isRefreshing,
-                onRefresh = viewModel::getRepoAll,
-                indicator = {
-                    Indicator(
-                        modifier =
-                            Modifier.align(Alignment.TopCenter).let {
-                                if (!userPrefs.enableBlur) {
-                                    it.padding(top = innerPadding.calculateTopPadding())
-                                } else {
-                                    it
-                                }
-                            },
-                        isRefreshing = state.isRefreshing,
-                        state = pullToRefreshState,
-                    )
-                },
-            ) {
-                val visibleList =
-                    if (selectedTab == 0) {
-                        list.filterNot { it.url.isGitHubSourceUrl() }
-                    } else {
-                        list.filter { it.url.isGitHubSourceUrl() }
-                    }
+            if (selectedTab == RepositoryTab.LSPosed) {
                 Column {
-                    TabRow(selectedTabIndex = selectedTab) {
-                        Tab(
-                            selected = selectedTab == 0,
-                            onClick = { selectedTab = 0 },
-                            text = { Text("Repositories") },
+                    RepositoryTabs(
+                        selectedTab = selectedTab,
+                        onSelected = { selectedTab = it },
+                        topPadding = innerPadding.calculateTopPadding(),
+                    )
+                    LsposedRepositoryTab(
+                        innerPadding = innerPadding,
+                        contentTopPadding = 0.dp,
+                    )
+                }
+            } else {
+                PullToRefreshBox(
+                    state = pullToRefreshState,
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = viewModel::getRepoAll,
+                    indicator = {
+                        Indicator(
+                            modifier =
+                                Modifier.align(Alignment.TopCenter).let {
+                                    if (!userPrefs.enableBlur) {
+                                        it.padding(top = innerPadding.calculateTopPadding())
+                                    } else {
+                                        it
+                                    }
+                                },
+                            isRefreshing = state.isRefreshing,
+                            state = pullToRefreshState,
                         )
-                        Tab(
-                            selected = selectedTab == 1,
-                            onClick = { selectedTab = 1 },
-                            text = { Text("GitHub") },
+                    },
+                ) {
+                    val visibleList =
+                        when (selectedTab) {
+                            RepositoryTab.RootModules -> list.filterNot { it.url.isGitHubSourceUrl() }
+                            RepositoryTab.GitHubSources -> list.filter { it.url.isGitHubSourceUrl() }
+                            RepositoryTab.LSPosed -> emptyList()
+                        }
+                    Column {
+                        RepositoryTabs(
+                            selectedTab = selectedTab,
+                            onSelected = { selectedTab = it },
+                            topPadding = innerPadding.calculateTopPadding(),
+                        )
+                        this@Scaffold.RepositoriesList(
+                            innerPadding = innerPadding,
+                            list = visibleList,
+                            state = listState,
+                            delete = viewModel::delete,
+                            getUpdate = viewModel::getUpdate,
                         )
                     }
-                this@Scaffold.RepositoriesList(
-                    innerPadding = innerPadding,
-                        list = visibleList,
-                    state = listState,
-                    delete = viewModel::delete,
-                    getUpdate = viewModel::getUpdate,
-                )
                 }
             }
 
@@ -318,6 +331,40 @@ fun RepositoriesScreen() =
             }
         }
     }
+
+private enum class RepositoryTab {
+    RootModules,
+    GitHubSources,
+    LSPosed,
+}
+
+@Composable
+private fun RepositoryTabs(
+    selectedTab: RepositoryTab,
+    onSelected: (RepositoryTab) -> Unit,
+    topPadding: androidx.compose.ui.unit.Dp,
+) {
+    TabRow(
+        selectedTabIndex = selectedTab.ordinal,
+        modifier = Modifier.padding(top = topPadding),
+    ) {
+        Tab(
+            selected = selectedTab == RepositoryTab.RootModules,
+            onClick = { onSelected(RepositoryTab.RootModules) },
+            text = { Text(stringResource(R.string.repository_tab_root_modules)) },
+        )
+        Tab(
+            selected = selectedTab == RepositoryTab.GitHubSources,
+            onClick = { onSelected(RepositoryTab.GitHubSources) },
+            text = { Text(stringResource(R.string.repository_tab_github_sources)) },
+        )
+        Tab(
+            selected = selectedTab == RepositoryTab.LSPosed,
+            onClick = { onSelected(RepositoryTab.LSPosed) },
+            text = { Text(stringResource(R.string.repository_tab_lsposed)) },
+        )
+    }
+}
 
 @Composable
 private fun AddDialog(
@@ -527,6 +574,7 @@ private fun GitHubSourceAddDialog(
 @Composable
 private fun TopBar(
     onAdd: () -> Unit,
+    canAdd: Boolean,
     setMenu: KFunction1<RepositoriesMenu, Unit>,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
@@ -553,13 +601,15 @@ private fun TopBar(
                     contentDescription = stringResource(R.string.accessibility_search),
                 )
             }
-            IconButton(
-                onClick = onAdd,
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.plus),
-                    contentDescription = stringResource(R.string.accessibility_add_repository),
-                )
+            if (canAdd) {
+                IconButton(
+                    onClick = onAdd,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.plus),
+                        contentDescription = stringResource(R.string.accessibility_add_repository),
+                    )
+                }
             }
 
             RepositoriesMenu(

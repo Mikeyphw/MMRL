@@ -1279,4 +1279,34 @@
     <string name="module_source_nightly_api">Nightly</string>
     <string name="module_source_nightly_link">Nightly.link</string>
     <string name="module_source_mode_status">Source: %1$s</string>
+
+    <!-- LSPosed APK module support -->
+    <string name="repository_tab_root_modules">Root modules</string>
+    <string name="repository_tab_github_sources">GitHub</string>
+    <string name="repository_tab_lsposed">LSPosed</string>
+    <string name="modules_tab_root_modules">Root modules</string>
+    <string name="modules_tab_lsposed">LSPosed</string>
+    <string name="lsposed_repository_title">LSPosed repository</string>
+    <string name="lsposed_repository_description">Browse Xposed modules from modules.lsposed.org. These install as APKs, then LSPosed handles enablement and app scope.</string>
+    <string name="lsposed_installed_title">Installed LSPosed modules</string>
+    <string name="lsposed_installed_description">APK modules matched against the LSPosed repository and locally detected Xposed metadata.</string>
+    <string name="lsposed_search_hint">Search LSPosed modules</string>
+    <string name="lsposed_install_guidance_title">APK module flow</string>
+    <string name="lsposed_install_guidance_description">Install the APK first. After installation, open LSPosed to enable the module and choose its target apps.</string>
+    <string name="lsposed_activation_title">Enable and scope in LSPosed</string>
+    <string name="lsposed_activation_description">MMRL can detect APK installation and updates, but LSPosed activation and scope review still happen inside LSPosed Manager.</string>
+    <string name="lsposed_open_manager">Open LSPosed</string>
+    <string name="lsposed_install_apk">Install APK</string>
+    <string name="lsposed_update_apk">Update APK</string>
+    <string name="lsposed_source">Source</string>
+    <string name="lsposed_website">Website</string>
+    <string name="lsposed_open_app">Open app</string>
+    <string name="lsposed_repo_version">Repo: %1$s</string>
+    <string name="lsposed_not_in_repo">Not in repo</string>
+    <string name="lsposed_xposed_metadata">Xposed metadata</string>
+    <string name="lsposed_no_apk_installer">No APK installer is available on this device.</string>
+    <string name="lsposed_empty_repository">No LSPosed modules match this search.</string>
+    <string name="lsposed_empty_installed">No installed LSPosed APK modules were found.</string>
+    <string name="refresh">Refresh</string>
+
 </resources>

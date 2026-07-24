@@ -1,0 +1,112 @@
+{
+  "applied_at": "2026-07-24T15:54:56.791065Z",
+  "artifact": "/home/mike/Downloads/mmrl_lsposed_apk_tabs_overlay.zip",
+  "artifact_name": "mmrl_lsposed_apk_tabs_overlay.zip",
+  "type": "overlay",
+  "sha256": "91f2c7463cb2fb2f9818f1c0a107abf16b0629daed51c4b0a3ab1da5668bfefa",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add LSPosed APK repository and installed module tabs",
+  "commit_hash": "",
+  "file_count": 10,
+  "change_counts": {
+    "add": 6,
+    "modify": 4
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "MMRL LSPosed repository and installed APK module tabs",
+    "description": "Adds LSPosed APK-module support phases 1 and 2: Repository LSPosed tab using modules.lsposed.org, Modules LSPosed tab with installed APK detection, APK installer handoff, LSPosed manager handoff, tests, and docs.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": ".",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/AndroidManifest.xml",
+          "action": "modify",
+          "sha256": "dc44cdc3bc343f8f704d544581f7478670fa3a0d19e597c847a016861caae70e",
+          "size": 16815,
+          "source_sha256": "db74cff486dd5db45d0a2d49ce7ea9300c1b3fb46f82f73a45d91e175a52ea72"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+          "action": "modify",
+          "sha256": "dae69a121f8e680a65547462257fb147473a75cc608ecb363a369c7200bea72f",
+          "size": 27374,
+          "source_sha256": "6942e4701231e33b635fc60824587c4726ebebcafe8b8cda570eeec30a9d83af"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+          "action": "modify",
+          "sha256": "2d722a6072b302bbfbc3b7b9ea5df2c76a36649a6a47a3c50c98feed776e1a6d",
+          "size": 14770,
+          "source_sha256": "9e0d7433482fd7652ddf33b5e1a01806ab6232a4a20cedbe13fcf152f4ec9f77"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "cec03864a24aaa7327ba93d945fe038211e7446ee0dc2ace62bee6559018011c",
+          "size": 101136,
+          "source_sha256": "3278da189c53f734ea38ab69b76ac60cdcbccdd10b0c0f82d1380a363d386e8e"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+          "action": "add",
+          "sha256": "0bc16761abe94dc74f179bd3eea82fe15504167fd8a36b95a39a0074d3dbf58f",
+          "size": 6744
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+          "action": "add",
+          "sha256": "1c5c1e1cf3838438156305762b3e82870606c9ebcd321ede18786a822b01d378",
+          "size": 10238
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt",
+          "action": "add",
+          "sha256": "1fd2b66cf45c5c6c2a6965124fa5ce1460c4afd190be447a84cadc10f1c31b55",
+          "size": 3957
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+          "action": "add",
+          "sha256": "38d837d3e3aa7a8fee594ebba633248b8d0ca7c77715b413044475b7e4ec3af8",
+          "size": 17633
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedModulePolicyTest.kt",
+          "action": "add",
+          "sha256": "e3646b2dac413d258eeba95219691189a8d7de231dad03e30c4831642c9fb7a3",
+          "size": 1841
+        },
+        {
+          "path": "docs/LSPOSED_APK_MODULES.md",
+          "action": "add",
+          "sha256": "5ea261df6a5c3e95c814ce44b8aad1a43afac3b0b8e87f5efb2e0a5c2f033d17",
+          "size": 1237
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add LSPosed APK repository and installed module tabs"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "dd65922eb0864a18a904c8ab50010d35"
+}
