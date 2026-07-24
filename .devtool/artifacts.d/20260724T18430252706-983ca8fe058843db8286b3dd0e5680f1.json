@@ -1,0 +1,110 @@
+{
+  "applied_at": "2026-07-24T18:43:02.527060Z",
+  "artifact": "/home/mike/Downloads/mmrl_lsposed_scope_discovery_overlay.zip",
+  "artifact_name": "mmrl_lsposed_scope_discovery_overlay.zip",
+  "type": "overlay",
+  "sha256": "f9cdc9aa11b23b44c240d72f1a37af4b90b4cca24a1e13fd55b0599f6308329c",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add LSPosed scope discovery",
+  "commit_hash": "",
+  "file_count": 9,
+  "change_counts": {
+    "add": 3,
+    "modify": 6
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_lsposed_scope_discovery_overlay",
+    "description": "Read-only Vector/LSPosed provider scope discovery for installed APK modules.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": {
+      "root": "$HOME/Code/MMRL"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "UI_UX_IMPLEMENTATION.md",
+          "action": "modify",
+          "sha256": "485530df6135746a61ec4c676aa6c607a2ac419966ae416213e6ca6a0de8e3ba",
+          "size": 19181,
+          "source_sha256": "2f6c1db34ea3feb244d764e12051667fe8fef8fcf57b7b02f639a1dd061cbeed"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+          "action": "modify",
+          "sha256": "cdaf4615b18dda86c934e8f587346202b718829860b09f0debb856c99d4625ec",
+          "size": 22208,
+          "source_sha256": "1e78ad26f3d6b7741182cd2c42c7ff468ca52094aeb43cf16e85c3608b378ae6"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+          "action": "modify",
+          "sha256": "56eb4a79d938838079080ac65925e7ab359d211656ebf7cb807a2bee615f1133",
+          "size": 11341,
+          "source_sha256": "cd50f74c4913da610c99e6ac1cc26bdf070321d68bb578bd5bc8281e46a6c64e"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeRepository.kt",
+          "action": "add",
+          "sha256": "e3bcc4ed3550eb800feaecbe02001826e3f7ec5daf0bfb571db409b438598148",
+          "size": 5555
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+          "action": "modify",
+          "sha256": "48ec4f649776968d397c595fb933a99abcc1d6dd7bc28446cabbf1c86994863b",
+          "size": 41445,
+          "source_sha256": "88c13cdec421cae70efa61589a8fc768f40900421b4605cc6862b95c0f115531"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt",
+          "action": "modify",
+          "sha256": "a9292e67e3bbd5ef19ca7b3014c73cd36d49b20d8ca2da89a37028256e86b07c",
+          "size": 8303,
+          "source_sha256": "d8e3536173c52a1b67974e60029543a736cc66daaa5174c97cb114ba1d8eec57"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "b259120a6fc006a6184b27d909d75b14a83c61ce41f14e1f07270bef5d79f58f",
+          "size": 104824,
+          "source_sha256": "d55fcfddd27aa648b0e086ed9719ea83cfe93a4dce04cd51257724fc74cc77ec"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeDiscoveryContractTest.kt",
+          "action": "add",
+          "sha256": "e08e00f306678bf5e6d930e5093089c1558f93f4bbfa021877c141c3587e5a32",
+          "size": 2779
+        },
+        {
+          "path": "docs/LSPOSED_SCOPE_DISCOVERY.md",
+          "action": "add",
+          "sha256": "1920d02af13bbb9695d343728cb9fe89a0618e5e72bde94d60c8a56fc303f49e",
+          "size": 661
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add LSPosed scope discovery"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "983ca8fe058843db8286b3dd0e5680f1"
+}
