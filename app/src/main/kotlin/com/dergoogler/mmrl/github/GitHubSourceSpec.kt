@@ -3,6 +3,16 @@ package com.dergoogler.mmrl.github
 import java.net.URI
 import java.util.Locale
 
+
+private val GitHubSourceMode.queryValue: String
+    get() =
+        when (this) {
+            GitHubSourceMode.RELEASE -> "release"
+            GitHubSourceMode.NIGHTLY -> "nightly"
+            GitHubSourceMode.NIGHTLY_LINK -> "nightlyLink"
+        }
+
+
 data class GitHubSourceSpec(
     val owner: String,
     val repository: String,
@@ -11,7 +21,7 @@ data class GitHubSourceSpec(
     val repoUrl: String get() = "https://github.com/$owner/$repository"
 
     val sourceUrl: String
-        get() = "$repoUrl?mmrlSource=${if (mode == GitHubSourceMode.NIGHTLY) "nightly" else "release"}"
+        get() = "$repoUrl?mmrlSource=${mode.queryValue}"
 
     companion object {
         fun fromDownloadUrl(url: String?): GitHubSourceSpec? {
@@ -41,6 +51,10 @@ data class GitHubSourceSpec(
                 return GitHubSourceSpec(parts[0], parts[1], mode)
             }
 
+            if (uri.host.equals("nightly.link", ignoreCase = true) && parts.size >= 2) {
+                return GitHubSourceSpec(parts[0], parts[1], GitHubSourceMode.NIGHTLY_LINK)
+            }
+
             return null
         }
 
@@ -58,7 +72,11 @@ data class GitHubSourceSpec(
                     ?.substringAfter('=', "")
                     ?.lowercase(Locale.ROOT)
                     ?.let {
-                        if (it == "nightly") GitHubSourceMode.NIGHTLY else GitHubSourceMode.RELEASE
+                        when (it) {
+                            "nightly" -> GitHubSourceMode.NIGHTLY
+                            "nightlylink", "nightly_link", "nightly-link" -> GitHubSourceMode.NIGHTLY_LINK
+                            else -> GitHubSourceMode.RELEASE
+                        }
                     } ?: GitHubSourceMode.RELEASE
             return GitHubSourceSpec(parts[0], parts[1], mode)
         }

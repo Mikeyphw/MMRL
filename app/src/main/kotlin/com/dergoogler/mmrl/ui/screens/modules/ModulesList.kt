@@ -59,7 +59,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -71,7 +70,10 @@ import com.dergoogler.mmrl.ash.model.AshModuleFilter
 import com.dergoogler.mmrl.ash.model.AshModuleProtection
 import com.dergoogler.mmrl.ash.model.AshModuleRiskBand
 import com.dergoogler.mmrl.ash.model.moduleProtections
+import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.ext.isPackageInstalled
+import com.dergoogler.mmrl.github.GitHubSourceMode
+import com.dergoogler.mmrl.github.GitHubSourceSpec
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.InstalledModuleGroupKey
 import com.dergoogler.mmrl.model.local.ModuleSnapshot
@@ -113,6 +115,7 @@ fun ScaffoldScope.ModulesList(
     lockedUpdates: Map<String, ModuleUpdateInfo>,
     versionPolicies: Map<String, ModuleVersionPolicy>,
     moduleSnapshots: List<ModuleSnapshot>,
+    localSources: List<LocalModuleSource>,
     state: LazyListState,
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
     viewModel: ModulesViewModel,
@@ -126,6 +129,7 @@ fun ScaffoldScope.ModulesList(
     val paddingValues = LocalMainScreenInnerPaddings.current
     val layoutDirection = LocalLayoutDirection.current
     val updateMap = remember(updates) { updates.associateBy { ModuleIdentity.normalize(it.local.id.id) } }
+    val localSourceMap = remember(localSources) { localSources.associateBy { ModuleIdentity.normalize(it.id) } }
     val ashProtectionMap = remember(ashState) { ashState.moduleProtections() }
     val ashWritable = !ashState.readOnly && ashState.lifecycle.compatible
     var snapshotDialogOpen by remember { mutableStateOf(false) }
@@ -174,6 +178,8 @@ fun ScaffoldScope.ModulesList(
                     lockedCount = versionPolicies.size,
                     snapshotCount = moduleSnapshots.size,
                     providerAlive = isProviderAlive,
+                    onSaveSnapshot = { viewModel.saveCurrentSnapshot() },
+                    onOpenSnapshots = { snapshotDialogOpen = true },
                 )
             }
 
@@ -199,6 +205,7 @@ fun ScaffoldScope.ModulesList(
                     updateMap = updateMap,
                     lockedUpdates = lockedUpdates,
                     versionPolicies = versionPolicies,
+                    localSourceMap = localSourceMap,
                     viewModel = viewModel,
                     isProviderAlive = isProviderAlive,
                     onDownload = onDownload,
@@ -227,6 +234,7 @@ private fun LazyListScope.moduleRows(
     updateMap: Map<String, ModuleUpdateInfo>,
     lockedUpdates: Map<String, ModuleUpdateInfo>,
     versionPolicies: Map<String, ModuleVersionPolicy>,
+    localSourceMap: Map<String, LocalModuleSource>,
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
@@ -245,6 +253,7 @@ private fun LazyListScope.moduleRows(
                 update = updateMap[normalizedId],
                 lockedUpdate = lockedUpdates[normalizedId],
                 policy = versionPolicies[normalizedId],
+                source = localSourceMap[normalizedId],
                 viewModel = viewModel,
                 isProviderAlive = isProviderAlive,
                 onDownload = onDownload,
@@ -274,6 +283,8 @@ private fun DeviceStatusHeader(
     lockedCount: Int,
     snapshotCount: Int,
     providerAlive: Boolean,
+    onSaveSnapshot: () -> Unit,
+    onOpenSnapshots: () -> Unit,
 ) {
     val activeCount = modules.count { it.state == State.ENABLE || it.state == State.UPDATE }
     val rebootRequired = modules.any { it.state == State.UPDATE || it.state == State.REMOVE }
@@ -325,6 +336,17 @@ private fun DeviceStatusHeader(
                 }
             }
 
+            Row(
+                modifier = Modifier.padding(top = 14.dp).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(onClick = onSaveSnapshot) {
+                    Text(stringResource(R.string.module_snapshot_save_now))
+                }
+                OutlinedButton(onClick = onOpenSnapshots) {
+                    Text(stringResource(R.string.module_snapshot_open))
+                }
+            }
         }
     }
 }
@@ -405,6 +427,7 @@ private fun InstalledModuleCard(
     update: ModuleUpdateInfo?,
     lockedUpdate: ModuleUpdateInfo?,
     policy: ModuleVersionPolicy?,
+    source: LocalModuleSource?,
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
@@ -451,6 +474,7 @@ private fun InstalledModuleCard(
     var menuOpen by remember { mutableStateOf(false) }
     var requiredAppBottomSheet by remember { mutableStateOf(false) }
     var detailsOpen by remember { mutableStateOf(false) }
+    var sourceDialogOpen by remember { mutableStateOf(false) }
 
     if (updateSheetOpen && updateItem != null) {
         VersionItemBottomSheet(
@@ -475,6 +499,18 @@ private fun InstalledModuleCard(
             lockedUpdate = lockedUpdate,
             ashProtection = ashProtection,
             onDismiss = { detailsOpen = false },
+        )
+    }
+
+    if (sourceDialogOpen && source != null) {
+        ModuleSourceDialog(
+            module = module,
+            source = source,
+            onDismiss = { sourceDialogOpen = false },
+            onModeSelected = { mode ->
+                viewModel.setModuleSourceMode(module, source, mode)
+                sourceDialogOpen = false
+            },
         )
     }
 
@@ -565,6 +601,7 @@ private fun InstalledModuleCard(
                             canOpenWebUi = canOpenWebUi,
                             actionEnabled = actionEnabled,
                             updateItem = updateItem,
+                            source = source,
                             ashProtection = ashProtection,
                             ashWritable = ashWritable,
                             removeEnabled = removeEnabled,
@@ -575,6 +612,7 @@ private fun InstalledModuleCard(
                             },
                             openUpdateSheet = { updateSheetOpen = true },
                             openDetails = { detailsOpen = true },
+                            openSourceDialog = { sourceDialogOpen = true },
                             onOpenSnapshots = onOpenSnapshots,
                         )
                     }
@@ -604,7 +642,7 @@ private fun InstalledModuleCard(
                             }
                         }
                         if (module.hasAction) {
-                            OutlinedButton(
+                            Button(
                                 onClick = { ActionActivity.start(context = context, modId = module.id) },
                                 enabled = actionEnabled,
                             ) {
@@ -634,6 +672,24 @@ private fun InstalledModuleCard(
                         StatusPill(
                             text = stringResource(R.string.module_update_available),
                             color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                    source?.let {
+                        StatusPill(
+                            text = stringResource(R.string.module_source_mode_status, it.displayModeLabel()),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    if (module.hasWebUI || module.hasModConf) {
+                        StatusPill(
+                            text = stringResource(R.string.view_module_features_webui),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    if (module.hasAction) {
+                        StatusPill(
+                            text = stringResource(R.string.module_action_available),
+                            color = MaterialTheme.colorScheme.secondary,
                         )
                     }
                     ashProtection?.let { protection ->
@@ -685,6 +741,7 @@ private fun ModuleActionsMenu(
     canOpenWebUi: Boolean,
     actionEnabled: Boolean,
     updateItem: VersionItem?,
+    source: LocalModuleSource?,
     ashProtection: AshModuleProtection?,
     ashWritable: Boolean,
     removeEnabled: Boolean,
@@ -693,6 +750,7 @@ private fun ModuleActionsMenu(
     launchWebUi: () -> Unit,
     openUpdateSheet: () -> Unit,
     openDetails: () -> Unit,
+    openSourceDialog: () -> Unit,
     onOpenSnapshots: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -708,6 +766,16 @@ private fun ModuleActionsMenu(
                 openDetails()
             },
         )
+        if (source != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.module_source_edit)) },
+                leadingIcon = { Icon(painterResource(R.drawable.database_edit), null) },
+                onClick = {
+                    onDismiss()
+                    openSourceDialog()
+                },
+            )
+        }
         DropdownMenuItem(
             text = { Text(stringResource(R.string.module_policy_lock_current)) },
             leadingIcon = { Icon(painterResource(R.drawable.shield_lock), null) },
@@ -843,6 +911,52 @@ private fun ModuleActionsMenu(
             },
         )
     }
+}
+
+@Composable
+private fun ModuleSourceDialog(
+    module: InstalledModule,
+    source: LocalModuleSource,
+    onDismiss: () -> Unit,
+    onModeSelected: (GitHubSourceMode) -> Unit,
+) {
+    val currentMode = source.resolvedMode()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
+        },
+        title = { Text(stringResource(R.string.module_source_edit)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = module.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(R.string.module_source_switch_note),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                listOf(
+                    GitHubSourceMode.RELEASE,
+                    GitHubSourceMode.NIGHTLY,
+                    GitHubSourceMode.NIGHTLY_LINK,
+                ).forEach { mode ->
+                    FilterChip(
+                        selected = currentMode == mode,
+                        onClick = { onModeSelected(mode) },
+                        label = { Text(mode.displayLabel()) },
+                    )
+                }
+                MetadataRow(stringResource(R.string.module_source_current_url), source.repoUrl)
+            }
+        },
+    )
 }
 
 @Composable
@@ -1060,7 +1174,6 @@ private fun StatusPill(
     color: Color,
 ) {
     Surface(
-        modifier = Modifier.semantics { stateDescription = text },
         color = color.copy(alpha = 0.12f),
         contentColor = color,
         shape = RoundedCornerShape(999.dp),
@@ -1070,13 +1183,30 @@ private fun StatusPill(
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
     }
 }
+
+
+private fun LocalModuleSource.resolvedMode(): GitHubSourceMode =
+    runCatching { GitHubSourceMode.valueOf(mode) }.getOrNull()
+        ?: GitHubSourceSpec.fromSourceUrl(repoUrl)?.mode
+        ?: GitHubSourceMode.RELEASE
+
+@Composable
+private fun LocalModuleSource.displayModeLabel(): String = resolvedMode().displayLabel()
+
+@Composable
+private fun GitHubSourceMode.displayLabel(): String =
+    when (this) {
+        GitHubSourceMode.RELEASE -> stringResource(R.string.module_source_release)
+        GitHubSourceMode.NIGHTLY -> stringResource(R.string.module_source_nightly_api)
+        GitHubSourceMode.NIGHTLY_LINK -> stringResource(R.string.module_source_nightly_link)
+    }
 
 @Composable
 private fun Platform.displayLabel(): String = when (this) {

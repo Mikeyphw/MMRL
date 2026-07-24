@@ -28,6 +28,7 @@ import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.ext.parcelable
+import com.dergoogler.mmrl.github.GitHubArtifactArchivePolicy
 import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
@@ -63,7 +64,9 @@ import java.io.IOException
 import java.io.OutputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import kotlin.coroutines.coroutineContext
 
@@ -289,33 +292,83 @@ class DownloadService : LifecycleService() {
         archive: File,
         operationId: String,
     ): File {
-        if (!url.contains("/actions/artifacts/", ignoreCase = true)) return archive
-        val nested =
-            runCatching {
-                ZipFile(archive).use { zip ->
-                    zip
-                        .entries()
-                        .asSequence()
-                        .filter { !it.isDirectory && it.name.endsWith(".zip", ignoreCase = true) }
-                        .maxByOrNull { nestedZipScore(it.name) }
-                        ?.let { entry ->
-                            val output = temporaryFile("$operationId-nested")
-                            zip.getInputStream(entry).buffered().use { input ->
-                                output.outputStream().buffered().use { outputStream ->
-                                    input.copyTo(outputStream)
-                                }
-                            }
-                            output.takeIf { it.isFile && it.length() > 0L }
-                        }
-                }
-            }.getOrNull()
+        if (!GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)) return archive
 
-        if (nested != null) {
-            operationHistoryRepository.appendLog(operationId, "Extracted nested module archive from GitHub artifact")
-            return nested
+        ZipFile(archive).use { zip ->
+            val entries = zip.entries().asSequence().filterNot { it.isDirectory }.toList()
+            val nestedZip =
+                entries
+                    .filter { it.name.endsWith(".zip", ignoreCase = true) }
+                    .maxByOrNull { nestedZipScore(it.name) }
+
+            if (nestedZip != null) {
+                val output = temporaryFile("$operationId-nested")
+                zip.getInputStream(nestedZip).buffered().use { input ->
+                    output.outputStream().buffered().use { outputStream ->
+                        input.copyTo(outputStream)
+                    }
+                }
+                require(output.isFile && output.length() > 0L) {
+                    "Extracted GitHub Actions module ZIP is empty"
+                }
+                operationHistoryRepository.appendLog(operationId, "Extracted nested module archive from GitHub artifact")
+                return output
+            }
+
+            val moduleRoot = GitHubArtifactArchivePolicy.moduleRoot(entries.map { it.name })
+            if (moduleRoot != null) {
+                if (moduleRoot.isEmpty()) {
+                    operationHistoryRepository.appendLog(operationId, "GitHub artifact archive is already a module ZIP")
+                    return archive
+                }
+
+                val output = temporaryFile("$operationId-module")
+                repackageArtifactModuleDirectory(
+                    zip = zip,
+                    entries = entries,
+                    moduleRoot = moduleRoot,
+                    output = output,
+                )
+                operationHistoryRepository.appendLog(
+                    operationId,
+                    "Repacked module directory ${moduleRoot.trimEnd('/')} from GitHub artifact",
+                )
+                return output
+            }
         }
-        operationHistoryRepository.appendLog(operationId, "GitHub artifact did not contain a nested ZIP; publishing artifact archive")
-        return archive
+
+        throw IOException(
+            "GitHub Actions artifact does not contain a module ZIP or module.prop. " +
+                "Refresh the nightly source or adjust the file regex so it selects the module archive artifact.",
+        )
+    }
+
+    private fun repackageArtifactModuleDirectory(
+        zip: ZipFile,
+        entries: List<ZipEntry>,
+        moduleRoot: String,
+        output: File,
+    ) {
+        output.delete()
+        output.parentFile?.mkdirs()
+        val written = mutableSetOf<String>()
+        ZipOutputStream(output.outputStream().buffered()).use { target ->
+            entries
+                .filter { it.name.startsWith(moduleRoot) }
+                .forEach { entry ->
+                    val relative = entry.name.removePrefix(moduleRoot).trimStart('/')
+                    if (relative.isBlank() || !written.add(relative)) return@forEach
+                    val targetEntry = ZipEntry(relative).apply { time = entry.time }
+                    target.putNextEntry(targetEntry)
+                    zip.getInputStream(entry).buffered().use { input ->
+                        input.copyTo(target)
+                    }
+                    target.closeEntry()
+                }
+        }
+        require(output.isFile && output.length() > 0L) {
+            "Repacked GitHub Actions module ZIP is empty"
+        }
     }
 
     private fun nestedZipScore(name: String): Int {
@@ -341,12 +394,15 @@ class DownloadService : LifecycleService() {
         output: OutputStream,
         onProgress: (Float) -> Unit,
     ): Result<*> {
-        if (!url.startsWith("https://api.github.com/", ignoreCase = true)) {
+        if (!url.startsWith("https://api.github.com/", ignoreCase = true) &&
+            !GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)
+        ) {
             return NetworkCompat.download(url = url, output = output, onProgress = onProgress)
         }
 
         return withContext(Dispatchers.IO) {
             runCatching {
+                val token = GitHubTokenStore(this@DownloadService).getToken()?.trim()?.takeIf(String::isNotBlank)
                 val request =
                     Request
                         .Builder()
@@ -354,13 +410,23 @@ class DownloadService : LifecycleService() {
                         .header("Accept", "application/octet-stream")
                         .header("X-GitHub-Api-Version", "2022-11-28")
                         .apply {
-                            GitHubTokenStore(this@DownloadService).getToken()?.takeIf(String::isNotBlank)?.let {
+                            token?.let {
                                 header("Authorization", "Bearer $it")
                             }
                         }.build()
 
                 NetworkUtils.createOkHttpClient().newCall(request).execute().use { response ->
-                    require(response.isSuccessful) { "HTTP ${response.code} while downloading GitHub file" }
+                    if (!response.isSuccessful) {
+                        val detail = response.body?.string()
+                        throw IOException(
+                            GitHubArtifactArchivePolicy.downloadFailureMessage(
+                                url = url,
+                                code = response.code,
+                                hasToken = token != null,
+                                bodySnippet = detail,
+                            ),
+                        )
+                    }
                     val body = response.body ?: error("Empty GitHub download response")
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                     val all = body.contentLength()

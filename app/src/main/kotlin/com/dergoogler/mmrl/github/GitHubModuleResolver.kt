@@ -13,6 +13,8 @@ import okhttp3.Response
 import java.io.File
 import java.io.IOException
 import java.net.URI
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.zip.ZipFile
 import kotlin.math.absoluteValue
@@ -20,6 +22,7 @@ import kotlin.math.absoluteValue
 enum class GitHubSourceMode {
     RELEASE,
     NIGHTLY,
+    NIGHTLY_LINK,
 }
 
 data class GitHubModuleRequest(
@@ -70,7 +73,8 @@ class GitHubModuleResolver {
             val candidates =
                 when (request.mode) {
                     GitHubSourceMode.RELEASE -> resolveReleases(repo, request.includePreReleases, request.token)
-                    GitHubSourceMode.NIGHTLY -> resolveNightly(repo, request.token)
+                    GitHubSourceMode.NIGHTLY -> resolveNightly(repo, request.token, useNightlyLink = false)
+                    GitHubSourceMode.NIGHTLY_LINK -> resolveNightly(repo, request.token, useNightlyLink = true)
                 }.filter { candidate ->
                     regex?.containsMatchIn(candidate.name) ?: true
                 }.sortedWith(compareByDescending<GitHubCandidate> { it.score }.thenByDescending { it.updatedAt.orEmpty() })
@@ -151,6 +155,7 @@ class GitHubModuleResolver {
     private fun resolveNightly(
         repo: GitHubRepository,
         token: String?,
+        useNightlyLink: Boolean,
     ): List<GitHubCandidate> {
         val runs =
             runsAdapter
@@ -168,17 +173,22 @@ class GitHubModuleResolver {
                     .filter { !it.expired }
             if (artifacts.isNotEmpty()) {
                 return artifacts.map { artifact ->
+                    val nightlyLinkUrl = nightlyLinkArtifactUrl(repo, run, artifact)
                     GitHubCandidate(
                         id = "artifact-${run.id}-${artifact.id}",
                         name = artifact.name,
-                        sourceName = run.name.ifBlank { "Nightly" },
-                    version = run.headSha.take(7).ifBlank { "nightly" },
-                    versionCode = run.runNumber.takeIf { it > 0 } ?: run.id.hashCode().absoluteValue.coerceAtLeast(1),
-                    downloadUrl = artifact.archiveDownloadUrl,
-                    apiDownloadUrl = artifact.archiveDownloadUrl,
-                    size = artifact.sizeInBytes,
+                        sourceName = if (useNightlyLink) {
+                            "${run.name.ifBlank { "Nightly" }} via nightly.link"
+                        } else {
+                            run.name.ifBlank { "Nightly" }
+                        },
+                        version = run.headSha.take(7).ifBlank { "nightly" },
+                        versionCode = run.runNumber.takeIf { it > 0 } ?: run.id.hashCode().absoluteValue.coerceAtLeast(1),
+                        downloadUrl = if (useNightlyLink) nightlyLinkUrl else artifact.archiveDownloadUrl,
+                        apiDownloadUrl = if (useNightlyLink) null else artifact.archiveDownloadUrl,
+                        size = artifact.sizeInBytes,
                         updatedAt = artifact.updatedAt ?: run.updatedAt,
-                        mode = GitHubSourceMode.NIGHTLY,
+                        mode = if (useNightlyLink) GitHubSourceMode.NIGHTLY_LINK else GitHubSourceMode.NIGHTLY,
                         score = assetScore(artifact.name),
                     )
                 }
@@ -245,6 +255,28 @@ class GitHubModuleResolver {
         }
         require(destination.isFile && destination.length() > 0L) { "Downloaded file is empty" }
     }
+
+
+    private fun nightlyLinkArtifactUrl(
+        repo: GitHubRepository,
+        run: GitHubRun,
+        artifact: GitHubArtifact,
+    ): String {
+        val workflow =
+            run.path.orEmpty()
+                .substringAfterLast('/')
+                .removeSuffix(".yml")
+                .removeSuffix(".yaml")
+                .ifBlank { run.name.ifBlank { "build" } }
+        val branch = run.headBranch.orEmpty().ifBlank { "master" }
+        return "https://nightly.link/${repo.owner}/${repo.name}/workflows/" +
+            "${encodePathSegment(workflow)}/${encodePathSegment(branch)}/${encodePathSegment(artifact.name)}.zip"
+    }
+
+    private fun encodePathSegment(value: String): String =
+        URLEncoder
+            .encode(value, StandardCharsets.UTF_8.name())
+            .replace("+", "%20")
 
     private fun apiText(
         repo: GitHubRepository,
@@ -371,6 +403,8 @@ class GitHubModuleResolver {
         val name: String = "",
         @param:Json(name = "run_number") val runNumber: Int = 0,
         @param:Json(name = "head_sha") val headSha: String = "",
+        @param:Json(name = "head_branch") val headBranch: String? = null,
+        val path: String? = null,
         @param:Json(name = "artifacts_url") val artifactsUrl: String,
         @param:Json(name = "created_at") val createdAt: String? = null,
         @param:Json(name = "updated_at") val updatedAt: String? = null,

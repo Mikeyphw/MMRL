@@ -108,7 +108,7 @@ internal object RepositorySourceLoader {
                 ?.takeIf(String::isNotBlank)
                 ?: candidate.version
         val moduleVersionCode =
-            if (options.mode == GitHubSourceMode.NIGHTLY) {
+            if (options.mode != GitHubSourceMode.RELEASE) {
                 candidate.versionCode
             } else {
                 properties["versionCode"]
@@ -126,7 +126,7 @@ internal object RepositorySourceLoader {
             properties["description"]
                 ?.trim()
                 ?.takeIf(String::isNotBlank)
-                ?: "GitHub ${if (options.mode == GitHubSourceMode.NIGHTLY) "nightly" else "release"} module source."
+                ?: "GitHub ${options.mode.sourceLabel()} module source."
 
         val version =
             VersionItem(
@@ -144,10 +144,10 @@ internal object RepositorySourceLoader {
             website = github.baseUrl,
             description =
                 "Persistent GitHub module source using " +
-                    if (options.mode == GitHubSourceMode.NIGHTLY) {
-                        "the latest successful Actions artifact."
-                    } else {
-                        "GitHub releases."
+                    when (options.mode) {
+                        GitHubSourceMode.RELEASE -> "GitHub releases."
+                        GitHubSourceMode.NIGHTLY -> "the latest successful Actions artifact through the GitHub API."
+                        GitHubSourceMode.NIGHTLY_LINK -> "the latest successful Actions artifact through nightly.link."
                     },
             metadata =
                 ModulesJsonMetadata(
@@ -443,6 +443,7 @@ internal object RepositorySourceLoader {
         val mode =
             when (parameters["mmrlSource"]?.lowercase(Locale.ROOT)) {
                 "nightly" -> GitHubSourceMode.NIGHTLY
+                "nightlylink", "nightly_link", "nightly-link" -> GitHubSourceMode.NIGHTLY_LINK
                 else -> GitHubSourceMode.RELEASE
             }
         val cleanRepoUrl = "https://github.com/${parts[0]}/${parts[1]}"
@@ -506,6 +507,14 @@ internal object RepositorySourceLoader {
         URLEncoder
             .encode(value, StandardCharsets.UTF_8.name())
             .replace("+", "%20")
+
+
+    private fun GitHubSourceMode.sourceLabel(): String =
+        when (this) {
+            GitHubSourceMode.RELEASE -> "release"
+            GitHubSourceMode.NIGHTLY -> "nightly"
+            GitHubSourceMode.NIGHTLY_LINK -> "nightly.link nightly"
+        }
 
     @JsonClass(generateAdapter = true)
     internal data class KernelSuCatalogEntry(

@@ -78,6 +78,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         val lockedUpdates by viewModel.lockedUpdates.collectAsStateWithLifecycle()
         val versionPolicies by viewModel.versionPolicies.collectAsStateWithLifecycle()
         val moduleSnapshots by viewModel.moduleSnapshots.collectAsStateWithLifecycle()
+        val localSources by viewModel.localSources.collectAsStateWithLifecycle()
         val query by viewModel.query.collectAsStateWithLifecycle()
         val state by viewModel.screenState.collectAsStateWithLifecycle()
         val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -188,6 +189,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                     lockedUpdates = lockedUpdates,
                     versionPolicies = versionPolicies,
                     moduleSnapshots = moduleSnapshots,
+                    localSources = localSources,
                     state = viewModel.listState,
                     viewModel = viewModel,
                     onDownload = download,

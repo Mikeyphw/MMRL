@@ -24,9 +24,13 @@ import com.dergoogler.mmrl.ash.model.matches
 import com.dergoogler.mmrl.ash.model.moduleProtections
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
+import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
+import com.dergoogler.mmrl.database.entity.Repo.Companion.toRepo
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.datastore.model.ModulesMenu
 import com.dergoogler.mmrl.datastore.model.Option
+import com.dergoogler.mmrl.github.GitHubSourceMode
+import com.dergoogler.mmrl.github.GitHubSourceSpec
 import com.dergoogler.mmrl.model.json.UpdateJson
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.LocalModule
@@ -113,6 +117,14 @@ class ModulesViewModel
         val ashMessages = ashMessagesFlow.asSharedFlow()
         val versionPolicies = modulePolicyStore.policies
         val moduleSnapshots = modulePolicyStore.snapshots
+        val localSources: StateFlow<List<LocalModuleSource>> =
+            localRepository
+                .getLocalSourcesAsFlow()
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = emptyList(),
+                )
 
         val moduleCompatibility: ModuleCompatibility
             get() =
@@ -761,6 +773,14 @@ class ModulesViewModel
             }
         }
 
+
+        private fun GitHubSourceMode.sourceLabel(): String =
+            when (this) {
+                GitHubSourceMode.RELEASE -> "release"
+                GitHubSourceMode.NIGHTLY -> "GitHub API nightly"
+                GitHubSourceMode.NIGHTLY_LINK -> "nightly.link nightly"
+            }
+
         private data class PendingModuleOperation(
             val historyId: String,
             val successSummary: String,
@@ -801,6 +821,32 @@ class ModulesViewModel
             }
 
             return item
+        }
+
+        fun setModuleSourceMode(
+            module: LocalModule,
+            source: LocalModuleSource,
+            mode: GitHubSourceMode,
+        ) {
+            val current = GitHubSourceSpec.fromSourceUrl(source.repoUrl) ?: return
+            val nextSourceUrl = GitHubSourceSpec(current.owner, current.repository, mode).sourceUrl
+            viewModelScope.launch {
+                val repo = nextSourceUrl.toRepo()
+                localRepository.insertRepo(repo)
+                localRepository.insertLocalSource(
+                    source.copy(
+                        id = module.id.id,
+                        repoUrl = nextSourceUrl,
+                        mode = mode.name,
+                        updatedAt = System.currentTimeMillis(),
+                    ),
+                )
+                modulesRepository.getRepo(repo)
+                versionItemCache.remove(module.id)
+                ashMessagesFlow.tryEmit(
+                    "${module.name} source switched to ${mode.sourceLabel()}",
+                )
+            }
         }
 
         fun setUpdateIgnored(moduleId: String, ignored: Boolean) {

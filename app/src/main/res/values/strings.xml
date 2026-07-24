@@ -867,6 +867,12 @@
     <string name="recovery_center_subtitle">Incidents, quarantine, restoration, and diagnostics</string>
     <string name="recovery_center_refresh">Refresh Recovery Center</string>
     <string name="recovery_task_status">Check status</string>
+    <string name="recovery_task_status_short">Status</string>
+    <string name="recovery_task_restore_short">Restore</string>
+    <string name="recovery_task_investigate_short">Culprit</string>
+    <string name="recovery_task_trial_short">Trial</string>
+    <string name="recovery_task_history_short">History</string>
+    <string name="recovery_task_advanced_short">Advanced</string>
     <string name="recovery_task_restore">Restore modules</string>
     <string name="recovery_task_investigate">Find culprit</string>
     <string name="recovery_task_trial">Review trial</string>
@@ -1266,26 +1272,11 @@
     <string name="module_snapshot_status_review">Review</string>
 
 
-    <string name="recovery_task_status_short">Status</string>
-    <string name="recovery_task_restore_short">Restore</string>
-    <string name="recovery_task_investigate_short">Culprit</string>
-    <string name="recovery_task_trial_short">Trial</string>
-    <string name="recovery_task_history_short">History</string>
-    <string name="recovery_task_advanced_short">Advanced</string>
-    <string name="repo_tab_repositories">Repositories</string>
-    <string name="repo_tab_github">GitHub</string>
-    <string name="repo_error_invalid_url">Invalid repository URL</string>
-    <string name="repo_github_error_invalid_url">Invalid GitHub repository URL</string>
-    <string name="repo_github_add_title">Add GitHub source</string>
-    <string name="repo_github_url_label">Repository URL</string>
-    <string name="repo_github_url_placeholder">https://github.com/owner/repo</string>
-    <string name="repo_github_release">Release</string>
-    <string name="repo_github_nightly">Nightly</string>
-    <string name="repo_github_include_prereleases">Include pre-releases</string>
-    <string name="repo_github_file_regex">File regex</string>
-    <string name="repo_github_regex_placeholder">optional, e.g. aarch64|arm64</string>
-    <string name="repo_github_token_saved">GitHub token saved</string>
-    <string name="repo_github_token">GitHub token</string>
-    <string name="repo_github_token_placeholder">optional for private repos</string>
-    <string name="repo_github_clear_token">Clear saved token</string>
+    <string name="module_source_edit">Edit module source</string>
+    <string name="module_source_switch_note">Change how this GitHub source resolves updates. Release uses normal GitHub releases; nightly uses Actions artifacts; nightly.link uses public nightly.link artifact downloads.</string>
+    <string name="module_source_current_url">Current source URL</string>
+    <string name="module_source_release">Release</string>
+    <string name="module_source_nightly_api">Nightly</string>
+    <string name="module_source_nightly_link">Nightly.link</string>
+    <string name="module_source_mode_status">Source: %1$s</string>
 </resources>

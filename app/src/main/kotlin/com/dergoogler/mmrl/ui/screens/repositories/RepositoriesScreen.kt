@@ -8,7 +8,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -277,21 +276,21 @@ fun RepositoriesScreen() =
                     } else {
                         list.filter { it.url.isGitHubSourceUrl() }
                     }
-                Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding())) {
+                Column {
                     TabRow(selectedTabIndex = selectedTab) {
                         Tab(
                             selected = selectedTab == 0,
                             onClick = { selectedTab = 0 },
-                            text = { Text(stringResource(R.string.repo_tab_repositories)) },
+                            text = { Text("Repositories") },
                         )
                         Tab(
                             selected = selectedTab == 1,
                             onClick = { selectedTab = 1 },
-                            text = { Text(stringResource(R.string.repo_tab_github)) },
+                            text = { Text("GitHub") },
                         )
                     }
                 this@Scaffold.RepositoriesList(
-                    innerPadding = PaddingValues(0.dp),
+                    innerPadding = innerPadding,
                         list = visibleList,
                     state = listState,
                     delete = viewModel::delete,
@@ -327,7 +326,6 @@ private fun AddDialog(
 ) {
     var repositoryUrl by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    val invalidUrlMessage = stringResource(R.string.repo_error_invalid_url)
 
     val onDone: () -> Unit = {
         runCatching { normalizeRepositoryUrlInput(repositoryUrl) }
@@ -335,7 +333,7 @@ private fun AddDialog(
                 onAdd(normalizedUrl)
                 onClose()
             }.onFailure {
-                error = it.message ?: invalidUrlMessage
+                error = it.message ?: "Invalid repository URL"
             }
     }
 
@@ -417,13 +415,13 @@ private fun GitHubSourceAddDialog(
             onAdd(sourceUrl)
             onClose()
         }.onFailure {
-            error = it.message ?: context.getString(R.string.repo_github_error_invalid_url)
+            error = it.message ?: "Invalid GitHub repository URL"
         }
     }
 
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text(stringResource(R.string.repo_github_add_title)) },
+        title = { Text("Add GitHub source") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -433,8 +431,8 @@ private fun GitHubSourceAddDialog(
                         repoUrl = it
                         error = null
                     },
-                    label = { Text(stringResource(R.string.repo_github_url_label)) },
-                    placeholder = { Text(stringResource(R.string.repo_github_url_placeholder)) },
+                    label = { Text("Repository URL") },
+                    placeholder = { Text("https://github.com/owner/repo") },
                     singleLine = true,
                     keyboardOptions =
                         KeyboardOptions(
@@ -453,12 +451,17 @@ private fun GitHubSourceAddDialog(
                     FilterChip(
                         selected = mode == GitHubSourceMode.RELEASE,
                         onClick = { mode = GitHubSourceMode.RELEASE },
-                        label = { Text(stringResource(R.string.repo_github_release)) },
+                        label = { Text("Release") },
                     )
                     FilterChip(
                         selected = mode == GitHubSourceMode.NIGHTLY,
                         onClick = { mode = GitHubSourceMode.NIGHTLY },
-                        label = { Text(stringResource(R.string.repo_github_nightly)) },
+                        label = { Text("Nightly") },
+                    )
+                    FilterChip(
+                        selected = mode == GitHubSourceMode.NIGHTLY_LINK,
+                        onClick = { mode = GitHubSourceMode.NIGHTLY_LINK },
+                        label = { Text("Nightly.link") },
                     )
                 }
                 if (mode == GitHubSourceMode.RELEASE) {
@@ -467,7 +470,7 @@ private fun GitHubSourceAddDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(stringResource(R.string.repo_github_include_prereleases))
+                        Text("Include pre-releases")
                         Switch(
                             checked = includePreReleases,
                             onCheckedChange = { includePreReleases = it },
@@ -478,8 +481,8 @@ private fun GitHubSourceAddDialog(
                     modifier = Modifier.fillMaxWidth(),
                     value = regex,
                     onValueChange = { regex = it },
-                    label = { Text(stringResource(R.string.repo_github_file_regex)) },
-                    placeholder = { Text(stringResource(R.string.repo_github_regex_placeholder)) },
+                    label = { Text("File regex") },
+                    placeholder = { Text("optional, e.g. aarch64|arm64") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
@@ -487,8 +490,8 @@ private fun GitHubSourceAddDialog(
                     modifier = Modifier.fillMaxWidth(),
                     value = token,
                     onValueChange = { token = it },
-                    label = { Text(stringResource(if (hasToken) R.string.repo_github_token_saved else R.string.repo_github_token)) },
-                    placeholder = { Text(stringResource(R.string.repo_github_token_placeholder)) },
+                    label = { Text(if (hasToken) "GitHub token saved" else "GitHub token") },
+                    placeholder = { Text(if (mode == GitHubSourceMode.NIGHTLY_LINK) "optional; nightly.link handles public artifact downloads" else "optional for private repos") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
@@ -500,7 +503,7 @@ private fun GitHubSourceAddDialog(
                             token = ""
                         },
                     ) {
-                        Text(stringResource(R.string.repo_github_clear_token))
+                        Text("Clear saved token")
                     }
                 }
             }
@@ -510,7 +513,7 @@ private fun GitHubSourceAddDialog(
                 onClick = add,
                 enabled = repoUrl.isNotBlank(),
             ) {
-                Text(stringResource(R.string.repo_add_dialog_add))
+                Text("Add")
             }
         },
         dismissButton = {
@@ -588,6 +591,14 @@ private fun FloatingButton(onClick: () -> Unit) {
     }
 }
 
+
+private fun GitHubSourceMode.queryValue(): String =
+    when (this) {
+        GitHubSourceMode.RELEASE -> "release"
+        GitHubSourceMode.NIGHTLY -> "nightly"
+        GitHubSourceMode.NIGHTLY_LINK -> "nightlyLink"
+    }
+
 private fun String.isGitHubSourceUrl(): Boolean =
     runCatching {
         val uri = URI(this)
@@ -602,18 +613,37 @@ private fun buildGitHubSourceUrl(
     regex: String,
 ): String {
     val uri = URI(rawUrl.trim().trimEnd('/').removeSuffix(".git"))
-    require(uri.host.equals("github.com", ignoreCase = true)) {
-        "Only github.com repositories are supported"
-    }
     val parts = uri.path.trim('/').split('/').filter(String::isNotBlank)
-    require(parts.size >= 2) { "GitHub URL must include owner and repository" }
+    val source =
+        when {
+            uri.host.equals("github.com", ignoreCase = true) -> {
+                require(parts.size >= 2) { "GitHub URL must include owner and repository" }
+                GitHubSourceInput(parts[0], parts[1], mode, null)
+            }
+            uri.host.equals("nightly.link", ignoreCase = true) -> {
+                require(parts.size >= 2) { "nightly.link URL must include owner and repository" }
+                val artifactName = parts.lastOrNull()?.removeSuffix(".zip")?.takeIf(String::isNotBlank)
+                GitHubSourceInput(parts[0], parts[1], GitHubSourceMode.NIGHTLY_LINK, artifactName)
+            }
+            else -> error("Only github.com repositories and nightly.link artifact URLs are supported")
+        }
+    val effectiveRegex =
+        regex.trim().takeIf(String::isNotBlank)
+            ?: source.artifactName?.let { Regex.escape(it) }
     val query =
         buildList {
-            add("mmrlSource=${if (mode == GitHubSourceMode.NIGHTLY) "nightly" else "release"}")
-            if (includePreReleases) add("includePreReleases=true")
-            regex.trim().takeIf(String::isNotBlank)?.let {
+            add("mmrlSource=${source.mode.queryValue()}")
+            if (source.mode == GitHubSourceMode.RELEASE && includePreReleases) add("includePreReleases=true")
+            effectiveRegex?.let {
                 add("regex=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}")
             }
         }.joinToString("&")
-    return "https://github.com/${parts[0]}/${parts[1]}?$query"
+    return "https://github.com/${source.owner}/${source.repository}?$query"
 }
+
+private data class GitHubSourceInput(
+    val owner: String,
+    val repository: String,
+    val mode: GitHubSourceMode,
+    val artifactName: String?,
+)
