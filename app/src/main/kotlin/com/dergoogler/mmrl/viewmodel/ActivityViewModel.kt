@@ -70,6 +70,18 @@ class ActivityViewModel
                 initialValue = 0,
             )
 
+        val activityAttentionCount =
+            combine(allHistory, ashManager.state) { entries, ashState ->
+                val ashEntries = ashState.snapshot?.activity.orEmpty().map { it.toHistoryEntry() }
+                (entries + ashEntries)
+                    .distinctBy(OperationHistoryEntity::id)
+                    .count { entry -> entry.isFailed || entry.isPendingReboot || entry.isRunning }
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = 0,
+            )
+
         init {
             viewModelScope.launch {
                 historyRepository.recoverStaleOperations()

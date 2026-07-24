@@ -1,17 +1,27 @@
 package com.dergoogler.mmrl.ash.root
 
+import android.content.Context
+import com.dergoogler.mmrl.ash.data.AshBundledModuleProvider
 import org.json.JSONObject
+import java.io.File
 import java.util.concurrent.Executors
+import java.util.zip.ZipInputStream
 import java.util.concurrent.TimeUnit
 
 internal class AshCtlExecutor(
+    private val context: Context? = null,
     private val moduleLocator: AshModuleLocator = AshModuleLocator(),
 ) {
-    fun moduleAvailable(): Boolean = moduleLocator.inspect().controlScript != null
+    fun moduleAvailable(): Boolean {
+        val inspection = moduleLocator.inspect()
+        val jq = repairBundledJqIfNeeded(inspection)
+        return inspection.controlScript != null && jq.executable
+    }
 
     fun moduleState(): String {
         val inspection = moduleLocator.inspect()
         val properties = inspection.properties
+        val jq = repairBundledJqIfNeeded(inspection)
         return JSONObject()
             .put("ok", true)
             .put("installed", inspection.installed)
@@ -26,6 +36,10 @@ internal class AshCtlExecutor(
             .put("disabled", inspection.disabled)
             .put("removalPending", inspection.removalPending)
             .put("updatePending", inspection.updatePending)
+            .put("jqPresent", jq.present)
+            .put("jqExecutable", jq.executable)
+            .put("jqRepaired", jq.repaired)
+            .put("jqRepairMessage", jq.message)
             .toString()
     }
 
@@ -110,8 +124,15 @@ internal class AshCtlExecutor(
         vararg arguments: String,
         timeoutSeconds: Long = 25,
     ): String {
-        val ctl = moduleLocator.locateControlScript()
+        val inspection = moduleLocator.inspect()
+        val ctl = inspection.controlScript
             ?: return errorJson("AshReXcue module is not installed or its control script could not be found")
+        val jq = repairBundledJqIfNeeded(inspection)
+        if (!jq.executable) {
+            return errorJson(
+                "AshReXcue needs the bundled jq runtime. ${jq.message} Reinstall the bundled module from MMRL if automatic repair cannot restore it.",
+            )
+        }
         val process = runCatching {
             ProcessBuilder(listOf(SYSTEM_SHELL, ctl.absolutePath, command) + arguments)
                 .redirectErrorStream(true)
@@ -146,6 +167,101 @@ internal class AshCtlExecutor(
         }
     }
 
+
+    private fun repairBundledJqIfNeeded(inspection: AshModuleLocator.Inspection): JqRuntimeState {
+        val moduleDirectory = inspection.directory
+            ?: return JqRuntimeState(message = "No installed AshReXcue module directory was found.")
+        val jq = File(moduleDirectory, JQ_RELATIVE_PATH)
+        if (jq.isFile) {
+            chmodExecutable(jq)
+            return JqRuntimeState(
+                present = true,
+                executable = jq.canExecute(),
+                repaired = jq.canExecute(),
+                message = if (jq.canExecute()) {
+                    "Bundled jq is executable."
+                } else {
+                    "Bundled jq exists but could not be made executable."
+                },
+            )
+        }
+        if (!inspection.active) {
+            return JqRuntimeState(
+                present = false,
+                executable = false,
+                repaired = false,
+                message = "A staged AshReXcue module is waiting for reboot, but the active bundled jq runtime is missing.",
+            )
+        }
+        val appContext = context ?: return JqRuntimeState(
+            present = false,
+            executable = false,
+            repaired = false,
+            message = "Bundled jq is missing and the root service cannot access app assets to repair it.",
+        )
+        return runCatching {
+            extractBundledJq(appContext, jq)
+            chmodExecutable(jq)
+            JqRuntimeState(
+                present = jq.isFile,
+                executable = jq.canExecute(),
+                repaired = jq.isFile && jq.canExecute(),
+                message = if (jq.isFile && jq.canExecute()) {
+                    "Bundled jq was restored from the packaged AshReXcue module."
+                } else {
+                    "Bundled jq could not be restored from the packaged AshReXcue module."
+                },
+            )
+        }.getOrElse { error ->
+            JqRuntimeState(
+                present = jq.isFile,
+                executable = jq.canExecute(),
+                repaired = false,
+                message = error.message ?: "Bundled jq repair failed.",
+            )
+        }
+    }
+
+    private fun extractBundledJq(context: Context, target: File) {
+        val parent = requireNotNull(target.parentFile) { "Bundled jq target has no parent directory" }
+        parent.mkdirs()
+        val temporary = File(parent, "${target.name}.repair-${android.system.Os.getpid()}")
+        if (temporary.exists()) temporary.delete()
+        context.assets.open(AshBundledModuleProvider.ASH_MODULE_ZIP_ASSET).use { input ->
+            ZipInputStream(input).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    val name = entry.name.removePrefix("./")
+                    if (!entry.isDirectory && name == JQ_RELATIVE_PATH) {
+                        temporary.outputStream().use(zip::copyTo)
+                        if (target.exists() && !target.delete()) {
+                            temporary.delete()
+                            error("Unable to replace stale bundled jq runtime")
+                        }
+                        if (!temporary.renameTo(target)) {
+                            temporary.copyTo(target, overwrite = true)
+                            temporary.delete()
+                        }
+                        return
+                    }
+                }
+            }
+        }
+        error("Packaged AshReXcue module does not contain $JQ_RELATIVE_PATH")
+    }
+
+    private fun chmodExecutable(file: File) {
+        file.setReadable(true, false)
+        file.setWritable(true, true)
+        file.setExecutable(true, false)
+        runCatching {
+            ProcessBuilder(SYSTEM_CHMOD, "755", file.absolutePath)
+                .redirectErrorStream(true)
+                .start()
+                .waitFor(5, TimeUnit.SECONDS)
+        }
+    }
+
     private fun requireSafeFolder(folder: String) {
         require(FOLDER_PATTERN.matches(folder)) { "Invalid module folder" }
     }
@@ -162,8 +278,17 @@ internal class AshCtlExecutor(
         .put("message", message)
         .toString()
 
+    private data class JqRuntimeState(
+        val present: Boolean = false,
+        val executable: Boolean = false,
+        val repaired: Boolean = false,
+        val message: String = "Bundled jq runtime was not inspected.",
+    )
+
     private companion object {
         const val SYSTEM_SHELL = "/system/bin/sh"
+        const val SYSTEM_CHMOD = "/system/bin/chmod"
+        const val JQ_RELATIVE_PATH = "jq/jq"
         const val MAX_RECOVERY_PLAN_MODULES = 8
         val FOLDER_PATTERN = Regex("^[A-Za-z0-9._-]{1,128}$")
         val PLAN_ID_PATTERN = Regex("^[A-Za-z0-9._-]{1,128}$")

@@ -7,7 +7,17 @@ import java.util.Locale
  * Repository author/name metadata can change and must never decide whether a module is installed.
  */
 object ModuleIdentity {
+    private val ashReXcueAliases = setOf(
+        "ashlooper",
+        "ashrexcue",
+        "ashrexcuebootloopprotector",
+    )
+
     fun normalize(id: String): String = id.trim().lowercase(Locale.ROOT)
 
     fun matches(left: String, right: String): Boolean = normalize(left) == normalize(right)
+
+    fun isAshReXcue(id: String): Boolean = normalizedToken(id) in ashReXcueAliases
+
+    private fun normalizedToken(id: String): String = normalize(id).filter(Char::isLetterOrDigit)
 }

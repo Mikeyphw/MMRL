@@ -123,6 +123,7 @@ fun MainScreen(
     val bulkInstallViewModel: BulkInstallViewModel = hiltViewModel()
     val activityViewModel: ActivityViewModel = hiltViewModel()
     val pendingReboots by activityViewModel.pendingRebootCount.collectAsStateWithLifecycle()
+    val activityAttentionCount by activityViewModel.activityAttentionCount.collectAsStateWithLifecycle()
 
     LaunchedEffect(openActivityOnLaunch) {
         if (openActivityOnLaunch) {
@@ -166,6 +167,7 @@ fun MainScreen(
             MoreDestinationsSheet(
                 updates = updates,
                 pendingReboots = pendingReboots,
+                activityAttentionCount = activityAttentionCount,
                 onDismiss = { moreDestinationsOpen = false },
             )
         }
@@ -177,6 +179,7 @@ fun MainScreen(
                         BottomNav(
                             updates = updates,
                             pendingReboots = pendingReboots,
+                            activityAttentionCount = activityAttentionCount,
                             onMoreClick = { moreDestinationsOpen = true },
                         )
                     },
@@ -195,7 +198,11 @@ fun MainScreen(
             WindowWidthSizeClass.Medium -> {
                 ResponsiveScaffold(
                     railBar = {
-                        RailNav(updates = updates, pendingReboots = pendingReboots)
+                        RailNav(
+                            updates = updates,
+                            pendingReboots = pendingReboots,
+                            activityAttentionCount = activityAttentionCount,
+                        )
                     },
                     contentWindowInsets = WindowInsets.none,
                 ) { paddingValues ->
@@ -213,6 +220,7 @@ fun MainScreen(
                 ExpandedMainLayout(
                     updates = updates,
                     pendingReboots = pendingReboots,
+                    activityAttentionCount = activityAttentionCount,
                     contentModifier = Modifier.hazeSource(hazeState),
                 )
             }
@@ -225,6 +233,7 @@ fun MainScreen(
 private fun ExpandedMainLayout(
     updates: Int,
     pendingReboots: Int,
+    activityAttentionCount: Int,
     contentModifier: Modifier,
 ) {
     PermanentNavigationDrawer(
@@ -256,6 +265,7 @@ private fun ExpandedMainLayout(
                             screen = screen,
                             updates = updates,
                             pendingReboots = pendingReboots,
+                            activityAttentionCount = activityAttentionCount,
                         )
                     }
                 }
@@ -294,6 +304,7 @@ private fun CurrentNavHost(modifier: Modifier = Modifier) {
 private fun BottomNav(
     updates: Int,
     pendingReboots: Int,
+    activityAttentionCount: Int,
     onMoreClick: () -> Unit,
 ) {
     val prefs = LocalUserPreferences.current
@@ -313,7 +324,7 @@ private fun BottomNav(
 
             NavigationBarItem(
                 icon = {
-                    BaseNavIcon(screen, isSelected, updates, pendingReboots)
+                    BaseNavIcon(screen, isSelected, updates, pendingReboots, activityAttentionCount)
                 },
                 label = {
                     Text(
@@ -353,6 +364,7 @@ private fun BottomNav(
 private fun RailNav(
     updates: Int,
     pendingReboots: Int,
+    activityAttentionCount: Int,
 ) {
     val prefs = LocalUserPreferences.current
     val navigator = LocalDestinationsNavigator.current
@@ -379,7 +391,7 @@ private fun RailNav(
                 NavigationRailItem(
                     modifier = Modifier.fillMaxWidth(),
                     icon = {
-                        BaseNavIcon(screen, isSelected, updates, pendingReboots)
+                        BaseNavIcon(screen, isSelected, updates, pendingReboots, activityAttentionCount)
                     },
                     label = {
                         Text(
@@ -403,6 +415,7 @@ private fun DrawerDestinationItem(
     screen: MainDestination,
     updates: Int,
     pendingReboots: Int,
+    activityAttentionCount: Int,
     onNavigate: (() -> Unit)? = null,
 ) {
     val navigator = LocalDestinationsNavigator.current
@@ -412,7 +425,7 @@ private fun DrawerDestinationItem(
 
     NavigationDrawerItem(
         icon = {
-            BaseNavIcon(screen, isSelected, updates, pendingReboots)
+            BaseNavIcon(screen, isSelected, updates, pendingReboots, activityAttentionCount)
         },
         label = {
             Text(
@@ -433,6 +446,7 @@ private fun DrawerDestinationItem(
 private fun MoreDestinationsSheet(
     updates: Int,
     pendingReboots: Int,
+    activityAttentionCount: Int,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -454,6 +468,7 @@ private fun MoreDestinationsSheet(
                     screen = screen,
                     updates = updates,
                     pendingReboots = pendingReboots,
+                    activityAttentionCount = activityAttentionCount,
                     onNavigate = onDismiss,
                 )
             }
@@ -484,12 +499,29 @@ private fun BaseNavIcon(
     selected: Boolean,
     updates: Int,
     pendingReboots: Int,
+    activityAttentionCount: Int,
 ) {
-    if (screen == MainDestination.Activity && pendingReboots > 0) {
+    if (screen == MainDestination.Activity && activityAttentionCount > 0) {
         BadgedBox(
             badge = {
                 Badge {
-                    Text(text = pendingReboots.toString())
+                    Text(text = activityAttentionCount.coerceAtMost(99).toString())
+                }
+            },
+        ) {
+            Icon(
+                painter = painterResource(id = if (selected) screen.iconFilled else screen.icon),
+                contentDescription = stringResource(screen.label),
+            )
+        }
+        return
+    }
+
+    if (screen == MainDestination.Ash && pendingReboots > 0) {
+        BadgedBox(
+            badge = {
+                Badge {
+                    Text(text = pendingReboots.coerceAtMost(99).toString())
                 }
             },
         ) {

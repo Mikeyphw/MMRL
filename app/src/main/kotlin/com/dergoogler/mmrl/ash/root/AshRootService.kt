@@ -5,7 +5,7 @@ import android.os.IBinder
 import com.topjohnwu.superuser.ipc.RootService
 
 class AshRootService : RootService() {
-    private val executor = AshCtlExecutor()
+    private val executor by lazy { AshCtlExecutor(context = applicationContext) }
 
     private val binder = object : IAshReXcueService.Stub() {
         override fun moduleState(): String = executor.moduleState()

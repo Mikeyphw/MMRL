@@ -252,3 +252,11 @@ Screenshot regression testing and Fastlane screenshot replacement are still pend
 - Safety copy covers unmatched installed Xposed APKs, missing LSPosed Manager, source-link warnings, and policy-blocked updates.
 - Adaptive two-pane LSPosed layouts are contract-tested, and the prior unnecessary nullable safe-call warning in `LsposedScreens.kt` is removed.
 
+
+## Runtime stability and Activity badge pass
+
+- Moshi code generation remains on KSP and is stripped from Hilt Java annotation-processor paths at execution time to avoid the recurring KAPT deprecation warning.
+- AshReXcue live calls now attempt bundled `jq/jq` repair from the packaged AshReXcue module asset before reporting runtime failure.
+- AshReXcue installed detection accepts legacy/renamed bundled module folder aliases so damaged installs are reported as installed-but-broken instead of missing.
+- Activity is now badged for attention-worthy work: failed, running, and pending-reboot activity across local operations and AshReXcue events.
+- The Recovery tab keeps a pending reboot badge, preserving safety visibility alongside the broader Activity attention badge.

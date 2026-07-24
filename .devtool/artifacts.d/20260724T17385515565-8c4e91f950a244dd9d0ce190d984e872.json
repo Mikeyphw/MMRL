@@ -1,0 +1,160 @@
+{
+  "applied_at": "2026-07-24T17:38:55.155654Z",
+  "artifact": "/home/mike/Downloads/mmrl_runtime_stability_badges_repair_overlay.zip",
+  "artifact_name": "mmrl_runtime_stability_badges_repair_overlay.zip",
+  "type": "overlay",
+  "sha256": "a33857b1a94389ca504a144439f1f62737b1f1a4350a4b43e176066a6f597e11",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Stabilize Moshi KSP, AshReXcue repair, and Activity badges",
+  "commit_hash": "",
+  "file_count": 16,
+  "change_counts": {
+    "add": 2,
+    "modify": 14
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_runtime_stability_badges_repair_overlay",
+    "description": "Migrate Moshi codegen fully away from Hilt/KAPT warning path, self-repair AshReXcue bundled jq, recognize AshReXcue aliases, and add Activity attention badges.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": {
+      "root": "$HOME/Code/MMRL"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/AshRuntimeRepairContractTest.kt",
+          "action": "add",
+          "sha256": "209ebeae88ee10486195dc8c3738eca0d1da187b9d1f04d8522f7f389ef5cf6b",
+          "size": 2577
+        },
+        {
+          "path": "docs/RUNTIME_STABILITY_BADGES_REPAIR.md",
+          "action": "add",
+          "sha256": "fd570e609e85a7ff1cfddafeff420116da40df51f8e9fd7f2ea74e74950e9c82",
+          "size": 1820
+        },
+        {
+          "path": "UI_UX_IMPLEMENTATION.md",
+          "action": "modify",
+          "sha256": "e52053b1443c032be85d5811736d4edfcc4031033ff2e7b2be18e2702fd58927",
+          "size": 18214,
+          "source_sha256": "0f6a53dfd8908cab3dc5c6670122c7aa28e676b19c11c915cf394dd249f99335"
+        },
+        {
+          "path": "app/build.gradle.kts",
+          "action": "modify",
+          "sha256": "89c4e3b484237a40df81290f4272420c02938a7a6594de2a952686cc067e96b4",
+          "size": 12140,
+          "source_sha256": "c31ff1b1c58e2c378fe3b789b22b07579ed4d29c67f05ce881102285d261e820"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/Models.kt",
+          "action": "modify",
+          "sha256": "3219b9f0c994da5435398ba30a165c7c89c19cc8295ee7b978a57807ca70a7ae",
+          "size": 8504,
+          "source_sha256": "d65e8a5458588e9b7870c8bea6780de87f4e6209cba59c20f41da6db2702c8e5"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshCtlExecutor.kt",
+          "action": "modify",
+          "sha256": "f3f54ee1d2c9f297425a84f31db912c7bbf2753be5e4362f820a3954b805d91d",
+          "size": 13648,
+          "source_sha256": "ffb9fb8ab818c9cfcb427518273ddc8f27ecb4f6deba62bef3b480adb7e2ef28"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshModuleLocator.kt",
+          "action": "modify",
+          "sha256": "50053705d188313ab55e93c6226a57c2d91b97ed67ddd85743d76eb062bc90e7",
+          "size": 4615,
+          "source_sha256": "ba5facce2b1bb4813fc7333ead60cee6cd7e802df2c4a5fa4a9b3af32cff40f5"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshRootService.kt",
+          "action": "modify",
+          "sha256": "06932c0f23c2f92310b1cfa3253e91bc20199355a060703cbfdc5c916cf95b81",
+          "size": 1997,
+          "source_sha256": "81f0531a5b30bfbe71a2923804dde330f8a0ff8b7a8feacd370aa9d3b096fba8"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/ModuleIdentity.kt",
+          "action": "modify",
+          "sha256": "897a273b49fcb2752f99d920d34476a07131f1065e6466b1777bb7e39e3b63dd",
+          "size": 754,
+          "source_sha256": "f40986205e3e275be911598367185b661c6c5de5ee22faca0aecff640f2cc20c"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/main/MainScreen.kt",
+          "action": "modify",
+          "sha256": "563beb7bb23f2bde90ff14158c571bebc3bd5c1623a98cf13635934c6f2b3790",
+          "size": 20676,
+          "source_sha256": "d72d5fbaeebcfe7591f4804e94beae0984ef9a296fc5ebbde24ce85fe05135a4"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/NewViewScreen.kt",
+          "action": "modify",
+          "sha256": "3fecb4b52bfd41b554ab1a3b39fa4cdc216799964f3f1e240d4d1e577e176fb5",
+          "size": 16010,
+          "source_sha256": "c6d07bb6c758c90251b87b2e1333b36e7fa200d71b06203afa49499a81abbcda"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshModuleIntelligenceCard.kt",
+          "action": "modify",
+          "sha256": "e01e85b7975586a36318c8c3d5892c693a180df0d5771040ac9137d42f2beafc",
+          "size": 12574,
+          "source_sha256": "a3e55fb76fa226f4f48f8f466fe3597b509874419296ad140e085a30f4327218"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "e61bd1d4ab373404358d3102f2b1bc05512ea87d79038624f324d6db81b5aead",
+          "size": 53997,
+          "source_sha256": "b1a18ac74c400e15243acaac3f8983044ff57733d30da5256a4dafa936c8325f"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ActivityViewModel.kt",
+          "action": "modify",
+          "sha256": "2827796233410d5c45892aa84767d28c859c01825936d80128209c33e2af12a3",
+          "size": 19983,
+          "source_sha256": "4246c407b24d72eb03f16495c26d3ee54524cc73ea042b9bf600149073e7b9f0"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/AshModuleLocatorTest.kt",
+          "action": "modify",
+          "sha256": "067df403dca3df43ec000eab3a3cac062a06f0e7e7c4daacf3d54b7cafff4c7a",
+          "size": 4419,
+          "source_sha256": "586b4a0c64a3f564999137196904d21ae010f1d816d8509cb5852920bfceba89"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/ModuleIdentityTest.kt",
+          "action": "modify",
+          "sha256": "427c96b8a94df7c61db2378dac9360c4a3c694775cc87abcd5e9871756a05227",
+          "size": 744,
+          "source_sha256": "5d110612631469e3bbcd6c3b53f56009e228e9e18b239af54753c02dd28d587f"
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Stabilize Moshi KSP, AshReXcue repair, and Activity badges"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "8c4e91f950a244dd9d0ce190d984e872"
+}

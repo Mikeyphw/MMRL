@@ -51,7 +51,7 @@ internal fun AshModuleIntelligenceCard(viewModel: AshViewModel = hiltViewModel()
     val local = LocalModule.current
     val online = LocalOnlineModule.current
     val version = LocalVersionItem.current
-    if (local.isEmpty || ModuleIdentity.matches(online.id, "AshLooper")) return
+    if (local.isEmpty || ModuleIdentity.isAshReXcue(online.id)) return
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val navigator = LocalDestinationsNavigator.current

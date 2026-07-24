@@ -213,7 +213,7 @@ object AshModuleLifecycleResolver {
 
         val compatibilityMessage = when {
             !installation.installed -> "AshReXcue is not installed"
-            !installation.controlAvailable -> "The installed module has no usable typed control service"
+            !installation.controlAvailable -> "AshReXcue is installed, but its control script or bundled jq runtime is missing. MMRL will try to repair bundled jq automatically; reinstall the bundled module if live controls remain unavailable."
             capabilities == null -> liveError ?: "The installed module did not report API capabilities"
             capabilities.apiVersion < SUPPORTED_API_MIN ->
                 "Module API ${capabilities.apiVersion} is older than supported API $SUPPORTED_API_MIN"

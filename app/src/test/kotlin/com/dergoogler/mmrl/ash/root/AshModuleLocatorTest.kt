@@ -68,6 +68,20 @@ class AshModuleLocatorTest {
     }
 
     @Test
+    fun `recognizes legacy AshReXcue folder even when module prop is missing`() {
+        val activeRoot = temporaryRoot()
+        val module = File(activeRoot, "AshReXcue_Bootloop_Protector").apply { mkdirs() }
+        val control = File(module, "ashrexcuectl").apply { writeText("#!/system/bin/sh\n") }
+
+        val inspection = AshModuleLocator(activeRoot, temporaryRoot()).inspect()
+
+        assertTrue(inspection.installed)
+        assertTrue(inspection.active)
+        assertEquals("AshReXcue_Bootloop_Protector", inspection.folder)
+        assertEquals(control.absolutePath, inspection.controlScript?.absolutePath)
+    }
+
+    @Test
     fun `ignores unrelated control script`() {
         val activeRoot = temporaryRoot()
         val module = createModule(

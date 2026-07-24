@@ -337,7 +337,7 @@ fun NewViewScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Header()
-                        if (ModuleIdentity.matches(module.id, "AshLooper")) {
+                        if (ModuleIdentity.isAshReXcue(module.id)) {
                             AshReXcueIntegrationCard()
                         } else {
                             AshModuleIntelligenceCard()

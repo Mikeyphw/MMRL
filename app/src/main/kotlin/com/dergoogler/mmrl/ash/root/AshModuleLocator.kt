@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.ash.root
 
 import java.io.File
+import java.util.Locale
 
 /** Resolves the installed AshReXcue module across active and staged module roots. */
 internal class AshModuleLocator(
@@ -68,9 +69,9 @@ internal class AshModuleLocator(
         val moduleId = properties["id"].orEmpty()
         val moduleName = properties["name"].orEmpty()
         val folderName = moduleDirectory.name
-        val matches = MODULE_ID_ALIASES.any { alias -> alias.equals(moduleId, ignoreCase = true) } ||
-            MODULE_ID_ALIASES.any { alias -> alias.equals(folderName, ignoreCase = true) } ||
-            moduleName.contains("AshReXcue", ignoreCase = true)
+        val matches = MODULE_ID_ALIASES.any { alias -> identityMatches(alias, moduleId) } ||
+            MODULE_ID_ALIASES.any { alias -> identityMatches(alias, folderName) } ||
+            normalizedKey(moduleName).let { key -> key.contains("ashrexcue") || key.contains("ashlooper") }
         if (!matches) return null
 
         val controlScript = File(moduleDirectory, CONTROL_SCRIPT).takeIf(File::isFile)
@@ -102,8 +103,22 @@ internal class AshModuleLocator(
         const val DISABLE_MARKER = "disable"
         const val REMOVE_MARKER = "remove"
 
-        val MODULE_ID_ALIASES = listOf("AshLooper", "AshReXcue", "ashrexcue")
+        val MODULE_ID_ALIASES = listOf(
+            "AshLooper",
+            "AshReXcue",
+            "ashrexcue",
+            "AshReXcue_BootLoop_Protector",
+            "AshReXcue_Bootloop_Protector",
+            "ashrexcue_bootloop_protector",
+        )
         val DEFAULT_ACTIVE_ROOT = File("/data/adb/modules")
         val DEFAULT_UPDATE_ROOT = File("/data/adb/modules_update")
+
+        fun identityMatches(left: String, right: String): Boolean =
+            normalizedKey(left) == normalizedKey(right)
+
+        fun normalizedKey(value: String): String = value
+            .lowercase(Locale.ROOT)
+            .filter(Char::isLetterOrDigit)
     }
 }

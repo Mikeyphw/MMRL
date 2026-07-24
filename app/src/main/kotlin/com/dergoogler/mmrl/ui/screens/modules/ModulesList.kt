@@ -882,7 +882,7 @@ private fun ModuleActionsMenu(
                         )
                     },
                     enabled = ashWritable && protection.trust != trust &&
-                        !(ModuleIdentity.matches(module.id.id, "AshLooper") && trust != "protected"),
+                        !(ModuleIdentity.isAshReXcue(module.id.id) && trust != "protected"),
                     onClick = {
                         onDismiss()
                         viewModel.setAshTrust(module, trust)

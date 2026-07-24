@@ -340,13 +340,16 @@ tasks.register("version") {
 }
 
 
-// Moshi code generation runs through KSP. Hilt's Java aggregation task must not also
-// load Moshi's processor from the KSP configuration, otherwise Moshi emits its KAPT
-// deprecation warning even though no KAPT configuration exists in this project.
+// Moshi code generation runs through KSP. Some AGP/Hilt variants assemble their
+// Java annotation-processor path lazily, after normal task configuration. Strip
+// Moshi's KSP processor immediately before the Hilt Java aggregation task runs so
+// Moshi is never loaded through the legacy KAPT-compatible processor path.
 tasks.withType<JavaCompile>().configureEach {
     if (name.startsWith("hiltJavaCompile")) {
-        options.annotationProcessorPath = options.annotationProcessorPath?.filter { file ->
-            !file.name.startsWith("moshi-kotlin-codegen-")
+        doFirst("stripMoshiCodegenFromHiltJavaAnnotationProcessors") {
+            options.annotationProcessorPath = options.annotationProcessorPath?.filter { file ->
+                !file.name.startsWith("moshi-kotlin-codegen-")
+            }
         }
     }
 }
