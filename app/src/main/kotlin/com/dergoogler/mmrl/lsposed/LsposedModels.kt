@@ -379,6 +379,19 @@ data class LsposedSafetyNotice(
     val body: String,
 )
 
+
+object LsposedUiContract {
+    const val listDetailBreakpointDp: Int = 840
+    const val detailRailMinWidthDp: Int = 280
+    const val phoneDescriptionMaxLines: Int = 3
+    const val detailRailDescriptionMaxLines: Int = 6
+    const val visibleSafetyNoticeLimit: Int = 3
+
+    fun useListDetail(widthDp: Int): Boolean = widthDp >= listDetailBreakpointDp
+
+    fun visibleNoticeCount(total: Int): Int = total.coerceAtMost(visibleSafetyNoticeLimit)
+}
+
 object LsposedSafetyClassifier {
     fun repositoryNotices(module: LsposedRepoModule): List<LsposedSafetyNotice> = buildList {
         add(

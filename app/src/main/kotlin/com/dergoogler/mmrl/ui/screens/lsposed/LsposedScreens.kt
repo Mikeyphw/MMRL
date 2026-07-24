@@ -3,6 +3,8 @@ package com.dergoogler.mmrl.ui.screens.lsposed
 import android.content.ActivityNotFoundException
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,7 +12,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -54,6 +59,7 @@ import com.dergoogler.mmrl.lsposed.LsposedSafetyLevel
 import com.dergoogler.mmrl.lsposed.LsposedSafetyNotice
 import com.dergoogler.mmrl.lsposed.LsposedSnapshot
 import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanItem
+import com.dergoogler.mmrl.lsposed.LsposedUiContract
 import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
 import com.dergoogler.mmrl.viewmodel.LsposedViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -81,15 +87,26 @@ fun LsposedRepositoryTab(
         error = state.error,
         onRefresh = { viewModel.refresh(force = true) },
         contentTopPadding = contentTopPadding,
-    ) {
-        item {
-            GuidanceCard(
-                title = stringResource(R.string.lsposed_install_guidance_title),
-                description = stringResource(R.string.lsposed_install_guidance_description),
-                action = stringResource(R.string.lsposed_open_manager),
-                onAction = viewModel::openLsposed,
-                actionEnabled = state.managerAvailable,
+        detailRail = {
+            LsposedRepositorySideRail(
+                visibleCount = modules.size,
+                installedCount = modules.count { it.packageName in installedPackages },
+                sourceCount = modules.count { !it.sourceUrl.isNullOrBlank() },
+                managerAvailable = state.managerAvailable,
+                onOpenLsposed = viewModel::openLsposed,
             )
+        },
+    ) { railActive ->
+        if (!railActive) {
+            item {
+                GuidanceCard(
+                    title = stringResource(R.string.lsposed_install_guidance_title),
+                    description = stringResource(R.string.lsposed_install_guidance_description),
+                    action = stringResource(R.string.lsposed_open_manager),
+                    onAction = viewModel::openLsposed,
+                    actionEnabled = state.managerAvailable,
+                )
+            }
         }
         items(modules, key = { it.packageName }) { module ->
             LsposedRepoModuleCard(
@@ -145,25 +162,40 @@ fun LsposedModulesTab(
         error = state.error,
         onRefresh = { viewModel.refresh(force = true) },
         contentTopPadding = contentTopPadding,
-    ) {
-        item {
-            GuidanceCard(
-                title = stringResource(R.string.lsposed_activation_title),
-                description = stringResource(R.string.lsposed_activation_description),
-                action = stringResource(R.string.lsposed_open_manager),
-                onAction = viewModel::openLsposed,
-                actionEnabled = state.managerAvailable,
-            )
-        }
-        item {
-            LsposedSnapshotCard(
-                installedCount = state.installed.size,
+        detailRail = {
+            LsposedInstalledSideRail(
+                installed = state.installed,
+                policies = state.policies,
+                managerAvailable = state.managerAvailable,
                 snapshots = state.snapshots,
                 plan = state.snapshotPlan,
+                onOpenLsposed = viewModel::openLsposed,
                 onSaveSnapshot = { viewModel.saveSnapshot() },
                 onCompareSnapshot = viewModel::compareSnapshot,
                 onDeleteSnapshot = viewModel::deleteSnapshot,
             )
+        },
+    ) { railActive ->
+        if (!railActive) {
+            item {
+                GuidanceCard(
+                    title = stringResource(R.string.lsposed_activation_title),
+                    description = stringResource(R.string.lsposed_activation_description),
+                    action = stringResource(R.string.lsposed_open_manager),
+                    onAction = viewModel::openLsposed,
+                    actionEnabled = state.managerAvailable,
+                )
+            }
+            item {
+                LsposedSnapshotCard(
+                    installedCount = state.installed.size,
+                    snapshots = state.snapshots,
+                    plan = state.snapshotPlan,
+                    onSaveSnapshot = { viewModel.saveSnapshot() },
+                    onCompareSnapshot = viewModel::compareSnapshot,
+                    onDeleteSnapshot = viewModel::deleteSnapshot,
+                )
+            }
         }
         items(modules, key = { it.packageName }) { module ->
             val policy = state.policies[LsposedIdentity.normalize(module.packageName)]
@@ -219,75 +251,142 @@ private fun LsposedTabContent(
     error: String?,
     onRefresh: () -> Unit,
     contentTopPadding: Dp?,
-    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+    detailRail: (@Composable () -> Unit)? = null,
+    content: LazyListScope.(Boolean) -> Unit,
 ) {
-    LazyColumn(
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = (contentTopPadding ?: innerPadding.calculateTopPadding()) + 12.dp,
-            bottom = innerPadding.calculateBottomPadding() + 24.dp,
-        ),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+    val topPadding = (contentTopPadding ?: innerPadding.calculateTopPadding()) + 12.dp
+    val bottomPadding = innerPadding.calculateBottomPadding() + 24.dp
+
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val railActive = detailRail != null && LsposedUiContract.useListDetail(maxWidth.value.toInt())
+
+        if (railActive) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = topPadding),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 0.dp,
+                        bottom = bottomPadding,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    TextButton(onClick = onRefresh) {
-                        Text(stringResource(R.string.refresh))
-                    }
+                    lsposedHeaderItems(
+                        title = title,
+                        description = description,
+                        query = query,
+                        onQueryChange = onQueryChange,
+                        loading = loading,
+                        error = error,
+                        onRefresh = onRefresh,
+                    )
+                    content(true)
                 }
-                OutlinedTextField(
-                    modifier = Modifier.fillMaxWidth(),
-                    value = query,
-                    onValueChange = onQueryChange,
-                    singleLine = true,
-                    label = { Text(stringResource(R.string.lsposed_search_hint)) },
+                Column(
+                    modifier = Modifier
+                        .weight(0.72f)
+                        .widthIn(min = LsposedUiContract.detailRailMinWidthDp.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(end = 16.dp, bottom = bottomPadding),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    detailRail?.invoke()
+                }
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = topPadding,
+                    bottom = bottomPadding,
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                lsposedHeaderItems(
+                    title = title,
+                    description = description,
+                    query = query,
+                    onQueryChange = onQueryChange,
+                    loading = loading,
+                    error = error,
+                    onRefresh = onRefresh,
+                )
+                content(false)
+            }
+        }
+    }
+}
+
+private fun LazyListScope.lsposedHeaderItems(
+    title: String,
+    description: String,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    loading: Boolean,
+    error: String?,
+    onRefresh: () -> Unit,
+) {
+    item {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = onRefresh) {
+                    Text(stringResource(R.string.refresh))
+                }
+            }
+            OutlinedTextField(
+                modifier = Modifier.fillMaxWidth(),
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                label = { Text(stringResource(R.string.lsposed_search_hint)) },
+            )
+        }
+    }
+    if (loading) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(28.dp))
+            }
+        }
+    }
+    if (error != null) {
+        item {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                shape = RoundedCornerShape(18.dp),
+            ) {
+                Text(
+                    text = error,
+                    modifier = Modifier.padding(14.dp),
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
-        if (loading) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(28.dp))
-                }
-            }
-        }
-        if (error != null) {
-            item {
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    shape = RoundedCornerShape(18.dp),
-                ) {
-                    Text(
-                        text = error,
-                        modifier = Modifier.padding(14.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-        }
-        content()
     }
 }
 
@@ -347,7 +446,7 @@ private fun LsposedRepoModuleCard(
                 text = module.displayDescription,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
+                maxLines = LsposedUiContract.phoneDescriptionMaxLines,
                 overflow = TextOverflow.Ellipsis,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -358,7 +457,7 @@ private fun LsposedRepoModuleCard(
                     StatusChip(text = safetyLevelLabel(level))
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Button(onClick = onInstall, enabled = !installing) {
                     Text(if (installed) stringResource(R.string.lsposed_update_apk) else stringResource(R.string.lsposed_install_apk))
                 }
@@ -419,7 +518,7 @@ private fun LsposedInstalledModuleCard(
                 text = module.description,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
+                maxLines = LsposedUiContract.phoneDescriptionMaxLines,
                 overflow = TextOverflow.Ellipsis,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -436,7 +535,7 @@ private fun LsposedInstalledModuleCard(
                 }
             }
             SafetyNoticeSummary(notices = notices)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedButton(onClick = onOpenApp, enabled = module.launchable) {
                     Text(stringResource(R.string.lsposed_open_app))
                 }
@@ -592,6 +691,91 @@ private fun LsposedSnapshotCard(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LsposedRepositorySideRail(
+    visibleCount: Int,
+    installedCount: Int,
+    sourceCount: Int,
+    managerAvailable: Boolean,
+    onOpenLsposed: () -> Unit,
+) {
+    GuidanceCard(
+        title = stringResource(R.string.lsposed_install_guidance_title),
+        description = stringResource(R.string.lsposed_install_guidance_description),
+        action = stringResource(R.string.lsposed_open_manager),
+        onAction = onOpenLsposed,
+        actionEnabled = managerAvailable,
+    )
+    LsposedMetricCard(
+        title = stringResource(R.string.lsposed_adaptive_repository_summary_title),
+        metrics = listOf(
+            stringResource(R.string.lsposed_repo_total_modules, visibleCount),
+            stringResource(R.string.lsposed_repo_installed_modules, installedCount),
+            stringResource(R.string.lsposed_repo_source_links, sourceCount),
+        ),
+    )
+}
+
+@Composable
+private fun LsposedInstalledSideRail(
+    installed: List<LsposedInstalledModule>,
+    policies: Map<String, LsposedVersionPolicy>,
+    managerAvailable: Boolean,
+    snapshots: List<LsposedSnapshot>,
+    plan: List<LsposedSnapshotPlanItem>,
+    onOpenLsposed: () -> Unit,
+    onSaveSnapshot: () -> Unit,
+    onCompareSnapshot: (LsposedSnapshot) -> Unit,
+    onDeleteSnapshot: (String) -> Unit,
+) {
+    GuidanceCard(
+        title = stringResource(R.string.lsposed_activation_title),
+        description = stringResource(R.string.lsposed_activation_description),
+        action = stringResource(R.string.lsposed_open_manager),
+        onAction = onOpenLsposed,
+        actionEnabled = managerAvailable,
+    )
+    LsposedMetricCard(
+        title = stringResource(R.string.lsposed_adaptive_installed_summary_title),
+        metrics = listOf(
+            stringResource(R.string.lsposed_installed_total, installed.size),
+            stringResource(R.string.lsposed_installed_updates, installed.count { it.hasUpdate }),
+            stringResource(R.string.lsposed_installed_locked, policies.values.count { it.isLocked }),
+            stringResource(R.string.lsposed_installed_unmatched, installed.count { !it.sourceMatched }),
+        ),
+    )
+    LsposedSnapshotCard(
+        installedCount = installed.size,
+        snapshots = snapshots,
+        plan = plan,
+        onSaveSnapshot = onSaveSnapshot,
+        onCompareSnapshot = onCompareSnapshot,
+        onDeleteSnapshot = onDeleteSnapshot,
+    )
+}
+
+@Composable
+private fun LsposedMetricCard(
+    title: String,
+    metrics: List<String>,
+) {
+    ElevatedCard(shape = RoundedCornerShape(22.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            metrics.forEach { metric ->
+                Text(
+                    text = metric,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

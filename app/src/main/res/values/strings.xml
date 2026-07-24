@@ -1328,6 +1328,16 @@
     <string name="lsposed_scope_review_needed">Scope review</string>
     <string name="lsposed_review_warning">Review warning</string>
     <string name="lsposed_action_required">Action needed</string>
+
+    <string name="lsposed_adaptive_repository_summary_title">Repository summary</string>
+    <string name="lsposed_adaptive_installed_summary_title">Installed summary</string>
+    <string name="lsposed_repo_total_modules">%1$d visible modules</string>
+    <string name="lsposed_repo_installed_modules">%1$d already installed</string>
+    <string name="lsposed_repo_source_links">%1$d with source links</string>
+    <string name="lsposed_installed_total">%1$d installed APK modules</string>
+    <string name="lsposed_installed_updates">%1$d updates available</string>
+    <string name="lsposed_installed_locked">%1$d locked by policy</string>
+    <string name="lsposed_installed_unmatched">%1$d not matched to repository</string>
     <string name="refresh">Refresh</string>
 
 </resources>

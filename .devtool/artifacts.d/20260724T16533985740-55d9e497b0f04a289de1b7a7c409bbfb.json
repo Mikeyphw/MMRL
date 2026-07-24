@@ -1,0 +1,83 @@
+{
+  "applied_at": "2026-07-24T16:53:39.857401Z",
+  "artifact": "/home/mike/Downloads/mmrl_lsposed_adaptive_polish_overlay.zip",
+  "artifact_name": "mmrl_lsposed_adaptive_polish_overlay.zip",
+  "type": "overlay",
+  "sha256": "90b16850b6046271d3fa7a0eba492eed2ce47fcac5034b43d79e24de142d241f",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Polish LSPosed adaptive APK layouts",
+  "commit_hash": "",
+  "file_count": 5,
+  "change_counts": {
+    "add": 2,
+    "modify": 3
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_lsposed_adaptive_polish_overlay",
+    "description": "Polish LSPosed APK tabs with adaptive side rails, compact phone-safe action rows, and source-level screenshot/layout contracts.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "workspace": {
+      "root": "$HOME/Code/MMRL"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "docs/LSPOSED_ADAPTIVE_POLISH.md",
+          "action": "add",
+          "sha256": "cadda426dc842d8ebf41f40d294991958208ea52ed68f04c70d14d53c3ccbc89",
+          "size": 980
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "d55fcfddd27aa648b0e086ed9719ea83cfe93a4dce04cd51257724fc74cc77ec",
+          "size": 103264,
+          "source_sha256": "f3438ed1bc8ccb82a85b0dc346df5940200c5e74a3bafe8765d7acf2b6802152"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+          "action": "modify",
+          "sha256": "d2667bdfa7c2f8aa34394172818fbae261d3058caaf6ca7c4760c2dd74ee8f41",
+          "size": 19552,
+          "source_sha256": "0a7d557b8f1858a40b0f0394f3e3fdc3bcc5d3436dfa2dd09f66ff604d4d54dd"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+          "action": "modify",
+          "sha256": "398efb732d4d2b7803e08a5bad132f6ceb35a3717b82ff3076bedf8f08894183",
+          "size": 35424,
+          "source_sha256": "ba8609fec63315979e602f2224cea881b3db9bd99b0d11a5f7b0d7ccba57847a"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedAdaptiveUiContractTest.kt",
+          "action": "add",
+          "sha256": "b15d4b67917894c39bf828fb109f16f6ba255ef5e0bfa6ca74b4b4c5df2f01a6",
+          "size": 1053
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Polish LSPosed adaptive APK layouts"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "55d9e497b0f04a289de1b7a7c409bbfb"
+}
