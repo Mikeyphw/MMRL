@@ -1320,6 +1320,14 @@
     <string name="lsposed_compare_latest_snapshot">Compare latest</string>
     <string name="lsposed_snapshot_count">%1$d APK modules</string>
     <string name="lsposed_snapshot_more_items">+%1$d more differences</string>
+
+    <string name="lsposed_review_install_title">Review LSPosed APK install</string>
+    <string name="lsposed_review_update_title">Review LSPosed APK update</string>
+    <string name="lsposed_download_open_installer">Download and open installer</string>
+    <string name="lsposed_source_available">Source available</string>
+    <string name="lsposed_scope_review_needed">Scope review</string>
+    <string name="lsposed_review_warning">Review warning</string>
+    <string name="lsposed_action_required">Action needed</string>
     <string name="refresh">Refresh</string>
 
 </resources>

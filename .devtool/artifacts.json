@@ -4641,6 +4641,89 @@
         }
       },
       "history_id": "64fb76e9e56b4512a33ba124388cecd6"
+    },
+    {
+      "applied_at": "2026-07-24T16:35:20.332892Z",
+      "artifact": "/home/mike/Downloads/mmrl_lsposed_safety_polish_overlay.zip",
+      "artifact_name": "mmrl_lsposed_safety_polish_overlay.zip",
+      "type": "overlay",
+      "sha256": "72e01b561b90b23298df5a29b0a1c204e726e312afa62e3cb177c019ab7c62ab",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Polish LSPosed APK review and safety states",
+      "commit_hash": "",
+      "file_count": 5,
+      "change_counts": {
+        "add": 2,
+        "modify": 3
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_lsposed_safety_polish_overlay",
+        "description": "Add review-first LSPosed APK install/update dialogs and safety/status guidance for source, scope, manager, and policy states.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": {
+          "root": "$HOME/Code/MMRL"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "docs/LSPOSED_SAFETY_POLISH.md",
+              "action": "add",
+              "sha256": "a44ae9fdd179add340b04153627225c5160a0c20453b6308a871109603ad7f5f",
+              "size": 859
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "f3438ed1bc8ccb82a85b0dc346df5940200c5e74a3bafe8765d7acf2b6802152",
+              "size": 102534,
+              "source_sha256": "821ed41d2595c4d45e4d4703930e33acd0bf1cf0d526b9a7601751801855db21"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+              "action": "modify",
+              "sha256": "0a7d557b8f1858a40b0f0394f3e3fdc3bcc5d3436dfa2dd09f66ff604d4d54dd",
+              "size": 19104,
+              "source_sha256": "8f6a2c851f384d80127538756ff28c6fb8e627b8941b045649bff8f552fd0a00"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+              "action": "modify",
+              "sha256": "ba8609fec63315979e602f2224cea881b3db9bd99b0d11a5f7b0d7ccba57847a",
+              "size": 28351,
+              "source_sha256": "7eee1bb9a62b32d3eef1d818a97150e5ed3867dd7ea548d10790c25e40d032c8"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedSafetyPolicyTest.kt",
+              "action": "add",
+              "sha256": "6008fef61589f50c670ae6f7e9c56c544bacc415e0d8f73ba34e07408b1b2d2e",
+              "size": 1621
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Polish LSPosed APK review and safety states"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "09488857e9e5468e900c2b7db099896d"
     }
   ]
 }

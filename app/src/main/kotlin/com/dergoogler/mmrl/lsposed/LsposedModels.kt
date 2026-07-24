@@ -367,6 +367,92 @@ object LsposedSnapshotPlanner {
     }
 }
 
+enum class LsposedSafetyLevel {
+    INFO,
+    WARNING,
+    ACTION,
+}
+
+data class LsposedSafetyNotice(
+    val level: LsposedSafetyLevel,
+    val title: String,
+    val body: String,
+)
+
+object LsposedSafetyClassifier {
+    fun repositoryNotices(module: LsposedRepoModule): List<LsposedSafetyNotice> = buildList {
+        add(
+            LsposedSafetyNotice(
+                level = LsposedSafetyLevel.INFO,
+                title = "APK install only",
+                body = "After installing this APK, enable the module and choose its app scope in LSPosed Manager.",
+            ),
+        )
+        if (module.sourceUrl.isNullOrBlank()) {
+            add(
+                LsposedSafetyNotice(
+                    level = LsposedSafetyLevel.WARNING,
+                    title = "No source link",
+                    body = "The LSPosed index did not publish a source link for this module. Review its website or release page before installing.",
+                ),
+            )
+        }
+        if (LsposedModulePolicy.bestInstallAsset(module) == null) {
+            add(
+                LsposedSafetyNotice(
+                    level = LsposedSafetyLevel.INFO,
+                    title = "APK asset needs review",
+                    body = "MMRL may need to load module details before it can find the APK release asset.",
+                ),
+            )
+        }
+    }
+
+    fun installedNotices(module: LsposedInstalledModule, managerAvailable: Boolean, updateBlocked: Boolean): List<LsposedSafetyNotice> = buildList {
+        add(
+            LsposedSafetyNotice(
+                level = LsposedSafetyLevel.INFO,
+                title = "Scope review needed",
+                body = "MMRL can detect that the APK is installed, but LSPosed enablement and scope are still managed inside LSPosed.",
+            ),
+        )
+        if (!managerAvailable) {
+            add(
+                LsposedSafetyNotice(
+                    level = LsposedSafetyLevel.ACTION,
+                    title = "LSPosed Manager not detected",
+                    body = "Install or unhide LSPosed Manager before enabling and scoping APK modules.",
+                ),
+            )
+        }
+        if (!module.sourceMatched) {
+            add(
+                LsposedSafetyNotice(
+                    level = LsposedSafetyLevel.WARNING,
+                    title = "Not in LSPosed repo",
+                    body = "This APK looks like an Xposed module, but it was not matched to modules.lsposed.org.",
+                ),
+            )
+        }
+        if (updateBlocked) {
+            add(
+                LsposedSafetyNotice(
+                    level = LsposedSafetyLevel.INFO,
+                    title = "Update blocked by policy",
+                    body = "A newer APK exists, but the local version policy prevents installing it from the normal update button.",
+                ),
+            )
+        }
+    }
+
+    fun highestLevel(notices: List<LsposedSafetyNotice>): LsposedSafetyLevel? = when {
+        notices.any { it.level == LsposedSafetyLevel.ACTION } -> LsposedSafetyLevel.ACTION
+        notices.any { it.level == LsposedSafetyLevel.WARNING } -> LsposedSafetyLevel.WARNING
+        notices.any { it.level == LsposedSafetyLevel.INFO } -> LsposedSafetyLevel.INFO
+        else -> null
+    }
+}
+
 fun LsposedInstalledModule.toSnapshotItem(policy: LsposedVersionPolicy? = null): LsposedSnapshotItem =
     LsposedSnapshotItem(
         packageName = LsposedIdentity.normalize(packageName),

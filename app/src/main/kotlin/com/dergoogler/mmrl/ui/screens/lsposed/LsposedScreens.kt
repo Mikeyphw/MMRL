@@ -7,14 +7,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,6 +28,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +49,9 @@ import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
 import com.dergoogler.mmrl.lsposed.LsposedModulePolicy
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
+import com.dergoogler.mmrl.lsposed.LsposedSafetyClassifier
+import com.dergoogler.mmrl.lsposed.LsposedSafetyLevel
+import com.dergoogler.mmrl.lsposed.LsposedSafetyNotice
 import com.dergoogler.mmrl.lsposed.LsposedSnapshot
 import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanItem
 import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
@@ -64,6 +69,7 @@ fun LsposedRepositoryTab(
     val query = state.query
     val modules = state.modules.filter { LsposedModulePolicy.matchesQuery(it, query) }
     val installedPackages = state.installed.map { it.packageName }.toSet()
+    var pendingInstall by remember { mutableStateOf<LsposedRepoModule?>(null) }
 
     LsposedTabContent(
         innerPadding = innerPadding,
@@ -90,12 +96,24 @@ fun LsposedRepositoryTab(
                 module = module,
                 installed = module.packageName in installedPackages,
                 installing = state.installingPackage == module.packageName,
-                onInstall = { viewModel.install(module) },
+                onInstall = { pendingInstall = module },
             )
         }
         if (!state.loading && modules.isEmpty()) {
             item { EmptyLsposedCard(text = stringResource(R.string.lsposed_empty_repository)) }
         }
+    }
+    pendingInstall?.let { module ->
+        LsposedApkReviewDialog(
+            module = module,
+            installed = module.packageName in installedPackages,
+            notices = LsposedSafetyClassifier.repositoryNotices(module),
+            onDismiss = { pendingInstall = null },
+            onConfirm = {
+                pendingInstall = null
+                viewModel.install(module)
+            },
+        )
     }
 }
 
@@ -115,6 +133,7 @@ fun LsposedModulesTab(
                 installed.packageName.contains(query, ignoreCase = true) ||
                 installed.description.contains(query, ignoreCase = true)
         }
+    var pendingUpdate by remember { mutableStateOf<LsposedInstalledModule?>(null) }
 
     LsposedTabContent(
         innerPadding = innerPadding,
@@ -151,10 +170,11 @@ fun LsposedModulesTab(
             LsposedInstalledModuleCard(
                 module = module,
                 policy = policy,
+                managerAvailable = state.managerAvailable,
                 installing = state.installingPackage == module.packageName,
                 onOpenApp = { viewModel.openApp(module.packageName) },
                 onOpenLsposed = viewModel::openLsposed,
-                onUpdate = { viewModel.update(module) },
+                onUpdate = { pendingUpdate = module },
                 onFollowLatest = { viewModel.followLatest(module.packageName) },
                 onIgnoreUpdates = { viewModel.ignoreUpdates(module.packageName) },
                 onPinCurrent = { viewModel.pinCurrent(module) },
@@ -163,6 +183,27 @@ fun LsposedModulesTab(
         }
         if (!state.loading && modules.isEmpty()) {
             item { EmptyLsposedCard(text = stringResource(R.string.lsposed_empty_installed)) }
+        }
+    }
+    pendingUpdate?.let { installed ->
+        val module = installed.repoModule
+        if (module == null) {
+            pendingUpdate = null
+        } else {
+            LsposedApkReviewDialog(
+                module = module,
+                installed = true,
+                notices = LsposedSafetyClassifier.installedNotices(
+                    module = installed,
+                    managerAvailable = state.managerAvailable,
+                    updateBlocked = false,
+                ),
+                onDismiss = { pendingUpdate = null },
+                onConfirm = {
+                    pendingUpdate = null
+                    viewModel.update(installed)
+                },
+            )
         }
     }
 }
@@ -313,6 +354,9 @@ private fun LsposedRepoModuleCard(
                 StatusChip(text = LsposedModulePolicy.latestVersionDisplay(module))
                 if (installed) StatusChip(text = stringResource(R.string.module_installed))
                 module.latestStableTime?.let { StatusChip(text = it.take(10)) }
+                LsposedSafetyClassifier.highestLevel(LsposedSafetyClassifier.repositoryNotices(module))?.let { level ->
+                    StatusChip(text = safetyLevelLabel(level))
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onInstall, enabled = !installing) {
@@ -337,6 +381,7 @@ private fun LsposedRepoModuleCard(
 private fun LsposedInstalledModuleCard(
     module: LsposedInstalledModule,
     policy: LsposedVersionPolicy?,
+    managerAvailable: Boolean,
     installing: Boolean,
     onOpenApp: () -> Unit,
     onOpenLsposed: () -> Unit,
@@ -347,6 +392,7 @@ private fun LsposedInstalledModuleCard(
     onMaxCurrent: () -> Unit,
 ) {
     val updateBlocked = module.hasUpdate && policy?.blocks(module.repoVersion?.versionCode) == true
+    val notices = LsposedSafetyClassifier.installedNotices(module, managerAvailable, updateBlocked)
     ElevatedCard(shape = RoundedCornerShape(22.dp)) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -385,7 +431,11 @@ private fun LsposedInstalledModuleCard(
                 policy?.takeIf { it.isLocked }?.let { StatusChip(text = it.statusLabel(module.repoVersion?.versionName)) }
                 if (!module.sourceMatched) StatusChip(text = stringResource(R.string.lsposed_not_in_repo))
                 if (module.detectedByXposedMetadata) StatusChip(text = stringResource(R.string.lsposed_xposed_metadata))
+                LsposedSafetyClassifier.highestLevel(notices)?.let { level ->
+                    StatusChip(text = safetyLevelLabel(level))
+                }
             }
+            SafetyNoticeSummary(notices = notices)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onOpenApp, enabled = module.launchable) {
                     Text(stringResource(R.string.lsposed_open_app))
@@ -410,6 +460,76 @@ private fun LsposedInstalledModuleCard(
             }
         }
     }
+}
+
+@Composable
+private fun SafetyNoticeSummary(notices: List<LsposedSafetyNotice>) {
+    val primary = notices.firstOrNull { it.level != LsposedSafetyLevel.INFO } ?: notices.firstOrNull() ?: return
+    Surface(
+        color = when (primary.level) {
+            LsposedSafetyLevel.ACTION -> MaterialTheme.colorScheme.errorContainer
+            LsposedSafetyLevel.WARNING -> MaterialTheme.colorScheme.secondaryContainer
+            LsposedSafetyLevel.INFO -> MaterialTheme.colorScheme.surfaceVariant
+        },
+        contentColor = when (primary.level) {
+            LsposedSafetyLevel.ACTION -> MaterialTheme.colorScheme.onErrorContainer
+            LsposedSafetyLevel.WARNING -> MaterialTheme.colorScheme.onSecondaryContainer
+            LsposedSafetyLevel.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(text = primary.title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text(text = primary.body, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun LsposedApkReviewDialog(
+    module: LsposedRepoModule,
+    installed: Boolean,
+    notices: List<LsposedSafetyNotice>,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(if (installed) R.string.lsposed_review_update_title else R.string.lsposed_review_install_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(text = module.displayName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(text = module.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = module.displayDescription, style = MaterialTheme.typography.bodySmall, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StatusChip(text = LsposedModulePolicy.latestVersionDisplay(module))
+                    module.sourceUrl?.takeIf { it.isNotBlank() }?.let { StatusChip(text = stringResource(R.string.lsposed_source_available)) }
+                    LsposedSafetyClassifier.highestLevel(notices)?.let { StatusChip(text = safetyLevelLabel(it)) }
+                }
+                SafetyNoticeSummary(notices = notices)
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text(stringResource(R.string.lsposed_download_open_installer))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun safetyLevelLabel(level: LsposedSafetyLevel): String = when (level) {
+    LsposedSafetyLevel.INFO -> stringResource(R.string.lsposed_scope_review_needed)
+    LsposedSafetyLevel.WARNING -> stringResource(R.string.lsposed_review_warning)
+    LsposedSafetyLevel.ACTION -> stringResource(R.string.lsposed_action_required)
 }
 
 @Composable
