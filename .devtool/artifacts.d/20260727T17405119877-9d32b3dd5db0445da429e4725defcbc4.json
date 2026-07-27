@@ -1,0 +1,101 @@
+{
+  "applied_at": "2026-07-27T17:40:51.198773Z",
+  "artifact": "/home/mike/Downloads/mmrl_lsposed_scope_editor_safe_overlay_r3.zip",
+  "artifact_name": "mmrl_lsposed_scope_editor_safe_overlay_r3.zip",
+  "type": "overlay",
+  "sha256": "1a514e1843fa396bd6be5c97ae1c5f744e10a9ac627c327a11621353ba3c6f99",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add guarded LSPosed scope editor",
+  "commit_hash": "",
+  "file_count": 8,
+  "change_counts": {
+    "add": 2,
+    "modify": 6
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_lsposed_scope_editor_safe_overlay_r3",
+    "description": "Add the guarded LSPosed scope editor, chained to discovery r3 and using JUnit contract tests.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+          "action": "modify",
+          "sha256": "d11afc9d5f7686460c85a86bbe1b3c9de9f9591fda6db3b55a0a7ed1ba94d466",
+          "size": 23725,
+          "source_sha256": "cdaf4615b18dda86c934e8f587346202b718829860b09f0debb856c99d4625ec"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+          "action": "modify",
+          "sha256": "fa6062ff5b1ec2e1a070f595d4cf7c90c1d2d955fd98178827c44df716f5a1b7",
+          "size": 11797,
+          "source_sha256": "623afa62d02d4169cd7574fc0eec3d712060c988c27e9492d12ca64c853e6ac0"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeRepository.kt",
+          "action": "modify",
+          "sha256": "268c5ddb00df7a4c87c1d73737eb3914a8271c8d1c604a33d4b2c228cc6a9805",
+          "size": 9034,
+          "source_sha256": "85482c4a650ae5ece3d3f781088abafbc7eae2f97ca8adb9a20b46be233b753b"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+          "action": "modify",
+          "sha256": "ce63825340c3f17681dc6b1aa366417e9acc864dd704b2cabb59a3858c04862d",
+          "size": 46614,
+          "source_sha256": "ada1b881823cf83decc4157e9e5b89f0f4dfbd6af1e8c472a36481c50f6dc48e"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt",
+          "action": "modify",
+          "sha256": "13f7a085d6fe01225fd2e0882c53547f3878441d3c3ddf5fb0e8f91b4eab9d82",
+          "size": 9709,
+          "source_sha256": "25293717857247eeacfc4a4787b1b56dedce32c5057bd4512e3881e12a4aec13"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "e277457e1804023ba6c413ffa4870dfbd2fe43f9d1a14043d0bd5d15de2a716c",
+          "size": 106793,
+          "source_sha256": "7c11748002f1dd144da3c349944c97c3bce00257046bf17013cbbe52f972396f"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeEditorContractTest.kt",
+          "action": "add",
+          "sha256": "62b52f3d5dc4611774be569e167ea5568c423584f2a366d23db8b48d905c692f",
+          "size": 2189
+        },
+        {
+          "path": "docs/LSPOSED_SCOPE_EDITOR.md",
+          "action": "add",
+          "sha256": "d851cc83d779ec503f1ba2d3bc1e8956ef7d9dc24b2e3ad29d7b998263fa518d",
+          "size": 577
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add guarded LSPosed scope editor"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "9d32b3dd5db0445da429e4725defcbc4"
+}

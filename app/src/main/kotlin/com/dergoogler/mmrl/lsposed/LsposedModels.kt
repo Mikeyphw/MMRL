@@ -219,6 +219,51 @@ data class LsposedScopeState(
 }
 
 
+data class LsposedScopeEditPlan(
+    val packageName: String,
+    val enabled: Boolean,
+    val autoInclude: Boolean,
+    val targets: List<LsposedScopeTarget>,
+) {
+    val normalizedPackageName: String
+        get() = LsposedIdentity.normalize(packageName)
+
+    val targetCount: Int
+        get() = targets.distinctBy { "${it.userId}:${it.packageName}" }.size
+
+    val summary: String
+        get() = buildString {
+            append(if (enabled) "Enable" else "Disable")
+            append(" · ")
+            append(if (autoInclude) "auto include" else "$targetCount scoped apps")
+        }
+}
+
+object LsposedScopePlanner {
+    private val PACKAGE_RE = Regex("^[A-Za-z0-9_.]+$")
+
+    fun plan(
+        module: LsposedInstalledModule,
+        enabled: Boolean,
+        autoInclude: Boolean,
+        targets: List<LsposedScopeTarget>,
+    ): LsposedScopeEditPlan {
+        require(module.scope != null) { "LSPosed module is not present in the provider database" }
+        require(PACKAGE_RE.matches(module.packageName)) { "Invalid module package name" }
+        val cleanedTargets = targets
+            .filter { PACKAGE_RE.matches(it.packageName) }
+            .distinctBy { "${it.userId}:${it.packageName}" }
+            .sortedWith(compareBy<LsposedScopeTarget> { it.userId }.thenBy { it.packageName })
+        return LsposedScopeEditPlan(
+            packageName = module.packageName,
+            enabled = enabled,
+            autoInclude = autoInclude,
+            targets = cleanedTargets,
+        )
+    }
+}
+
+
 object LsposedModulePolicy {
     fun bestInstallAsset(module: LsposedRepoModule): Pair<LsposedRelease, LsposedReleaseAsset>? {
         val releases = module.releases.ifEmpty { module.betaReleases }.ifEmpty { module.snapshotReleases }

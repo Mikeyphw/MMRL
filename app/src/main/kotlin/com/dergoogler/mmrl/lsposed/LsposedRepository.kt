@@ -78,6 +78,8 @@ class LsposedRepository(private val context: Context) {
 
     fun installedTargets(): List<LsposedScopeTarget> = scopeRepository.installedTargets()
 
+    suspend fun applyScopePlan(plan: LsposedScopeEditPlan): LsposedScopeState = scopeRepository.applyPlan(plan)
+
     fun installedModules(
         index: List<LsposedRepoModule>,
         scopeState: LsposedScopeState = LsposedScopeState(),

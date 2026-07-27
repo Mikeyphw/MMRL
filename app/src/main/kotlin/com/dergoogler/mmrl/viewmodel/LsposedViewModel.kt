@@ -15,6 +15,7 @@ import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
 import com.dergoogler.mmrl.lsposed.toSnapshotItem
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
+import com.dergoogler.mmrl.lsposed.LsposedScopePlanner
 import com.dergoogler.mmrl.lsposed.LsposedScopeState
 import com.dergoogler.mmrl.lsposed.LsposedScopeTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,6 +40,7 @@ class LsposedViewModel @Inject constructor(
         val query: String = "",
         val error: String? = null,
         val installingPackage: String? = null,
+        val applyingScopePackage: String? = null,
         val managerAvailable: Boolean = false,
         val providerStatus: LsposedProviderStatus = LsposedProviderStatus(),
         val scopeState: LsposedScopeState = LsposedScopeState(),
@@ -158,6 +160,33 @@ class LsposedViewModel @Inject constructor(
             module.toSnapshotItem(policy = stateFlow.value.policies[normalizedPackage])
         }
         stateFlow.update { it.copy(snapshotPlan = LsposedSnapshotPlanner.compare(snapshot, current)) }
+    }
+
+    fun applyScope(
+        module: LsposedInstalledModule,
+        enabled: Boolean,
+        autoInclude: Boolean,
+        targets: List<LsposedScopeTarget>,
+    ) {
+        viewModelScope.launch {
+            val plan = runCatching { LsposedScopePlanner.plan(module, enabled, autoInclude, targets) }
+                .getOrElse { error ->
+                    eventsFlow.tryEmit(Event.Message(error.message ?: "Unable to prepare LSPosed scope changes"))
+                    return@launch
+                }
+            stateFlow.update { it.copy(applyingScopePackage = module.packageName, error = null) }
+            runCatching { repository.applyScopePlan(plan) }
+                .onSuccess { scopeState ->
+                    val modules = stateFlow.value.modules
+                    val installed = repository.installedModules(modules, scopeState)
+                    stateFlow.update { it.copy(scopeState = scopeState, installed = installed) }
+                    eventsFlow.tryEmit(Event.Message("Applied LSPosed scope changes. Reopen LSPosed or reboot if the provider does not refresh immediately."))
+                }
+                .onFailure { error ->
+                    eventsFlow.tryEmit(Event.Message(error.message ?: "Unable to apply LSPosed scope changes"))
+                }
+            stateFlow.update { it.copy(applyingScopePackage = null) }
+        }
     }
 
 

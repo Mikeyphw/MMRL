@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -55,6 +56,7 @@ import com.dergoogler.mmrl.lsposed.LsposedModulePolicy
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
 import com.dergoogler.mmrl.lsposed.LsposedScopeState
+import com.dergoogler.mmrl.lsposed.LsposedScopeTarget
 import com.dergoogler.mmrl.lsposed.LsposedSafetyClassifier
 import com.dergoogler.mmrl.lsposed.LsposedSafetyLevel
 import com.dergoogler.mmrl.lsposed.LsposedSafetyNotice
@@ -154,6 +156,7 @@ fun LsposedModulesTab(
         }
     var pendingUpdate by remember { mutableStateOf<LsposedInstalledModule?>(null) }
     var scopeDetails by remember { mutableStateOf<LsposedInstalledModule?>(null) }
+    var scopeEditor by remember { mutableStateOf<LsposedInstalledModule?>(null) }
 
     LsposedTabContent(
         innerPadding = innerPadding,
@@ -191,6 +194,7 @@ fun LsposedModulesTab(
                 onOpenLsposed = viewModel::openLsposed,
                 onUpdate = { pendingUpdate = module },
                 onViewScope = { scopeDetails = module },
+                onEditScope = { scopeEditor = module },
                 onFollowLatest = { viewModel.followLatest(module.packageName) },
                 onIgnoreUpdates = { viewModel.ignoreUpdates(module.packageName) },
                 onPinCurrent = { viewModel.pinCurrent(module) },
@@ -227,6 +231,19 @@ fun LsposedModulesTab(
             module = module,
             scopeState = state.scopeState,
             onDismiss = { scopeDetails = null },
+        )
+    }
+
+    scopeEditor?.let { module ->
+        LsposedScopeEditorDialog(
+            module = module,
+            availableTargets = state.scopeTargets,
+            applying = state.applyingScopePackage == module.packageName,
+            onDismiss = { scopeEditor = null },
+            onApply = { enabled, autoInclude, targets ->
+                scopeEditor = null
+                viewModel.applyScope(module, enabled, autoInclude, targets)
+            },
         )
     }
 
@@ -499,6 +516,7 @@ private fun LsposedInstalledModuleCard(
     onOpenLsposed: () -> Unit,
     onUpdate: () -> Unit,
     onViewScope: () -> Unit,
+    onEditScope: () -> Unit,
     onFollowLatest: () -> Unit,
     onIgnoreUpdates: () -> Unit,
     onPinCurrent: () -> Unit,
@@ -563,6 +581,9 @@ private fun LsposedInstalledModuleCard(
                 }
                 OutlinedButton(onClick = onViewScope, enabled = module.scope != null) {
                     Text(stringResource(R.string.lsposed_view_scope))
+                }
+                OutlinedButton(onClick = onEditScope, enabled = module.scope != null) {
+                    Text(stringResource(R.string.lsposed_edit_scope))
                 }
                 if (module.hasUpdate) {
                     Button(onClick = onUpdate, enabled = !installing && !updateBlocked) {
@@ -636,6 +657,82 @@ private fun LsposedScopeDetailsDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.dialog_ok))
+            }
+        },
+    )
+}
+
+@Composable
+private fun LsposedScopeEditorDialog(
+    module: LsposedInstalledModule,
+    availableTargets: List<LsposedScopeTarget>,
+    applying: Boolean,
+    onDismiss: () -> Unit,
+    onApply: (Boolean, Boolean, List<LsposedScopeTarget>) -> Unit,
+) {
+    val scope = module.scope ?: return
+    var enabled by remember(module.packageName) { mutableStateOf(scope.enabled) }
+    var autoInclude by remember(module.packageName) { mutableStateOf(scope.autoInclude) }
+    var selected by remember(module.packageName) {
+        mutableStateOf(scope.targets.map { "${it.userId}:${it.packageName}" }.toSet())
+    }
+    val targets = remember(availableTargets, scope) {
+        (availableTargets + scope.targets)
+            .distinctBy { "${it.userId}:${it.packageName}" }
+            .sortedWith(compareBy<LsposedScopeTarget> { it.label.lowercase() }.thenBy { it.packageName })
+    }
+    val selectedTargets = targets.filter { "${it.userId}:${it.packageName}" in selected }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.lsposed_edit_scope_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(text = module.displayName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(text = stringResource(R.string.lsposed_scope_review_backup_notice), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Checkbox(checked = enabled, onCheckedChange = { enabled = it })
+                    Text(text = stringResource(R.string.lsposed_scope_enable_module), style = MaterialTheme.typography.bodySmall)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Checkbox(checked = autoInclude, onCheckedChange = { autoInclude = it })
+                    Text(text = stringResource(R.string.lsposed_scope_auto_include), style = MaterialTheme.typography.bodySmall)
+                }
+                Text(text = stringResource(R.string.lsposed_scope_selected_count, selectedTargets.size), style = MaterialTheme.typography.labelLarge)
+                targets.take(60).forEach { target ->
+                    val key = "${target.userId}:${target.packageName}"
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Checkbox(
+                            checked = key in selected,
+                            onCheckedChange = { checked ->
+                                selected = if (checked) selected + key else selected - key
+                            },
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = target.label, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(text = "${target.packageName} · user ${target.userId}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+                if (targets.size > 60) {
+                    Text(text = stringResource(R.string.lsposed_scope_editor_more_targets, targets.size - 60), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onApply(enabled, autoInclude, selectedTargets) },
+                enabled = !applying,
+            ) {
+                Text(stringResource(R.string.lsposed_apply_scope_changes))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
             }
         },
     )

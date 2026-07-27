@@ -1378,4 +1378,12 @@
     <string name="lsposed_scope_target">%1$s · %2$s · user %3$d</string>
     <string name="lsposed_scope_more_targets">+%1$d more scoped apps</string>
 
+    <string name="lsposed_edit_scope">Edit scope</string>
+    <string name="lsposed_edit_scope_title">Edit LSPosed scope</string>
+    <string name="lsposed_scope_review_backup_notice">MMRL will create a root-side backup before writing the LSPosed provider database. Reopen LSPosed or reboot if changes do not refresh immediately.</string>
+    <string name="lsposed_scope_enable_module">Enable this module in LSPosed</string>
+    <string name="lsposed_scope_selected_count">%1$d selected target apps</string>
+    <string name="lsposed_scope_editor_more_targets">+%1$d more installed apps hidden in this compact editor</string>
+    <string name="lsposed_apply_scope_changes">Apply scope changes</string>
+
 </resources>
