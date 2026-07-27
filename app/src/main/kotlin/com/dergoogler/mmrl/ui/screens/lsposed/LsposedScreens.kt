@@ -54,6 +54,7 @@ import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
 import com.dergoogler.mmrl.lsposed.LsposedModulePolicy
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
+import com.dergoogler.mmrl.lsposed.LsposedScopeState
 import com.dergoogler.mmrl.lsposed.LsposedSafetyClassifier
 import com.dergoogler.mmrl.lsposed.LsposedSafetyLevel
 import com.dergoogler.mmrl.lsposed.LsposedSafetyNotice
@@ -152,6 +153,7 @@ fun LsposedModulesTab(
                 installed.description.contains(query, ignoreCase = true)
         }
     var pendingUpdate by remember { mutableStateOf<LsposedInstalledModule?>(null) }
+    var scopeDetails by remember { mutableStateOf<LsposedInstalledModule?>(null) }
 
     LsposedTabContent(
         innerPadding = innerPadding,
@@ -168,6 +170,7 @@ fun LsposedModulesTab(
                 installed = state.installed,
                 policies = state.policies,
                 managerAvailable = state.managerAvailable,
+                scopeState = state.scopeState,
                 snapshots = state.snapshots,
                 plan = state.snapshotPlan,
                 onOpenLsposed = viewModel::openLsposed,
@@ -187,6 +190,7 @@ fun LsposedModulesTab(
                 onOpenApp = { viewModel.openApp(module.packageName) },
                 onOpenLsposed = viewModel::openLsposed,
                 onUpdate = { pendingUpdate = module },
+                onViewScope = { scopeDetails = module },
                 onFollowLatest = { viewModel.followLatest(module.packageName) },
                 onIgnoreUpdates = { viewModel.ignoreUpdates(module.packageName) },
                 onPinCurrent = { viewModel.pinCurrent(module) },
@@ -218,6 +222,14 @@ fun LsposedModulesTab(
             }
         }
     }
+    scopeDetails?.let { module ->
+        LsposedScopeDetailsDialog(
+            module = module,
+            scopeState = state.scopeState,
+            onDismiss = { scopeDetails = null },
+        )
+    }
+
     pendingUpdate?.let { installed ->
         val module = installed.repoModule
         if (module == null) {
@@ -486,6 +498,7 @@ private fun LsposedInstalledModuleCard(
     onOpenApp: () -> Unit,
     onOpenLsposed: () -> Unit,
     onUpdate: () -> Unit,
+    onViewScope: () -> Unit,
     onFollowLatest: () -> Unit,
     onIgnoreUpdates: () -> Unit,
     onPinCurrent: () -> Unit,
@@ -526,6 +539,11 @@ private fun LsposedInstalledModuleCard(
                 StatusChip(text = stringResource(R.string.module_installed))
                 module.installedVersionName?.let { StatusChip(text = it) }
                 module.repoVersion?.let { StatusChip(text = stringResource(R.string.lsposed_repo_version, it.versionName)) }
+                module.scope?.let { scope ->
+                    StatusChip(text = stringResource(if (scope.enabled) R.string.lsposed_scope_enabled else R.string.lsposed_scope_disabled))
+                    StatusChip(text = stringResource(R.string.lsposed_scope_count, scope.scopeCount))
+                    if (scope.autoInclude) StatusChip(text = stringResource(R.string.lsposed_scope_auto_include))
+                } ?: StatusChip(text = stringResource(R.string.lsposed_scope_unknown))
                 if (module.hasUpdate) StatusChip(text = stringResource(R.string.module_update_available))
                 if (updateBlocked) StatusChip(text = stringResource(R.string.lsposed_update_blocked))
                 policy?.takeIf { it.isLocked }?.let { StatusChip(text = it.statusLabel(module.repoVersion?.versionName)) }
@@ -542,6 +560,9 @@ private fun LsposedInstalledModuleCard(
                 }
                 OutlinedButton(onClick = onOpenLsposed) {
                     Text(stringResource(R.string.lsposed_open_manager))
+                }
+                OutlinedButton(onClick = onViewScope, enabled = module.scope != null) {
+                    Text(stringResource(R.string.lsposed_view_scope))
                 }
                 if (module.hasUpdate) {
                     Button(onClick = onUpdate, enabled = !installing && !updateBlocked) {
@@ -560,6 +581,64 @@ private fun LsposedInstalledModuleCard(
             }
         }
     }
+}
+
+@Composable
+private fun LsposedScopeDetailsDialog(
+    module: LsposedInstalledModule,
+    scopeState: LsposedScopeState,
+    onDismiss: () -> Unit,
+) {
+    val scope = module.scope
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.lsposed_scope_details_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(text = module.displayName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(text = module.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (scope == null) {
+                    Text(
+                        text = scopeState.message ?: stringResource(R.string.lsposed_scope_unknown_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        StatusChip(text = stringResource(if (scope.enabled) R.string.lsposed_scope_enabled else R.string.lsposed_scope_disabled))
+                        StatusChip(text = stringResource(R.string.lsposed_scope_count, scope.scopeCount))
+                        if (scope.autoInclude) StatusChip(text = stringResource(R.string.lsposed_scope_auto_include))
+                    }
+                    Text(text = stringResource(R.string.lsposed_scope_db_path, scopeState.dbPath), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (scope.targets.isEmpty()) {
+                        Text(text = stringResource(R.string.lsposed_scope_empty), style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            scope.targets.take(12).forEach { target ->
+                                Text(
+                                    text = stringResource(R.string.lsposed_scope_target, target.label, target.packageName, target.userId),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            if (scope.targets.size > 12) {
+                                Text(
+                                    text = stringResource(R.string.lsposed_scope_more_targets, scope.targets.size - 12),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.dialog_ok))
+            }
+        },
+    )
 }
 
 @Composable
@@ -727,6 +806,7 @@ private fun LsposedInstalledSideRail(
     installed: List<LsposedInstalledModule>,
     policies: Map<String, LsposedVersionPolicy>,
     managerAvailable: Boolean,
+    scopeState: LsposedScopeState,
     snapshots: List<LsposedSnapshot>,
     plan: List<LsposedSnapshotPlanItem>,
     onOpenLsposed: () -> Unit,
@@ -734,12 +814,10 @@ private fun LsposedInstalledSideRail(
     onCompareSnapshot: (LsposedSnapshot) -> Unit,
     onDeleteSnapshot: (String) -> Unit,
 ) {
-    GuidanceCard(
-        title = stringResource(R.string.lsposed_activation_title),
-        description = stringResource(R.string.lsposed_activation_description),
-        action = stringResource(R.string.lsposed_open_manager),
-        onAction = onOpenLsposed,
-        actionEnabled = managerAvailable,
+    LsposedProviderStatusCard(
+        managerAvailable = managerAvailable,
+        scopeState = scopeState,
+        onOpenLsposed = onOpenLsposed,
     )
     LsposedMetricCard(
         title = stringResource(R.string.lsposed_adaptive_installed_summary_title),
@@ -758,6 +836,35 @@ private fun LsposedInstalledSideRail(
         onCompareSnapshot = onCompareSnapshot,
         onDeleteSnapshot = onDeleteSnapshot,
     )
+}
+
+@Composable
+private fun LsposedProviderStatusCard(
+    managerAvailable: Boolean,
+    scopeState: LsposedScopeState,
+    onOpenLsposed: () -> Unit,
+) {
+    ElevatedCard(shape = RoundedCornerShape(22.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(text = stringResource(R.string.lsposed_provider_status_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                StatusChip(text = if (managerAvailable) stringResource(R.string.lsposed_provider_manager_available) else stringResource(R.string.lsposed_provider_manager_missing))
+                StatusChip(text = if (scopeState.readable) stringResource(R.string.lsposed_scope_db_readable) else stringResource(R.string.lsposed_scope_db_unreadable))
+                if (scopeState.readable) StatusChip(text = stringResource(R.string.lsposed_scope_modules_count, scopeState.moduleCount))
+            }
+            Text(
+                text = scopeState.message ?: stringResource(R.string.lsposed_provider_status_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = onOpenLsposed, enabled = managerAvailable) {
+                Text(stringResource(R.string.lsposed_open_manager))
+            }
+        }
+    }
 }
 
 @Composable

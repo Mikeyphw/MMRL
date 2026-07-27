@@ -15,6 +15,8 @@ import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
 import com.dergoogler.mmrl.lsposed.toSnapshotItem
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
+import com.dergoogler.mmrl.lsposed.LsposedScopeState
+import com.dergoogler.mmrl.lsposed.LsposedScopeTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +41,8 @@ class LsposedViewModel @Inject constructor(
         val installingPackage: String? = null,
         val managerAvailable: Boolean = false,
         val providerStatus: LsposedProviderStatus = LsposedProviderStatus(),
+        val scopeState: LsposedScopeState = LsposedScopeState(),
+        val scopeTargets: List<LsposedScopeTarget> = emptyList(),
         val policies: Map<String, LsposedVersionPolicy> = emptyMap(),
         val snapshots: List<LsposedSnapshot> = emptyList(),
         val snapshotPlan: List<LsposedSnapshotPlanItem> = emptyList(),
@@ -79,21 +83,23 @@ class LsposedViewModel @Inject constructor(
     fun refresh(force: Boolean = true) {
         viewModelScope.launch {
             stateFlow.update { it.copy(loading = true, error = null) }
-            runCatching {
-                val modules = repository.loadModules(forceRefresh = force)
-                val installed = repository.installedModules(modules)
-                val providerStatus = repository.providerStatus()
-                stateFlow.update {
-                    it.copy(
-                        loading = false,
-                        modules = modules,
-                        installed = installed,
-                        managerAvailable = providerStatus.canOpen,
-                        providerStatus = providerStatus,
-                    )
-                }
-            }.onFailure { throwable ->
-                stateFlow.update { it.copy(loading = false, error = throwable.message ?: "Unable to load LSPosed modules") }
+            val providerStatus = repository.providerStatus()
+            val scopeState = repository.scopeState()
+            val modulesResult = runCatching { repository.loadModules(forceRefresh = force) }
+            val modules = modulesResult.getOrDefault(emptyList())
+            val installed = repository.installedModules(modules, scopeState)
+            val targets = runCatching { repository.installedTargets() }.getOrDefault(emptyList())
+            stateFlow.update {
+                it.copy(
+                    loading = false,
+                    modules = modules,
+                    installed = installed,
+                    managerAvailable = providerStatus.canOpen,
+                    providerStatus = providerStatus,
+                    scopeState = scopeState,
+                    scopeTargets = targets,
+                    error = modulesResult.exceptionOrNull()?.message,
+                )
             }
         }
     }

@@ -24,6 +24,7 @@ class LsposedRepository(private val context: Context) {
     }
     private val moduleAdapter by lazy { moshi.adapter(LsposedRepoModule::class.java) }
     private val cacheDir by lazy { File(context.cacheDir, "lsposed-repo").apply { mkdirs() } }
+    private val scopeRepository by lazy { LsposedScopeRepository(context) }
 
     suspend fun loadModules(forceRefresh: Boolean = false): List<LsposedRepoModule> = withContext(Dispatchers.IO) {
         val cache = File(cacheDir, "modules.json")
@@ -31,9 +32,17 @@ class LsposedRepository(private val context: Context) {
             if (!forceRefresh && cache.isFile && cache.length() > 0L) {
                 cache.readText()
             } else {
-                requestText("https://modules.lsposed.org/modules.json").also(cache::writeText)
+                runCatching { requestText("https://modules.lsposed.org/modules.json") }
+                    .onSuccess(cache::writeText)
+                    .getOrElse {
+                        cache.takeIf { it.isFile && it.length() > 0L }?.readText()
+                    }
             }
-        moduleListAdapter.fromJson(body).orEmpty().filterNot { it.hide == true }.sortedBy { it.displayName.lowercase() }
+        body
+            ?.let { moduleListAdapter.fromJson(it).orEmpty() }
+            .orEmpty()
+            .filterNot { it.hide == true }
+            .sortedBy { it.displayName.lowercase() }
     }
 
     suspend fun loadDetail(packageName: String): LsposedRepoModule = withContext(Dispatchers.IO) {
@@ -65,9 +74,17 @@ class LsposedRepository(private val context: Context) {
         )
     }
 
-    fun installedModules(index: List<LsposedRepoModule>): List<LsposedInstalledModule> {
+    suspend fun scopeState(): LsposedScopeState = scopeRepository.readState()
+
+    fun installedTargets(): List<LsposedScopeTarget> = scopeRepository.installedTargets()
+
+    fun installedModules(
+        index: List<LsposedRepoModule>,
+        scopeState: LsposedScopeState = LsposedScopeState(),
+    ): List<LsposedInstalledModule> {
         val pm = context.packageManager
         val repoByPackage = index.associateBy { it.packageName }
+        val scopeByPackage = scopeState.modulesByPackage
         val packages = installedPackages(pm)
         return packages.mapNotNull { info ->
             val packageName = info.packageName
@@ -87,6 +104,7 @@ class LsposedRepository(private val context: Context) {
                 repoModule = repoModule,
                 launchable = pm.getLaunchIntentForPackage(packageName) != null,
                 detectedByXposedMetadata = isXposed,
+                scope = scopeByPackage[LsposedIdentity.normalize(packageName)],
             )
         }.sortedWith(compareByDescending<LsposedInstalledModule> { it.hasUpdate }.thenBy { it.displayName.lowercase() })
     }
@@ -182,7 +200,11 @@ class LsposedRepository(private val context: Context) {
     }
 
     private fun requestText(url: String): String {
-        val request = Request.Builder().url(url).get().build()
+        val request = Request.Builder()
+            .url(url)
+            .header("Accept", "application/json")
+            .get()
+            .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 error("Unable to load LSPosed repository: HTTP ${response.code}")

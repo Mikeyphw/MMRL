@@ -1,0 +1,100 @@
+{
+  "applied_at": "2026-07-27T17:36:31.558951Z",
+  "artifact": "/home/mike/Downloads/mmrl_lsposed_scope_discovery_safe_overlay_r3.zip",
+  "artifact_name": "mmrl_lsposed_scope_discovery_safe_overlay_r3.zip",
+  "type": "overlay",
+  "sha256": "15b7a9a7c32e6ee5c3b9b6798c70b5add4e297bc93e5fed2e2e6cff387f4cf1d",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Add LSPosed scope discovery",
+  "commit_hash": "",
+  "file_count": 8,
+  "change_counts": {
+    "add": 3,
+    "modify": 5
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_lsposed_scope_discovery_safe_overlay_r3",
+    "description": "Add read-only Vector/LSPosed scope discovery with JUnit contract tests and compile-safe shell path quoting.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+          "action": "modify",
+          "sha256": "cdaf4615b18dda86c934e8f587346202b718829860b09f0debb856c99d4625ec",
+          "size": 22208,
+          "source_sha256": "1e78ad26f3d6b7741182cd2c42c7ff468ca52094aeb43cf16e85c3608b378ae6"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+          "action": "modify",
+          "sha256": "623afa62d02d4169cd7574fc0eec3d712060c988c27e9492d12ca64c853e6ac0",
+          "size": 11684,
+          "source_sha256": "cd50f74c4913da610c99e6ac1cc26bdf070321d68bb578bd5bc8281e46a6c64e"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeRepository.kt",
+          "action": "add",
+          "sha256": "85482c4a650ae5ece3d3f781088abafbc7eae2f97ca8adb9a20b46be233b753b",
+          "size": 5605
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+          "action": "modify",
+          "sha256": "ada1b881823cf83decc4157e9e5b89f0f4dfbd6af1e8c472a36481c50f6dc48e",
+          "size": 41445,
+          "source_sha256": "ebb5bb54af79fd302ade78eeb98c820645dee827c56394d1293347c18747680d"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt",
+          "action": "modify",
+          "sha256": "25293717857247eeacfc4a4787b1b56dedce32c5057bd4512e3881e12a4aec13",
+          "size": 8225,
+          "source_sha256": "d8e3536173c52a1b67974e60029543a736cc66daaa5174c97cb114ba1d8eec57"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "7c11748002f1dd144da3c349944c97c3bce00257046bf17013cbbe52f972396f",
+          "size": 106090,
+          "source_sha256": "835f0c269f61c45ca6b557dbe4a4eb00d8b70406031ff50fb4b9ef26306f9fd3"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeDiscoveryContractTest.kt",
+          "action": "add",
+          "sha256": "77c4b52ee7671dfb8d0f12085a5ee98293f17d283cefda4cab9d2616aa343f8e",
+          "size": 2936
+        },
+        {
+          "path": "docs/LSPOSED_SCOPE_DISCOVERY.md",
+          "action": "add",
+          "sha256": "b89209e69a62526cffa8d1db195bd583606f1bacc2378e33a27b043cb6a9f920",
+          "size": 532
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add LSPosed scope discovery"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "b0e29c9bada04cbd868f1bd7fc0584de"
+}

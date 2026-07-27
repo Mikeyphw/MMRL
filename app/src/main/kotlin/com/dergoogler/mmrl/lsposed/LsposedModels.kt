@@ -125,6 +125,7 @@ data class LsposedInstalledModule(
     val repoModule: LsposedRepoModule?,
     val launchable: Boolean,
     val detectedByXposedMetadata: Boolean,
+    val scope: LsposedModuleScope? = null,
 ) {
     val displayName: String get() = repoModule?.displayName ?: label
     val description: String get() = repoModule?.displayDescription ?: "Installed APK module. It was not matched to the LSPosed repository index."
@@ -160,6 +161,61 @@ data class LsposedProviderStatus(
             installed -> "Provider installed"
             else -> "Provider not detected"
         }
+}
+
+
+data class LsposedScopeTarget(
+    val packageName: String,
+    val label: String = packageName,
+    val userId: Int = 0,
+) {
+    val display: String
+        get() = if (label.isNotBlank() && label != packageName) "$label · $packageName" else packageName
+}
+
+data class LsposedModuleScope(
+    val modulePackageName: String,
+    val mid: Long,
+    val apkPath: String,
+    val enabled: Boolean,
+    val autoInclude: Boolean,
+    val targets: List<LsposedScopeTarget> = emptyList(),
+) {
+    val normalizedPackageName: String
+        get() = LsposedIdentity.normalize(modulePackageName)
+
+    val scopeCount: Int
+        get() = targets.distinctBy { "${it.userId}:${it.packageName}" }.size
+
+    val stateLabel: String
+        get() = if (enabled) "Enabled in LSPosed" else "Disabled in LSPosed"
+
+    val scopeLabel: String
+        get() = when {
+            autoInclude -> "Auto include"
+            scopeCount == 1 -> "1 scoped app"
+            else -> "$scopeCount scoped apps"
+        }
+}
+
+data class LsposedScopeState(
+    val dbPath: String = LsposedScopeState.DEFAULT_DB_PATH,
+    val readable: Boolean = false,
+    val modules: List<LsposedModuleScope> = emptyList(),
+    val message: String? = null,
+) {
+    val modulesByPackage: Map<String, LsposedModuleScope>
+        get() = modules.associateBy { it.normalizedPackageName }
+
+    val moduleCount: Int
+        get() = modules.size
+
+    val scopedModuleCount: Int
+        get() = modules.count { it.scopeCount > 0 || it.autoInclude }
+
+    companion object {
+        const val DEFAULT_DB_PATH = "/data/adb/lspd/modules_config.db"
+    }
 }
 
 

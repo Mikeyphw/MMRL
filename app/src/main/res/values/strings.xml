@@ -1358,4 +1358,24 @@
     <string name="github_source_add_confirm">Add</string>
     <string name="github_source_error_invalid_url">Invalid GitHub repository URL</string>
 
+    <string name="lsposed_provider_status_title">Provider status</string>
+    <string name="lsposed_provider_status_description">Vector or LSPosed provider detected. Scope data is read from the local provider database when root grants access.</string>
+    <string name="lsposed_provider_manager_available">Manager available</string>
+    <string name="lsposed_provider_manager_missing">Manager unavailable</string>
+    <string name="lsposed_scope_db_readable">Scope DB readable</string>
+    <string name="lsposed_scope_db_unreadable">Scope DB unreadable</string>
+    <string name="lsposed_scope_modules_count">%1$d provider modules</string>
+    <string name="lsposed_scope_enabled">Enabled in LSPosed</string>
+    <string name="lsposed_scope_disabled">Disabled in LSPosed</string>
+    <string name="lsposed_scope_unknown">Scope unknown</string>
+    <string name="lsposed_scope_unknown_description">This APK module was not found in the LSPosed provider database.</string>
+    <string name="lsposed_scope_count">%1$d scoped apps</string>
+    <string name="lsposed_scope_auto_include">Auto include</string>
+    <string name="lsposed_view_scope">View scope</string>
+    <string name="lsposed_scope_details_title">LSPosed scope</string>
+    <string name="lsposed_scope_db_path">DB: %1$s</string>
+    <string name="lsposed_scope_empty">No scoped apps are listed for this module.</string>
+    <string name="lsposed_scope_target">%1$s · %2$s · user %3$d</string>
+    <string name="lsposed_scope_more_targets">+%1$d more scoped apps</string>
+
 </resources>
