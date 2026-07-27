@@ -1362,6 +1362,13 @@
     <string name="lsposed_provider_status_description">Vector or LSPosed provider detected. Scope data is read from the local provider database when root grants access.</string>
     <string name="lsposed_provider_manager_available">Manager available</string>
     <string name="lsposed_provider_manager_missing">Manager unavailable</string>
+    <string name="lsposed_provider_manager_installed_app">Manager app installed</string>
+    <string name="lsposed_provider_manager_action_bridge">Provider action bridge</string>
+    <string name="lsposed_provider_manager_bundled_apk">Manager APK bundled</string>
+    <string name="lsposed_provider_manager_unavailable">Manager unavailable</string>
+    <string name="lsposed_provider_module_active">Provider active</string>
+    <string name="lsposed_provider_update_pending">Provider update staged</string>
+    <string name="lsposed_provider_disabled">Provider disabled</string>
     <string name="lsposed_scope_db_readable">Scope DB readable</string>
     <string name="lsposed_scope_db_unreadable">Scope DB unreadable</string>
     <string name="lsposed_scope_modules_count">%1$d provider modules</string>

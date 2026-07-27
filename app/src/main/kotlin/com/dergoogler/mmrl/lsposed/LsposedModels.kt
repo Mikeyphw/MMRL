@@ -134,6 +134,13 @@ data class LsposedInstalledModule(
     val sourceMatched: Boolean get() = repoModule != null
 }
 
+enum class LsposedManagerOpenMode {
+    INSTALLED_MANAGER,
+    PROVIDER_ACTION,
+    BUNDLED_MANAGER_APK,
+    UNAVAILABLE,
+}
+
 data class LsposedProviderStatus(
     val installed: Boolean = false,
     val moduleId: String? = null,
@@ -146,20 +153,21 @@ data class LsposedProviderStatus(
     val actionAvailable: Boolean = false,
     val managerApkPresent: Boolean = false,
     val managerPackageInstalled: Boolean = false,
+    val managerOpenMode: LsposedManagerOpenMode = LsposedManagerOpenMode.UNAVAILABLE,
 ) {
     val canOpen: Boolean
-        get() = managerPackageInstalled || actionAvailable
+        get() = managerOpenMode == LsposedManagerOpenMode.INSTALLED_MANAGER ||
+            managerOpenMode == LsposedManagerOpenMode.PROVIDER_ACTION
 
     val displayName: String
         get() = name?.takeIf { it.isNotBlank() } ?: moduleId ?: folder ?: "LSPosed provider"
 
     val statusLabel: String
-        get() = when {
-            managerPackageInstalled -> "Manager app installed"
-            actionAvailable -> "Provider action available"
-            managerApkPresent -> "Manager APK bundled"
-            installed -> "Provider installed"
-            else -> "Provider not detected"
+        get() = when (managerOpenMode) {
+            LsposedManagerOpenMode.INSTALLED_MANAGER -> "Manager app installed"
+            LsposedManagerOpenMode.PROVIDER_ACTION -> "Provider action bridge"
+            LsposedManagerOpenMode.BUNDLED_MANAGER_APK -> "Manager APK bundled"
+            LsposedManagerOpenMode.UNAVAILABLE -> if (installed) "Provider installed" else "Provider not detected"
         }
 }
 

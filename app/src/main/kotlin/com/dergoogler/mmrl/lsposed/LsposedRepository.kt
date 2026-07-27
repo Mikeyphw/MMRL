@@ -116,6 +116,12 @@ class LsposedRepository(private val context: Context) {
         val active = findProviderCandidate(PROVIDER_ACTIVE_ROOT, active = true)
         val staged = findProviderCandidate(PROVIDER_UPDATE_ROOT, active = false)
         val selected = active ?: staged
+        val managerOpenMode = when {
+            managerInstalled -> LsposedManagerOpenMode.INSTALLED_MANAGER
+            active?.actionAvailable == true -> LsposedManagerOpenMode.PROVIDER_ACTION
+            selected?.managerApkPresent == true -> LsposedManagerOpenMode.BUNDLED_MANAGER_APK
+            else -> LsposedManagerOpenMode.UNAVAILABLE
+        }
         return LsposedProviderStatus(
             installed = selected != null,
             moduleId = selected?.moduleId,
@@ -128,6 +134,7 @@ class LsposedRepository(private val context: Context) {
             actionAvailable = active?.actionAvailable == true,
             managerApkPresent = selected?.managerApkPresent == true,
             managerPackageInstalled = managerInstalled,
+            managerOpenMode = managerOpenMode,
         )
     }
 

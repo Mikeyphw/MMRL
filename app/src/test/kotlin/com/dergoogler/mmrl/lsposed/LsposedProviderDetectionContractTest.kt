@@ -38,7 +38,9 @@ class LsposedProviderDetectionContractTest {
         val viewModel = source("app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt")
 
         assertTrue(models.contains("data class LsposedProviderStatus"))
-        assertTrue(models.contains("managerPackageInstalled || actionAvailable"))
+        assertTrue(models.contains("enum class LsposedManagerOpenMode"))
+        assertTrue(models.contains("managerOpenMode == LsposedManagerOpenMode.INSTALLED_MANAGER"))
+        assertTrue(models.contains("managerOpenMode == LsposedManagerOpenMode.PROVIDER_ACTION"))
         assertTrue(viewModel.contains("managerAvailable = providerStatus.canOpen"))
     }
 

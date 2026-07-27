@@ -52,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.lsposed.LsposedIdentity
 import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
+import com.dergoogler.mmrl.lsposed.LsposedManagerOpenMode
 import com.dergoogler.mmrl.lsposed.LsposedModulePolicy
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
@@ -173,6 +174,7 @@ fun LsposedModulesTab(
                 installed = state.installed,
                 policies = state.policies,
                 managerAvailable = state.managerAvailable,
+                providerStatus = state.providerStatus,
                 scopeState = state.scopeState,
                 snapshots = state.snapshots,
                 plan = state.snapshotPlan,
@@ -903,6 +905,7 @@ private fun LsposedInstalledSideRail(
     installed: List<LsposedInstalledModule>,
     policies: Map<String, LsposedVersionPolicy>,
     managerAvailable: Boolean,
+    providerStatus: com.dergoogler.mmrl.lsposed.LsposedProviderStatus,
     scopeState: LsposedScopeState,
     snapshots: List<LsposedSnapshot>,
     plan: List<LsposedSnapshotPlanItem>,
@@ -913,6 +916,7 @@ private fun LsposedInstalledSideRail(
 ) {
     LsposedProviderStatusCard(
         managerAvailable = managerAvailable,
+        providerStatus = providerStatus,
         scopeState = scopeState,
         onOpenLsposed = onOpenLsposed,
     )
@@ -938,9 +942,16 @@ private fun LsposedInstalledSideRail(
 @Composable
 private fun LsposedProviderStatusCard(
     managerAvailable: Boolean,
+    providerStatus: com.dergoogler.mmrl.lsposed.LsposedProviderStatus,
     scopeState: LsposedScopeState,
     onOpenLsposed: () -> Unit,
 ) {
+    val managerStatus = when (providerStatus.managerOpenMode) {
+        LsposedManagerOpenMode.INSTALLED_MANAGER -> stringResource(R.string.lsposed_provider_manager_installed_app)
+        LsposedManagerOpenMode.PROVIDER_ACTION -> stringResource(R.string.lsposed_provider_manager_action_bridge)
+        LsposedManagerOpenMode.BUNDLED_MANAGER_APK -> stringResource(R.string.lsposed_provider_manager_bundled_apk)
+        LsposedManagerOpenMode.UNAVAILABLE -> stringResource(R.string.lsposed_provider_manager_unavailable)
+    }
     ElevatedCard(shape = RoundedCornerShape(22.dp)) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -948,7 +959,10 @@ private fun LsposedProviderStatusCard(
         ) {
             Text(text = stringResource(R.string.lsposed_provider_status_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                StatusChip(text = if (managerAvailable) stringResource(R.string.lsposed_provider_manager_available) else stringResource(R.string.lsposed_provider_manager_missing))
+                StatusChip(text = managerStatus)
+                if (providerStatus.active) StatusChip(text = stringResource(R.string.lsposed_provider_module_active))
+                if (providerStatus.updatePending) StatusChip(text = stringResource(R.string.lsposed_provider_update_pending))
+                if (providerStatus.disabled) StatusChip(text = stringResource(R.string.lsposed_provider_disabled))
                 StatusChip(text = if (scopeState.readable) stringResource(R.string.lsposed_scope_db_readable) else stringResource(R.string.lsposed_scope_db_unreadable))
                 if (scopeState.readable) StatusChip(text = stringResource(R.string.lsposed_scope_modules_count, scopeState.moduleCount))
             }
