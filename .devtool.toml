@@ -37,3 +37,10 @@ clean = ["clean"]
 
 [targets.mmrl_android.artifacts]
 required = true
+
+[validation.phases]
+compile = [":app:compileOfficialDebugSources"]
+resources = [":app:processOfficialDebugResources"]
+unit-test = [":app:testOfficialDebugUnitTest"]
+package = [":app:assembleOfficialDebug"]
+lint = [":app:lintOfficialDebug"]
