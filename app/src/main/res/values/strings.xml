@@ -1396,4 +1396,10 @@
     <string name="lsposed_scope_editor_more_targets">+%1$d more installed apps hidden in this compact editor</string>
     <string name="lsposed_apply_scope_changes">Apply scope changes</string>
 
+    <string name="settings_github_api_token">GitHub API token</string>
+    <string name="settings_github_api_token_desc_empty">No app-wide token saved. Add one to reduce GitHub 403/rate-limit failures for repositories, nightly sources, and artifact downloads.</string>
+    <string name="settings_github_api_token_desc_saved">App-wide token saved in Android Keystore. Enter a replacement token, or submit an empty value to clear it.</string>
+    <string name="settings_github_api_token_saved">GitHub token saved</string>
+    <string name="settings_github_api_token_cleared">GitHub token cleared</string>
+
 </resources>

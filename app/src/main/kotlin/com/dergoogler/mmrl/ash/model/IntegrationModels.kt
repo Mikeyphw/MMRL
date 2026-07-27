@@ -134,7 +134,7 @@ fun AshManagerState.moduleProtections(): Map<String, AshModuleProtection> {
                     intelligenceSummary = insight?.summary.orEmpty(),
                 )
             buildList {
-                ModuleIdentity.normalize(module.id).takeIf(String::isNotBlank)?.let { add(it to protection) }
+                ModuleIdentity.canonical(module.id).takeIf(String::isNotBlank)?.let { add(it to protection) }
                 ModuleIdentity.normalize(module.folder).takeIf(String::isNotBlank)?.let { add(it to protection) }
             }
         }.toMap()

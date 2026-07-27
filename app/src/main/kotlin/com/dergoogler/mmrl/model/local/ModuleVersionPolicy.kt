@@ -143,11 +143,11 @@ object ModuleSnapshotPlanner {
         snapshot: ModuleSnapshot,
         current: List<ModuleSnapshotItem>,
     ): List<ModuleSnapshotPlanItem> {
-        val currentById = current.associateBy { ModuleIdentity.normalize(it.id) }
-        val snapshotById = snapshot.modules.associateBy { ModuleIdentity.normalize(it.id) }
+        val currentById = current.associateBy { ModuleIdentity.canonical(it.id) }
+        val snapshotById = snapshot.modules.associateBy { ModuleIdentity.canonical(it.id) }
         val planned = buildList {
             snapshot.modules.forEach { saved ->
-                val currentItem = currentById[ModuleIdentity.normalize(saved.id)]
+                val currentItem = currentById[ModuleIdentity.canonical(saved.id)]
                 when {
                     currentItem == null -> add(
                         ModuleSnapshotPlanItem(
@@ -183,7 +183,7 @@ object ModuleSnapshotPlanner {
                     )
                 }
             }
-            current.filter { currentItem -> snapshotById[ModuleIdentity.normalize(currentItem.id)] == null }
+            current.filter { currentItem -> snapshotById[ModuleIdentity.canonical(currentItem.id)] == null }
                 .forEach { extra ->
                     add(
                         ModuleSnapshotPlanItem(

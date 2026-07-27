@@ -1,0 +1,129 @@
+{
+  "applied_at": "2026-07-27T18:56:59.119334Z",
+  "artifact": "/home/mike/Downloads/mmrl_repo_token_ashrexcue_hotfix_overlay_r3.zip",
+  "artifact_name": "mmrl_repo_token_ashrexcue_hotfix_overlay_r3.zip",
+  "type": "overlay",
+  "sha256": "a6b04a3894c9e32975634b1cc223882a019c21a7373456b8f28b02153a61d43f",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Fix repository token and AshReXcue recognition",
+  "commit_hash": "",
+  "file_count": 12,
+  "change_counts": {
+    "add": 2,
+    "modify": 10
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_repo_token_ashrexcue_hotfix_overlay_r3",
+    "description": "Fix LSPosed/Xposed repository 403 resilience, add an app-wide GitHub API token setting backed by GitHubTokenStore, and canonicalize AshReXcue installed-module aliases. Retry makes the source contract locate the repository root from both root and app Gradle working directories.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "docs/REPOSITORY_TOKEN_ASHREXCUE_HOTFIX.md",
+          "action": "add",
+          "sha256": "673ccf8a5f0caf979369253675cbb741fe48869d239354b92ed2193a565c91db",
+          "size": 1049
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/ModuleIdentityTest.kt",
+          "action": "modify",
+          "sha256": "292425b5d26667387f749b8f3cdc79b43382028e30d2b031df96d1ab2d5291c2",
+          "size": 1067,
+          "source_sha256": "427c96b8a94df7c61db2378dac9360c4a3c694775cc87abcd5e9871756a05227"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepoTokenAshContractTest.kt",
+          "action": "add",
+          "sha256": "a53cd12854c85e3eaf148fd4e8b6b1e83b72b0de1c3a5e2e32c2e834ab551007",
+          "size": 2117
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/ModuleIdentity.kt",
+          "action": "modify",
+          "sha256": "5ae940eaccc565c065577e1f5aa309f7d1a54206aa91d221aba4ce33d6e549ac",
+          "size": 1250,
+          "source_sha256": "897a273b49fcb2752f99d920d34476a07131f1065e6466b1777bb7e39e3b63dd"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulePolicyStore.kt",
+          "action": "modify",
+          "sha256": "18227e2e5556861aa30b9ca724b8492817fe0c7bdf6fdd714843deef85396701",
+          "size": 6597,
+          "source_sha256": "7b220d22c25301e8397ae0c6972ecd6407901262a4a246ca5399a6a1b79899cc"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/LocalRepository.kt",
+          "action": "modify",
+          "sha256": "16b2db05bd5237d6c0a9a0234f88608785f8466f016bffa04c47e708bb6452a7",
+          "size": 10907,
+          "source_sha256": "d9370c0c9e4aded971b42a460545b111e25b1c665208696ebc22fbfde74130b0"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+          "action": "modify",
+          "sha256": "4c56107ee68e747c537bbd22501750a86e6180dab5f635bcd1419f3989e76a2c",
+          "size": 39024,
+          "source_sha256": "bf910b7c18d9f0ad31e8d4d64d53d85bdc03be0e1b8c523d7afdc5e3bf9207e9"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+          "action": "modify",
+          "sha256": "859f2e9224f6f545884a9da4aade2a3c1068d8596b5cc719cb863a8c6aeacc9f",
+          "size": 16647,
+          "source_sha256": "cdf8e31209e76a27438b1a5733c536470f415b13c668c8cb9e8d71c20ea12ff8"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/IntegrationModels.kt",
+          "action": "modify",
+          "sha256": "5b41ba70547a954a0b9ef2dafc7d9035c7c329c9f00c9b399d7633367efdfc21",
+          "size": 6450,
+          "source_sha256": "7983299e8e14ed4b624b407dfb742acc5eb760debac7c508f19e1bca49029f5d"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/other/OtherScreen.kt",
+          "action": "modify",
+          "sha256": "ef9701097423652a5087da637747add5551d66e72888c9bbeff892d243a49ae4",
+          "size": 4858,
+          "source_sha256": "d99436215022f0c7850440723384d4b29ff32ff47cba28241644c8e3d0c31912"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt",
+          "action": "modify",
+          "sha256": "a3dff32cf6bc9675d05b0dc14e039ec904a2d788405bca8e398dab06de4ab6f4",
+          "size": 7660,
+          "source_sha256": "a6ef0d0b00237608386aef305bbd41b27e4371d1dae53414ef91b404070ffee2"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "2a4f617baf1f50d1bb997820a4dc496cddf79241014d7b21e15e30cb7421bc82",
+          "size": 108218,
+          "source_sha256": "301f5ac2f7f9fbe2fd6c9004670e882bf423aed46b2b23649e35a707cd8421ef"
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Fix repository token and AshReXcue recognition"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "7d097ce2331241e582eebeb48c6ff8e7"
+}

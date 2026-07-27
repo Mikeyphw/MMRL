@@ -239,7 +239,7 @@ class ModulesViewModel
                 localRepository.getLocalSourcesAsFlow(),
             ) { localModules, onlineModules, repositories, localSources ->
                 val repoNames = repositories.associate { it.url to it.name }
-                val sourceTracking = localSources.associateBy { ModuleIdentity.normalize(it.id) }
+                val sourceTracking = localSources.associateBy { ModuleIdentity.canonical(it.id) }
                 val platform = PlatformManager.platform
                 val rootVersion =
                     PlatformManager.get(0) {
@@ -271,9 +271,9 @@ class ModulesViewModel
                 localRepository.getUpdatableTagsAsFlow(),
                 versionPolicies,
             ) { candidates, updatableTags, policies ->
-                val updateTracking = updatableTags.associate { ModuleIdentity.normalize(it.id) to it.updatable }
+                val updateTracking = updatableTags.associate { ModuleIdentity.canonical(it.id) to it.updatable }
                 candidates.filter { candidate ->
-                    val normalizedId = ModuleIdentity.normalize(candidate.local.id.id)
+                    val normalizedId = ModuleIdentity.canonical(candidate.local.id.id)
                     updateTracking[normalizedId] != false && policies[normalizedId]?.blocks(candidate.version.versionCode) != true
                 }
             }.stateIn(
@@ -288,7 +288,7 @@ class ModulesViewModel
                 versionPolicies,
             ) { candidates, policies ->
                 candidates.mapNotNull { candidate ->
-                    val normalizedId = ModuleIdentity.normalize(candidate.local.id.id)
+                    val normalizedId = ModuleIdentity.canonical(candidate.local.id.id)
                     if (policies[normalizedId]?.blocks(candidate.version.versionCode) == true) {
                         normalizedId to candidate
                     } else {
@@ -309,7 +309,7 @@ class ModulesViewModel
             platform: com.dergoogler.mmrl.platform.Platform,
             rootVersion: Int,
         ): ModuleUpdateInfo? {
-            val normalizedId = ModuleIdentity.normalize(local.id.id)
+            val normalizedId = ModuleIdentity.canonical(local.id.id)
             val source = sourceTracking[normalizedId]
 
             val online =
@@ -423,7 +423,7 @@ class ModulesViewModel
 
                 localFlow.value =
                     source.filter { module ->
-                        val protection = protections[ModuleIdentity.normalize(module.id.id)]
+                        val protection = protections[ModuleIdentity.canonical(module.id.id)]
                         if (!protection.matches(ashFilter)) return@filter false
                         if (key.isNotBlank() || newKey.isNotBlank()) {
                             when {
@@ -624,7 +624,7 @@ class ModulesViewModel
             policies: Map<String, ModuleVersionPolicy>,
             ashTrustStates: Map<String, String>,
         ) = ModuleSnapshotItem(
-            id = ModuleIdentity.normalize(id.id),
+            id = ModuleIdentity.canonical(id.id),
             name = name,
             version = version,
             versionCode = versionCode,
@@ -634,8 +634,8 @@ class ModulesViewModel
             state = state.name,
             size = size,
             lastUpdated = lastUpdated,
-            policy = policies[ModuleIdentity.normalize(id.id)],
-            ashTrustState = ashTrustStates[ModuleIdentity.normalize(id.id)],
+            policy = policies[ModuleIdentity.canonical(id.id)],
+            ashTrustState = ashTrustStates[ModuleIdentity.canonical(id.id)],
         )
 
         fun createModuleOps(

@@ -65,7 +65,7 @@ class ModulePolicyStore(context: Context) {
             metadataOnly = true,
             cachedZipCount = 0,
             modules = modules.map { module ->
-                val normalizedId = ModuleIdentity.normalize(module.id.id)
+                val normalizedId = ModuleIdentity.canonical(module.id.id)
                 ModuleSnapshotItem(
                     id = normalizedId,
                     name = module.name,
@@ -98,7 +98,7 @@ class ModulePolicyStore(context: Context) {
     private fun loadPolicies(): Map<String, ModuleVersionPolicy> = runCatching {
         if (!policiesFile.baseFile.isFile) return emptyMap()
         val envelope = json.decodeFromString(PolicyEnvelope.serializer(), policiesFile.readFully().toString(Charsets.UTF_8))
-        envelope.policies.associateBy { ModuleIdentity.normalize(it.moduleId) }
+        envelope.policies.associateBy { ModuleIdentity.canonical(it.moduleId) }
     }.getOrElse { emptyMap() }
 
     private fun loadSnapshots(): List<ModuleSnapshot> = runCatching {

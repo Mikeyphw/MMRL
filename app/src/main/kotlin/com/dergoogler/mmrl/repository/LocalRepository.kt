@@ -43,11 +43,14 @@ class LocalRepository
         fun getLocalAll() = localDao.getAll()
 
         fun getLocalByIdOrNullAsFlow(id: String) =
-            localDao.getByIdOrNullAsFlow(ModuleIdentity.normalize(id)).map { it?.toModule() }
+            localDao.getAllAsFlow().map { list ->
+                list.firstOrNull { ModuleIdentity.matches(it.id, id) }?.toModule()
+            }
 
         suspend fun getLocalByIdOrNull(id: String) =
             withContext(Dispatchers.IO) {
                 localDao.getByIdOrNull(ModuleIdentity.normalize(id))?.toModule()
+                    ?: localDao.getAll().firstOrNull { ModuleIdentity.matches(it.id, id) }?.toModule()
             }
 
         suspend fun insertLocal(value: LocalModule) =
@@ -107,15 +110,17 @@ class LocalRepository
 
         suspend fun hasUpdatableTag(id: String) =
             withContext(Dispatchers.IO) {
-                localDao.hasUpdatableTagOrNull(ModuleIdentity.normalize(id))?.updatable ?: true
+                localDao.hasUpdatableTagOrNull(ModuleIdentity.normalize(id))?.updatable
+                    ?: localDao.getUpdatableTagAll().firstOrNull { ModuleIdentity.matches(it.id, id) }?.updatable
+                    ?: true
             }
 
         fun getUpdatableTagsAsFlow() =
             localDao.getUpdatableTagAllAsFlow().map { tags ->
                 tags
-                    .groupBy { ModuleIdentity.normalize(it.id) }
-                    .map { (normalizedId, matches) ->
-                        matches.firstOrNull { it.id == normalizedId } ?: matches.last()
+                    .groupBy { ModuleIdentity.canonical(it.id) }
+                    .map { (canonicalId, matches) ->
+                        matches.firstOrNull { ModuleIdentity.normalize(it.id) == canonicalId } ?: matches.last()
                     }
             }
 
@@ -124,6 +129,7 @@ class LocalRepository
         suspend fun getLocalSourceByIdOrNull(id: String) =
             withContext(Dispatchers.IO) {
                 localDao.getSourceByIdOrNull(ModuleIdentity.normalize(id))
+                    ?: localDao.getSourceAll().firstOrNull { ModuleIdentity.matches(it.id, id) }
             }
 
         suspend fun insertLocalSource(value: LocalModuleSource) =
@@ -133,10 +139,10 @@ class LocalRepository
 
         suspend fun clearUpdatableTag(new: List<String>) =
             withContext(Dispatchers.IO) {
-                val retained = new.map(ModuleIdentity::normalize).toSet()
-                val removed = localDao.getUpdatableTagAll().filter { ModuleIdentity.normalize(it.id) !in retained }
+                val retained = new.flatMap { ModuleIdentity.aliasesFor(it) }.map(ModuleIdentity::canonical).toSet()
+                val removed = localDao.getUpdatableTagAll().filter { ModuleIdentity.canonical(it.id) !in retained }
                 localDao.deleteUpdatableTag(removed)
-                val removedSources = localDao.getSourceAll().filter { ModuleIdentity.normalize(it.id) !in retained }
+                val removedSources = localDao.getSourceAll().filter { ModuleIdentity.canonical(it.id) !in retained }
                 localDao.deleteSource(removedSources)
             }
 

@@ -8,12 +8,14 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.core.content.pm.PackageInfoCompat
 import com.dergoogler.mmrl.app.moshi
+import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import java.io.File
+import java.net.URI
 
 class LsposedRepository(private val context: Context) {
     private val client by lazy { NetworkUtils.createOkHttpClient() }
@@ -25,6 +27,7 @@ class LsposedRepository(private val context: Context) {
     private val moduleAdapter by lazy { moshi.adapter(LsposedRepoModule::class.java) }
     private val cacheDir by lazy { File(context.cacheDir, "lsposed-repo").apply { mkdirs() } }
     private val scopeRepository by lazy { LsposedScopeRepository(context) }
+    private val githubTokenStore by lazy { GitHubTokenStore(context) }
 
     suspend fun loadModules(forceRefresh: Boolean = false): List<LsposedRepoModule> = withContext(Dispatchers.IO) {
         val cache = File(cacheDir, "modules.json")
@@ -32,21 +35,25 @@ class LsposedRepository(private val context: Context) {
             if (!forceRefresh && cache.isFile && cache.length() > 0L) {
                 cache.readText()
             } else {
-                runCatching { requestText("https://modules.lsposed.org/modules.json") }
+                runCatching { requestText(LSPOSED_MODULES_URL, LSPOSED_MODULES_FALLBACK_URLS) }
                     .onSuccess(cache::writeText)
-                    .getOrElse {
-                        cache.takeIf { it.isFile && it.length() > 0L }?.readText()
+                    .getOrElse { failure ->
+                        cache.takeIf { it.isFile && it.length() > 0L }?.readText() ?: throw failure
                     }
             }
-        body
-            ?.let { moduleListAdapter.fromJson(it).orEmpty() }
+        moduleListAdapter.fromJson(body)
             .orEmpty()
             .filterNot { it.hide == true }
             .sortedBy { it.displayName.lowercase() }
     }
 
     suspend fun loadDetail(packageName: String): LsposedRepoModule = withContext(Dispatchers.IO) {
-        moduleAdapter.fromJson(requestText("https://modules.lsposed.org/module/$packageName.json"))
+        moduleAdapter.fromJson(
+            requestText(
+                "https://modules.lsposed.org/module/$packageName.json",
+                lsposedModuleFallbackUrls(packageName),
+            ),
+        )
             ?: error("LSPosed repository returned empty details for $packageName")
     }
 
@@ -58,7 +65,12 @@ class LsposedRepository(private val context: Context) {
         val safeName = asset.name?.takeIf { it.endsWith(".apk", ignoreCase = true) }
             ?: "${module.packageName}-${System.currentTimeMillis()}.apk"
         val out = File(cacheDir, safeName.replace(Regex("[^A-Za-z0-9._-]"), "_"))
-        val request = Request.Builder().url(url).get().build()
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", userAgent())
+            .applyGitHubAuthentication(url, githubTokenStore.getToken())
+            .get()
+            .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 error("Unable to download APK: HTTP ${response.code}")
@@ -222,19 +234,86 @@ class LsposedRepository(private val context: Context) {
         }.getOrDefault(emptyMap())
     }
 
-    private fun requestText(url: String): String {
+    private fun requestText(
+        url: String,
+        fallbackUrls: List<String> = emptyList(),
+    ): String {
+        val candidates = (listOf(url) + fallbackUrls).distinct()
+        val failures = mutableListOf<String>()
+        for (candidate in candidates) {
+            val result = runCatching { executeJsonRequest(candidate) }
+            result.getOrNull()?.let { return it }
+            failures += "${candidate}: ${result.exceptionOrNull()?.message ?: "unknown failure"}"
+        }
+        error(
+            buildString {
+                append("Unable to load LSPosed repository")
+                if (failures.isNotEmpty()) {
+                    append(". Tried ")
+                    append(failures.joinToString("; "))
+                }
+            },
+        )
+    }
+
+    private fun executeJsonRequest(url: String): String {
         val request = Request.Builder()
             .url(url)
             .header("Accept", "application/json")
+            .header("User-Agent", userAgent())
+            .applyGitHubAuthentication(url, githubTokenStore.getToken())
             .get()
             .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                error("Unable to load LSPosed repository: HTTP ${response.code}")
+                val snippet = response.body?.string()?.take(220)?.trim()?.takeIf(String::isNotBlank)
+                error(lsposedRepositoryFailureMessage(url, response.code, snippet))
             }
-            return response.body?.string() ?: error("Unable to load LSPosed repository: empty response")
+            return response.body?.string() ?: error("empty response")
         }
     }
+
+    private fun Request.Builder.applyGitHubAuthentication(
+        requestUrl: String,
+        githubToken: String?,
+    ): Request.Builder = apply {
+        val host = runCatching { URI(requestUrl).host.orEmpty() }.getOrDefault("")
+        if (host.contains("github", ignoreCase = true)) {
+            githubToken?.trim()?.takeIf(String::isNotBlank)?.let {
+                header("Authorization", "Bearer $it")
+            }
+            if (host.equals("api.github.com", ignoreCase = true)) {
+                header("Accept", "application/vnd.github+json")
+                header("X-GitHub-Api-Version", "2022-11-28")
+            }
+        }
+    }
+
+    private fun lsposedRepositoryFailureMessage(
+        url: String,
+        code: Int,
+        bodySnippet: String?,
+    ): String {
+        val host = runCatching { URI(url).host.orEmpty() }.getOrDefault("")
+        val guidance = when {
+            code == 403 && host.equals("modules.lsposed.org", ignoreCase = true) ->
+                "HTTP 403 from modules.lsposed.org; mirror fallback will be tried"
+            code == 403 && host.contains("github", ignoreCase = true) && !githubTokenStore.hasToken() ->
+                "HTTP 403 from GitHub; save a GitHub API token in Settings > Other and retry"
+            code == 403 && host.contains("github", ignoreCase = true) ->
+                "HTTP 403 from GitHub; check the saved token permissions or rate limit"
+            else -> "HTTP $code"
+        }
+        return buildString {
+            append(guidance)
+            if (!bodySnippet.isNullOrBlank()) {
+                append(". Server said: ")
+                append(bodySnippet)
+            }
+        }
+    }
+
+    private fun userAgent(): String = "MMRL/${context.packageName} Android"
 
     @Suppress("DEPRECATION")
     private fun installedPackages(pm: PackageManager): List<PackageInfo> =
@@ -265,6 +344,16 @@ class LsposedRepository(private val context: Context) {
             "org.lsposed.manager",
             "io.github.libxposed.manager",
             "org.lsposed.lspd",
+        )
+
+        private const val LSPOSED_MODULES_URL = "https://modules.lsposed.org/modules.json"
+        private val LSPOSED_MODULES_FALLBACK_URLS = listOf(
+            "https://cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/modules.json",
+        )
+
+        fun lsposedModuleFallbackUrls(packageName: String): List<String> = listOf(
+            "https://cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/module/$packageName.json",
+            "https://cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/$packageName.json",
         )
 
         val PROVIDER_MODULE_IDS = listOf(

@@ -1,9 +1,15 @@
 package com.dergoogler.mmrl.ui.screens.settings.other
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.service.ProviderService
 import com.dergoogler.mmrl.ui.component.SettingsScaffold
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.SwitchItem
@@ -27,6 +33,9 @@ fun OtherScreen() {
     val snackbarHost = LocalSnackbarHost.current
     val viewModel = LocalSettings.current
     val userPreferences = LocalUserPreferences.current
+    val githubTokenStore = remember(context) { GitHubTokenStore(context) }
+    var githubTokenSaved by remember { mutableStateOf(githubTokenStore.hasToken()) }
+    var githubTokenEditorRevision by remember { mutableStateOf(0) }
 
     SettingsScaffold(
         title = R.string.settings_other,
@@ -42,6 +51,39 @@ fun OtherScreen() {
         ) {
             Title(R.string.settings_doh)
             Description(R.string.settings_doh_desc)
+        }
+
+
+        key(githubTokenEditorRevision) {
+            TextEditDialogItem(
+                value = "",
+                strict = false,
+                onConfirm = { token ->
+                    githubTokenStore.saveToken(token)
+                    githubTokenSaved = githubTokenStore.hasToken()
+                    githubTokenEditorRevision++
+                    scope.launch {
+                        snackbarHost.showSnackbar(
+                            context.getString(
+                                if (githubTokenSaved) {
+                                    R.string.settings_github_api_token_saved
+                                } else {
+                                    R.string.settings_github_api_token_cleared
+                                },
+                            ),
+                        )
+                    }
+                },
+            ) {
+                Title(R.string.settings_github_api_token)
+                Description(
+                    if (githubTokenSaved) {
+                        R.string.settings_github_api_token_desc_saved
+                    } else {
+                        R.string.settings_github_api_token_desc_empty
+                    },
+                )
+            }
         }
 
         SwitchItem(
