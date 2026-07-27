@@ -179,6 +179,7 @@ fun LsposedModulesTab(
                 snapshots = state.snapshots,
                 plan = state.snapshotPlan,
                 onOpenLsposed = viewModel::openLsposed,
+                onRefreshProvider = viewModel::refreshLsposedProvider,
                 onSaveSnapshot = { viewModel.saveSnapshot() },
                 onCompareSnapshot = viewModel::compareSnapshot,
                 onDeleteSnapshot = viewModel::deleteSnapshot,
@@ -910,6 +911,7 @@ private fun LsposedInstalledSideRail(
     snapshots: List<LsposedSnapshot>,
     plan: List<LsposedSnapshotPlanItem>,
     onOpenLsposed: () -> Unit,
+    onRefreshProvider: () -> Unit,
     onSaveSnapshot: () -> Unit,
     onCompareSnapshot: (LsposedSnapshot) -> Unit,
     onDeleteSnapshot: (String) -> Unit,
@@ -919,6 +921,7 @@ private fun LsposedInstalledSideRail(
         providerStatus = providerStatus,
         scopeState = scopeState,
         onOpenLsposed = onOpenLsposed,
+        onRefreshProvider = onRefreshProvider,
     )
     LsposedMetricCard(
         title = stringResource(R.string.lsposed_adaptive_installed_summary_title),
@@ -945,6 +948,7 @@ private fun LsposedProviderStatusCard(
     providerStatus: com.dergoogler.mmrl.lsposed.LsposedProviderStatus,
     scopeState: LsposedScopeState,
     onOpenLsposed: () -> Unit,
+    onRefreshProvider: () -> Unit,
 ) {
     val managerStatus = when (providerStatus.managerOpenMode) {
         LsposedManagerOpenMode.INSTALLED_MANAGER -> stringResource(R.string.lsposed_provider_manager_installed_app)
@@ -963,6 +967,7 @@ private fun LsposedProviderStatusCard(
                 if (providerStatus.active) StatusChip(text = stringResource(R.string.lsposed_provider_module_active))
                 if (providerStatus.updatePending) StatusChip(text = stringResource(R.string.lsposed_provider_update_pending))
                 if (providerStatus.disabled) StatusChip(text = stringResource(R.string.lsposed_provider_disabled))
+                StatusChip(text = if (providerStatus.refreshBridgeAvailable) stringResource(R.string.lsposed_provider_refresh_ready) else stringResource(R.string.lsposed_provider_refresh_reboot_required))
                 StatusChip(text = if (scopeState.readable) stringResource(R.string.lsposed_scope_db_readable) else stringResource(R.string.lsposed_scope_db_unreadable))
                 if (scopeState.readable) StatusChip(text = stringResource(R.string.lsposed_scope_modules_count, scopeState.moduleCount))
             }
@@ -971,8 +976,13 @@ private fun LsposedProviderStatusCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            OutlinedButton(onClick = onOpenLsposed, enabled = managerAvailable) {
-                Text(stringResource(R.string.lsposed_open_manager))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedButton(onClick = onOpenLsposed, enabled = managerAvailable) {
+                    Text(stringResource(R.string.lsposed_open_manager))
+                }
+                OutlinedButton(onClick = onRefreshProvider, enabled = providerStatus.refreshBridgeAvailable) {
+                    Text(stringResource(R.string.lsposed_refresh_provider))
+                }
             }
         }
     }

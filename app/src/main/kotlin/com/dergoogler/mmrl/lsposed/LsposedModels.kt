@@ -141,6 +141,20 @@ enum class LsposedManagerOpenMode {
     UNAVAILABLE,
 }
 
+enum class LsposedProviderRefreshMode {
+    OPEN_MANAGER,
+    ACTION_BRIDGE,
+    REBOOT_REQUIRED,
+}
+
+data class LsposedProviderRefreshPlan(
+    val mode: LsposedProviderRefreshMode,
+    val moduleId: String? = null,
+) {
+    val available: Boolean
+        get() = mode != LsposedProviderRefreshMode.REBOOT_REQUIRED
+}
+
 data class LsposedProviderStatus(
     val installed: Boolean = false,
     val moduleId: String? = null,
@@ -156,6 +170,10 @@ data class LsposedProviderStatus(
     val managerOpenMode: LsposedManagerOpenMode = LsposedManagerOpenMode.UNAVAILABLE,
 ) {
     val canOpen: Boolean
+        get() = managerOpenMode == LsposedManagerOpenMode.INSTALLED_MANAGER ||
+            managerOpenMode == LsposedManagerOpenMode.PROVIDER_ACTION
+
+    val refreshBridgeAvailable: Boolean
         get() = managerOpenMode == LsposedManagerOpenMode.INSTALLED_MANAGER ||
             managerOpenMode == LsposedManagerOpenMode.PROVIDER_ACTION
 

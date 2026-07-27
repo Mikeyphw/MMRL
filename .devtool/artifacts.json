@@ -7291,6 +7291,295 @@
         }
       },
       "history_id": "31edfad2b0ad4259b96b12762d76c04a"
+    },
+    {
+      "applied_at": "2026-07-27T18:19:50.467762Z",
+      "artifact": "/home/mike/Downloads/mmrl_lsposed_provider_refresh_bridge_overlay.zip",
+      "artifact_name": "mmrl_lsposed_provider_refresh_bridge_overlay.zip",
+      "type": "overlay",
+      "sha256": "536f25ffd92395860856705f28a76b7fc0f6c7d3893fdbc444618d4253049966",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Add LSPosed provider refresh bridge",
+      "commit_hash": "",
+      "file_count": 7,
+      "change_counts": {
+        "add": 2,
+        "modify": 5
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_lsposed_provider_refresh_bridge_overlay",
+        "description": "Add an explicit LSPosed/Vector provider refresh bridge after guarded scope edits, choosing installed manager, active provider action bridge, or reboot fallback with UI and contract coverage.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+              "action": "modify",
+              "sha256": "904dc8c957ca5a79e96db90b7d5dc6c1828f347743a695f2d6e5651a8f6affac",
+              "size": 24638,
+              "source_sha256": "08f164b99026ee434e0122ca19ab20ebe4d8e589e26af93410982a44ba510fac"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+              "action": "modify",
+              "sha256": "cdf8e31209e76a27438b1a5733c536470f415b13c668c8cb9e8d71c20ea12ff8",
+              "size": 12947,
+              "source_sha256": "57e570d18c4157fcfec47ad64adbce0deb6f3f961998fc7f05eee912ec317b9b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt",
+              "action": "modify",
+              "sha256": "cbdf2df211d588558f567f07fb5a8726d2bf3ca516edc3877bf0c9221add00e6",
+              "size": 11836,
+              "source_sha256": "13f7a085d6fe01225fd2e0882c53547f3878441d3c3ddf5fb0e8f91b4eab9d82"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+              "action": "modify",
+              "sha256": "5972c9198c60d1b3195721cae43322f5328abe22b19f4f50a6ed9a7f341bab0f",
+              "size": 48410,
+              "source_sha256": "a0e3263030657be6f56861531aceb0bcec8230d4a50cd31a6fbc072afa8461bd"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "301f5ac2f7f9fbe2fd6c9004670e882bf423aed46b2b23649e35a707cd8421ef",
+              "size": 107614,
+              "source_sha256": "8238a757c95db5ca6e53007b176020b7ee5bd0139b8b22811cc1c1a80aa810ce"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedProviderRefreshBridgeContractTest.kt",
+              "action": "add",
+              "sha256": "e5426e5b3c3cd09205abe2860fc7bd70db1b859f75e0a3714378db92fce43940",
+              "size": 3053
+            },
+            {
+              "path": "docs/LSPOSED_PROVIDER_REFRESH_BRIDGE.md",
+              "action": "add",
+              "sha256": "f26c2f376a38f86b17ea5db5429646ffd45304fb4332f070bd08b11202ddaabc",
+              "size": 779
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add LSPosed provider refresh bridge"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "27b8cc898fc04493abcd302a128dcb8b"
+    },
+    {
+      "applied_at": "2026-07-27T18:21:50.267568Z",
+      "artifact": "/home/mike/Downloads/mmrl_lsposed_provider_refresh_bridge_overlay.zip",
+      "artifact_name": "mmrl_lsposed_provider_refresh_bridge_overlay.zip",
+      "type": "overlay",
+      "sha256": "536f25ffd92395860856705f28a76b7fc0f6c7d3893fdbc444618d4253049966",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Add LSPosed provider refresh bridge",
+      "commit_hash": "",
+      "file_count": 7,
+      "change_counts": {
+        "add": 2,
+        "modify": 5
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_lsposed_provider_refresh_bridge_overlay",
+        "description": "Add an explicit LSPosed/Vector provider refresh bridge after guarded scope edits, choosing installed manager, active provider action bridge, or reboot fallback with UI and contract coverage.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+              "action": "modify",
+              "sha256": "904dc8c957ca5a79e96db90b7d5dc6c1828f347743a695f2d6e5651a8f6affac",
+              "size": 24638,
+              "source_sha256": "08f164b99026ee434e0122ca19ab20ebe4d8e589e26af93410982a44ba510fac"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+              "action": "modify",
+              "sha256": "cdf8e31209e76a27438b1a5733c536470f415b13c668c8cb9e8d71c20ea12ff8",
+              "size": 12947,
+              "source_sha256": "57e570d18c4157fcfec47ad64adbce0deb6f3f961998fc7f05eee912ec317b9b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt",
+              "action": "modify",
+              "sha256": "cbdf2df211d588558f567f07fb5a8726d2bf3ca516edc3877bf0c9221add00e6",
+              "size": 11836,
+              "source_sha256": "13f7a085d6fe01225fd2e0882c53547f3878441d3c3ddf5fb0e8f91b4eab9d82"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+              "action": "modify",
+              "sha256": "5972c9198c60d1b3195721cae43322f5328abe22b19f4f50a6ed9a7f341bab0f",
+              "size": 48410,
+              "source_sha256": "a0e3263030657be6f56861531aceb0bcec8230d4a50cd31a6fbc072afa8461bd"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "301f5ac2f7f9fbe2fd6c9004670e882bf423aed46b2b23649e35a707cd8421ef",
+              "size": 107614,
+              "source_sha256": "8238a757c95db5ca6e53007b176020b7ee5bd0139b8b22811cc1c1a80aa810ce"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedProviderRefreshBridgeContractTest.kt",
+              "action": "add",
+              "sha256": "e5426e5b3c3cd09205abe2860fc7bd70db1b859f75e0a3714378db92fce43940",
+              "size": 3053
+            },
+            {
+              "path": "docs/LSPOSED_PROVIDER_REFRESH_BRIDGE.md",
+              "action": "add",
+              "sha256": "f26c2f376a38f86b17ea5db5429646ffd45304fb4332f070bd08b11202ddaabc",
+              "size": 779
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add LSPosed provider refresh bridge"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "da40abc3281b462092b91cb94395e589"
+    },
+    {
+      "applied_at": "2026-07-27T18:25:21.332676Z",
+      "artifact": "/home/mike/Downloads/mmrl_lsposed_provider_refresh_bridge_overlay_r2.zip",
+      "artifact_name": "mmrl_lsposed_provider_refresh_bridge_overlay_r2.zip",
+      "type": "overlay",
+      "sha256": "d7b99d63ee9a99cef0339d7302589b3bf424cb9be676921658d8d8898a6fc8e1",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Add LSPosed provider refresh bridge",
+      "commit_hash": "",
+      "file_count": 8,
+      "change_counts": {
+        "add": 2,
+        "modify": 6
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_lsposed_provider_refresh_bridge_overlay_r2",
+        "description": "Add an explicit LSPosed/Vector provider refresh bridge after guarded scope edits, and update the scope/editor contracts to the sealed refresh-plan flow.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+              "action": "modify",
+              "sha256": "904dc8c957ca5a79e96db90b7d5dc6c1828f347743a695f2d6e5651a8f6affac",
+              "size": 24638,
+              "source_sha256": "08f164b99026ee434e0122ca19ab20ebe4d8e589e26af93410982a44ba510fac"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+              "action": "modify",
+              "sha256": "cdf8e31209e76a27438b1a5733c536470f415b13c668c8cb9e8d71c20ea12ff8",
+              "size": 12947,
+              "source_sha256": "57e570d18c4157fcfec47ad64adbce0deb6f3f961998fc7f05eee912ec317b9b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt",
+              "action": "modify",
+              "sha256": "cbdf2df211d588558f567f07fb5a8726d2bf3ca516edc3877bf0c9221add00e6",
+              "size": 11836,
+              "source_sha256": "13f7a085d6fe01225fd2e0882c53547f3878441d3c3ddf5fb0e8f91b4eab9d82"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+              "action": "modify",
+              "sha256": "5972c9198c60d1b3195721cae43322f5328abe22b19f4f50a6ed9a7f341bab0f",
+              "size": 48410,
+              "source_sha256": "a0e3263030657be6f56861531aceb0bcec8230d4a50cd31a6fbc072afa8461bd"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "301f5ac2f7f9fbe2fd6c9004670e882bf423aed46b2b23649e35a707cd8421ef",
+              "size": 107614,
+              "source_sha256": "8238a757c95db5ca6e53007b176020b7ee5bd0139b8b22811cc1c1a80aa810ce"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedProviderRefreshBridgeContractTest.kt",
+              "action": "add",
+              "sha256": "e5426e5b3c3cd09205abe2860fc7bd70db1b859f75e0a3714378db92fce43940",
+              "size": 3053
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeEditorContractTest.kt",
+              "action": "modify",
+              "sha256": "1e775d87d97018410869f212c1e49e8c1abca4bd43626e6632d5d23642083053",
+              "size": 2789,
+              "source_sha256": "1a36c5e49bca79c04e0028ab0a10f1f95a4b042fbe2955704cbd56a2f993a7f8"
+            },
+            {
+              "path": "docs/LSPOSED_PROVIDER_REFRESH_BRIDGE.md",
+              "action": "add",
+              "sha256": "f26c2f376a38f86b17ea5db5429646ffd45304fb4332f070bd08b11202ddaabc",
+              "size": 779
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add LSPosed provider refresh bridge"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "7a51d5257953466dbeb8e815b68e8ab5"
     }
   ]
 }

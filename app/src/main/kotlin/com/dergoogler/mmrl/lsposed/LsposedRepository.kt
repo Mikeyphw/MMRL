@@ -148,6 +148,20 @@ class LsposedRepository(private val context: Context) {
         ?.moduleId
         ?.takeIf { it.isNotBlank() }
 
+    fun providerRefreshPlan(status: LsposedProviderStatus = providerStatus()): LsposedProviderRefreshPlan = when {
+        status.managerPackageInstalled -> LsposedProviderRefreshPlan(LsposedProviderRefreshMode.OPEN_MANAGER)
+        status.active && status.actionAvailable && !status.moduleId.isNullOrBlank() -> LsposedProviderRefreshPlan(
+            mode = LsposedProviderRefreshMode.ACTION_BRIDGE,
+            moduleId = status.moduleId,
+        )
+        else -> LsposedProviderRefreshPlan(LsposedProviderRefreshMode.REBOOT_REQUIRED)
+    }
+
+    fun lsposedProviderRefreshModuleId(): String? = providerRefreshPlan()
+        .takeIf { it.mode == LsposedProviderRefreshMode.ACTION_BRIDGE }
+        ?.moduleId
+        ?.takeIf { it.isNotBlank() }
+
     fun launchAppIntent(packageName: String): Intent? = context.packageManager.getLaunchIntentForPackage(packageName)
 
     private fun findProviderCandidate(root: File, active: Boolean): ProviderCandidate? {

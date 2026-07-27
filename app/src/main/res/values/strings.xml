@@ -1369,6 +1369,9 @@
     <string name="lsposed_provider_module_active">Provider active</string>
     <string name="lsposed_provider_update_pending">Provider update staged</string>
     <string name="lsposed_provider_disabled">Provider disabled</string>
+    <string name="lsposed_provider_refresh_ready">Refresh bridge ready</string>
+    <string name="lsposed_provider_refresh_reboot_required">Reboot may be required</string>
+    <string name="lsposed_refresh_provider">Refresh provider</string>
     <string name="lsposed_scope_db_readable">Scope DB readable</string>
     <string name="lsposed_scope_db_unreadable">Scope DB unreadable</string>
     <string name="lsposed_scope_modules_count">%1$d provider modules</string>

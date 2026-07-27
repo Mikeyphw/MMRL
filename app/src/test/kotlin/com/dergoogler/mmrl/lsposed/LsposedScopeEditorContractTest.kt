@@ -36,10 +36,16 @@ class LsposedScopeEditorContractTest {
         val screens = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt")
 
         assertTrue(viewModel.contains("applyScope("))
-        assertTrue(viewModel.contains("Reopen LSPosed or reboot"))
+        assertTrue(viewModel.contains("repository.providerRefreshPlan(stateFlow.value.providerStatus)"))
+        assertTrue(viewModel.contains("providerRefreshRecommended = true"))
+        assertTrue(viewModel.contains("Open the manager to refresh provider state"))
+        assertTrue(viewModel.contains("Event.RunProviderAction(ModId(moduleId))"))
+        assertTrue(viewModel.contains("Reboot if the provider does not refresh immediately"))
         assertTrue(screens.contains("LsposedScopeEditorDialog"))
         assertTrue(screens.contains("lsposed_scope_review_backup_notice"))
         assertTrue(screens.contains("lsposed_apply_scope_changes"))
+        assertTrue(screens.contains("onRefreshProvider"))
+        assertTrue(screens.contains("lsposed_refresh_provider"))
     }
 
     private fun source(path: String): String {

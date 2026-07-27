@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.lsposed.LsposedIdentity
 import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
 import com.dergoogler.mmrl.lsposed.LsposedPolicyStore
+import com.dergoogler.mmrl.lsposed.LsposedProviderRefreshMode
 import com.dergoogler.mmrl.lsposed.LsposedProviderStatus
 import com.dergoogler.mmrl.lsposed.LsposedSnapshot
 import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanItem
@@ -43,6 +44,7 @@ class LsposedViewModel @Inject constructor(
         val applyingScopePackage: String? = null,
         val managerAvailable: Boolean = false,
         val providerStatus: LsposedProviderStatus = LsposedProviderStatus(),
+        val providerRefreshRecommended: Boolean = false,
         val scopeState: LsposedScopeState = LsposedScopeState(),
         val scopeTargets: List<LsposedScopeTarget> = emptyList(),
         val policies: Map<String, LsposedVersionPolicy> = emptyMap(),
@@ -98,6 +100,7 @@ class LsposedViewModel @Inject constructor(
                     installed = installed,
                     managerAvailable = providerStatus.canOpen,
                     providerStatus = providerStatus,
+                    providerRefreshRecommended = false,
                     scopeState = scopeState,
                     scopeTargets = targets,
                     error = modulesResult.exceptionOrNull()?.message,
@@ -179,8 +182,20 @@ class LsposedViewModel @Inject constructor(
                 .onSuccess { scopeState ->
                     val modules = stateFlow.value.modules
                     val installed = repository.installedModules(modules, scopeState)
-                    stateFlow.update { it.copy(scopeState = scopeState, installed = installed) }
-                    eventsFlow.tryEmit(Event.Message("Applied LSPosed scope changes. Reopen LSPosed or reboot if the provider does not refresh immediately."))
+                    val refreshPlan = repository.providerRefreshPlan(stateFlow.value.providerStatus)
+                    stateFlow.update {
+                        it.copy(
+                            scopeState = scopeState,
+                            installed = installed,
+                            providerRefreshRecommended = true,
+                        )
+                    }
+                    val message = when (refreshPlan.mode) {
+                        LsposedProviderRefreshMode.OPEN_MANAGER -> "Applied LSPosed scope changes. Open the manager to refresh provider state."
+                        LsposedProviderRefreshMode.ACTION_BRIDGE -> "Applied LSPosed scope changes. Use Refresh provider to run the active provider bridge."
+                        LsposedProviderRefreshMode.REBOOT_REQUIRED -> "Applied LSPosed scope changes. Reboot if the provider does not refresh immediately."
+                    }
+                    eventsFlow.tryEmit(Event.Message(message))
                 }
                 .onFailure { error ->
                     eventsFlow.tryEmit(Event.Message(error.message ?: "Unable to apply LSPosed scope changes"))
@@ -219,6 +234,31 @@ class LsposedViewModel @Inject constructor(
             return
         }
         eventsFlow.tryEmit(Event.Message("LSPosed, Vector, or another compatible framework provider is not installed or cannot be opened."))
+    }
+
+    fun refreshLsposedProvider() {
+        val refreshPlan = repository.providerRefreshPlan(stateFlow.value.providerStatus)
+        when (refreshPlan.mode) {
+            LsposedProviderRefreshMode.OPEN_MANAGER -> {
+                val intent = repository.lsposedManagerIntent()
+                if (intent != null) {
+                    eventsFlow.tryEmit(Event.OpenIntent(intent))
+                } else {
+                    eventsFlow.tryEmit(Event.Message("LSPosed manager is no longer available. Refresh the provider status."))
+                }
+            }
+            LsposedProviderRefreshMode.ACTION_BRIDGE -> {
+                val moduleId = refreshPlan.moduleId
+                if (moduleId.isNullOrBlank()) {
+                    eventsFlow.tryEmit(Event.Message("Provider action bridge is unavailable. Reboot if scope changes do not appear."))
+                } else {
+                    eventsFlow.tryEmit(Event.RunProviderAction(ModId(moduleId)))
+                }
+            }
+            LsposedProviderRefreshMode.REBOOT_REQUIRED -> {
+                eventsFlow.tryEmit(Event.Message("Provider refresh bridge is unavailable. Reboot if scope changes do not appear."))
+            }
+        }
     }
 
     fun openApp(packageName: String) {
