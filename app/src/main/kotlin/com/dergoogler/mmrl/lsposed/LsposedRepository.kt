@@ -152,8 +152,27 @@ class LsposedRepository(private val context: Context) {
 
     fun lsposedManagerIntent(): Intent? {
         val pm = context.packageManager
-        return LSPOSED_MANAGER_PACKAGES.firstNotNullOfOrNull { pm.getLaunchIntentForPackage(it) }
+        return LSPOSED_MANAGER_PACKAGES.firstNotNullOfOrNull { packageName ->
+            pm.getLaunchIntentForPackage(packageName) ?: managerCategoryLaunchIntent(pm, packageName)
+        }
     }
+
+    private fun managerCategoryLaunchIntent(pm: PackageManager, packageName: String): Intent? {
+        if (packageName != VECTOR_MANAGER_PACKAGE || !packageInstalled(pm, packageName)) return null
+        return Intent(Intent.ACTION_MAIN)
+            .setPackage(packageName)
+            .addCategory(Intent.CATEGORY_DEFAULT)
+            .addCategory("$packageName.LAUNCH_MANAGER")
+    }
+
+    @Suppress("DEPRECATION")
+    private fun packageInstalled(pm: PackageManager, packageName: String): Boolean = runCatching {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0L))
+        } else {
+            pm.getPackageInfo(packageName, 0)
+        }
+    }.isSuccess
 
     fun lsposedProviderActionModuleId(): String? = providerStatus()
         .takeIf { it.actionAvailable }
@@ -340,18 +359,23 @@ class LsposedRepository(private val context: Context) {
     )
 
     companion object {
+        private const val VECTOR_MANAGER_PACKAGE = "org.matrix.vector.manager"
+
         val LSPOSED_MANAGER_PACKAGES = listOf(
             "org.lsposed.manager",
             "io.github.libxposed.manager",
             "org.lsposed.lspd",
+            VECTOR_MANAGER_PACKAGE,
         )
 
         private const val LSPOSED_MODULES_URL = "https://modules.lsposed.org/modules.json"
         private val LSPOSED_MODULES_FALLBACK_URLS = listOf(
+            "https://backup.modules.lsposed.org/modules.json",
             "https://cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/modules.json",
         )
 
         fun lsposedModuleFallbackUrls(packageName: String): List<String> = listOf(
+            "https://backup.modules.lsposed.org/module/$packageName.json",
             "https://cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/module/$packageName.json",
             "https://cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/$packageName.json",
         )

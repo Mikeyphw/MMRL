@@ -39,6 +39,8 @@
         <package android:name="org.lsposed.manager" />
         <package android:name="io.github.libxposed.manager" />
         <package android:name="org.lsposed.lspd" />
+        <package android:name="org.matrix.vector.manager" />
+        <package android:name="org.matrix.vector.daemon" />
 
         <intent>
             <action android:name="android.settings.APP_NOTIFICATION_SETTINGS" />
