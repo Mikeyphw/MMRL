@@ -1,0 +1,108 @@
+{
+  "applied_at": "2026-07-28T17:37:47.427924Z",
+  "artifact": "/home/mike/Downloads/mmrl_debug_workbench_probe_pack_overlay.zip",
+  "artifact_name": "mmrl_debug_workbench_probe_pack_overlay.zip",
+  "type": "overlay",
+  "sha256": "09c934618f3c26c3c300d8d74cd40bc884442f0d9a382e5868c699b081c4791f",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add debug workbench probes",
+  "commit_hash": "",
+  "file_count": 10,
+  "change_counts": {
+    "add": 9,
+    "modify": 1
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_debug_workbench_probe_pack_overlay",
+    "description": "Add a read-only Debug Workbench with LSPosed/Vector manager/provider probes, Xposed repo endpoint matrix, GitHub token status, and AshReXcue identity diagnostics.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugModels.kt",
+          "action": "add",
+          "sha256": "379bdda6255c558576736319bf18e18b7a5efbb6a1be5700b1f22e238cc2f410",
+          "size": 2233
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugProbeRunner.kt",
+          "action": "add",
+          "sha256": "998f9638511a43651e140968221177d65907d43cddb48fb50048a3e65082ef34",
+          "size": 832
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/GitHubTokenDebugProbe.kt",
+          "action": "add",
+          "sha256": "e0d031ab33223fdb5f5e6905d562a93224305f8e6adc5e0a27c7cf46f05e19bf",
+          "size": 1742
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedDebugProbe.kt",
+          "action": "add",
+          "sha256": "099ba7ffddb3df50a30fd9447e2f04ffa57f4af7a74a5c67390d40dad87951f4",
+          "size": 10472
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedRepoDebugProbe.kt",
+          "action": "add",
+          "sha256": "963d4aa18496879c79e1fa3f3e087408cd44b0d25e29970275e55341df93fbfc",
+          "size": 5092
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/AshReXcueDebugProbe.kt",
+          "action": "add",
+          "sha256": "fc2ef44c925733edaa8fbcc7cdb15eae04db4ffc9848e8e1736fb965d9def2bf",
+          "size": 5592
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt",
+          "action": "add",
+          "sha256": "3cb5a4313ef52632056b5529d5afd268fa78dd82824ddc9082e1fe877bd3b536",
+          "size": 4452
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/developer/DeveloperScreen.kt",
+          "action": "modify",
+          "sha256": "2b4dea11022921a1bb346a3626daec1ab64e519965f73b61182776ef230a78f6",
+          "size": 3463,
+          "source_sha256": "0066ecd2b85d4e6b76953707b5fab0a0998ed81af0ac8bf2e7103710da0f9bb9"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugWorkbenchContractTest.kt",
+          "action": "add",
+          "sha256": "c973ffa95e210018129ad820b00029e0d69be8b8daf5f5bed572a6bfcffc751d",
+          "size": 3910
+        },
+        {
+          "path": "docs/DEBUG_WORKBENCH.md",
+          "action": "add",
+          "sha256": "dfe0e6448c061f30bcf960ed0611fb8ab88c9d3b2dab814082b3cede1706c5e0",
+          "size": 1282
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add debug workbench probes"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "bbb4c9766486480fb4aa4ebd9971d7c2"
+}

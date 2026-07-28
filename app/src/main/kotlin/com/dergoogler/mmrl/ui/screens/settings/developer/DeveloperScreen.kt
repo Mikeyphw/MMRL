@@ -7,15 +7,18 @@ import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ui.component.SettingsScaffold
 import com.dergoogler.mmrl.ui.component.listItem.dsl.ListItemScope
 import com.dergoogler.mmrl.ui.component.listItem.dsl.ListScope
+import com.dergoogler.mmrl.ui.component.listItem.dsl.component.ButtonItem
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.Item
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.Section
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.SwitchItem
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Description
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Title
+import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalSettings
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.DebugWorkbenchScreenDestination
 
 @Composable
 fun ListScope.DeveloperSwitch(
@@ -39,6 +42,7 @@ fun ListScope.DeveloperSwitch(
 fun DeveloperScreen() {
     val viewModel = LocalSettings.current
     val userPreferences = LocalUserPreferences.current
+    val navigator = LocalDestinationsNavigator.current
 
     SettingsScaffold(
         title = R.string.settings_developer,
@@ -57,6 +61,14 @@ fun DeveloperScreen() {
                 onChange = viewModel::setDevAlwaysShowUpdateAlert,
             ) {
                 Title(R.string.settings_always_show_update_alert)
+            }
+
+            ButtonItem(
+                enabled = userPreferences.developerMode,
+                onClick = { navigator.navigate(DebugWorkbenchScreenDestination) },
+            ) {
+                Title("Debug Workbench")
+                Description("Read-only diagnostics for LSPosed, Vector Manager, Xposed repo access, GitHub token storage, and AshReXcue detection.")
             }
         }
 
