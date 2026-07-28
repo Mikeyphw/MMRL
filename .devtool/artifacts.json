@@ -9394,6 +9394,72 @@
         }
       },
       "history_id": "897d9b0b64f644b29e8c1740a19c34e5"
+    },
+    {
+      "applied_at": "2026-07-28T18:43:48.827192Z",
+      "artifact": "/home/mike/Downloads/mmrl_debug_workbench_final_seal_overlay.zip",
+      "artifact_name": "mmrl_debug_workbench_final_seal_overlay.zip",
+      "type": "overlay",
+      "sha256": "543ee784c2139c2f8c879f52295e24de9040f6b4a9e0d7743523929bd4aa3294",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Seal debug workbench contracts",
+      "commit_hash": "",
+      "file_count": 3,
+      "change_counts": {
+        "add": 2,
+        "modify": 1
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_debug_workbench_final_seal_overlay",
+        "description": "Seal the MMRL Debug Workbench roadmap with final documentation and anti-regression contracts for probe pack, guarded actions, support bundle, history, guided diagnostics, redaction, non-mutation, and no-warning policies. No runtime behavior changes.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "docs/DEBUG_WORKBENCH.md",
+              "action": "modify",
+              "sha256": "818d1e967956bae98df317ceca86a493d61c90a916a023734ffd08f869594478",
+              "size": 7819,
+              "source_sha256": "8671d7d10cff9ef33c479a06f7dac15345143cfbc2262079e2f8b9e45bce21dc"
+            },
+            {
+              "path": "docs/DEBUG_WORKBENCH_FINAL_SEAL.md",
+              "action": "add",
+              "sha256": "50b5c5407511e28ebc85a12fe3118fafc543df2cb70c9f0f86817e76bb1a7a97",
+              "size": 3969
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugWorkbenchFinalSealContractTest.kt",
+              "action": "add",
+              "sha256": "d05c3cacd1b906834bd6a4ae70f4fdfab0d15a20e5ec531bd599807824ffe2b4",
+              "size": 5902
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Seal debug workbench contracts"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "0aa4c17badd24a51830660ae58289a90"
     }
   ]
 }

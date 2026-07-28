@@ -86,3 +86,27 @@ Guided diagnostic safeguards:
 - flows must not print raw GitHub tokens, Authorization headers, or cookies;
 - support bundles include `debug-guide.txt` and `debug-guide.json` with only the active flow name, focused summaries, and redacted remedy cards;
 - the active issue flow is recorded as metadata in `debug-report.json` so exported bundles show which support path the user selected.
+
+## Phase 7 final seal
+
+Phase 7 locks the Debug Workbench contract after the probe pack, guarded actions, support bundle, history, and guided diagnostics phases have landed.
+
+The final seal is documentation and regression-contract only. It does not add new runtime probes, new root commands, new provider actions, repository mutations, scope database writes, or token storage mutations.
+
+Sealed capabilities:
+
+- read-only probes for GitHub token status, LSPosed/libxposed/Vector manager visibility, provider module scan, Xposed repository endpoint matrix, and AshReXcue identity;
+- guarded actions limited to resolved manager opening, provider refresh bridge, repository service start/stop, support bundle export, and local history clearing;
+- sanitized support bundles with `debug-report.txt`, `debug-report.json`, `debug-history.txt`, `debug-history.json`, `debug-guide.txt`, `debug-guide.json`, and `README.txt`;
+- bounded local history of at most 10 redacted summaries;
+- guided diagnostics for manager recognition, Xposed repo 403, AshReXcue detection, and GitHub token issues;
+- source contracts that keep tokens, Authorization headers, cookies, evidence rows, root command output, module/provider state, repository cache state, and LSPosed scope databases out of unsafe mutation paths.
+
+Release gate:
+
+- unit tests must pass;
+- Android lint must report zero errors and zero warnings;
+- debug exports must remain redacted;
+- `LocalClipboardManager` must not return;
+- arbitrary shell execution must not be introduced in the debug package;
+- debug history and guided diagnostics must remain local, bounded, redacted, and support-oriented.
