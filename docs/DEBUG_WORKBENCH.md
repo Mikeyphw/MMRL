@@ -65,3 +65,24 @@ History safeguards:
 - support bundle export includes `debug-history.txt` and `debug-history.json` so intermittent repo 403s, provider visibility changes, and AshReXcue recognition changes can be compared by support without exposing secrets.
 
 The comparison UI is passive. It does not re-run actions, mutate state, or infer repairs automatically. It only reports status changes between the current probe result and the previous local snapshot.
+
+## Phase 6 guided diagnostics flows
+
+Phase 6 adds issue-specific guided diagnostic flows on top of the existing read-only probes. A guided flow is a focused lens over the same probe runner, not a new privileged executor.
+
+Guided flows:
+
+- **Manager not recognized** focuses on LSPosed/libxposed/Vector manager package visibility and provider fallback evidence.
+- **Xposed repo 403** focuses on the repository endpoint matrix and app-wide GitHub token status.
+- **AshReXcue not detected** focuses on AshReXcue folder, `module.prop` id/name, canonical alias, and staged-vs-active module evidence.
+- **GitHub token problems** focuses on encrypted token availability/decryption and whether GitHub-backed repository fallbacks still fail.
+
+Each flow runs the normal read-only probe set, filters the results to the relevant probe ids, and produces remedy cards. The cards are intentionally human-readable so support can tell whether the failure is package visibility, missing launch intent, primary repository 403, missing token, broken token decryption, or an unknown module identity alias.
+
+Guided diagnostic safeguards:
+
+- flows must not add arbitrary shell input;
+- flows must not mutate module folders, LSPosed scope databases, provider modules, repository cache files, or token storage;
+- flows must not print raw GitHub tokens, Authorization headers, or cookies;
+- support bundles include `debug-guide.txt` and `debug-guide.json` with only the active flow name, focused summaries, and redacted remedy cards;
+- the active issue flow is recorded as metadata in `debug-report.json` so exported bundles show which support path the user selected.

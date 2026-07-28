@@ -31,7 +31,7 @@ class DebugHistoryContractTest {
         assertTrue(screen.contains("historyStore.record(next)"))
         assertTrue(screen.contains("DebugHistoryStore.compare(next, previous)"))
         assertTrue(screen.contains("Clear local history"))
-        assertTrue(screen.contains("supportBundleExporter.share(results, lastAction, history)"))
+        assertTrue(screen.contains("supportBundleExporter.share(results, lastAction, history, activeGuide)"))
     }
 
     @Test

@@ -12,10 +12,13 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import com.dergoogler.mmrl.debug.DebugActionResult
 import com.dergoogler.mmrl.debug.DebugActionRunner
+import com.dergoogler.mmrl.debug.DebugGuideResult
+import com.dergoogler.mmrl.debug.DebugGuidedDiagnostics
 import com.dergoogler.mmrl.debug.DebugHistoryComparison
 import com.dergoogler.mmrl.debug.DebugHistoryFormatter
 import com.dergoogler.mmrl.debug.DebugHistorySnapshot
 import com.dergoogler.mmrl.debug.DebugHistoryStore
+import com.dergoogler.mmrl.debug.DebugIssueFlow
 import com.dergoogler.mmrl.debug.DebugProbeResult
 import com.dergoogler.mmrl.debug.DebugProbeRunner
 import com.dergoogler.mmrl.debug.DebugProbeStatus
@@ -49,6 +52,26 @@ fun DebugWorkbenchScreen() {
     var lastComparison by remember { mutableStateOf<DebugHistoryComparison?>(null) }
     var lastReport by remember { mutableStateOf("Run probes to generate a redacted report.") }
     var lastAction by remember { mutableStateOf<DebugActionResult?>(null) }
+    var activeGuide by remember { mutableStateOf<DebugGuideResult?>(null) }
+
+    fun runProbeSession(flow: DebugIssueFlow? = null) {
+        running = true
+        coroutineScope.launch {
+            val next = runner.runAll()
+            val previous = withContext(Dispatchers.IO) { historyStore.loadRecent().firstOrNull() }
+            val comparison = DebugHistoryStore.compare(next, previous)
+            val nextHistory = withContext(Dispatchers.IO) {
+                historyStore.record(next)
+                historyStore.loadRecent()
+            }
+            results = next
+            history = nextHistory
+            lastComparison = comparison
+            lastReport = DebugReportFormatter.asText(next)
+            activeGuide = flow?.let { DebugGuidedDiagnostics.evaluate(it, next) }
+            running = false
+        }
+    }
 
     SettingsScaffold(
         title = "Debug Workbench",
@@ -56,23 +79,7 @@ fun DebugWorkbenchScreen() {
         Section {
             ButtonItem(
                 enabled = !running,
-                onClick = {
-                    running = true
-                    coroutineScope.launch {
-                        val next = runner.runAll()
-                        val previous = withContext(Dispatchers.IO) { historyStore.loadRecent().firstOrNull() }
-                        val comparison = DebugHistoryStore.compare(next, previous)
-                        val nextHistory = withContext(Dispatchers.IO) {
-                            historyStore.record(next)
-                            historyStore.loadRecent()
-                        }
-                        results = next
-                        history = nextHistory
-                        lastComparison = comparison
-                        lastReport = DebugReportFormatter.asText(next)
-                        running = false
-                    }
-                },
+                onClick = { runProbeSession() },
             ) {
                 Title(if (running) "Running probes…" else "Run read-only probes")
                 Description("Checks package visibility, Vector/LSPosed providers, Xposed repo fallbacks, GitHub token status, and AshReXcue identity. Saves a small redacted local history for comparisons.")
@@ -90,6 +97,25 @@ fun DebugWorkbenchScreen() {
             ) {
                 Title("Copy redacted report")
                 Description("Copies a support-safe report. Authorization headers, cookies, and GitHub tokens are redacted.")
+            }
+        }
+
+        Section(title = "Guided diagnostics") {
+            DebugIssueFlow.entries.forEach { flow ->
+                ButtonItem(
+                    enabled = !running,
+                    onClick = { runProbeSession(flow) },
+                ) {
+                    Title(flow.buttonTitle)
+                    Description(flow.description)
+                }
+            }
+
+            activeGuide?.let { guide ->
+                Item {
+                    Title("${guide.status.symbol()} ${guide.flow.title}")
+                    Description(guide.descriptionText())
+                }
             }
         }
 
@@ -124,10 +150,10 @@ fun DebugWorkbenchScreen() {
 
             ButtonItem(
                 enabled = results.isNotEmpty(),
-                onClick = { lastAction = supportBundleExporter.share(results, lastAction, history) },
+                onClick = { lastAction = supportBundleExporter.share(results, lastAction, history, activeGuide) },
             ) {
                 Title("Share support bundle")
-                Description("Exports a ZIP with redacted text, JSON probe reports, and bounded redacted history. Tokens, cookies, and Authorization headers stay redacted.")
+                Description("Exports a ZIP with redacted text, JSON probe reports, bounded redacted history, and the active guided diagnostic flow. Tokens, cookies, and Authorization headers stay redacted.")
             }
 
             ButtonItem(
@@ -180,7 +206,7 @@ fun DebugWorkbenchScreen() {
             Section(divider = false) {
                 Item {
                     Title("No probe results yet")
-                    Description("Run the probes to diagnose manager recognition, provider scan, repo 403 behavior, and AshReXcue detection.")
+                    Description("Run the probes or use a guided diagnostic flow to diagnose manager recognition, provider scan, repo 403 behavior, GitHub token problems, and AshReXcue detection.")
                 }
             }
         } else {
@@ -223,6 +249,20 @@ private fun DebugProbeResult.descriptionText(): String = buildString {
     remedies.forEach { remedy ->
         append("\nRemedy: ")
         append(remedy)
+    }
+}
+
+private fun DebugGuideResult.descriptionText(): String = buildString {
+    append(summary)
+    steps.forEach { step ->
+        append("\n")
+        append(step.status.symbol())
+        append(" ")
+        append(step.title)
+        append(": ")
+        append(step.summary)
+        append("\nRemedy: ")
+        append(step.remedy)
     }
 }
 

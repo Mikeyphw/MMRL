@@ -9206,6 +9206,194 @@
         }
       },
       "history_id": "1cfca27f62d84f708667a96614833b3d"
+    },
+    {
+      "applied_at": "2026-07-28T18:32:47.644947Z",
+      "artifact": "/home/mike/Downloads/mmrl_debug_workbench_guided_flows_overlay.zip",
+      "artifact_name": "mmrl_debug_workbench_guided_flows_overlay.zip",
+      "type": "overlay",
+      "sha256": "94e6c589c4f8d190ce3f8a6980591b0b7e382268728f12ea96f3bdfb46acd3bd",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Add debug workbench guided diagnostics",
+      "commit_hash": "",
+      "file_count": 7,
+      "change_counts": {
+        "add": 2,
+        "modify": 5
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_debug_workbench_guided_flows_overlay",
+        "description": "Add Debug Workbench Phase 6 guided diagnostics flows for manager recognition, Xposed repo 403, AshReXcue detection, and app-wide GitHub token issues with redacted support-bundle guide metadata.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugGuidedDiagnostics.kt",
+              "action": "add",
+              "sha256": "c1518c0f5e54e70a3894539bedde0e2df72b293170e0ef1c692544ae023eba43",
+              "size": 10994
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugSupportBundleExporter.kt",
+              "action": "modify",
+              "sha256": "c656890ebff8f94ec40cf0eca9b831b7a996462903e38ca705e4226e792dd762",
+              "size": 7680,
+              "source_sha256": "c93888a64aefaa7b98c026ce82e9190cd19be2cf73238c723a6d9d8271a5b5b2"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt",
+              "action": "modify",
+              "sha256": "7638cfc97fb1911183bd94fb049bdfc7f965c9e7f00d4117a6ca0b9a7be365a3",
+              "size": 11371,
+              "source_sha256": "ddd92ab8b3ecf5d77f122de13bea3583aaf3a22a8c13f0e983a1016f859eab05"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugGuidedDiagnosticsContractTest.kt",
+              "action": "add",
+              "sha256": "f39ad1706691ca8a038485493827025383dc608ebbd5e0a40a874899e6bacb27",
+              "size": 6704
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugHistoryContractTest.kt",
+              "action": "modify",
+              "sha256": "a9cae2be02ff87f71575988511d4ace96b2d15cfd32acb9ceed5c4a9ad089565",
+              "size": 5386,
+              "source_sha256": "e005c6684757201ac36c2ed063ab9ddf923a93de6fd0fb0330843bca7e8d6dd0"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugSupportBundleContractTest.kt",
+              "action": "modify",
+              "sha256": "f5a9bfec93683069be99aefd680909cac10b7884b8eb353754e4e06dbe0587c6",
+              "size": 3613,
+              "source_sha256": "38e3153c9d0b2c0d79dde2368e6891c52f6d26930b6ea570c878ebf69121a3c9"
+            },
+            {
+              "path": "docs/DEBUG_WORKBENCH.md",
+              "action": "modify",
+              "sha256": "8671d7d10cff9ef33c479a06f7dac15345143cfbc2262079e2f8b9e45bce21dc",
+              "size": 6175,
+              "source_sha256": "cabdb3a7a249fca840b4b04aa7dc4c132234a7852d8d1d4e7d05aeb3ba02f6db"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add debug workbench guided diagnostics"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "5fa2e142515a492bb0b7dcf909b56104"
+    },
+    {
+      "applied_at": "2026-07-28T18:36:57.749875Z",
+      "artifact": "/home/mike/Downloads/mmrl_debug_workbench_guided_flows_overlay_r2.zip",
+      "artifact_name": "mmrl_debug_workbench_guided_flows_overlay_r2.zip",
+      "type": "overlay",
+      "sha256": "b1d97e35663931f806658af75249a32f8aa1746539652f8a672cbfd90cbc5a61",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Add debug workbench guided diagnostics",
+      "commit_hash": "",
+      "file_count": 7,
+      "change_counts": {
+        "add": 2,
+        "modify": 5
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_debug_workbench_guided_flows_overlay_r2",
+        "description": "Add Debug Workbench Phase 6 guided diagnostics flows for manager recognition, Xposed repo 403, AshReXcue detection, and app-wide GitHub token issues with redacted support-bundle guide metadata. r2 fixes the guided-flow contract so it validates data-driven button labels instead of requiring duplicated literal UI strings.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugGuidedDiagnostics.kt",
+              "action": "add",
+              "sha256": "c1518c0f5e54e70a3894539bedde0e2df72b293170e0ef1c692544ae023eba43",
+              "size": 10994
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugSupportBundleExporter.kt",
+              "action": "modify",
+              "sha256": "c656890ebff8f94ec40cf0eca9b831b7a996462903e38ca705e4226e792dd762",
+              "size": 7680,
+              "source_sha256": "c93888a64aefaa7b98c026ce82e9190cd19be2cf73238c723a6d9d8271a5b5b2"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt",
+              "action": "modify",
+              "sha256": "7638cfc97fb1911183bd94fb049bdfc7f965c9e7f00d4117a6ca0b9a7be365a3",
+              "size": 11371,
+              "source_sha256": "ddd92ab8b3ecf5d77f122de13bea3583aaf3a22a8c13f0e983a1016f859eab05"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugGuidedDiagnosticsContractTest.kt",
+              "action": "add",
+              "sha256": "0887c7ae22f76eaa00ea136e5bd7cf79cbaf767b9fc1cd7369e23acb29abc564",
+              "size": 6839
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugHistoryContractTest.kt",
+              "action": "modify",
+              "sha256": "a9cae2be02ff87f71575988511d4ace96b2d15cfd32acb9ceed5c4a9ad089565",
+              "size": 5386,
+              "source_sha256": "e005c6684757201ac36c2ed063ab9ddf923a93de6fd0fb0330843bca7e8d6dd0"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugSupportBundleContractTest.kt",
+              "action": "modify",
+              "sha256": "f5a9bfec93683069be99aefd680909cac10b7884b8eb353754e4e06dbe0587c6",
+              "size": 3613,
+              "source_sha256": "38e3153c9d0b2c0d79dde2368e6891c52f6d26930b6ea570c878ebf69121a3c9"
+            },
+            {
+              "path": "docs/DEBUG_WORKBENCH.md",
+              "action": "modify",
+              "sha256": "8671d7d10cff9ef33c479a06f7dac15345143cfbc2262079e2f8b9e45bce21dc",
+              "size": 6175,
+              "source_sha256": "cabdb3a7a249fca840b4b04aa7dc4c132234a7852d8d1d4e7d05aeb3ba02f6db"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add debug workbench guided diagnostics"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true
+        }
+      },
+      "history_id": "897d9b0b64f644b29e8c1740a19c34e5"
     }
   ]
 }

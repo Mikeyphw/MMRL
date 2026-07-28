@@ -14,6 +14,7 @@ class DebugSupportBundleExporter(private val context: Context) {
         results: List<DebugProbeResult>,
         lastAction: DebugActionResult?,
         history: List<DebugHistorySnapshot> = emptyList(),
+        activeGuide: DebugGuideResult? = null,
     ): DebugActionResult {
         if (results.isEmpty()) {
             return DebugActionResult(
@@ -25,7 +26,7 @@ class DebugSupportBundleExporter(private val context: Context) {
             val directory = File(context.cacheDir, DIRECTORY).apply { mkdirs() }
             pruneOldBundles(directory)
             val file = File(directory, "mmrl-debug-workbench-${System.currentTimeMillis()}.zip")
-            writeBundle(file, results, lastAction, history)
+            writeBundle(file, results, lastAction, history, activeGuide)
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
             val sendIntent = Intent(Intent.ACTION_SEND)
                 .setType("application/zip")
@@ -50,12 +51,15 @@ class DebugSupportBundleExporter(private val context: Context) {
         results: List<DebugProbeResult>,
         lastAction: DebugActionResult?,
         history: List<DebugHistorySnapshot>,
+        activeGuide: DebugGuideResult?,
     ) {
         ZipOutputStream(file.outputStream().buffered()).use { zip ->
             zip.writeEntry("debug-report.txt", DebugReportFormatter.asText(results))
-            zip.writeEntry("debug-report.json", asJson(results, lastAction, history))
+            zip.writeEntry("debug-report.json", asJson(results, lastAction, history, activeGuide))
             zip.writeEntry("debug-history.txt", DebugHistoryFormatter.historyText(history))
             zip.writeEntry("debug-history.json", DebugHistoryFormatter.historyJson(history))
+            zip.writeEntry("debug-guide.txt", DebugGuideFormatter.asText(activeGuide))
+            zip.writeEntry("debug-guide.json", DebugGuideFormatter.asJson(activeGuide))
             zip.writeEntry(
                 "README.txt",
                 buildString {
@@ -65,6 +69,7 @@ class DebugSupportBundleExporter(private val context: Context) {
                     appendLine("This bundle intentionally preserves root module paths, package names, HTTP status codes, probe summaries, and redacted history status changes.")
                     appendLine("GitHub tokens, Authorization headers, and cookies are redacted before export.")
                     appendLine("Debug history is local, bounded, redacted, and contains statuses/summaries only.")
+                    appendLine("Guided diagnostics include only selected flow names, focused probe summaries, and remedy cards.")
                 },
             )
         }
@@ -74,6 +79,7 @@ class DebugSupportBundleExporter(private val context: Context) {
         results: List<DebugProbeResult>,
         lastAction: DebugActionResult?,
         history: List<DebugHistorySnapshot>,
+        activeGuide: DebugGuideResult?,
     ): String = buildString {
         val groupedResults = results.groupBy { it.group }.entries.toList()
         appendLine("{")
@@ -111,7 +117,8 @@ class DebugSupportBundleExporter(private val context: Context) {
         } ?: "null"
         appendLine("  ],")
         appendLine("  \"lastAction\": $lastActionJson,")
-        appendLine("  \"historyCount\": ${history.size}")
+        appendLine("  \"historyCount\": ${history.size},")
+        appendLine("  \"activeIssueFlow\": ${(activeGuide?.flow?.name)?.json() ?: "null"}")
         appendLine("}")
     }
 

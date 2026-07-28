@@ -29,7 +29,7 @@ class DebugSupportBundleContractTest {
 
         assertTrue(screen.contains("Share support bundle"))
         assertTrue(screen.contains("DebugSupportBundleExporter(context)"))
-        assertTrue(screen.contains("supportBundleExporter.share(results, lastAction, history)"))
+        assertTrue(screen.contains("supportBundleExporter.share(results, lastAction, history, activeGuide)"))
         assertTrue(screen.contains("Clear local history"))
     }
 
