@@ -51,3 +51,17 @@ The exporter is still support-safe and read-only:
 - it preserves root module paths, package names, HTTP status codes, and probe labels because those are necessary for diagnosing manager/provider/repo bugs.
 
 Phase 4 also migrates the screen from deprecated `LocalClipboardManager` to `LocalClipboard` with `ClipEntry`, so the debug screen remains warning-clean on current Compose.
+
+## Phase 5 history and comparisons
+
+Phase 5 adds a bounded local history for Debug Workbench probe runs. Each run stores only redacted probe ids, titles, groups, statuses, and summaries under the app private files directory. The history is intentionally small, local, and support-oriented: it exists to compare the current run against the previous run and highlight newly failing checks, regressions, improved checks, and checks fixed since the last run.
+
+History safeguards:
+
+- only redacted summaries are persisted;
+- evidence rows, GitHub tokens, Authorization headers, cookies, scope database contents, and raw root command output are not persisted in history;
+- at most 10 snapshots are retained;
+- **Clear local history** deletes only Debug Workbench history and must not touch modules, repository caches, LSPosed scope databases, provider modules, or token storage;
+- support bundle export includes `debug-history.txt` and `debug-history.json` so intermittent repo 403s, provider visibility changes, and AshReXcue recognition changes can be compared by support without exposing secrets.
+
+The comparison UI is passive. It does not re-run actions, mutate state, or infer repairs automatically. It only reports status changes between the current probe result and the previous local snapshot.

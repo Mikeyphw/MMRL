@@ -12,6 +12,10 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import com.dergoogler.mmrl.debug.DebugActionResult
 import com.dergoogler.mmrl.debug.DebugActionRunner
+import com.dergoogler.mmrl.debug.DebugHistoryComparison
+import com.dergoogler.mmrl.debug.DebugHistoryFormatter
+import com.dergoogler.mmrl.debug.DebugHistorySnapshot
+import com.dergoogler.mmrl.debug.DebugHistoryStore
 import com.dergoogler.mmrl.debug.DebugProbeResult
 import com.dergoogler.mmrl.debug.DebugProbeRunner
 import com.dergoogler.mmrl.debug.DebugProbeStatus
@@ -25,7 +29,9 @@ import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Description
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Title
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Destination<RootGraph>
 @Composable
@@ -35,9 +41,12 @@ fun DebugWorkbenchScreen() {
     val coroutineScope = rememberCoroutineScope()
     val runner = remember(context) { DebugProbeRunner(context) }
     val actionRunner = remember(context) { DebugActionRunner(context) }
+    val historyStore = remember(context) { DebugHistoryStore(context) }
     val supportBundleExporter = remember(context) { DebugSupportBundleExporter(context) }
     var running by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<DebugProbeResult>>(emptyList()) }
+    var history by remember { mutableStateOf(historyStore.loadRecent()) }
+    var lastComparison by remember { mutableStateOf<DebugHistoryComparison?>(null) }
     var lastReport by remember { mutableStateOf("Run probes to generate a redacted report.") }
     var lastAction by remember { mutableStateOf<DebugActionResult?>(null) }
 
@@ -51,14 +60,22 @@ fun DebugWorkbenchScreen() {
                     running = true
                     coroutineScope.launch {
                         val next = runner.runAll()
+                        val previous = withContext(Dispatchers.IO) { historyStore.loadRecent().firstOrNull() }
+                        val comparison = DebugHistoryStore.compare(next, previous)
+                        val nextHistory = withContext(Dispatchers.IO) {
+                            historyStore.record(next)
+                            historyStore.loadRecent()
+                        }
                         results = next
+                        history = nextHistory
+                        lastComparison = comparison
                         lastReport = DebugReportFormatter.asText(next)
                         running = false
                     }
                 },
             ) {
                 Title(if (running) "Running probes…" else "Run read-only probes")
-                Description("Checks package visibility, Vector/LSPosed providers, Xposed repo fallbacks, GitHub token status, and AshReXcue identity. No writes are performed.")
+                Description("Checks package visibility, Vector/LSPosed providers, Xposed repo fallbacks, GitHub token status, and AshReXcue identity. Saves a small redacted local history for comparisons.")
             }
 
             ButtonItem(
@@ -107,16 +124,54 @@ fun DebugWorkbenchScreen() {
 
             ButtonItem(
                 enabled = results.isNotEmpty(),
-                onClick = { lastAction = supportBundleExporter.share(results, lastAction) },
+                onClick = { lastAction = supportBundleExporter.share(results, lastAction, history) },
             ) {
                 Title("Share support bundle")
-                Description("Exports a ZIP with redacted text and JSON probe reports for support. Tokens, cookies, and Authorization headers stay redacted.")
+                Description("Exports a ZIP with redacted text, JSON probe reports, and bounded redacted history. Tokens, cookies, and Authorization headers stay redacted.")
+            }
+
+            ButtonItem(
+                enabled = history.isNotEmpty(),
+                onClick = {
+                    coroutineScope.launch {
+                        val cleared = withContext(Dispatchers.IO) { historyStore.clear() }
+                        if (cleared) {
+                            history = emptyList()
+                            lastComparison = null
+                            lastAction = DebugActionResult(
+                                status = DebugProbeStatus.PASS,
+                                message = "Cleared local Debug Workbench history.",
+                            )
+                        } else {
+                            lastAction = DebugActionResult(
+                                status = DebugProbeStatus.WARN,
+                                message = "Debug Workbench history could not be cleared.",
+                            )
+                        }
+                    }
+                },
+            ) {
+                Title("Clear local history")
+                Description("Deletes only the bounded redacted Debug Workbench history used for comparisons. It does not touch modules, repo cache, scope DBs, or tokens.")
             }
 
             lastAction?.let { action ->
                 Item {
                     Title("Last action: ${action.status.symbol()}")
                     Description(action.message)
+                }
+            }
+        }
+
+        if (lastComparison != null || history.isNotEmpty()) {
+            Section(title = "History") {
+                Item {
+                    Title("Comparison")
+                    Description(DebugHistoryFormatter.comparisonText(lastComparison))
+                }
+                Item {
+                    Title("Stored runs: ${history.size}")
+                    Description(history.descriptionText())
                 }
             }
         }
@@ -168,5 +223,13 @@ private fun DebugProbeResult.descriptionText(): String = buildString {
     remedies.forEach { remedy ->
         append("\nRemedy: ")
         append(remedy)
+    }
+}
+
+private fun List<DebugHistorySnapshot>.descriptionText(): String {
+    if (isEmpty()) return "No previous probe runs stored."
+    return take(3).joinToString("\n") { snapshot ->
+        val failing = snapshot.entries.count { it.status == DebugProbeStatus.FAIL || it.status == DebugProbeStatus.WARN }
+        "${snapshot.createdAtMillis}: ${snapshot.entries.size} checks, $failing warnings/failures"
     }
 }

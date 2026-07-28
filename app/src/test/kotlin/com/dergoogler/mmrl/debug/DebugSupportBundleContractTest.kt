@@ -19,6 +19,8 @@ class DebugSupportBundleContractTest {
         assertTrue(exporter.contains("debug-report.txt"))
         assertTrue(exporter.contains("debug-report.json"))
         assertTrue(exporter.contains("README.txt"))
+        assertTrue(exporter.contains("debug-history.txt"))
+        assertTrue(exporter.contains("debug-history.json"))
         assertTrue(exporter.contains("DebugRedactor.redact"))
         assertTrue(exporter.contains("FLAG_GRANT_READ_URI_PERMISSION"))
         assertFalse(exporter.contains("Runtime.getRuntime().exec"))
@@ -27,7 +29,8 @@ class DebugSupportBundleContractTest {
 
         assertTrue(screen.contains("Share support bundle"))
         assertTrue(screen.contains("DebugSupportBundleExporter(context)"))
-        assertTrue(screen.contains("supportBundleExporter.share(results, lastAction)"))
+        assertTrue(screen.contains("supportBundleExporter.share(results, lastAction, history)"))
+        assertTrue(screen.contains("Clear local history"))
     }
 
     @Test

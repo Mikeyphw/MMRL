@@ -1,0 +1,80 @@
+{
+  "applied_at": "2026-07-28T18:19:02.244553Z",
+  "artifact": "/home/mike/Downloads/mmrl_debug_workbench_history_overlay.zip",
+  "artifact_name": "mmrl_debug_workbench_history_overlay.zip",
+  "type": "overlay",
+  "sha256": "988aaccfad6b6bfe69a5c7b6f86d9432b91ae6815622ac104ac4618f93dc812f",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add debug workbench probe history",
+  "commit_hash": "",
+  "file_count": 5,
+  "change_counts": {
+    "add": 2,
+    "modify": 3
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_debug_workbench_history_overlay",
+    "description": "Add bounded redacted Debug Workbench probe history, previous-run comparisons, support-bundle history export, and regression contracts.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugHistoryStore.kt",
+          "action": "add",
+          "sha256": "d7e2631657c703225bebb4073f4dadf1f2791078dc909678dc30807ffb5f13bc",
+          "size": 11726
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugSupportBundleExporter.kt",
+          "action": "modify",
+          "sha256": "c93888a64aefaa7b98c026ce82e9190cd19be2cf73238c723a6d9d8271a5b5b2",
+          "size": 7129,
+          "source_sha256": "41ae06ba47959bf0b2ef8eaa6161e3567d72344d3661acdba1a6f0d498e2127c"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt",
+          "action": "modify",
+          "sha256": "ddd92ab8b3ecf5d77f122de13bea3583aaf3a22a8c13f0e983a1016f859eab05",
+          "size": 10121,
+          "source_sha256": "6e5cad279d92fc235ecc201fdb8187638d30dde2ad6ed28e8eef0a43c78ba0b5"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugHistoryContractTest.kt",
+          "action": "add",
+          "sha256": "e005c6684757201ac36c2ed063ab9ddf923a93de6fd0fb0330843bca7e8d6dd0",
+          "size": 5373
+        },
+        {
+          "path": "docs/DEBUG_WORKBENCH.md",
+          "action": "modify",
+          "sha256": "cabdb3a7a249fca840b4b04aa7dc4c132234a7852d8d1d4e7d05aeb3ba02f6db",
+          "size": 4532,
+          "source_sha256": "1cd3b059b19664fdfe5b1127609b1407673197c31768235e6d6f56a65afeaf34"
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add debug workbench probe history"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "ad1b6ef890104dd2b9564ba7529a442e"
+}
