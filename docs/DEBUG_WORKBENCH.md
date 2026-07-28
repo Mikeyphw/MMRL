@@ -21,3 +21,14 @@ Sensitive data policy:
 - GitHub tokens beginning with `ghp_`, `github_pat_`, `gho_`, `ghu_`, `ghs_`, or `ghr_` are redacted.
 - Cookies are redacted.
 - Root module paths are preserved because they are required to diagnose module identity and provider placement.
+
+## Phase 3 guarded remediation actions
+
+The Debug Workbench may expose guarded remediation buttons after the read-only probes land. These actions are intentionally narrow:
+
+- Open resolved manager uses `LsposedRepository.lsposedManagerIntent()` and never invents package names at click time.
+- Run provider action bridge uses `LsposedRepository.providerRefreshPlan()` and only starts `ActionActivity` for the active provider module id selected by that plan.
+- Start repository refresh starts the existing `RepositoryService`; the foreground notification remains the source of success/failure counts.
+- Stop repository refresh stops the existing `RepositoryService`.
+
+These actions must not expose arbitrary shell input, print tokens, alter scope databases directly, or bypass the provider refresh plan. The copied debug report remains redacted after actions run.

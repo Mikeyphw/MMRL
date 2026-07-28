@@ -1,0 +1,73 @@
+{
+  "applied_at": "2026-07-28T17:56:11.443142Z",
+  "artifact": "/home/mike/Downloads/mmrl_debug_workbench_guarded_actions_overlay.zip",
+  "artifact_name": "mmrl_debug_workbench_guarded_actions_overlay.zip",
+  "type": "overlay",
+  "sha256": "fe890fee55123e56e4fc3a24046f0a6ef23dd6c24efa44f808c9a26e1e5d50de",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "Add debug workbench guarded actions",
+  "commit_hash": "",
+  "file_count": 4,
+  "change_counts": {
+    "add": 2,
+    "modify": 2
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_debug_workbench_guarded_actions_overlay",
+    "description": "Add guarded Debug Workbench remediation actions for opening the resolved LSPosed/Vector manager, running the selected provider action bridge, and starting/stopping repository refresh service while preserving redacted reports and non-arbitrary-shell constraints.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugActionRunner.kt",
+          "action": "add",
+          "sha256": "667d3c18c1edee73221df041e7acff917698c5012706ac73c455bbf7b673f4ae",
+          "size": 3663
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt",
+          "action": "modify",
+          "sha256": "7ba8b96b476881baca3ad583eae0ce8f4607c721fc17266fcc0ccb2252c1b6ee",
+          "size": 6211,
+          "source_sha256": "3cb5a4313ef52632056b5529d5afd268fa78dd82824ddc9082e1fe877bd3b536"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugWorkbenchActionsContractTest.kt",
+          "action": "add",
+          "sha256": "55b3d43dbf681633920d53d810aadf4e258c0af3d3be4142f82f4b9b3da1b113",
+          "size": 2513
+        },
+        {
+          "path": "docs/DEBUG_WORKBENCH.md",
+          "action": "modify",
+          "sha256": "fa1d29ec3f71359fc06dacf838cc481e80af7a5c740330ef45da4598004f7227",
+          "size": 2146,
+          "source_sha256": "dfe0e6448c061f30bcf960ed0611fb8ab88c9d3b2dab814082b3cede1706c5e0"
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add debug workbench guarded actions"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "851656246415427fa67696ba6148d130"
+}

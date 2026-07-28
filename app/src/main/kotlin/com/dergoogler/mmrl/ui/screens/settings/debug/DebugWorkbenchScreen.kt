@@ -9,6 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import com.dergoogler.mmrl.debug.DebugActionResult
+import com.dergoogler.mmrl.debug.DebugActionRunner
 import com.dergoogler.mmrl.debug.DebugProbeResult
 import com.dergoogler.mmrl.debug.DebugProbeRunner
 import com.dergoogler.mmrl.debug.DebugProbeStatus
@@ -30,9 +32,11 @@ fun DebugWorkbenchScreen() {
     val clipboard = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
     val runner = remember(context) { DebugProbeRunner(context) }
+    val actionRunner = remember(context) { DebugActionRunner(context) }
     var running by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<DebugProbeResult>>(emptyList()) }
     var lastReport by remember { mutableStateOf("Run probes to generate a redacted report.") }
+    var lastAction by remember { mutableStateOf<DebugActionResult?>(null) }
 
     SettingsScaffold(
         title = "Debug Workbench",
@@ -60,6 +64,43 @@ fun DebugWorkbenchScreen() {
             ) {
                 Title("Copy redacted report")
                 Description("Copies a support-safe report. Authorization headers, cookies, and GitHub tokens are redacted.")
+            }
+        }
+
+        Section(title = "Guarded actions") {
+            ButtonItem(
+                onClick = { lastAction = actionRunner.openLsposedManager() },
+            ) {
+                Title("Open resolved manager")
+                Description("Uses the same LSPosed/libxposed/Vector manager intent resolution reported by the probes.")
+            }
+
+            ButtonItem(
+                onClick = { lastAction = actionRunner.runProviderActionBridge() },
+            ) {
+                Title("Run provider action bridge")
+                Description("Runs only the active provider module action.sh selected by the provider refresh plan. No arbitrary shell is exposed.")
+            }
+
+            ButtonItem(
+                onClick = { lastAction = actionRunner.startRepositoryRefresh() },
+            ) {
+                Title("Start repository refresh")
+                Description("Starts the existing repository foreground service so repo/cache failures are visible in notifications and logs.")
+            }
+
+            ButtonItem(
+                onClick = { lastAction = actionRunner.stopRepositoryRefresh() },
+            ) {
+                Title("Stop repository refresh")
+                Description("Stops the repository foreground service if it is running.")
+            }
+
+            lastAction?.let { action ->
+                Item {
+                    Title("Last action: ${action.status.symbol()}")
+                    Description(action.message)
+                }
             }
         }
 
