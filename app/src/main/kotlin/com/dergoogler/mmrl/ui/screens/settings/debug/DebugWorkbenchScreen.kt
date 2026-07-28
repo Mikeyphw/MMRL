@@ -1,20 +1,22 @@
 package com.dergoogler.mmrl.ui.screens.settings.debug
 
+import android.content.ClipData
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import com.dergoogler.mmrl.debug.DebugActionResult
 import com.dergoogler.mmrl.debug.DebugActionRunner
 import com.dergoogler.mmrl.debug.DebugProbeResult
 import com.dergoogler.mmrl.debug.DebugProbeRunner
 import com.dergoogler.mmrl.debug.DebugProbeStatus
 import com.dergoogler.mmrl.debug.DebugReportFormatter
+import com.dergoogler.mmrl.debug.DebugSupportBundleExporter
 import com.dergoogler.mmrl.ui.component.SettingsScaffold
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.ButtonItem
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.Item
@@ -29,10 +31,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun DebugWorkbenchScreen() {
     val context = LocalContext.current
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     val coroutineScope = rememberCoroutineScope()
     val runner = remember(context) { DebugProbeRunner(context) }
     val actionRunner = remember(context) { DebugActionRunner(context) }
+    val supportBundleExporter = remember(context) { DebugSupportBundleExporter(context) }
     var running by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<DebugProbeResult>>(emptyList()) }
     var lastReport by remember { mutableStateOf("Run probes to generate a redacted report.") }
@@ -60,7 +63,13 @@ fun DebugWorkbenchScreen() {
 
             ButtonItem(
                 enabled = results.isNotEmpty(),
-                onClick = { clipboard.setText(AnnotatedString(lastReport)) },
+                onClick = {
+                    coroutineScope.launch {
+                        clipboard.setClipEntry(
+                            ClipEntry(ClipData.newPlainText("MMRL debug report", lastReport)),
+                        )
+                    }
+                },
             ) {
                 Title("Copy redacted report")
                 Description("Copies a support-safe report. Authorization headers, cookies, and GitHub tokens are redacted.")
@@ -94,6 +103,14 @@ fun DebugWorkbenchScreen() {
             ) {
                 Title("Stop repository refresh")
                 Description("Stops the repository foreground service if it is running.")
+            }
+
+            ButtonItem(
+                enabled = results.isNotEmpty(),
+                onClick = { lastAction = supportBundleExporter.share(results, lastAction) },
+            ) {
+                Title("Share support bundle")
+                Description("Exports a ZIP with redacted text and JSON probe reports for support. Tokens, cookies, and Authorization headers stay redacted.")
             }
 
             lastAction?.let { action ->

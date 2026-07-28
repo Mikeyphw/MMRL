@@ -32,3 +32,22 @@ The Debug Workbench may expose guarded remediation buttons after the read-only p
 - Stop repository refresh stops the existing `RepositoryService`.
 
 These actions must not expose arbitrary shell input, print tokens, alter scope databases directly, or bypass the provider refresh plan. The copied debug report remains redacted after actions run.
+
+## Phase 4 support bundle export
+
+Phase 4 adds a guarded **Share support bundle** action. It writes a short-lived ZIP into the app cache and shares it through the existing `FileProvider` authority.
+
+Bundle contents:
+
+- `debug-report.txt` with the same redacted support text as **Copy redacted report**;
+- `debug-report.json` with grouped probe results, evidence, remedies, and the last guarded action result;
+- `README.txt` describing what is intentionally preserved and what is redacted.
+
+The exporter is still support-safe and read-only:
+
+- it does not run shell commands;
+- it does not mutate provider modules, repository cache, scope databases, or token storage;
+- it redacts Authorization headers, GitHub tokens, and cookies before writing ZIP entries;
+- it preserves root module paths, package names, HTTP status codes, and probe labels because those are necessary for diagnosing manager/provider/repo bugs.
+
+Phase 4 also migrates the screen from deprecated `LocalClipboardManager` to `LocalClipboard` with `ClipEntry`, so the debug screen remains warning-clean on current Compose.

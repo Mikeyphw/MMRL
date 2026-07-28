@@ -1,0 +1,73 @@
+{
+  "applied_at": "2026-07-28T18:01:31.286676Z",
+  "artifact": "/home/mike/Downloads/mmrl_debug_workbench_support_bundle_overlay.zip",
+  "artifact_name": "mmrl_debug_workbench_support_bundle_overlay.zip",
+  "type": "overlay",
+  "sha256": "25e49a26567c9081c482495cbf1e223981bd38cf074fb04fb92663dc40aeba2a",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add debug workbench support bundle export",
+  "commit_hash": "",
+  "file_count": 4,
+  "change_counts": {
+    "add": 2,
+    "modify": 2
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_debug_workbench_support_bundle_overlay",
+    "description": "Add a sanitized Debug Workbench support bundle share action and migrate the debug screen to the modern LocalClipboard API to keep diagnostics warning-clean.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugSupportBundleExporter.kt",
+          "action": "add",
+          "sha256": "41ae06ba47959bf0b2ef8eaa6161e3567d72344d3661acdba1a6f0d498e2127c",
+          "size": 6570
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt",
+          "action": "modify",
+          "sha256": "6e5cad279d92fc235ecc201fdb8187638d30dde2ad6ed28e8eef0a43c78ba0b5",
+          "size": 6981,
+          "source_sha256": "7ba8b96b476881baca3ad583eae0ce8f4607c721fc17266fcc0ccb2252c1b6ee"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugSupportBundleContractTest.kt",
+          "action": "add",
+          "sha256": "38c21846af227c73bfac045aaf55f042c132acd9c53d1b0bd120d7deadbb13a6",
+          "size": 3413
+        },
+        {
+          "path": "docs/DEBUG_WORKBENCH.md",
+          "action": "modify",
+          "sha256": "1cd3b059b19664fdfe5b1127609b1407673197c31768235e6d6f56a65afeaf34",
+          "size": 3235,
+          "source_sha256": "fa1d29ec3f71359fc06dacf838cc481e80af7a5c740330ef45da4598004f7227"
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add debug workbench support bundle export"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "d6b6170d9588481a96a3bd06d5f4b1d9"
+}
