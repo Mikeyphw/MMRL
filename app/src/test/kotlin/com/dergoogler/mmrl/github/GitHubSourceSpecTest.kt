@@ -27,22 +27,22 @@ class GitHubSourceSpecTest {
 
 
     @Test
-    fun `nightly link artifact url resolves to nightly link source`() {
+    fun `nightly link artifact url is ignored`() {
         val source = GitHubSourceSpec.fromDownloadUrl(
             "https://nightly.link/Owner/Repo/workflows/core/master/Vector-Release.zip",
         )
 
-        assertEquals(GitHubSourceMode.NIGHTLY_LINK, source?.mode)
-        assertEquals("https://github.com/Owner/Repo?mmrlSource=nightlyLink", source?.sourceUrl)
+        assertNull(source)
     }
 
     @Test
-    fun `nightly link source url parses as nightly link mode`() {
+    fun `legacy nightly link source url parses as github nightly mode`() {
         val source = GitHubSourceSpec.fromSourceUrl(
             "https://github.com/Owner/Repo?mmrlSource=nightlyLink",
         )
 
-        assertEquals(GitHubSourceMode.NIGHTLY_LINK, source?.mode)
+        assertEquals(GitHubSourceMode.NIGHTLY, source?.mode)
+        assertEquals("https://github.com/Owner/Repo?mmrlSource=nightly", source?.sourceUrl)
     }
 
     @Test

@@ -407,8 +407,6 @@
     <string name="latest_commit_id">Najnowsze ID zatwierdzenia</string>
     <string name="build_tools_version">Wersja narzędzi budowania</string>
     <string name="compile_sdk">Kompilacja SDK</string>
-    <string name="settings_set_spoofed_wxp">Pakiet WebUI X Portable</string>
-    <string name="settings_set_spoofed_wxp_desc">Ustaw niestandardową fałszywą nazwę pakietu WebUI X Portable.</string>
     <string name="page_superuser">Superuser</string>
     <string name="menu_pin_has_root">Przypnij z rootem</string>
     <string name="menu_show_system_apps">Pokaż systemowe aplikacje</string>

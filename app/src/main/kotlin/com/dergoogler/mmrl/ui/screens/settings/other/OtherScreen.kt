@@ -113,8 +113,8 @@ fun OtherScreen() {
             value = userPreferences.webuixPackageName,
             onConfirm = viewModel::setWebuixPackageName,
         ) {
-            Title(context.getString(R.string.settings_set_spoofed_wxp))
-            Description(context.getString(R.string.settings_set_spoofed_wxp_desc))
+            Title(context.getString(R.string.settings_set_wxp_package))
+            Description(context.getString(R.string.settings_set_wxp_package_desc))
         }
     }
 }

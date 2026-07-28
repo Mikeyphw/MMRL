@@ -7,12 +7,34 @@ import org.junit.Test
 
 class GitHubArtifactArchivePolicyTest {
     @Test
-    fun `nightly link workflow archive is treated as artifact archive`() {
+    fun `github actions artifact api archive is treated as artifact archive`() {
         assertTrue(
+            GitHubArtifactArchivePolicy.isActionsArtifactArchive(
+                "https://api.github.com/repos/JingMatrix/Vector/actions/artifacts/123/zip",
+            ),
+        )
+    }
+
+    @Test
+    fun `nightly link workflow archive is not treated as artifact archive`() {
+        assertFalse(
             GitHubArtifactArchivePolicy.isActionsArtifactArchive(
                 "https://nightly.link/JingMatrix/Vector/workflows/core/master/Vector-Release.zip",
             ),
         )
+    }
+
+    @Test
+    fun `github actions artifact failure message does not mention nightly link`() {
+        val message = GitHubArtifactArchivePolicy.downloadFailureMessage(
+            url = "https://api.github.com/repos/Owner/Repo/actions/artifacts/456/zip",
+            code = 403,
+            hasToken = false,
+            bodySnippet = "Forbidden",
+        )
+
+        assertFalse(message.contains("nightly.link"))
+        assertTrue(message.contains("GitHub token"))
     }
 
     @Test

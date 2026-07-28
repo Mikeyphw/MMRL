@@ -44,7 +44,8 @@ class UiTopologyDensitySealTest {
         val repositories = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt")
         assertTrue(repositories.contains("R.string.github_source_add_title"))
         assertTrue(repositories.contains("R.string.github_source_repository_url"))
-        assertTrue(repositories.contains("R.string.github_source_mode_nightly_link"))
+        assertTrue(repositories.contains("R.string.github_source_mode_nightly"))
+        assertFalse(repositories.contains("github_source_mode_nightly_link"))
         assertFalse(repositories.contains("Text(\"Add GitHub source\")"))
         assertFalse(repositories.contains("Text(\"Repository URL\")"))
     }

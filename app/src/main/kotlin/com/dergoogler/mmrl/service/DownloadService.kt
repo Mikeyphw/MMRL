@@ -407,7 +407,7 @@ class DownloadService : LifecycleService() {
                     Request
                         .Builder()
                         .url(url)
-                        .header("Accept", "application/octet-stream")
+                        .header("Accept", githubDownloadAccept(url))
                         .header("X-GitHub-Api-Version", "2022-11-28")
                         .apply {
                             token?.let {
@@ -444,6 +444,13 @@ class DownloadService : LifecycleService() {
             }
         }
     }
+
+    private fun githubDownloadAccept(url: String): String =
+        if (GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)) {
+            "application/vnd.github+json"
+        } else {
+            "application/octet-stream"
+        }
 
     private fun cleanupTemporaryFile(operationId: String) {
         temporaryFile(operationId).delete()

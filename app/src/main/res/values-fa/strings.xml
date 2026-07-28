@@ -410,8 +410,6 @@
     <string name="latest_commit_id">آخرین شناسه پیاده‌سازی</string>
     <string name="build_tools_version">نگارش ابزارهای ساخت</string>
     <string name="compile_sdk">SDK کامپایل</string>
-    <string name="settings_set_spoofed_wxp">بسته قابل حمل رابط وب ایکس</string>
-    <string name="settings_set_spoofed_wxp_desc">تنظیم نام بسته قابل حمل رابط وب ایکس سفارشی.</string>
     <string name="settings_enable_blur">فعال کردن تاری</string>
     <string name="settings_enable_blur_desc">فعال کردن اثر تاری در اجزا</string>
     <string name="settings_hide_bottom_bar_labels">پنهان کردن مسخصه های نوار پایین</string>

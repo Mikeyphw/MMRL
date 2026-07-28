@@ -410,8 +410,6 @@
     <string name="latest_commit_id">ID Commit Terbaru</string>
     <string name="build_tools_version">Versi Build Tool</string>
     <string name="compile_sdk">Kompilasi SDK</string>
-    <string name="settings_set_spoofed_wxp">Paket WebUI X Portable</string>
-    <string name="settings_set_spoofed_wxp_desc">Atur pemalsuan nama paket kustom WebUI X Portable.</string>
     <string name="settings_enable_blur">Aktifkan Blur</string>
     <string name="settings_enable_blur_desc">Mengaktifkan efek blur pada komponen</string>
     <string name="settings_hide_bottom_bar_labels">Sembunyikan Label Bilah Bawah</string>

@@ -406,8 +406,6 @@
     <string name="build_tools_version">Versión de Build Tools</string>
     <string name="compile_sdk">Compilación de SDK</string>
     <string name="latest_commit_id">ID del último commit</string>
-    <string name="settings_set_spoofed_wxp_desc">Establezca un nombre de paquete personalizado para WebUI X portable.</string>
-    <string name="settings_set_spoofed_wxp">Paquete portable de WebUI X</string>
     <string name="settings_disable_su_desc">Deshabilitar temporalmente la capacidad de cualquier aplicación para obtener privilegios de root a través del comando su (los procesos root existentes no se verán afectados).</string>
     <string name="page_superuser">Superusuario</string>
     <string name="menu_pin_has_root">Fijar con root</string>

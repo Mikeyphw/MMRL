@@ -506,11 +506,6 @@ private fun GitHubSourceAddDialog(
                         onClick = { mode = GitHubSourceMode.NIGHTLY },
                         label = { Text(stringResource(R.string.github_source_mode_nightly)) },
                     )
-                    FilterChip(
-                        selected = mode == GitHubSourceMode.NIGHTLY_LINK,
-                        onClick = { mode = GitHubSourceMode.NIGHTLY_LINK },
-                        label = { Text(stringResource(R.string.github_source_mode_nightly_link)) },
-                    )
                 }
                 if (mode == GitHubSourceMode.RELEASE) {
                     Row(
@@ -539,7 +534,7 @@ private fun GitHubSourceAddDialog(
                     value = token,
                     onValueChange = { token = it },
                     label = { Text(stringResource(if (hasToken) R.string.github_source_token_saved else R.string.github_source_token)) },
-                    placeholder = { Text(stringResource(if (mode == GitHubSourceMode.NIGHTLY_LINK) R.string.github_source_token_placeholder_nightly_link else R.string.github_source_token_placeholder)) },
+                    placeholder = { Text(stringResource(R.string.github_source_token_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
@@ -647,7 +642,6 @@ private fun GitHubSourceMode.queryValue(): String =
     when (this) {
         GitHubSourceMode.RELEASE -> "release"
         GitHubSourceMode.NIGHTLY -> "nightly"
-        GitHubSourceMode.NIGHTLY_LINK -> "nightlyLink"
     }
 
 private fun String.isGitHubSourceUrl(): Boolean =
@@ -669,18 +663,12 @@ private fun buildGitHubSourceUrl(
         when {
             uri.host.equals("github.com", ignoreCase = true) -> {
                 require(parts.size >= 2) { "GitHub URL must include owner and repository" }
-                GitHubSourceInput(parts[0], parts[1], mode, null)
+                GitHubSourceInput(parts[0], parts[1], mode)
             }
-            uri.host.equals("nightly.link", ignoreCase = true) -> {
-                require(parts.size >= 2) { "nightly.link URL must include owner and repository" }
-                val artifactName = parts.lastOrNull()?.removeSuffix(".zip")?.takeIf(String::isNotBlank)
-                GitHubSourceInput(parts[0], parts[1], GitHubSourceMode.NIGHTLY_LINK, artifactName)
-            }
-            else -> error("Only github.com repositories and nightly.link artifact URLs are supported")
+            else -> error("Only github.com repositories are supported")
         }
     val effectiveRegex =
         regex.trim().takeIf(String::isNotBlank)
-            ?: source.artifactName?.let { Regex.escape(it) }
     val query =
         buildList {
             add("mmrlSource=${source.mode.queryValue()}")
@@ -696,5 +684,4 @@ private data class GitHubSourceInput(
     val owner: String,
     val repository: String,
     val mode: GitHubSourceMode,
-    val artifactName: String?,
 )

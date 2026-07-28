@@ -54,6 +54,7 @@ data class AshModuleProtection(
 fun AshManagerState.protectionSummary(): AshProtectionSummary {
     val dashboard = snapshot?.dashboard
     val status = when {
+        source == AshSnapshotSource.Cache && snapshot != null -> AshProtectionStatus.Cached
         lifecycle.state == AshModuleLifecycleState.Missing ||
             lifecycle.state == AshModuleLifecycleState.Disabled ||
             lifecycle.state == AshModuleLifecycleState.Broken ||
@@ -61,7 +62,6 @@ fun AshManagerState.protectionSummary(): AshProtectionSummary {
             !rootAvailable -> AshProtectionStatus.Unavailable
         lifecycle.state == AshModuleLifecycleState.Outdated -> AshProtectionStatus.UpdateRequired
         lifecycle.rebootRequired -> AshProtectionStatus.RebootPending
-        source == AshSnapshotSource.Cache -> AshProtectionStatus.Cached
         dashboard?.restoreState == "testing" -> AshProtectionStatus.RestorationTrial
         (dashboard?.quarantined ?: 0) > 0 -> AshProtectionStatus.Quarantined
         dashboard?.bootState in setOf("booting", "monitoring") -> AshProtectionStatus.Monitoring

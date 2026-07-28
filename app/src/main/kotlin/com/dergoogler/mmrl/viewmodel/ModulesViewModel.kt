@@ -778,7 +778,6 @@ class ModulesViewModel
             when (this) {
                 GitHubSourceMode.RELEASE -> "release"
                 GitHubSourceMode.NIGHTLY -> "GitHub API nightly"
-                GitHubSourceMode.NIGHTLY_LINK -> "nightly.link nightly"
             }
 
         private data class PendingModuleOperation(

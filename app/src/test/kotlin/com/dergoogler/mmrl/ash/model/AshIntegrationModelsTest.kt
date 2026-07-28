@@ -58,6 +58,27 @@ class AshIntegrationModelsTest {
     }
 
     @Test
+    fun cachedSnapshotTakesPriorityOverMissingLiveLifecycle() {
+        val state =
+            AshManagerState(
+                rootAvailable = true,
+                lifecycle = AshModuleLifecycle(
+                    state = AshModuleLifecycleState.Missing,
+                    compatibilityMessage = "AshReXcue is not installed",
+                ),
+                snapshot = AshSnapshot(dashboard = Dashboard(bootState = "stable")),
+                source = AshSnapshotSource.Cache,
+                readOnly = true,
+                liveError = "Live AshReXcue module was not detected; showing the last successful snapshot",
+            )
+
+        val summary = state.protectionSummary()
+
+        assertEquals(AshProtectionStatus.Cached, summary.status)
+        assertEquals("AshReXcue last known state", summary.title)
+    }
+
+    @Test
     fun missingProtectionStillMatchesAllFilter() {
         val protection: AshModuleProtection? = null
         assertTrue(protection.matches(AshModuleFilter.All))

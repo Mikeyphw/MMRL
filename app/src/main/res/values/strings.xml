@@ -467,8 +467,8 @@
     <string name="latest_commit_id">Latest Commit ID</string>
     <string name="build_tools_version">Build Tools Version</string>
     <string name="compile_sdk">Compile SDK</string>
-    <string name="settings_set_spoofed_wxp">WebUI X Portable Package</string>
-    <string name="settings_set_spoofed_wxp_desc">Set a custom spoofed WebUI X Portable Package name.</string>
+    <string name="settings_set_wxp_package">WebUI X Portable Package</string>
+    <string name="settings_set_wxp_package_desc">Set a custom WebUI X Portable package name.</string>
     <string name="settings_enable_blur">Enable Blur</string>
     <string name="settings_enable_blur_desc">Enabled blur effect in components</string>
     <string name="settings_hide_bottom_bar_labels">Hide Bottom Bar Labels</string>
@@ -1273,11 +1273,10 @@
 
 
     <string name="module_source_edit">Edit module source</string>
-    <string name="module_source_switch_note">Change how this GitHub source resolves updates. Release uses normal GitHub releases; nightly uses Actions artifacts; nightly.link uses public nightly.link artifact downloads.</string>
+    <string name="module_source_switch_note">Change how this GitHub source resolves updates. Release uses normal GitHub releases; nightly uses GitHub Actions artifacts.</string>
     <string name="module_source_current_url">Current source URL</string>
     <string name="module_source_release">Release</string>
     <string name="module_source_nightly_api">Nightly</string>
-    <string name="module_source_nightly_link">Nightly.link</string>
     <string name="module_source_mode_status">Source: %1$s</string>
 
     <!-- LSPosed APK module support -->
@@ -1346,14 +1345,12 @@
     <string name="github_source_repository_placeholder">https://github.com/owner/repo</string>
     <string name="github_source_mode_release">Release</string>
     <string name="github_source_mode_nightly">Nightly</string>
-    <string name="github_source_mode_nightly_link">Nightly.link</string>
     <string name="github_source_include_prereleases">Include pre-releases</string>
     <string name="github_source_file_regex">File regex</string>
     <string name="github_source_file_regex_placeholder">optional, e.g. aarch64|arm64</string>
     <string name="github_source_token">GitHub token</string>
     <string name="github_source_token_saved">GitHub token saved</string>
     <string name="github_source_token_placeholder">optional for private repos</string>
-    <string name="github_source_token_placeholder_nightly_link">optional; nightly.link handles public artifact downloads</string>
     <string name="github_source_clear_token">Clear saved token</string>
     <string name="github_source_add_confirm">Add</string>
     <string name="github_source_error_invalid_url">Invalid GitHub repository URL</string>

@@ -353,8 +353,6 @@
     <string name="explore_repos_discover_text">Khám phá và cài đặt các mô-đun từ [bold]%1$d[/bold] kho lưu trữ đáng tin cậy, với hơn [bold]%2$d[/bold] mô-đun cho thiết bị của bạn.</string>
     <string name="latest_commit_id">ID commit mới nhất</string>
     <string name="build_tools_version">Phiên bản Build Tools</string>
-    <string name="settings_set_spoofed_wxp">Gói WebUI X Portable</string>
-    <string name="settings_set_spoofed_wxp_desc">Đặt tên gói WebUI X Portable giả mạo tùy chỉnh.</string>
     <string name="settings_enable_blur">Bật làm mờ</string>
     <string name="settings_enable_blur_desc">Bật hiệu ứng làm mờ trong các thành phần</string>
     <string name="settings_hide_bottom_bar_labels">Ẩn nhãn thanh dưới cùng</string>

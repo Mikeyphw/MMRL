@@ -75,14 +75,6 @@ android {
             dimension = "distribution"
             applicationId = mmrlForkApplicationId
             resValue("string", "app_name", baseAppName)
-            buildConfigField("Boolean", "IS_SPOOFED_BUILD", "false")
-        }
-
-        create("spoofed") {
-            dimension = "distribution"
-            applicationId = generateRandomPackageName()
-            resValue("string", "app_name", generateRandomName())
-            buildConfigField("Boolean", "IS_SPOOFED_BUILD", "true")
         }
     }
 

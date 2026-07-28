@@ -426,8 +426,6 @@
     <string name="latest_commit_id">Son Commit ID\\\'si</string>
     <string name="build_tools_version">Derleme Araçları Sürümü</string>
     <string name="compile_sdk">SDK\'yı Derle</string>
-    <string name="settings_set_spoofed_wxp">WebUI X Taşınabilir Paket</string>
-    <string name="settings_set_spoofed_wxp_desc">Özel sahte WebUI X Taşınabilir Paket adı ayarla.</string>
     <string name="page_repos">Depolar</string>
     <string name="setup_root_note">MMRL\'ın tüm özelliklerine erişmek için, kök erişimine sahip bir cihaz gereklidir. MMRL root atmak için talimatlar sağlamaz ve root işlemi sırasında veya MMRL\'in kullanımında oluşabilecek sorunlardan sorumlu değildir.\n\n[link=https://mmrl.dev/legal/privacy]Gizlilik Politikası[/link] • [link=https://mmrl.dev/legal/terms]Kullanım Şartları[/link]</string>
     <string name="from_other_repositories">Diğer Depolardan</string>

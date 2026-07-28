@@ -1,7 +1,7 @@
 package com.dergoogler.mmrl.ash.root
 
+import com.dergoogler.mmrl.model.ModuleIdentity
 import java.io.File
-import java.util.Locale
 
 /** Resolves the installed AshReXcue module across active and staged module roots. */
 internal class AshModuleLocator(
@@ -69,9 +69,8 @@ internal class AshModuleLocator(
         val moduleId = properties["id"].orEmpty()
         val moduleName = properties["name"].orEmpty()
         val folderName = moduleDirectory.name
-        val matches = MODULE_ID_ALIASES.any { alias -> identityMatches(alias, moduleId) } ||
-            MODULE_ID_ALIASES.any { alias -> identityMatches(alias, folderName) } ||
-            normalizedKey(moduleName).let { key -> key.contains("ashrexcue") || key.contains("ashlooper") }
+        val matches = sequenceOf(moduleId, folderName, moduleName)
+            .any(ModuleIdentity::isAshReXcue)
         if (!matches) return null
 
         val controlScript = File(moduleDirectory, CONTROL_SCRIPT).takeIf(File::isFile)
@@ -113,12 +112,5 @@ internal class AshModuleLocator(
         )
         val DEFAULT_ACTIVE_ROOT = File("/data/adb/modules")
         val DEFAULT_UPDATE_ROOT = File("/data/adb/modules_update")
-
-        fun identityMatches(left: String, right: String): Boolean =
-            normalizedKey(left) == normalizedKey(right)
-
-        fun normalizedKey(value: String): String = value
-            .lowercase(Locale.ROOT)
-            .filter(Char::isLetterOrDigit)
     }
 }

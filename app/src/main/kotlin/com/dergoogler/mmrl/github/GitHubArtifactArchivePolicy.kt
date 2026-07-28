@@ -15,15 +15,6 @@ internal object GitHubArtifactArchivePolicy {
                 parts[4] == "artifacts" &&
                 parts.last().equals("zip", ignoreCase = true)
         }
-        if (host.equals("nightly.link", ignoreCase = true)) {
-            return parts.size >= 5 &&
-                (
-                    parts.getOrNull(2) == "workflows" ||
-                        parts.getOrNull(2) == "actions" ||
-                        parts.getOrNull(2) == "suites"
-                ) &&
-                uri.path.endsWith(".zip", ignoreCase = true)
-        }
         return false
     }
 
@@ -59,24 +50,18 @@ internal object GitHubArtifactArchivePolicy {
         bodySnippet: String?,
     ): String {
         val isArtifact = isActionsArtifactArchive(url)
-        val isNightlyLink = runCatching { URI(url).host.equals("nightly.link", ignoreCase = true) }.getOrDefault(false)
         val detail = bodySnippet?.trim()?.takeIf(String::isNotBlank)?.take(220)
         val base =
             when {
-                isNightlyLink -> "HTTP $code while downloading nightly.link artifact"
                 isArtifact -> "HTTP $code while downloading GitHub Actions artifact"
                 else -> "HTTP $code while downloading GitHub file"
             }
         val guidance =
             when {
-                isNightlyLink && code == 404 ->
-                    "The latest successful artifact may not exist for that workflow, branch, or artifact name. Refresh the source or adjust the regex."
-                isNightlyLink ->
-                    "Refresh the nightly.link source, check the artifact regex, then retry."
                 isArtifact && code in setOf(401, 403) && !hasToken ->
-                    "Add a GitHub token with Actions read access, or switch this module source to nightly.link."
+                    "Add a GitHub token with Actions read access, then retry."
                 isArtifact && code in setOf(401, 403) ->
-                    "Check that the saved GitHub token can read Actions artifacts for this repository, or switch this module source to nightly.link."
+                    "Check that the saved GitHub token can read Actions artifacts for this repository."
                 isArtifact && code == 404 ->
                     "The nightly artifact may have expired or been deleted. Refresh the source and retry."
                 isArtifact ->

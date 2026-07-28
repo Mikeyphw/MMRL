@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ash.AshOperationKind
 import com.dergoogler.mmrl.ash.AshViewModel
+import com.dergoogler.mmrl.ash.ConnectionState
 import com.dergoogler.mmrl.ash.model.SettingItem
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ui.component.FlatSectionCard
@@ -103,7 +104,19 @@ fun BootProtectionScreen(viewModel: AshViewModel = hiltViewModel()) =
             BootProtectionContent(
                 settings = state.settings,
                 readOnly = state.readOnly,
-                lifecycleText = state.lifecycle.compatibilityMessage,
+                lifecycleText = when (val connection = state.connection) {
+                    is ConnectionState.Cached -> connection.message
+                    is ConnectionState.Error -> connection.message
+                    is ConnectionState.ModuleIncompatible -> connection.message
+                    is ConnectionState.ModuleOutdated -> connection.message
+                    is ConnectionState.RebootPending -> connection.message
+                    ConnectionState.ModuleMissing,
+                    ConnectionState.RootDenied,
+                    ConnectionState.Checking,
+                    ConnectionState.ModuleDisabled,
+                    ConnectionState.Ready,
+                    -> state.lifecycle.compatibilityMessage
+                },
                 saving = state.isOperationRunning(AshOperationKind.SaveSettings, "protection"),
                 discarding = state.isOperationRunning(AshOperationKind.DiscardPending),
                 healthChecksEnabled = preferences.ashHealthChecksEnabled,

@@ -919,7 +919,6 @@ private fun ModuleSourceDialog(
                 listOf(
                     GitHubSourceMode.RELEASE,
                     GitHubSourceMode.NIGHTLY,
-                    GitHubSourceMode.NIGHTLY_LINK,
                 ).forEach { mode ->
                     FilterChip(
                         selected = currentMode == mode,
@@ -1179,7 +1178,6 @@ private fun GitHubSourceMode.displayLabel(): String =
     when (this) {
         GitHubSourceMode.RELEASE -> stringResource(R.string.module_source_release)
         GitHubSourceMode.NIGHTLY -> stringResource(R.string.module_source_nightly_api)
-        GitHubSourceMode.NIGHTLY_LINK -> stringResource(R.string.module_source_nightly_link)
     }
 
 @Composable

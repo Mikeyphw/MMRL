@@ -138,17 +138,28 @@ class AshReXcueManager @Inject constructor(
             val cachedState = runCatching {
                 val cachedInstallation = repository.parseModuleInstallation(cached.moduleStateRaw)
                 val snapshot = repository.parseSnapshot(cached.snapshotRaw)
-                val installation = currentInstallation ?: cachedInstallation
+                val liveInstallation = currentInstallation
+                val installation = cachedInstallationForLifecycle(
+                    liveInstallation = liveInstallation,
+                    cachedInstallation = cachedInstallation,
+                )
                 val capabilities = snapshot.capabilities.takeIf { capabilities ->
-                    currentInstallation == null ||
+                    liveInstallation == null ||
+                        !liveInstallation.installed ||
                         capabilities.moduleVersionCode == 0 ||
                         capabilities.moduleVersionCode == installation.versionCode
                 }
+                val cacheLiveError = liveError
+                    ?: if (liveInstallation != null && !liveInstallation.installed && !liveInstallation.updatePending) {
+                        "Live AshReXcue module was not detected; showing the last successful snapshot"
+                    } else {
+                        "Live AshReXcue status is unavailable"
+                    }
                 val lifecycle = AshModuleLifecycleResolver.resolve(
                     installation = installation,
                     bundled = bundled,
                     capabilities = capabilities,
-                    liveError = liveError,
+                    liveError = cacheLiveError,
                 )
                 val health = AshStateHealthEngine.assess(
                     snapshot = snapshot,
@@ -162,7 +173,7 @@ class AshReXcueManager @Inject constructor(
                     source = AshSnapshotSource.Cache,
                     readOnly = true,
                     lastSuccessfulAt = cached.savedAt,
-                    liveError = liveError ?: "Live AshReXcue status is unavailable",
+                    liveError = cacheLiveError,
                     health = health,
                     releaseGate = AshReleaseGateEngine.assess(
                         rootAvailable = rootAvailable,
@@ -303,3 +314,11 @@ class AshReXcueManager @Inject constructor(
         const val FAILURE_BACKOFF_MILLIS = 15_000L
     }
 }
+
+internal fun cachedInstallationForLifecycle(
+    liveInstallation: AshModuleInstallation?,
+    cachedInstallation: AshModuleInstallation,
+): AshModuleInstallation =
+    liveInstallation
+        ?.takeIf { it.installed || it.updatePending }
+        ?: cachedInstallation

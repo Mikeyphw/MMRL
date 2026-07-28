@@ -82,6 +82,19 @@ class AshModuleLocatorTest {
     }
 
     @Test
+    fun `recognizes separator variants through shared AshReXcue identity`() {
+        val activeRoot = temporaryRoot()
+        val module = File(activeRoot, "AshReXcue Bootloop Protector").apply { mkdirs() }
+        val control = File(module, "ashrexcuectl").apply { writeText("#!/system/bin/sh\n") }
+
+        val inspection = AshModuleLocator(activeRoot, temporaryRoot()).inspect()
+
+        assertTrue(inspection.installed)
+        assertEquals("AshReXcue Bootloop Protector", inspection.folder)
+        assertEquals(control.absolutePath, inspection.controlScript?.absolutePath)
+    }
+
+    @Test
     fun `ignores unrelated control script`() {
         val activeRoot = temporaryRoot()
         val module = createModule(

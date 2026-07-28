@@ -431,8 +431,6 @@
     <string name="latest_commit_id">最新のコミット ID</string>
     <string name="build_tools_version">ビルドツールのバージョン</string>
     <string name="compile_sdk">コンパイル SDK</string>
-    <string name="settings_set_spoofed_wxp">WebUI X Portable パッケージ</string>
-    <string name="settings_set_spoofed_wxp_desc">WebUI X Portable を偽装するパッケージ名をカスタマイズします。</string>
     <string name="page_superuser">スーパーユーザー</string>
     <string name="menu_show_system_apps">システムアプリを表示</string>
     <string name="menu_show_category">カテゴリーを表示</string>

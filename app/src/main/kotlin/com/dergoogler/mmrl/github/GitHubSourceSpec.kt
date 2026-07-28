@@ -9,7 +9,6 @@ private val GitHubSourceMode.queryValue: String
         when (this) {
             GitHubSourceMode.RELEASE -> "release"
             GitHubSourceMode.NIGHTLY -> "nightly"
-            GitHubSourceMode.NIGHTLY_LINK -> "nightlyLink"
         }
 
 
@@ -51,10 +50,6 @@ data class GitHubSourceSpec(
                 return GitHubSourceSpec(parts[0], parts[1], mode)
             }
 
-            if (uri.host.equals("nightly.link", ignoreCase = true) && parts.size >= 2) {
-                return GitHubSourceSpec(parts[0], parts[1], GitHubSourceMode.NIGHTLY_LINK)
-            }
-
             return null
         }
 
@@ -74,7 +69,7 @@ data class GitHubSourceSpec(
                     ?.let {
                         when (it) {
                             "nightly" -> GitHubSourceMode.NIGHTLY
-                            "nightlylink", "nightly_link", "nightly-link" -> GitHubSourceMode.NIGHTLY_LINK
+                            "nightlylink", "nightly_link", "nightly-link" -> GitHubSourceMode.NIGHTLY
                             else -> GitHubSourceMode.RELEASE
                         }
                     } ?: GitHubSourceMode.RELEASE

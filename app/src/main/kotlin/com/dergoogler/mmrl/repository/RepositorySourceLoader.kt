@@ -147,7 +147,6 @@ internal object RepositorySourceLoader {
                     when (options.mode) {
                         GitHubSourceMode.RELEASE -> "GitHub releases."
                         GitHubSourceMode.NIGHTLY -> "the latest successful Actions artifact through the GitHub API."
-                        GitHubSourceMode.NIGHTLY_LINK -> "the latest successful Actions artifact through nightly.link."
                     },
             metadata =
                 ModulesJsonMetadata(
@@ -443,7 +442,7 @@ internal object RepositorySourceLoader {
         val mode =
             when (parameters["mmrlSource"]?.lowercase(Locale.ROOT)) {
                 "nightly" -> GitHubSourceMode.NIGHTLY
-                "nightlylink", "nightly_link", "nightly-link" -> GitHubSourceMode.NIGHTLY_LINK
+                "nightlylink", "nightly_link", "nightly-link" -> GitHubSourceMode.NIGHTLY
                 else -> GitHubSourceMode.RELEASE
             }
         val cleanRepoUrl = "https://github.com/${parts[0]}/${parts[1]}"
@@ -513,7 +512,6 @@ internal object RepositorySourceLoader {
         when (this) {
             GitHubSourceMode.RELEASE -> "release"
             GitHubSourceMode.NIGHTLY -> "nightly"
-            GitHubSourceMode.NIGHTLY_LINK -> "nightly.link nightly"
         }
 
     @JsonClass(generateAdapter = true)
