@@ -110,3 +110,19 @@ Release gate:
 - `LocalClipboardManager` must not return;
 - arbitrary shell execution must not be introduced in the debug package;
 - debug history and guided diagnostics must remain local, bounded, redacted, and support-oriented.
+
+## Phase 8 root visibility hardening
+
+Phase 8 extends the final-sealed Debug Workbench with deeper evidence for cases where the app reports that Vector, LSPosed, or AshReXcue is missing even though the user believes the module or manager is installed.
+
+The hardening keeps the workbench read-only while making the missing layer visible:
+
+- LSPosed and AshReXcue probes now use root-aware `SuFile` reads for `/data/adb/modules` and `/data/adb/modules_update` instead of relying only on app-process `File` access;
+- provider and AshReXcue probes report root existence, directory status, readability, child count, a bounded children preview, and any listing error;
+- provider and AshReXcue candidate rows report whether `module.prop` was readable and which canonical identity matched;
+- LSPosed manager diagnostics include package enumeration hints for visible `lsposed`, `libxposed`, `vector`, and `matrix` package names;
+- Vector manager handling checks package visibility for `org.matrix.vector.manager` and keeps `org.matrix.vector.daemon` visible to the package manager;
+- manager launch resolution checks normal launcher intents, package-specific `LAUNCH_MANAGER` actions/categories, and the LSPosed compatibility launch action;
+- repository main-index fallback now uses `modules.lsposed.org` followed by `backup.modules.lsposed.org`, with the generated jsDelivr path kept only as a last-resort compatibility fallback and diagnosed when it returns 404.
+
+Phase 8 must not write module folders, alter LSPosed scope databases, mutate repository cache state, save/delete tokens, or run arbitrary shell input. It only changes read paths, diagnostics, and the repository fallback order for the Xposed/LSPosed main index.

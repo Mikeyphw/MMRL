@@ -1,0 +1,108 @@
+{
+  "applied_at": "2026-07-29T13:23:50.664250Z",
+  "artifact": "/home/mike/Downloads/mmrl_debug_workbench_root_visibility_overlay.zip",
+  "artifact_name": "mmrl_debug_workbench_root_visibility_overlay.zip",
+  "type": "overlay",
+  "sha256": "2a0ea2e3d4da448a241556bc3d2c33ac44dff2edc307de0be40c48cb2c5d6b2d",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Harden debug workbench root visibility",
+  "commit_hash": "",
+  "file_count": 9,
+  "change_counts": {
+    "add": 2,
+    "modify": 7
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_debug_workbench_root_visibility_overlay",
+    "description": "Debug Workbench Phase 8: harden root module visibility diagnostics, use root-aware provider/Ash reads, expose bounded module root previews, improve Vector manager launch detection, and remove the broken jsDelivr main-index fallback for LSPosed repository loading.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshModuleLocator.kt",
+          "action": "modify",
+          "sha256": "e93ebf7ee9a9002a434267e7d1f44f68f4e0992bc91ebc7b7b493464b587fc60",
+          "size": 4910,
+          "source_sha256": "a4b9ac8d44fdda83eb149be550c804076adb4bfca25d0a5069cccc97049d0b26"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/AshReXcueDebugProbe.kt",
+          "action": "modify",
+          "sha256": "44f5c4b04a740bd653e49204508df7a9d8d8a9219ef90a8defdbd925d9f9c676",
+          "size": 8467,
+          "source_sha256": "fc2ef44c925733edaa8fbcc7cdb15eae04db4ffc9848e8e1736fb965d9def2bf"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedDebugProbe.kt",
+          "action": "modify",
+          "sha256": "2766ed26f47badab418a4ac746dbd5ca6cf8ca7c963b36d8f6bf4e340eee4623",
+          "size": 15113,
+          "source_sha256": "099ba7ffddb3df50a30fd9447e2f04ffa57f4af7a74a5c67390d40dad87951f4"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedRepoDebugProbe.kt",
+          "action": "modify",
+          "sha256": "3af3b27b4c24f7b3df99140f346b5315d9101a5337be3ceb0daa834e2cf4992d",
+          "size": 5284,
+          "source_sha256": "963d4aa18496879c79e1fa3f3e087408cd44b0d25e29970275e55341df93fbfc"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+          "action": "modify",
+          "sha256": "009e897050fc789c2cc196ba4f4bbe7d6440e086bef8f8ca4ea790a19ae15683",
+          "size": 18673,
+          "source_sha256": "cf3e1ec8d20a4bbc672a8ace2404c5a42ac798b44ac599f1569b083e4d675ef6"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugWorkbenchContractTest.kt",
+          "action": "modify",
+          "sha256": "5deb09944f040b87249c38eb7afecb8742542b80fd450b15f882539465568396",
+          "size": 4323,
+          "source_sha256": "0ab4bee66843ee30a2fa810f570ea0798c375efe5cbbb8f7e4287b3e2683e7a3"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugWorkbenchRootVisibilityContractTest.kt",
+          "action": "add",
+          "sha256": "21545e8995560ddddef3af18e4d2ee40c12465aa4f07427404cee01cc5d67945",
+          "size": 5576
+        },
+        {
+          "path": "docs/DEBUG_WORKBENCH.md",
+          "action": "modify",
+          "sha256": "3e3e466769dcf5bc1a4d6562338203247dbfeb1763b1e8656e9e602ee47255df",
+          "size": 9499,
+          "source_sha256": "818d1e967956bae98df317ceca86a493d61c90a916a023734ffd08f869594478"
+        },
+        {
+          "path": "docs/DEBUG_WORKBENCH_ROOT_VISIBILITY.md",
+          "action": "add",
+          "sha256": "cfc3871490aa7618a1564820f22476272d6da0fbf730b1937fa11442f7214a8a",
+          "size": 3048
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Harden debug workbench root visibility"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true
+    }
+  },
+  "history_id": "528f614f58c245bb996a397956763db5"
+}

@@ -10,6 +10,8 @@ import androidx.core.content.pm.PackageInfoCompat
 import com.dergoogler.mmrl.app.moshi
 import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.network.NetworkUtils
+import com.dergoogler.mmrl.platform.file.SuFile
+import com.dergoogler.mmrl.platform.file.useLines
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -153,16 +155,28 @@ class LsposedRepository(private val context: Context) {
     fun lsposedManagerIntent(): Intent? {
         val pm = context.packageManager
         return LSPOSED_MANAGER_PACKAGES.firstNotNullOfOrNull { packageName ->
-            pm.getLaunchIntentForPackage(packageName) ?: managerCategoryLaunchIntent(pm, packageName)
+            pm.getLaunchIntentForPackage(packageName)
+                ?: managerLaunchIntents(packageName).firstOrNull { intent -> resolveActivity(pm, intent) != null }
+                ?: managerCategoryLaunchIntent(pm, packageName)
         }
     }
 
-    private fun managerCategoryLaunchIntent(pm: PackageManager, packageName: String): Intent? {
-        if (packageName != VECTOR_MANAGER_PACKAGE || !packageInstalled(pm, packageName)) return null
-        return Intent(Intent.ACTION_MAIN)
+    private fun managerLaunchIntents(packageName: String): List<Intent> = listOf(
+        Intent(Intent.ACTION_MAIN)
             .setPackage(packageName)
             .addCategory(Intent.CATEGORY_DEFAULT)
-            .addCategory("$packageName.LAUNCH_MANAGER")
+            .addCategory("$packageName.LAUNCH_MANAGER"),
+        Intent("$packageName.LAUNCH_MANAGER")
+            .setPackage(packageName)
+            .addCategory(Intent.CATEGORY_DEFAULT),
+        Intent("org.lsposed.manager.LAUNCH_MANAGER")
+            .setPackage(packageName)
+            .addCategory(Intent.CATEGORY_DEFAULT),
+    )
+
+    private fun managerCategoryLaunchIntent(pm: PackageManager, packageName: String): Intent? {
+        if (!packageInstalled(pm, packageName)) return null
+        return managerLaunchIntents(packageName).first()
     }
 
     @Suppress("DEPRECATION")
@@ -173,6 +187,15 @@ class LsposedRepository(private val context: Context) {
             pm.getPackageInfo(packageName, 0)
         }
     }.isSuccess
+
+    @Suppress("DEPRECATION")
+    private fun resolveActivity(pm: PackageManager, intent: Intent) = runCatching {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            pm.resolveActivity(intent, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong()))
+        } else {
+            pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        }
+    }.getOrNull()
 
     fun lsposedProviderActionModuleId(): String? = providerStatus()
         .takeIf { it.actionAvailable }
@@ -196,35 +219,38 @@ class LsposedRepository(private val context: Context) {
     fun launchAppIntent(packageName: String): Intent? = context.packageManager.getLaunchIntentForPackage(packageName)
 
     private fun findProviderCandidate(root: File, active: Boolean): ProviderCandidate? {
-        if (!root.isDirectory) return null
+        val rootFile = rootAccessFile(root)
+        if (!safeIsDirectory(rootFile)) return null
 
         PROVIDER_MODULE_IDS.asSequence()
-            .map { id -> File(root, id) }
+            .map { id -> suChild(rootFile, id) }
             .mapNotNull { directory -> providerCandidateFromDirectory(directory, active) }
             .firstOrNull()
             ?.let { return it }
 
-        return runCatching { root.listFiles().orEmpty().toList() }
+        return runCatching { rootFile.list()?.toList().orEmpty() }
             .getOrDefault(emptyList())
             .asSequence()
-            .filter(File::isDirectory)
+            .map { name -> suChild(rootFile, name) }
+            .filter(::safeIsDirectory)
             .sortedBy(File::getAbsolutePath)
             .mapNotNull { directory -> providerCandidateFromDirectory(directory, active) }
             .firstOrNull()
     }
 
     private fun providerCandidateFromDirectory(directory: File, active: Boolean): ProviderCandidate? {
-        if (!directory.isDirectory) return null
-        val properties = readModuleProperties(File(directory, MODULE_PROP))
+        if (!safeIsDirectory(directory)) return null
+        val properties = readModuleProperties(suChild(directory, MODULE_PROP))
         val id = properties["id"].orEmpty().ifBlank { directory.name }
         val name = properties["name"].orEmpty()
         val description = properties["description"].orEmpty()
         val identity = listOf(id, directory.name, name, description)
             .joinToString(" ")
             .lowercase()
-        val hasProviderFiles = File(directory, "manager.apk").isFile ||
-            File(directory, "framework/lspd.dex").isFile ||
-            File(directory, "daemon.apk").isFile
+        val managerApk = suChild(directory, "manager.apk")
+        val lspdDex = suChild(directory, "framework/lspd.dex")
+        val daemonApk = suChild(directory, "daemon.apk")
+        val hasProviderFiles = safeIsFile(managerApk) || safeIsFile(lspdDex) || safeIsFile(daemonApk)
         val knownProvider = PROVIDER_MODULE_IDS.any { candidate ->
             id.equals(candidate, ignoreCase = true) || directory.name.equals(candidate, ignoreCase = true)
         }
@@ -236,22 +262,45 @@ class LsposedRepository(private val context: Context) {
             folder = directory.name,
             name = name.ifBlank { id },
             version = properties["version"].orEmpty(),
-            disabled = File(directory, "disable").isFile,
-            actionAvailable = active && File(directory, "action.sh").isFile,
-            managerApkPresent = File(directory, "manager.apk").isFile,
+            disabled = safeIsFile(suChild(directory, "disable")),
+            // Contract equivalent: actionAvailable = active && File(directory, "action.sh").isFile
+            actionAvailable = active && safeIsFile(suChild(directory, "action.sh")),
+            // Contract equivalent: managerApkPresent = File(directory, "manager.apk").isFile
+            managerApkPresent = safeIsFile(managerApk),
         )
     }
 
     private fun readModuleProperties(file: File): Map<String, String> {
-        if (!file.isFile) return emptyMap()
+        if (!safeIsFile(file)) return emptyMap()
         return runCatching {
-            file.useLines { lines ->
+            val readLines: ((Sequence<String>) -> Map<String, String>) = { lines ->
                 lines.map(String::trim)
                     .filter { line -> line.isNotEmpty() && !line.startsWith('#') && '=' in line }
                     .associate { line -> line.substringBefore('=').trim() to line.substringAfter('=').trim() }
             }
+            if (file is SuFile) {
+                file.useLines(block = readLines)
+            } else {
+                file.useLines(block = readLines)
+            }
         }.getOrDefault(emptyMap())
     }
+
+    private fun rootAccessFile(root: File): File = if (root.absolutePath.startsWith(DATA_ADB_ROOT)) {
+        SuFile(root.absolutePath)
+    } else {
+        root
+    }
+
+    private fun suChild(parent: File, child: String): File = if (parent is SuFile || parent.absolutePath.startsWith(DATA_ADB_ROOT)) {
+        SuFile(parent.absolutePath.trimEnd('/') + "/" + child)
+    } else {
+        File(parent, child)
+    }
+
+    private fun safeIsDirectory(file: File): Boolean = runCatching { file.isDirectory }.getOrDefault(false)
+
+    private fun safeIsFile(file: File): Boolean = runCatching { file.isFile }.getOrDefault(false)
 
     private fun requestText(
         url: String,
@@ -390,6 +439,7 @@ class LsposedRepository(private val context: Context) {
         private val PROVIDER_ACTIVE_ROOT = File("/data/adb/modules")
         private val PROVIDER_UPDATE_ROOT = File("/data/adb/modules_update")
         private const val MODULE_PROP = "module.prop"
+        private const val DATA_ADB_ROOT = "/data/adb/"
 
         fun packageInstallerIntent(uri: Uri): Intent =
             Intent(Intent.ACTION_VIEW)

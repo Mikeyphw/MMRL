@@ -6,6 +6,8 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import com.dergoogler.mmrl.lsposed.LsposedRepository
+import com.dergoogler.mmrl.platform.file.SuFile
+import com.dergoogler.mmrl.platform.file.useLines
 import java.io.File
 
 class LsposedDebugProbe(
@@ -16,7 +18,8 @@ class LsposedDebugProbe(
     fun managerProbe(): DebugProbeResult {
         val rows = inspectManagerPackages()
         val installed = rows.filter { it.installed }
-        val launchable = installed.filter { it.launchable || it.categoryLaunchResolved }
+        val launchable = installed.filter { it.launchable || it.categoryLaunchResolved || it.actionLaunchResolved }
+        val visibleMatches = visibleManagerLikePackages(context.packageManager)
         return DebugProbeResult(
             id = "lsposed-manager-packages",
             title = "LSPosed / Vector manager packages",
@@ -28,24 +31,35 @@ class LsposedDebugProbe(
             },
             summary = when {
                 launchable.isNotEmpty() -> "${launchable.size} manager package(s) are installed and launchable."
-                installed.isNotEmpty() -> "Manager package is installed but MMRL could not resolve a launch intent."
+                installed.isNotEmpty() -> "Manager package is installed but MMRL could not resolve a launcher, category, or action intent."
                 else -> "No known LSPosed/libxposed/Vector manager package is visible to MMRL."
             },
             evidence = rows.flatMap { row ->
                 listOf(
                     DebugEvidence(row.packageName, "installed=${row.installed}, version=${row.versionName.ifBlank { "unknown" }}"),
-                    DebugEvidence("${row.packageName} launch", "launcher=${row.launchable}, category=${row.categoryLaunchResolved}, activity=${row.resolvedActivity.ifBlank { "none" }}"),
+                    DebugEvidence(
+                        "${row.packageName} launch",
+                        "launcher=${row.launchable}, category=${row.categoryLaunchResolved}, action=${row.actionLaunchResolved}, activity=${row.resolvedActivity.ifBlank { "none" }}",
+                    ),
                 )
-            },
+            } + listOf(
+                DebugEvidence("Vector manager package", VECTOR_MANAGER_PACKAGE),
+                DebugEvidence("visible manager-like package scan", "count=${visibleMatches.size}, matches=${visibleMatches.joinToString().ifBlank { "none" }}"),
+                DebugEvidence("package visibility policy", "QUERY_ALL_PACKAGES declared; explicit Vector manager/daemon queries declared"),
+            ),
             remedies = when {
-                installed.isEmpty() -> listOf("Install LSPosed, libxposed, or Vector Manager; then reopen this probe.")
-                launchable.isEmpty() -> listOf("The package is visible, but its launcher/category intent changed. Share this debug report so MMRL can add the new action/category.")
+                installed.isEmpty() -> listOf("If the manager is installed, check whether it is installed for another Android user/profile or hidden from this app profile.")
+                launchable.isEmpty() -> listOf("The package is visible, but its launcher/category/action intent changed. Share this debug report so MMRL can add the new action/category.")
                 else -> emptyList()
             },
         )
     }
 
     fun providerProbe(): DebugProbeResult {
+        val rootSnapshots = listOf(
+            rootSnapshot(rootAccessFile(activeModuleRoot), "active root"),
+            rootSnapshot(rootAccessFile(stagedModuleRoot), "staged root"),
+        )
         val modules = inspectProviderModules()
         val active = modules.filter { it.active }
         val staged = modules.filterNot { it.active }
@@ -62,19 +76,13 @@ class LsposedDebugProbe(
                 active.any { it.looksUsable } -> "Active provider module found."
                 active.isNotEmpty() -> "Active provider folder exists, but expected provider files are incomplete."
                 staged.isNotEmpty() -> "Only staged provider module found; reboot may be required."
-                else -> "No known LSPosed or Vector provider module was found."
+                else -> "No known LSPosed or Vector provider module was found. Root directory visibility is included below."
             },
-            evidence = if (modules.isEmpty()) {
-                listOf(
-                    DebugEvidence("active root", activeModuleRoot.absolutePath),
-                    DebugEvidence("staged root", stagedModuleRoot.absolutePath),
-                    DebugEvidence("known ids", LsposedRepository.PROVIDER_MODULE_IDS.joinToString()),
-                )
-            } else {
-                modules.flatMap { module -> module.toEvidence() }
-            },
+            evidence = rootSnapshots.flatMap { it.toEvidence() } +
+                listOf(DebugEvidence("known ids", LsposedRepository.PROVIDER_MODULE_IDS.joinToString())) +
+                if (modules.isEmpty()) emptyList() else modules.flatMap { module -> module.toEvidence() },
             remedies = if (modules.isEmpty()) {
-                listOf("Check whether the module is installed under /data/adb/modules or /data/adb/modules_update.")
+                listOf("Check root directory visibility, discovered folder names, and module.prop readability in this report.")
             } else {
                 emptyList()
             },
@@ -87,25 +95,32 @@ class LsposedDebugProbe(
             val info = packageInfo(pm, packageName)
             val launcher = runCatching { pm.getLaunchIntentForPackage(packageName) }.getOrNull()
             val categoryIntent = managerCategoryLaunchIntent(packageName)
-            val categoryResolve = categoryIntent?.let { resolveActivity(pm, it) }
+            val categoryResolve = resolveFirstActivity(pm, categoryIntent)
+            val actionIntent = managerActionLaunchIntent(packageName)
+            val actionResolve = resolveFirstActivity(pm, actionIntent)
             ManagerPackageRow(
                 packageName = packageName,
                 installed = info != null,
                 versionName = info?.versionName.orEmpty(),
                 launchable = launcher != null,
                 categoryLaunchResolved = categoryResolve != null,
-                resolvedActivity = categoryResolve?.activityInfo?.name.orEmpty(),
+                actionLaunchResolved = actionResolve != null,
+                resolvedActivity = listOfNotNull(
+                    categoryResolve?.activityInfo?.name,
+                    actionResolve?.activityInfo?.name,
+                ).firstOrNull().orEmpty(),
             )
         }
     }
 
-    private fun managerCategoryLaunchIntent(packageName: String): Intent? = when (packageName) {
-        VECTOR_MANAGER_PACKAGE -> Intent(Intent.ACTION_MAIN)
-            .setPackage(packageName)
-            .addCategory(Intent.CATEGORY_DEFAULT)
-            .addCategory("$packageName.LAUNCH_MANAGER")
-        else -> null
-    }
+    private fun managerCategoryLaunchIntent(packageName: String): Intent = Intent(Intent.ACTION_MAIN)
+        .setPackage(packageName)
+        .addCategory(Intent.CATEGORY_DEFAULT)
+        .addCategory("$packageName.LAUNCH_MANAGER")
+
+    private fun managerActionLaunchIntent(packageName: String): Intent = Intent("$packageName.LAUNCH_MANAGER")
+        .setPackage(packageName)
+        .addCategory(Intent.CATEGORY_DEFAULT)
 
     private fun inspectProviderModules(): List<ProviderModuleRow> = listOf(
         activeModuleRoot to true,
@@ -113,9 +128,12 @@ class LsposedDebugProbe(
     ).flatMap { (root, active) -> inspectProviderRoot(root, active) }
 
     private fun inspectProviderRoot(root: File, active: Boolean): List<ProviderModuleRow> {
-        if (!root.isDirectory) return emptyList()
-        val preferred = LsposedRepository.PROVIDER_MODULE_IDS.map { File(root, it) }
-        val discovered = runCatching { root.listFiles().orEmpty().filter(File::isDirectory) }.getOrDefault(emptyList())
+        val rootFile = rootAccessFile(root)
+        if (!safeIsDirectory(rootFile)) return emptyList()
+        val preferred = LsposedRepository.PROVIDER_MODULE_IDS.map { id -> suChild(rootFile, id) }
+        val discovered = listRootNames(rootFile).names
+            .map { name -> suChild(rootFile, name) }
+            .filter(::safeIsDirectory)
         return (preferred + discovered)
             .distinctBy { it.absolutePath }
             .mapNotNull { directory -> providerRow(directory, active) }
@@ -123,15 +141,17 @@ class LsposedDebugProbe(
     }
 
     private fun providerRow(directory: File, active: Boolean): ProviderModuleRow? {
-        if (!directory.isDirectory) return null
-        val properties = readModuleProperties(directory.resolve(MODULE_PROP))
+        if (!safeIsDirectory(directory)) return null
+        val propFile = suChild(directory, MODULE_PROP)
+        val properties = readModuleProperties(propFile)
         val id = properties["id"].orEmpty().ifBlank { directory.name }
         val identity = listOf(id, directory.name, properties["name"].orEmpty(), properties["description"].orEmpty())
             .joinToString(" ")
             .lowercase()
-        val hasProviderFile = directory.resolve("manager.apk").isFile ||
-            directory.resolve("daemon.apk").isFile ||
-            directory.resolve("framework/lspd.dex").isFile
+        val managerApkFile = suChild(directory, "manager.apk")
+        val daemonApkFile = suChild(directory, "daemon.apk")
+        val lspdDexFile = suChild(directory, "framework/lspd.dex")
+        val hasProviderFile = safeIsFile(managerApkFile) || safeIsFile(daemonApkFile) || safeIsFile(lspdDexFile)
         val knownId = LsposedRepository.PROVIDER_MODULE_IDS.any { known ->
             known.equals(id, ignoreCase = true) || known.equals(directory.name, ignoreCase = true)
         }
@@ -143,25 +163,80 @@ class LsposedDebugProbe(
             moduleId = id,
             name = properties["name"].orEmpty().ifBlank { id },
             version = properties["version"].orEmpty(),
-            disabled = directory.resolve("disable").isFile,
-            removalPending = directory.resolve("remove").isFile,
-            actionSh = directory.resolve("action.sh").isFile,
-            managerApk = directory.resolve("manager.apk").isFile,
-            daemonApk = directory.resolve("daemon.apk").isFile,
-            lspdDex = directory.resolve("framework/lspd.dex").isFile,
+            modulePropReadable = safeIsFile(propFile) && properties.isNotEmpty(),
+            disabled = safeIsFile(suChild(directory, "disable")),
+            removalPending = safeIsFile(suChild(directory, "remove")),
+            actionSh = safeIsFile(suChild(directory, "action.sh")),
+            managerApk = safeIsFile(managerApkFile),
+            daemonApk = safeIsFile(daemonApkFile),
+            lspdDex = safeIsFile(lspdDexFile),
         )
     }
 
+    private fun visibleManagerLikePackages(pm: PackageManager): List<String> = runCatching {
+        installedPackages(pm)
+            .map { it.packageName }
+            .filter { name ->
+                val lower = name.lowercase()
+                "lsposed" in lower || "libxposed" in lower || "vector" in lower || "matrix" in lower
+            }
+            .sorted()
+            .take(40)
+    }.getOrElse { error -> listOf("error=${error.message ?: error::class.java.simpleName}") }
+
+    private fun rootSnapshot(root: File, label: String): ModuleRootSnapshot {
+        val listing = listRootNames(root)
+        return ModuleRootSnapshot(
+            label = label,
+            path = root.absolutePath,
+            exists = safeExists(root),
+            directory = safeIsDirectory(root),
+            readable = safeCanRead(root),
+            childCount = listing.names.size,
+            childrenPreview = listing.names.sorted().take(ROOT_PREVIEW_LIMIT),
+            listingError = listing.error.orEmpty(),
+        )
+    }
+
+    private fun listRootNames(root: File): RootListing = runCatching {
+        RootListing(root.list()?.toList().orEmpty(), null)
+    }.getOrElse { error -> RootListing(emptyList(), error.message ?: error::class.java.simpleName) }
+
     private fun readModuleProperties(file: File): Map<String, String> {
-        if (!file.isFile) return emptyMap()
+        if (!safeIsFile(file)) return emptyMap()
         return runCatching {
-            file.useLines { lines ->
+            val readLines: ((Sequence<String>) -> Map<String, String>) = { lines ->
                 lines.map(String::trim)
                     .filter { line -> line.isNotEmpty() && !line.startsWith('#') && '=' in line }
                     .associate { line -> line.substringBefore('=').trim() to line.substringAfter('=').trim() }
             }
+            if (file is SuFile) {
+                file.useLines(block = readLines)
+            } else {
+                file.useLines(block = readLines)
+            }
         }.getOrDefault(emptyMap())
     }
+
+    private fun rootAccessFile(root: File): File = if (root.absolutePath.startsWith(DATA_ADB_ROOT)) {
+        SuFile(root.absolutePath)
+    } else {
+        root
+    }
+
+    private fun suChild(parent: File, child: String): File = if (parent is SuFile || parent.absolutePath.startsWith(DATA_ADB_ROOT)) {
+        SuFile(parent.absolutePath.trimEnd('/') + "/" + child)
+    } else {
+        File(parent, child)
+    }
+
+    private fun safeExists(file: File): Boolean = runCatching { file.exists() }.getOrDefault(false)
+
+    private fun safeIsDirectory(file: File): Boolean = runCatching { file.isDirectory }.getOrDefault(false)
+
+    private fun safeIsFile(file: File): Boolean = runCatching { file.isFile }.getOrDefault(false)
+
+    private fun safeCanRead(file: File): Boolean = runCatching { file.canRead() }.getOrDefault(false)
 
     @Suppress("DEPRECATION")
     private fun packageInfo(pm: PackageManager, packageName: String): PackageInfo? = runCatching {
@@ -173,7 +248,7 @@ class LsposedDebugProbe(
     }.getOrNull()
 
     @Suppress("DEPRECATION")
-    private fun resolveActivity(pm: PackageManager, intent: Intent): ResolveInfo? = runCatching {
+    private fun resolveFirstActivity(pm: PackageManager, intent: Intent): ResolveInfo? = runCatching {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             pm.resolveActivity(intent, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong()))
         } else {
@@ -181,12 +256,22 @@ class LsposedDebugProbe(
         }
     }.getOrNull()
 
+    @Suppress("DEPRECATION")
+    private fun installedPackages(pm: PackageManager): List<PackageInfo> = runCatching {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(0L))
+        } else {
+            pm.getInstalledPackages(0)
+        }
+    }.getOrDefault(emptyList())
+
     private data class ManagerPackageRow(
         val packageName: String,
         val installed: Boolean,
         val versionName: String,
         val launchable: Boolean,
         val categoryLaunchResolved: Boolean,
+        val actionLaunchResolved: Boolean,
         val resolvedActivity: String,
     )
 
@@ -196,6 +281,7 @@ class LsposedDebugProbe(
         val moduleId: String,
         val name: String,
         val version: String,
+        val modulePropReadable: Boolean,
         val disabled: Boolean,
         val removalPending: Boolean,
         val actionSh: Boolean,
@@ -206,14 +292,38 @@ class LsposedDebugProbe(
         val looksUsable: Boolean get() = !disabled && (actionSh || managerApk || daemonApk || lspdDex)
 
         fun toEvidence(): List<DebugEvidence> = listOf(
-            DebugEvidence("${if (active) "active" else "staged"}:$folder", "id=$moduleId, name=$name, version=${version.ifBlank { "unknown" }}"),
+            DebugEvidence("${if (active) "active" else "staged"}:$folder", "id=$moduleId, name=$name, version=${version.ifBlank { "unknown" }}, module.prop=$modulePropReadable"),
             DebugEvidence("$folder files", "action.sh=$actionSh, manager.apk=$managerApk, daemon.apk=$daemonApk, framework/lspd.dex=$lspdDex"),
             DebugEvidence("$folder markers", "disabled=$disabled, remove=$removalPending"),
+        )
+    }
+
+    private data class RootListing(
+        val names: List<String>,
+        val error: String?,
+    )
+
+    private data class ModuleRootSnapshot(
+        val label: String,
+        val path: String,
+        val exists: Boolean,
+        val directory: Boolean,
+        val readable: Boolean,
+        val childCount: Int,
+        val childrenPreview: List<String>,
+        val listingError: String,
+    ) {
+        fun toEvidence(): List<DebugEvidence> = listOf(
+            DebugEvidence(label, "path=$path, exists=$exists, directory=$directory, readable=$readable, children=$childCount"),
+            DebugEvidence("$label preview", childrenPreview.joinToString().ifBlank { "none" }),
+            DebugEvidence("$label list error", listingError.ifBlank { "none" }),
         )
     }
 
     private companion object {
         const val VECTOR_MANAGER_PACKAGE = "org.matrix.vector.manager"
         const val MODULE_PROP = "module.prop"
+        const val ROOT_PREVIEW_LIMIT = 30
+        const val DATA_ADB_ROOT = "/data/adb/"
     }
 }

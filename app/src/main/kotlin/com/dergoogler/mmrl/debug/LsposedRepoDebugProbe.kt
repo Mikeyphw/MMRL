@@ -30,6 +30,8 @@ class LsposedRepoDebugProbe(context: Context) {
                 else -> "Repository endpoint probe could not confirm a usable JSON response."
             },
             evidence = results.flatMap { it.toEvidence() } + listOf(
+                DebugEvidence("runtime fallback order", "modules.lsposed.org/modules.json -> backup.modules.lsposed.org/modules.json -> jsDelivr main-index fallback"),
+                DebugEvidence("jsDelivr main-index fallback", "last-resort generated gh-pages endpoint; backup.modules.lsposed.org is preferred after primary 403"),
                 DebugEvidence("github token", if (tokenStore.hasToken()) "configured" else "not configured"),
                 DebugEvidence("authorization policy", "GitHub token is only attached to github hosts; values are redacted"),
             ),

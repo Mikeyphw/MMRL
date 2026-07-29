@@ -49,6 +49,7 @@ class DebugWorkbenchContractTest {
         assertTrue(runner.contains("AshReXcueDebugProbe(activeModuleRoot, stagedModuleRoot).run()"))
         assertTrue(repo.contains("modules.lsposed.org/modules.json"))
         assertTrue(repo.contains("backup.modules.lsposed.org/modules.json"))
+        assertTrue(repo.contains("jsDelivr main-index fallback"))
         assertTrue(repo.contains("cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/modules.json"))
         assertTrue(ash.contains("ModuleIdentity::isAshReXcue"))
         assertTrue(ash.contains("ashrexcuebootloopprotector"))
