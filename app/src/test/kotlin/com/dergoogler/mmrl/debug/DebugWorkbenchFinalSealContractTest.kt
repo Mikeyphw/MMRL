@@ -67,7 +67,7 @@ class DebugWorkbenchFinalSealContractTest {
 
         assertTrue(actions.contains("LsposedRepository(context).lsposedManagerIntent()"))
         assertTrue(actions.contains("repository.providerRefreshPlan()"))
-        assertTrue(actions.contains("RepositoryService.start(context, interval = 1L)"))
+        assertTrue(actions.contains("RepositoryService.refreshOnce(context)"))
         assertTrue(history.contains("DEFAULT_MAX_SNAPSHOTS = 10"))
         assertTrue(guided.contains("DebugIssueFlow"))
 

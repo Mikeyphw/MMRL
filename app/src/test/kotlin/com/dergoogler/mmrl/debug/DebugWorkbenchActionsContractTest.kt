@@ -18,7 +18,7 @@ class DebugWorkbenchActionsContractTest {
         assertTrue(actions.contains("repository.providerRefreshPlan()"))
         assertTrue(actions.contains("LsposedProviderRefreshMode.ACTION_BRIDGE"))
         assertTrue(actions.contains("ActionActivity.start(context, ModId(moduleId))"))
-        assertTrue(actions.contains("RepositoryService.start(context, interval = 1L)"))
+        assertTrue(actions.contains("RepositoryService.refreshOnce(context)"))
         assertTrue(actions.contains("RepositoryService.stop(context)"))
         assertTrue(actions.contains("No arbitrary shell"))
         assertFalse(actions.contains("Runtime.getRuntime().exec"))
@@ -27,7 +27,7 @@ class DebugWorkbenchActionsContractTest {
         assertTrue(screen.contains("Guarded actions"))
         assertTrue(screen.contains("Open resolved manager"))
         assertTrue(screen.contains("Run provider action bridge"))
-        assertTrue(screen.contains("Start repository refresh"))
+        assertTrue(screen.contains("Run one-time repository refresh"))
         assertTrue(screen.contains("Stop repository refresh"))
         assertTrue(screen.contains("lastAction"))
     }

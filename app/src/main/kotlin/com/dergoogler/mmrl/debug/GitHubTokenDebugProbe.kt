@@ -27,7 +27,7 @@ class GitHubTokenDebugProbe(context: Context) {
             evidence = listOf(
                 DebugEvidence("encrypted record", hasCipherText.toString()),
                 DebugEvidence("decryptable", decrypted.toString()),
-                DebugEvidence("token preview", if (decrypted) "configured:${token!!.length} chars" else "none"),
+                DebugEvidence("token preview", if (decrypted) "configured:${token.orEmpty().length} chars" else "none"),
                 DebugEvidence("storage", "GitHubTokenStore / AndroidKeyStore"),
             ),
             remedies = if (hasCipherText && !decrypted) {

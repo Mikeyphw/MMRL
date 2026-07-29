@@ -36,7 +36,7 @@ class LsposedRepoNullScopeContractTest {
         val model = source("app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt")
         val probe = source("app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedDebugProbe.kt")
 
-        assertTrue(model.contains("@Json(name = \"scope\") val repositoryScope: List<String>? = null"))
+        assertTrue(model.contains("@param:Json(name = \"scope\") val repositoryScope: List<String>? = null"))
         assertTrue(model.contains("val scope: List<String>"))
         assertTrue(model.contains("get() = repositoryScope.orEmpty()"))
         assertTrue(model.contains("repositoryScope = detail.scope.ifEmpty { scope }"))

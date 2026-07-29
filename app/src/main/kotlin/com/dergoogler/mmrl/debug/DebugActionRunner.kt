@@ -48,10 +48,10 @@ class DebugActionRunner(private val context: Context) {
     }
 
     fun startRepositoryRefresh(): DebugActionResult = runCatching {
-        RepositoryService.start(context, interval = 1L)
+        RepositoryService.refreshOnce(context)
         DebugActionResult(
             status = DebugProbeStatus.PASS,
-            message = "Started repository refresh service; the foreground notification will report success/failure counts.",
+            message = "Started a one-time repository refresh. The foreground notification will close after the pass completes.",
         )
     }.getOrElse { error ->
         DebugActionResult(

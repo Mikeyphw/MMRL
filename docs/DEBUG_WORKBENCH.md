@@ -126,3 +126,9 @@ The hardening keeps the workbench read-only while making the missing layer visib
 - repository main-index fallback now uses `modules.lsposed.org` followed by `backup.modules.lsposed.org`, with the generated jsDelivr path kept only as a last-resort compatibility fallback and diagnosed when it returns 404.
 
 Phase 8 must not write module folders, alter LSPosed scope databases, mutate repository cache state, save/delete tokens, or run arbitrary shell input. It only changes read paths, diagnostics, and the repository fallback order for the Xposed/LSPosed main index.
+
+## Post Phase 8 hotfix: repository JSON and service lifecycle
+
+The Debug Workbench repository refresh action is intentionally one-shot. It must not leave the repository foreground service running after a manual troubleshooting pass. Persistent auto-refresh belongs to Settings > Updates only.
+
+The LSPosed repository parser is tolerant of nullable scope data and mixed `additionalAuthors` metadata so one malformed or schema-shifted repository entry cannot empty the whole LSPosed page.

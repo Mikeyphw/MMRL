@@ -17,6 +17,8 @@ import dev.dergoogler.mmrl.compat.worker.MMRLLifecycleService
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -29,12 +31,16 @@ class RepositoryService : MMRLLifecycleService() {
     override val channelId = NotificationUtils.CHANNEL_ID_REPOSITORY
     override val groupKey = "REPOSITORY_SERVICE_GROUP_KEY"
 
+    private var repositoryJob: Job? = null
+
     override fun onCreate() {
         super.onCreate()
         isActive = true
     }
 
     override fun onDestroy() {
+        repositoryJob?.cancel()
+        repositoryJob = null
         super.onDestroy()
         isActive = false
     }
@@ -54,24 +60,34 @@ class RepositoryService : MMRLLifecycleService() {
         setForeground()
 
         val interval = intent.getLongExtra(INTERVAL_KEY, 60000)
+        val oneShot = intent.getBooleanExtra(ONE_SHOT_KEY, false)
 
-        lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                while (isActive) {
-                    try {
-                        val repoDao = database.repoDao()
-                        val repos = repoDao.getAll()
-                        processRepos(repos)
-                    } catch (e: Exception) {
-                        sendFailureNotification()
+        repositoryJob?.cancel()
+        repositoryJob = lifecycleScope.launch {
+            suspend fun refreshRepositories() {
+                try {
+                    val repoDao = database.repoDao()
+                    val repos = repoDao.getAll()
+                    processRepos(repos)
+                } catch (e: Exception) {
+                    sendFailureNotification()
+                }
+            }
+
+            if (oneShot) {
+                refreshRepositories()
+                stopSelf(startId)
+            } else {
+                lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    while (currentCoroutineContext().isActive) {
+                        refreshRepositories()
+                        delay(interval.hours)
                     }
-
-                    delay(interval.hours)
                 }
             }
         }
 
-        return START_STICKY
+        return if (oneShot) START_NOT_STICKY else START_STICKY
     }
 
     private suspend fun processRepos(repos: List<Repo>) {
@@ -119,6 +135,7 @@ class RepositoryService : MMRLLifecycleService() {
         var isActive by mutableStateOf(false)
             private set
         private const val INTERVAL_KEY = "INTERVAL"
+        private const val ONE_SHOT_KEY = "ONE_SHOT"
 
         fun start(
             context: Context,
@@ -132,6 +149,22 @@ class RepositoryService : MMRLLifecycleService() {
                             RepositoryService::class.java.name,
                         )
                     putExtra(INTERVAL_KEY, interval)
+                }
+
+            context.startForegroundService(intent)
+        }
+
+
+        fun refreshOnce(context: Context) {
+            val intent =
+                Intent().apply {
+                    component =
+                        ComponentName(
+                            context.packageName,
+                            RepositoryService::class.java.name,
+                        )
+                    putExtra(INTERVAL_KEY, 1L)
+                    putExtra(ONE_SHOT_KEY, true)
                 }
 
             context.startForegroundService(intent)

@@ -21,10 +21,12 @@ import com.dergoogler.mmrl.ash.model.OperationResult
 import com.dergoogler.mmrl.ash.model.PendingSetting
 import com.dergoogler.mmrl.ash.model.QuarantineItem
 import com.dergoogler.mmrl.ash.model.SettingItem
+import com.dergoogler.mmrl.ash.root.AshModuleLocator
 import com.dergoogler.mmrl.ash.root.RootServiceClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,12 +38,46 @@ class AshRepository @Inject constructor(
     private val activityDao: ActivityDao,
 ) {
     suspend fun rootAvailable(): Boolean = rootClient.rootAvailable()
-    suspend fun moduleStateRaw(): String = rootClient.moduleState()
+    suspend fun moduleStateRaw(): String {
+        val rootServiceRaw = rootClient.moduleState()
+        val rootServiceInstalled = runCatching { parse(rootServiceRaw).optBoolean("installed") }.getOrDefault(false)
+        if (rootServiceInstalled) return rootServiceRaw
+
+        val locatorRaw = locatorModuleStateRaw()
+        val locatorInstalled = runCatching { parse(locatorRaw).optBoolean("installed") }.getOrDefault(false)
+        return if (locatorInstalled) locatorRaw else rootServiceRaw
+    }
     suspend fun snapshotRaw(activityLimit: Int = 150): String = rootClient.snapshot(activityLimit)
     suspend fun releaseGateRaw(): String = rootClient.releaseGate()
 
     fun releaseRootConnection() {
         rootClient.release()
+    }
+
+    private fun locatorModuleStateRaw(): String {
+        val inspection = AshModuleLocator().inspect()
+        val properties = inspection.properties
+        val control = inspection.controlScript
+        val jq = inspection.directory?.let { File(it, "system/bin/jq") }
+        return JSONObject()
+            .put("ok", true)
+            .put("installed", inspection.installed)
+            .put("active", inspection.active)
+            .put("folder", inspection.folder)
+            .put("id", properties["id"].orEmpty())
+            .put("name", properties["name"].orEmpty())
+            .put("version", properties["version"].orEmpty())
+            .put("versionCode", properties["versionCode"]?.toIntOrNull() ?: 0)
+            .put("source", "${inspection.source}:locator-fallback")
+            .put("controlAvailable", control != null)
+            .put("disabled", inspection.disabled)
+            .put("removalPending", inspection.removalPending)
+            .put("updatePending", inspection.updatePending)
+            .put("jqPresent", jq?.isFile == true)
+            .put("jqExecutable", jq?.canExecute() == true)
+            .put("jqRepaired", false)
+            .put("jqRepairMessage", "Module state came from the root-aware locator fallback.")
+            .toString()
     }
 
     fun parseModuleInstallation(raw: String): AshModuleInstallation {

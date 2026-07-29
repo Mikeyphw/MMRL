@@ -137,7 +137,7 @@ fun DebugWorkbenchScreen() {
             ButtonItem(
                 onClick = { lastAction = actionRunner.startRepositoryRefresh() },
             ) {
-                Title("Start repository refresh")
+                Title("Run one-time repository refresh")
                 Description("Starts the existing repository foreground service so repo/cache failures are visible in notifications and logs.")
             }
 
