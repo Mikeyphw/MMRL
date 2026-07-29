@@ -22,7 +22,7 @@ data class LsposedRepoModule(
     val snapshotReleases: List<LsposedRelease> = emptyList(),
     val readme: String? = null,
     val summary: String? = null,
-    val scope: List<String> = emptyList(),
+    @Json(name = "scope") val repositoryScope: List<String>? = null,
     val sourceUrl: String? = null,
     val hide: Boolean? = null,
     val additionalAuthors: List<String>? = null,
@@ -31,6 +31,9 @@ data class LsposedRepoModule(
     val stargazerCount: Int? = null,
 ) {
     val packageName: String get() = name
+
+    val scope: List<String>
+        get() = repositoryScope.orEmpty()
 
     val displayName: String
         get() = summary?.takeIf { it.isNotBlank() }
@@ -63,7 +66,7 @@ data class LsposedRepoModule(
             snapshotReleases = detail.snapshotReleases.ifEmpty { snapshotReleases },
             readme = detail.readme ?: readme,
             summary = detail.summary ?: summary,
-            scope = detail.scope.ifEmpty { scope },
+            repositoryScope = detail.scope.ifEmpty { scope },
             sourceUrl = detail.sourceUrl ?: sourceUrl,
             hide = detail.hide ?: hide,
             additionalAuthors = detail.additionalAuthors ?: additionalAuthors,

@@ -19,6 +19,9 @@ class LsposedDebugProbe(
         val rows = inspectManagerPackages()
         val installed = rows.filter { it.installed }
         val launchable = installed.filter { it.launchable || it.categoryLaunchResolved || it.actionLaunchResolved }
+        val providerModules = inspectProviderModules()
+        val providerBridgeAvailable = providerModules.any { module -> module.active && !module.disabled && module.actionSh }
+        val bundledProviderManagerAvailable = providerModules.any { module -> module.active && !module.disabled && module.managerApk }
         val visibleMatches = visibleManagerLikePackages(context.packageManager)
         return DebugProbeResult(
             id = "lsposed-manager-packages",
@@ -27,11 +30,13 @@ class LsposedDebugProbe(
             status = when {
                 launchable.isNotEmpty() -> DebugProbeStatus.PASS
                 installed.isNotEmpty() -> DebugProbeStatus.WARN
+                providerBridgeAvailable -> DebugProbeStatus.WARN
                 else -> DebugProbeStatus.FAIL
             },
             summary = when {
                 launchable.isNotEmpty() -> "${launchable.size} manager package(s) are installed and launchable."
                 installed.isNotEmpty() -> "Manager package is installed but MMRL could not resolve a launcher, category, or action intent."
+                providerBridgeAvailable -> "No installed manager package is visible, but the active provider action bridge can open the bundled manager."
                 else -> "No known LSPosed/libxposed/Vector manager package is visible to MMRL."
             },
             evidence = rows.flatMap { row ->
@@ -45,9 +50,12 @@ class LsposedDebugProbe(
             } + listOf(
                 DebugEvidence("Vector manager package", VECTOR_MANAGER_PACKAGE),
                 DebugEvidence("visible manager-like package scan", "count=${visibleMatches.size}, matches=${visibleMatches.joinToString().ifBlank { "none" }}"),
+                DebugEvidence("provider action bridge", "available=$providerBridgeAvailable, bundledManagerApk=$bundledProviderManagerAvailable"),
+                DebugEvidence("Vector action bridge", "Vector can expose its manager through com.android.shell/.BugreportWarningActivity even when org.matrix.vector.manager is not installed as a normal package"),
                 DebugEvidence("package visibility policy", "QUERY_ALL_PACKAGES declared; explicit Vector manager/daemon queries declared"),
             ),
             remedies = when {
+                installed.isEmpty() && providerBridgeAvailable -> listOf("Use Open LSPosed or Run provider action bridge. Vector may not install org.matrix.vector.manager as a normal package; its action.sh launches the manager through com.android.shell.")
                 installed.isEmpty() -> listOf("If the manager is installed, check whether it is installed for another Android user/profile or hidden from this app profile.")
                 launchable.isEmpty() -> listOf("The package is visible, but its launcher/category/action intent changed. Share this debug report so MMRL can add the new action/category.")
                 else -> emptyList()

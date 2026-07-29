@@ -71,3 +71,17 @@ Phase 8 is read-only except for normal network repository reads. It must not:
 - expose Authorization headers or cookies;
 - run arbitrary shell input;
 - expand support bundles with unbounded root command output.
+
+## Phase 8 follow-up: null scope and Vector bridge reporting
+
+The LSPosed repository index may expose `scope: null` on individual module records.
+MMRL treats null and missing repository scope fields as an empty scope list so the
+entire LSPosed module list does not fail with a Moshi non-null decoding error.
+This does not grant or edit LSPosed runtime scopes; it only prevents repository
+metadata from blocking locally detected Xposed APK modules.
+
+Vector can also expose its manager through the provider `action.sh` bridge instead
+of an Android package that PackageManager can see as `org.matrix.vector.manager`.
+When the installed manager package is invisible but the active provider action
+bridge is present, Debug Workbench now reports that bridge as the available path
+rather than only failing the installed-manager package probe.
