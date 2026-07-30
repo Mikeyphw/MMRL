@@ -1,0 +1,131 @@
+{
+  "applied_at": "2026-07-30T15:40:59.592280Z",
+  "artifact": "/home/mike/Downloads/mmrl_github_artifact_sources_phase9_9b_overlay.zip",
+  "artifact_name": "mmrl_github_artifact_sources_phase9_9b_overlay.zip",
+  "type": "overlay",
+  "sha256": "89799adc56cd1b14c8f4c9180fb5db087f513a262c6df03da02f2023e720cc0a",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add GitHub artifact resolver and source rules",
+  "commit_hash": "",
+  "file_count": 12,
+  "change_counts": {
+    "add": 3,
+    "modify": 9
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_github_artifact_sources_phase9_9b_overlay",
+    "description": "Phase 9 + 9B: content-shape aware GitHub artifact resolver plus editable saved GitHub module source rules for release/nightly, regex filters, preferred variants, branch/workflow filters, and artifact strategy selection.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubArtifactArchivePolicy.kt",
+          "action": "modify",
+          "sha256": "f53e22bc9dfa41a9cea63ec31d459464b865e7cfde1f97fbfa40cd4720a111d4",
+          "size": 13332,
+          "source_sha256": "9753a9133000e9061d968e09b06b9fcf99f863f1c10accd81319f5d92969006a"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubModuleResolver.kt",
+          "action": "modify",
+          "sha256": "0c16812636cbe99ff68d5ebd780986a2a3ff5dcd5d67bc762b5dac44d0c2d641",
+          "size": 17242,
+          "source_sha256": "499abf913124f8a99beff6780c9219bf0f9b2393c92246f3752602f15ff2e27c"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubSourceSpec.kt",
+          "action": "modify",
+          "sha256": "5f8eb769ebd3d819b1fc084a7edf8d15ed373a20c0fd0b067691e84bf7a55426",
+          "size": 5506,
+          "source_sha256": "4f2c685c171c4a9947c612a4e6219ab9867085b91579a4c419725a06e9000290"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/RepositorySourceLoader.kt",
+          "action": "modify",
+          "sha256": "e37e6966c4f48031386e1c3b28fcc5e06f5bbb7d58e4120f864f912e943f2a40",
+          "size": 22611,
+          "source_sha256": "e1074aa5a3070cc5993f2ba649bb66138058217ca271be85f7c3540f30d6fa2e"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadService.kt",
+          "action": "modify",
+          "sha256": "b21f0eabcc7a5d17e9dd51aeb115a9c8e0708569f2898560587e37b540e4c3bb",
+          "size": 27244,
+          "source_sha256": "9341cf4a054185a9cd07ca10f19d9930fc7c5a894370faf925872c290d6cf744"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "427c2134771dec55ac5064274b5296934376693c6b9fae401250f3bb1896ad80",
+          "size": 61181,
+          "source_sha256": "216c211309f5454dd2fbffc2694473b569768f488422f245b8ea08ee6d3338fd"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+          "action": "modify",
+          "sha256": "ee7b7558fb7a0cfa01e00f7f7d2daec3b7ccbfd082797bf5ebf6a4e296e908d5",
+          "size": 36113,
+          "source_sha256": "fc913b6a48d89516b5f58e787ab48d6fa3ebcd0534e40f04933b6068a88d17c4"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+          "action": "modify",
+          "sha256": "61d3cd8ced7196fb9315eb6da8d08de2795a9c4be85e61f69f98bea37bb75caa",
+          "size": 39876,
+          "source_sha256": "6b7a4e145fba84061b2245757445651ccb3d7d8ff0c84c39a4f68e02d5553256"
+        },
+        {
+          "path": "app/src/main/res/values/strings.xml",
+          "action": "modify",
+          "sha256": "55271b71ddb2346f6d1a83d0899c5c578ddf5092b6c6273c1ef47f3d2d546e18",
+          "size": 109430,
+          "source_sha256": "bf8d230e0b001f3cafbf17026bf99433bd11763ec67b8a19b48f89f148cc9db1"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/github/GitHubArtifactContentShapeTest.kt",
+          "action": "add",
+          "sha256": "243fea6ec16d162a33cde5a59715f722fada6e4375773058b374b14ef107359a",
+          "size": 3983
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/github/GitHubSourceRulesContractTest.kt",
+          "action": "add",
+          "sha256": "8e1958c9b62ef0f4402bf3fdd7f5183334252e15ce13719db04f80b68a23cf72",
+          "size": 2277
+        },
+        {
+          "path": "docs/GITHUB_MODULE_SOURCES_PHASE9.md",
+          "action": "add",
+          "sha256": "185fd10f37aa215dc6e3fb1206e36dd916c56f1c5a1c636bc89a7598c0372323",
+          "size": 2088
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add GitHub artifact resolver and source rules"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true,
+      "notes": [
+        "Local sandbox could not run Gradle because the wrapper needs gradle-9.5.0 from services.gradle.org and outbound network is unavailable. Pure Kotlin source syntax for GitHubSourceSpec and GitHubArtifactArchivePolicy was checked with kotlinc stubs."
+      ]
+    }
+  },
+  "history_id": "04fef60d475f43f0af9eefc0641e2216"
+}

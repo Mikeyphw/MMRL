@@ -11,10 +11,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.Request
 import okhttp3.Response
 import java.io.File
-import java.io.IOException
 import java.net.URI
 import java.util.Locale
-import java.util.zip.ZipFile
 import kotlin.math.absoluteValue
 
 enum class GitHubSourceMode {
@@ -28,6 +26,13 @@ data class GitHubModuleRequest(
     val includePreReleases: Boolean,
     val regex: String,
     val token: String?,
+    val assetRegex: String = "",
+    val artifactRegex: String = "",
+    val rejectRegex: String = "",
+    val preferredVariantRegex: String = "",
+    val branchRegex: String = "",
+    val workflowRegex: String = "",
+    val artifactStrategy: GitHubArtifactStrategy = GitHubArtifactStrategy.AUTO,
 )
 
 data class GitHubCandidate(
@@ -43,6 +48,8 @@ data class GitHubCandidate(
     val mode: GitHubSourceMode,
     val score: Int,
     val nestedZipName: String? = null,
+    val artifactStrategy: GitHubArtifactStrategy = GitHubArtifactStrategy.AUTO,
+    val diagnostics: String? = null,
 )
 
 data class GitHubResolveResult(
@@ -63,23 +70,17 @@ class GitHubModuleResolver {
     suspend fun resolve(request: GitHubModuleRequest): GitHubResolveResult =
         withContext(Dispatchers.IO) {
             val repo = parseRepository(request.repoUrl)
-            val regex = request.regex.trim().takeIf(String::isNotBlank)?.let {
-                runCatching { Regex(it, RegexOption.IGNORE_CASE) }
-                    .getOrElse { error("Invalid regex: ${it.message}") }
-            }
             val candidates =
                 when (request.mode) {
-                    GitHubSourceMode.RELEASE -> resolveReleases(repo, request.includePreReleases, request.token)
-                    GitHubSourceMode.NIGHTLY -> resolveNightly(repo, request.token)
-                }.filter { candidate ->
-                    regex?.containsMatchIn(candidate.name) ?: true
+                    GitHubSourceMode.RELEASE -> resolveReleases(repo, request.includePreReleases, request.token, request)
+                    GitHubSourceMode.NIGHTLY -> resolveNightly(repo, request.token, request)
                 }.sortedWith(compareByDescending<GitHubCandidate> { it.score }.thenByDescending { it.updatedAt.orEmpty() })
 
             require(candidates.isNotEmpty()) {
-                if (regex == null) {
-                    "No installable ZIP files found"
+                if (request.hasAnyMatcher()) {
+                    "No GitHub files matched the saved source rules"
                 } else {
-                    "No files matched the regex"
+                    "No installable GitHub files found"
                 }
             }
 
@@ -106,31 +107,37 @@ class GitHubModuleResolver {
             onProgress = onProgress,
         )
 
-        if (candidate.mode == GitHubSourceMode.RELEASE && candidate.nestedZipName == null) {
-            downloaded
-        } else {
-            extractNestedZip(
-                archive = downloaded,
-                targetDirectory = root,
-                preferredEntryName = candidate.nestedZipName,
-            )
-        }
+        val materialized = GitHubArtifactArchivePolicy.materializeModuleZip(
+            archive = downloaded,
+            targetDirectory = root,
+            outputNamePrefix = candidate.id,
+            preferredEntryName = candidate.nestedZipName,
+            forcedStrategy = candidate.artifactStrategy,
+            score = ::assetScore,
+        )
+        materialized.file
     }
 
     private fun resolveReleases(
         repo: GitHubRepository,
         includePreReleases: Boolean,
         token: String?,
+        request: GitHubModuleRequest,
     ): List<GitHubCandidate> {
         val releases = releasesAdapter.fromJson(apiText(repo, "releases?per_page=30", token)).orEmpty()
         val release =
             releases.firstOrNull { !it.draft && (includePreReleases || !it.prerelease) }
                 ?: error("No matching GitHub release found")
 
+        val nameRule = request.assetNameRegex()
+        val rejectRule = request.rejectNameRegex()
+        val preferredRule = request.preferredNameRegex()
         return release.assets
             .filter { it.name.endsWith(".zip", ignoreCase = true) }
+            .filter { asset -> nameRule?.containsMatchIn(asset.name) ?: true }
+            .filterNot { asset -> rejectRule?.containsMatchIn(asset.name) ?: false }
             .map { asset ->
-                val score = assetScore(asset.name)
+                val score = assetScore(asset.name) + if (preferredRule?.containsMatchIn(asset.name) == true) 240 else 0
                 GitHubCandidate(
                     id = "release-${release.id}-${asset.id}",
                     name = asset.name,
@@ -143,6 +150,8 @@ class GitHubModuleResolver {
                     updatedAt = asset.updatedAt ?: release.publishedAt,
                     mode = GitHubSourceMode.RELEASE,
                     score = score,
+                    artifactStrategy = request.artifactStrategy,
+                    diagnostics = "release asset matched saved source rules; strategy=${request.artifactStrategy.queryValue}",
                 )
             }
     }
@@ -150,13 +159,23 @@ class GitHubModuleResolver {
     private fun resolveNightly(
         repo: GitHubRepository,
         token: String?,
+        request: GitHubModuleRequest,
     ): List<GitHubCandidate> {
         val runs =
             runsAdapter
                 .fromJson(apiText(repo, "actions/runs?status=success&per_page=20", token))
                 ?.workflowRuns
                 .orEmpty()
+                .filter { run -> request.branchNameRegex()?.containsMatchIn(run.headBranch.orEmpty()) ?: true }
+                .filter { run ->
+                    val workflow = listOf(run.name, run.path.orEmpty()).joinToString(" ")
+                    request.workflowNameRegex()?.containsMatchIn(workflow) ?: true
+                }
                 .sortedByDescending { it.createdAt.orEmpty() }
+
+        val artifactRule = request.artifactNameRegex()
+        val rejectRule = request.rejectNameRegex()
+        val preferredRule = request.preferredNameRegex()
 
         runs.forEach { run ->
             val artifacts =
@@ -165,6 +184,8 @@ class GitHubModuleResolver {
                     ?.artifacts
                     .orEmpty()
                     .filter { !it.expired }
+                    .filter { artifact -> artifactRule?.containsMatchIn(artifact.name) ?: true }
+                    .filterNot { artifact -> rejectRule?.containsMatchIn(artifact.name) ?: false }
             if (artifacts.isNotEmpty()) {
                 return artifacts.map { artifact ->
                     GitHubCandidate(
@@ -178,40 +199,15 @@ class GitHubModuleResolver {
                         size = artifact.sizeInBytes,
                         updatedAt = artifact.updatedAt ?: run.updatedAt,
                         mode = GitHubSourceMode.NIGHTLY,
-                        score = assetScore(artifact.name),
+                        score = assetScore(artifact.name) + if (preferredRule?.containsMatchIn(artifact.name) == true) 240 else 0,
+                        artifactStrategy = request.artifactStrategy,
+                        diagnostics = "nightly artifact matched saved source rules; strategy=${request.artifactStrategy.queryValue}; run=${run.name}; branch=${run.headBranch.orEmpty()}",
                     )
                 }
             }
         }
 
-        error("No successful GitHub Actions run with artifacts found")
-    }
-
-    private fun extractNestedZip(
-        archive: File,
-        targetDirectory: File,
-        preferredEntryName: String?,
-    ): File {
-        ZipFile(archive).use { zip ->
-            val entries =
-                zip
-                    .entries()
-                    .asSequence()
-                    .filter { !it.isDirectory && it.name.endsWith(".zip", ignoreCase = true) }
-                    .toList()
-            require(entries.isNotEmpty()) { "GitHub Actions artifact does not contain a module ZIP" }
-            val entry =
-                preferredEntryName?.let { preferred -> entries.firstOrNull { it.name == preferred } }
-                    ?: entries.maxBy { assetScore(it.name) }
-            val output = File(targetDirectory, safeFileName(entry.name.substringAfterLast('/')))
-            zip.getInputStream(entry).buffered().use { input ->
-                output.outputStream().buffered().use { outputStream ->
-                    input.copyTo(outputStream)
-                }
-            }
-            require(output.isFile && output.length() > 0L) { "Extracted module ZIP is empty" }
-            return output
-        }
+        error("No successful GitHub Actions run with artifacts matching saved source rules found")
     }
 
     private fun download(
@@ -243,6 +239,35 @@ class GitHubModuleResolver {
             }
         }
         require(destination.isFile && destination.length() > 0L) { "Downloaded file is empty" }
+    }
+
+    private fun GitHubModuleRequest.hasAnyMatcher(): Boolean =
+        listOf(regex, assetRegex, artifactRegex, rejectRegex, preferredVariantRegex, branchRegex, workflowRegex)
+            .any { it.isNotBlank() }
+
+    private fun GitHubModuleRequest.assetNameRegex(): Regex? =
+        compileRule(assetRegex.ifBlank { regex }, "asset regex")
+
+    private fun GitHubModuleRequest.artifactNameRegex(): Regex? =
+        compileRule(artifactRegex.ifBlank { regex }, "artifact regex")
+
+    private fun GitHubModuleRequest.rejectNameRegex(): Regex? =
+        compileRule(rejectRegex, "reject regex")
+
+    private fun GitHubModuleRequest.preferredNameRegex(): Regex? =
+        compileRule(preferredVariantRegex, "preferred variant regex")
+
+    private fun GitHubModuleRequest.branchNameRegex(): Regex? =
+        compileRule(branchRegex, "branch regex")
+
+    private fun GitHubModuleRequest.workflowNameRegex(): Regex? =
+        compileRule(workflowRegex, "workflow regex")
+
+    private fun compileRule(value: String, label: String): Regex? {
+        val clean = value.trim().takeIf(String::isNotBlank) ?: return null
+        require(clean.length <= 240) { "$label is too long" }
+        return runCatching { Regex(clean, RegexOption.IGNORE_CASE) }
+            .getOrElse { error("Invalid $label: ${it.message}") }
     }
 
     private fun apiText(

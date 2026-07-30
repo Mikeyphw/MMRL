@@ -828,7 +828,19 @@ class ModulesViewModel
             mode: GitHubSourceMode,
         ) {
             val current = GitHubSourceSpec.fromSourceUrl(source.repoUrl) ?: return
-            val nextSourceUrl = GitHubSourceSpec(current.owner, current.repository, mode).sourceUrl
+            setModuleSourceRules(
+                module = module,
+                source = source,
+                spec = current.withMode(mode),
+            )
+        }
+
+        fun setModuleSourceRules(
+            module: LocalModule,
+            source: LocalModuleSource,
+            spec: GitHubSourceSpec,
+        ) {
+            val nextSourceUrl = spec.sourceUrl
             viewModelScope.launch {
                 val repo = nextSourceUrl.toRepo()
                 localRepository.insertRepo(repo)
@@ -836,17 +848,30 @@ class ModulesViewModel
                     source.copy(
                         id = module.id.id,
                         repoUrl = nextSourceUrl,
-                        mode = mode.name,
+                        mode = spec.mode.name,
                         updatedAt = System.currentTimeMillis(),
                     ),
                 )
                 modulesRepository.getRepo(repo)
                 versionItemCache.remove(module.id)
                 ashMessagesFlow.tryEmit(
-                    "${module.name} source switched to ${mode.sourceLabel()}",
+                    "${module.name} source switched to ${spec.mode.sourceLabel()} (${spec.ruleSummary()})",
                 )
             }
         }
+
+        private fun GitHubSourceSpec.ruleSummary(): String =
+            listOf(
+                "regex" to regex,
+                "assetRegex" to assetRegex,
+                "artifactRegex" to artifactRegex,
+                "rejectRegex" to rejectRegex,
+                "preferredVariantRegex" to preferredVariantRegex,
+                "branchRegex" to branchRegex,
+                "workflowRegex" to workflowRegex,
+            ).filter { (_, value) -> value.isNotBlank() }
+                .joinToString { (key, value) -> "$key=$value" }
+                .ifBlank { "auto; strategy=${artifactStrategy.queryValue}" }
 
         fun setUpdateIgnored(moduleId: String, ignored: Boolean) {
             viewModelScope.launch {

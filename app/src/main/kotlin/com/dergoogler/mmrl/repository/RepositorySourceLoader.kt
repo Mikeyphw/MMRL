@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.repository
 
 import com.dergoogler.mmrl.app.moshi
+import com.dergoogler.mmrl.github.GitHubArtifactStrategy
 import com.dergoogler.mmrl.github.GitHubModuleRequest
 import com.dergoogler.mmrl.github.GitHubModuleResolver
 import com.dergoogler.mmrl.github.GitHubSourceMode
@@ -81,6 +82,13 @@ internal object RepositorySourceLoader {
                     includePreReleases = options.includePreReleases,
                     regex = options.regex,
                     token = githubToken,
+                    assetRegex = options.assetRegex,
+                    artifactRegex = options.artifactRegex,
+                    rejectRegex = options.rejectRegex,
+                    preferredVariantRegex = options.preferredVariantRegex,
+                    branchRegex = options.branchRegex,
+                    workflowRegex = options.workflowRegex,
+                    artifactStrategy = options.artifactStrategy,
                 ),
             )
         val candidate = result.recommended ?: error("GitHub repository has no installable files")
@@ -147,7 +155,7 @@ internal object RepositorySourceLoader {
                     when (options.mode) {
                         GitHubSourceMode.RELEASE -> "GitHub releases."
                         GitHubSourceMode.NIGHTLY -> "the latest successful Actions artifact through the GitHub API."
-                    },
+                    } + " Strategy=${options.artifactStrategy.queryValue}; rules=${options.ruleSummary()}.",
             metadata =
                 ModulesJsonMetadata(
                     version = ModulesJson.CURRENT_VERSION,
@@ -451,6 +459,13 @@ internal object RepositorySourceLoader {
             mode = mode,
             includePreReleases = parameters["includePreReleases"].equals("true", ignoreCase = true),
             regex = parameters["regex"].orEmpty(),
+            assetRegex = parameters["assetRegex"].orEmpty(),
+            artifactRegex = parameters["artifactRegex"].orEmpty(),
+            rejectRegex = parameters["rejectRegex"].orEmpty(),
+            preferredVariantRegex = parameters["preferredVariantRegex"].orEmpty(),
+            branchRegex = parameters["branchRegex"].orEmpty(),
+            workflowRegex = parameters["workflowRegex"].orEmpty(),
+            artifactStrategy = GitHubArtifactStrategy.fromQuery(parameters["artifactStrategy"]),
         )
     }
 
@@ -541,5 +556,25 @@ internal object RepositorySourceLoader {
         val mode: GitHubSourceMode,
         val includePreReleases: Boolean,
         val regex: String,
-    )
+        val assetRegex: String,
+        val artifactRegex: String,
+        val rejectRegex: String,
+        val preferredVariantRegex: String,
+        val branchRegex: String,
+        val workflowRegex: String,
+        val artifactStrategy: GitHubArtifactStrategy,
+    ) {
+        fun ruleSummary(): String =
+            listOf(
+                "regex" to regex,
+                "assetRegex" to assetRegex,
+                "artifactRegex" to artifactRegex,
+                "rejectRegex" to rejectRegex,
+                "preferredVariantRegex" to preferredVariantRegex,
+                "branchRegex" to branchRegex,
+                "workflowRegex" to workflowRegex,
+            ).filter { (_, value) -> value.isNotBlank() }
+                .joinToString { (key, value) -> "$key=$value" }
+                .ifBlank { "auto" }
+    }
 }

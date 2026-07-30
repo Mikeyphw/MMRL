@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -59,6 +62,7 @@ import com.dergoogler.mmrl.ext.isScrollingUp
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.rememberSaveableLazyListState
 import com.dergoogler.mmrl.ext.systemBarsPaddingEnd
+import com.dergoogler.mmrl.github.GitHubArtifactStrategy
 import com.dergoogler.mmrl.github.GitHubSourceMode
 import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.model.local.BulkModule
@@ -448,13 +452,41 @@ private fun GitHubSourceAddDialog(
     var mode by remember { mutableStateOf(GitHubSourceMode.RELEASE) }
     var includePreReleases by remember { mutableStateOf(false) }
     var regex by remember { mutableStateOf("") }
+    var assetRegex by remember { mutableStateOf("") }
+    var artifactRegex by remember { mutableStateOf("") }
+    var rejectRegex by remember { mutableStateOf("") }
+    var preferredVariantRegex by remember { mutableStateOf("") }
+    var branchRegex by remember { mutableStateOf("") }
+    var workflowRegex by remember { mutableStateOf("") }
+    var artifactStrategy by remember { mutableStateOf(GitHubArtifactStrategy.AUTO) }
     var token by remember { mutableStateOf("") }
     var hasToken by remember { mutableStateOf(tokenStore.hasToken()) }
     var error by remember { mutableStateOf<String?>(null) }
 
     val add: () -> Unit = {
         runCatching {
-            buildGitHubSourceUrl(repoUrl, mode, includePreReleases, regex)
+            validateGitHubSourceRules(
+                regex = regex,
+                assetRegex = assetRegex,
+                artifactRegex = artifactRegex,
+                rejectRegex = rejectRegex,
+                preferredVariantRegex = preferredVariantRegex,
+                branchRegex = branchRegex,
+                workflowRegex = workflowRegex,
+            )
+            buildGitHubSourceUrl(
+                rawUrl = repoUrl,
+                mode = mode,
+                includePreReleases = includePreReleases,
+                regex = regex,
+                assetRegex = assetRegex,
+                artifactRegex = artifactRegex,
+                rejectRegex = rejectRegex,
+                preferredVariantRegex = preferredVariantRegex,
+                branchRegex = branchRegex,
+                workflowRegex = workflowRegex,
+                artifactStrategy = artifactStrategy,
+            )
         }.onSuccess { sourceUrl ->
             if (token.isNotBlank()) {
                 tokenStore.saveToken(token)
@@ -471,7 +503,10 @@ private fun GitHubSourceAddDialog(
         onDismissRequest = onClose,
         title = { Text(stringResource(R.string.github_source_add_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     value = repoUrl,
@@ -523,12 +558,106 @@ private fun GitHubSourceAddDialog(
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     value = regex,
-                    onValueChange = { regex = it },
+                    onValueChange = {
+                        regex = it
+                        error = null
+                    },
                     label = { Text(stringResource(R.string.github_source_file_regex)) },
                     placeholder = { Text(stringResource(R.string.github_source_file_regex_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = if (mode == GitHubSourceMode.RELEASE) assetRegex else artifactRegex,
+                    onValueChange = {
+                        if (mode == GitHubSourceMode.RELEASE) assetRegex = it else artifactRegex = it
+                        error = null
+                    },
+                    label = { Text(stringResource(if (mode == GitHubSourceMode.RELEASE) R.string.github_source_asset_regex else R.string.github_source_artifact_regex)) },
+                    placeholder = { Text(stringResource(if (mode == GitHubSourceMode.RELEASE) R.string.github_source_asset_regex_placeholder else R.string.github_source_artifact_regex_placeholder)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = rejectRegex,
+                    onValueChange = {
+                        rejectRegex = it
+                        error = null
+                    },
+                    label = { Text(stringResource(R.string.github_source_reject_regex)) },
+                    placeholder = { Text(stringResource(R.string.github_source_reject_regex_placeholder)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = preferredVariantRegex,
+                    onValueChange = {
+                        preferredVariantRegex = it
+                        error = null
+                    },
+                    label = { Text(stringResource(R.string.github_source_preferred_variant_regex)) },
+                    placeholder = { Text(stringResource(R.string.github_source_preferred_variant_regex_placeholder)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                )
+                if (mode == GitHubSourceMode.NIGHTLY) {
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        value = branchRegex,
+                        onValueChange = {
+                            branchRegex = it
+                            error = null
+                        },
+                        label = { Text(stringResource(R.string.github_source_branch_regex)) },
+                        placeholder = { Text(stringResource(R.string.github_source_branch_regex_placeholder)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                    )
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        value = workflowRegex,
+                        onValueChange = {
+                            workflowRegex = it
+                            error = null
+                        },
+                        label = { Text(stringResource(R.string.github_source_workflow_regex)) },
+                        placeholder = { Text(stringResource(R.string.github_source_workflow_regex_placeholder)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.github_source_artifact_strategy),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        GitHubArtifactStrategy.AUTO,
+                        GitHubArtifactStrategy.DIRECT_MODULE_ZIP,
+                        GitHubArtifactStrategy.NESTED_ZIP,
+                    ).forEach { strategy ->
+                        FilterChip(
+                            selected = artifactStrategy == strategy,
+                            onClick = { artifactStrategy = strategy },
+                            label = { Text(strategy.displayLabel()) },
+                        )
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        GitHubArtifactStrategy.EXTRACTED_MODULE_LAYOUT,
+                        GitHubArtifactStrategy.SINGLE_FOLDER_MODULE_LAYOUT,
+                    ).forEach { strategy ->
+                        FilterChip(
+                            selected = artifactStrategy == strategy,
+                            onClick = { artifactStrategy = strategy },
+                            label = { Text(strategy.displayLabel()) },
+                        )
+                    }
+                }
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     value = token,
@@ -656,6 +785,13 @@ private fun buildGitHubSourceUrl(
     mode: GitHubSourceMode,
     includePreReleases: Boolean,
     regex: String,
+    assetRegex: String,
+    artifactRegex: String,
+    rejectRegex: String,
+    preferredVariantRegex: String,
+    branchRegex: String,
+    workflowRegex: String,
+    artifactStrategy: GitHubArtifactStrategy,
 ): String {
     val uri = URI(rawUrl.trim().trimEnd('/').removeSuffix(".git"))
     val parts = uri.path.trim('/').split('/').filter(String::isNotBlank)
@@ -673,11 +809,59 @@ private fun buildGitHubSourceUrl(
         buildList {
             add("mmrlSource=${source.mode.queryValue()}")
             if (source.mode == GitHubSourceMode.RELEASE && includePreReleases) add("includePreReleases=true")
-            effectiveRegex?.let {
-                add("regex=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}")
+            effectiveRegex?.let { add("regex=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}") }
+            addEncoded("assetRegex", assetRegex)
+            addEncoded("artifactRegex", artifactRegex)
+            addEncoded("rejectRegex", rejectRegex)
+            addEncoded("preferredVariantRegex", preferredVariantRegex)
+            addEncoded("branchRegex", branchRegex)
+            addEncoded("workflowRegex", workflowRegex)
+            if (artifactStrategy != GitHubArtifactStrategy.AUTO) {
+                add("artifactStrategy=${artifactStrategy.queryValue}")
             }
         }.joinToString("&")
     return "https://github.com/${source.owner}/${source.repository}?$query"
+}
+
+@Composable
+private fun GitHubArtifactStrategy.displayLabel(): String =
+    when (this) {
+        GitHubArtifactStrategy.AUTO -> stringResource(R.string.github_source_strategy_auto)
+        GitHubArtifactStrategy.DIRECT_MODULE_ZIP -> stringResource(R.string.github_source_strategy_direct_zip)
+        GitHubArtifactStrategy.NESTED_ZIP -> stringResource(R.string.github_source_strategy_nested_zip)
+        GitHubArtifactStrategy.EXTRACTED_MODULE_LAYOUT -> stringResource(R.string.github_source_strategy_extracted_module_layout)
+        GitHubArtifactStrategy.SINGLE_FOLDER_MODULE_LAYOUT -> stringResource(R.string.github_source_strategy_single_folder_module_layout)
+    }
+
+private fun MutableList<String>.addEncoded(key: String, value: String) {
+    value.trim().takeIf(String::isNotBlank)?.let {
+        add("$key=${URLEncoder.encode(it, StandardCharsets.UTF_8.name())}")
+    }
+}
+
+private fun validateGitHubSourceRules(
+    regex: String,
+    assetRegex: String,
+    artifactRegex: String,
+    rejectRegex: String,
+    preferredVariantRegex: String,
+    branchRegex: String,
+    workflowRegex: String,
+) {
+    listOf(
+        "regex" to regex,
+        "asset regex" to assetRegex,
+        "artifact regex" to artifactRegex,
+        "reject regex" to rejectRegex,
+        "preferred variant regex" to preferredVariantRegex,
+        "branch regex" to branchRegex,
+        "workflow regex" to workflowRegex,
+    ).forEach { (label, value) ->
+        val clean = value.trim()
+        if (clean.isBlank()) return@forEach
+        require(clean.length <= 240) { "$label is too long" }
+        runCatching { Regex(clean) }.getOrElse { error("Invalid $label: ${it.message}") }
+    }
 }
 
 private data class GitHubSourceInput(

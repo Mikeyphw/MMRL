@@ -64,9 +64,6 @@ import java.io.IOException
 import java.io.OutputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
-import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import kotlin.coroutines.coroutineContext
 
@@ -294,84 +291,16 @@ class DownloadService : LifecycleService() {
     ): File {
         if (!GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)) return archive
 
-        ZipFile(archive).use { zip ->
-            val entries = zip.entries().asSequence().filterNot { it.isDirectory }.toList()
-            val nestedZip =
-                entries
-                    .filter { it.name.endsWith(".zip", ignoreCase = true) }
-                    .maxByOrNull { nestedZipScore(it.name) }
-
-            if (nestedZip != null) {
-                val output = temporaryFile("$operationId-nested")
-                zip.getInputStream(nestedZip).buffered().use { input ->
-                    output.outputStream().buffered().use { outputStream ->
-                        input.copyTo(outputStream)
-                    }
-                }
-                require(output.isFile && output.length() > 0L) {
-                    "Extracted GitHub Actions module ZIP is empty"
-                }
-                operationHistoryRepository.appendLog(operationId, "Extracted nested module archive from GitHub artifact")
-                return output
-            }
-
-            val moduleRoot = GitHubArtifactArchivePolicy.moduleRoot(entries.map { it.name })
-            if (moduleRoot != null) {
-                if (moduleRoot.isEmpty()) {
-                    operationHistoryRepository.appendLog(operationId, "GitHub artifact archive is already a module ZIP")
-                    return archive
-                }
-
-                val output = temporaryFile("$operationId-module")
-                repackageArtifactModuleDirectory(
-                    zip = zip,
-                    entries = entries,
-                    moduleRoot = moduleRoot,
-                    output = output,
-                )
-                operationHistoryRepository.appendLog(
-                    operationId,
-                    "Repacked module directory ${moduleRoot.trimEnd('/')} from GitHub artifact",
-                )
-                return output
-            }
-        }
-
-        throw IOException(
-            "GitHub Actions artifact does not contain a module ZIP or module.prop. " +
-                "Refresh the nightly source or adjust the file regex so it selects the module archive artifact.",
-        )
+        val materialized = GitHubArtifactArchivePolicy.materializeModuleZip(
+            archive = archive,
+            targetDirectory = cacheDir.resolve("downloads"),
+            outputNamePrefix = operationId,
+        ) { name -> githubArtifactScore(name) }
+        operationHistoryRepository.appendLog(operationId, "GitHub artifact selected ${materialized.analysis.summary}")
+        return materialized.file
     }
 
-    private fun repackageArtifactModuleDirectory(
-        zip: ZipFile,
-        entries: List<ZipEntry>,
-        moduleRoot: String,
-        output: File,
-    ) {
-        output.delete()
-        output.parentFile?.mkdirs()
-        val written = mutableSetOf<String>()
-        ZipOutputStream(output.outputStream().buffered()).use { target ->
-            entries
-                .filter { it.name.startsWith(moduleRoot) }
-                .forEach { entry ->
-                    val relative = entry.name.removePrefix(moduleRoot).trimStart('/')
-                    if (relative.isBlank() || !written.add(relative)) return@forEach
-                    val targetEntry = ZipEntry(relative).apply { time = entry.time }
-                    target.putNextEntry(targetEntry)
-                    zip.getInputStream(entry).buffered().use { input ->
-                        input.copyTo(target)
-                    }
-                    target.closeEntry()
-                }
-        }
-        require(output.isFile && output.length() > 0L) {
-            "Repacked GitHub Actions module ZIP is empty"
-        }
-    }
-
-    private fun nestedZipScore(name: String): Int {
+    private fun githubArtifactScore(name: String): Int {
         val lower = name.lowercase()
         val abiScore =
             android.os.Build.SUPPORTED_ABIS
@@ -385,8 +314,10 @@ class DownloadService : LifecycleService() {
                 }.distinct()
                 .mapIndexedNotNull { index, alias -> if (lower.contains(alias)) 400 - index else null }
                 .maxOrNull() ?: 0
-        val penalty = if (lower.contains("source") || lower.contains("debug")) -80 else 0
-        return abiScore + penalty
+        val zipScore = if (lower.endsWith(".zip")) 40 else 0
+        val releaseScore = if (lower.contains("release")) 80 else 0
+        val penalty = if (lower.contains("source") || lower.contains("symbols") || lower.contains("mapping") || lower.contains("debug")) -80 else 0
+        return abiScore + zipScore + releaseScore + penalty
     }
 
     private suspend fun download(

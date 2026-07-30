@@ -1354,6 +1354,25 @@
     <string name="github_source_clear_token">Clear saved token</string>
     <string name="github_source_add_confirm">Add</string>
     <string name="github_source_error_invalid_url">Invalid GitHub repository URL</string>
+    <string name="save">Save</string>
+    <string name="github_source_asset_regex">Asset regex</string>
+    <string name="github_source_asset_regex_placeholder">optional, e.g. release|arm64</string>
+    <string name="github_source_artifact_regex">Artifact regex</string>
+    <string name="github_source_artifact_regex_placeholder">optional, e.g. Vector.*Release</string>
+    <string name="github_source_reject_regex">Reject regex</string>
+    <string name="github_source_reject_regex_placeholder">optional, e.g. symbols|mapping|debug</string>
+    <string name="github_source_preferred_variant_regex">Preferred variant regex</string>
+    <string name="github_source_preferred_variant_regex_placeholder">optional, e.g. release|zygisk|arm64</string>
+    <string name="github_source_branch_regex">Branch regex</string>
+    <string name="github_source_branch_regex_placeholder">optional, e.g. master|main</string>
+    <string name="github_source_workflow_regex">Workflow regex</string>
+    <string name="github_source_workflow_regex_placeholder">optional, e.g. core|build</string>
+    <string name="github_source_artifact_strategy">Artifact strategy</string>
+    <string name="github_source_strategy_auto">Auto</string>
+    <string name="github_source_strategy_direct_zip">Direct ZIP</string>
+    <string name="github_source_strategy_nested_zip">Nested ZIP</string>
+    <string name="github_source_strategy_extracted_module_layout">Extracted root</string>
+    <string name="github_source_strategy_single_folder_module_layout">Folder root</string>
 
     <string name="lsposed_provider_status_title">Provider status</string>
     <string name="lsposed_provider_status_description">Vector or LSPosed provider detected. Scope data is read from the local provider database when root grants access.</string>

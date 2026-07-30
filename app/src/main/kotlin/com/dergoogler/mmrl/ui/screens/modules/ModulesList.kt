@@ -35,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -72,6 +73,7 @@ import com.dergoogler.mmrl.ash.model.AshModuleRiskBand
 import com.dergoogler.mmrl.ash.model.moduleProtections
 import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.ext.isPackageInstalled
+import com.dergoogler.mmrl.github.GitHubArtifactStrategy
 import com.dergoogler.mmrl.github.GitHubSourceMode
 import com.dergoogler.mmrl.github.GitHubSourceSpec
 import com.dergoogler.mmrl.model.ModuleIdentity
@@ -492,8 +494,8 @@ private fun InstalledModuleCard(
             module = module,
             source = source,
             onDismiss = { sourceDialogOpen = false },
-            onModeSelected = { mode ->
-                viewModel.setModuleSourceMode(module, source, mode)
+            onSave = { spec ->
+                viewModel.setModuleSourceRules(module, source, spec)
                 sourceDialogOpen = false
             },
         )
@@ -892,18 +894,70 @@ private fun ModuleSourceDialog(
     module: InstalledModule,
     source: LocalModuleSource,
     onDismiss: () -> Unit,
-    onModeSelected: (GitHubSourceMode) -> Unit,
+    onSave: (GitHubSourceSpec) -> Unit,
 ) {
-    val currentMode = source.resolvedMode()
+    val current = GitHubSourceSpec.fromSourceUrl(source.repoUrl)
+    var mode by remember { mutableStateOf(current?.mode ?: source.resolvedMode()) }
+    var includePreReleases by remember { mutableStateOf(current?.includePreReleases ?: false) }
+    var regex by remember { mutableStateOf(current?.regex.orEmpty()) }
+    var assetRegex by remember { mutableStateOf(current?.assetRegex.orEmpty()) }
+    var artifactRegex by remember { mutableStateOf(current?.artifactRegex.orEmpty()) }
+    var rejectRegex by remember { mutableStateOf(current?.rejectRegex.orEmpty()) }
+    var preferredVariantRegex by remember { mutableStateOf(current?.preferredVariantRegex.orEmpty()) }
+    var branchRegex by remember { mutableStateOf(current?.branchRegex.orEmpty()) }
+    var workflowRegex by remember { mutableStateOf(current?.workflowRegex.orEmpty()) }
+    var artifactStrategy by remember { mutableStateOf(current?.artifactStrategy ?: GitHubArtifactStrategy.AUTO) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val save: () -> Unit = {
+        val owner = current?.owner
+        val repository = current?.repository
+        if (owner == null || repository == null) {
+            error = source.repoUrl
+        } else {
+            validateGitHubSourceRules(
+                regex = regex,
+                assetRegex = assetRegex,
+                artifactRegex = artifactRegex,
+                rejectRegex = rejectRegex,
+                preferredVariantRegex = preferredVariantRegex,
+                branchRegex = branchRegex,
+                workflowRegex = workflowRegex,
+            ).onSuccess {
+                onSave(
+                    GitHubSourceSpec(
+                        owner = owner,
+                        repository = repository,
+                        mode = mode,
+                        includePreReleases = includePreReleases,
+                        regex = regex,
+                        assetRegex = assetRegex,
+                        artifactRegex = artifactRegex,
+                        rejectRegex = rejectRegex,
+                        preferredVariantRegex = preferredVariantRegex,
+                        branchRegex = branchRegex,
+                        workflowRegex = workflowRegex,
+                        artifactStrategy = artifactStrategy,
+                    ),
+                )
+            }.onFailure {
+                error = it.message
+            }
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
+            TextButton(onClick = save) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
         },
         title = { Text(stringResource(R.string.module_source_edit)) },
         text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
@@ -916,15 +970,94 @@ private fun ModuleSourceDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                listOf(
-                    GitHubSourceMode.RELEASE,
-                    GitHubSourceMode.NIGHTLY,
-                ).forEach { mode ->
-                    FilterChip(
-                        selected = currentMode == mode,
-                        onClick = { onModeSelected(mode) },
-                        label = { Text(mode.displayLabel()) },
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(GitHubSourceMode.RELEASE, GitHubSourceMode.NIGHTLY).forEach { item ->
+                        FilterChip(
+                            selected = mode == item,
+                            onClick = { mode = item },
+                            label = { Text(item.displayLabel()) },
+                        )
+                    }
+                }
+                if (mode == GitHubSourceMode.RELEASE) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stringResource(R.string.github_source_include_prereleases))
+                        Switch(checked = includePreReleases, onCheckedChange = { includePreReleases = it })
+                    }
+                }
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = regex,
+                    onValueChange = { regex = it; error = null },
+                    label = { Text(stringResource(R.string.github_source_file_regex)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = if (mode == GitHubSourceMode.RELEASE) assetRegex else artifactRegex,
+                    onValueChange = {
+                        if (mode == GitHubSourceMode.RELEASE) assetRegex = it else artifactRegex = it
+                        error = null
+                    },
+                    label = { Text(stringResource(if (mode == GitHubSourceMode.RELEASE) R.string.github_source_asset_regex else R.string.github_source_artifact_regex)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = rejectRegex,
+                    onValueChange = { rejectRegex = it; error = null },
+                    label = { Text(stringResource(R.string.github_source_reject_regex)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = preferredVariantRegex,
+                    onValueChange = { preferredVariantRegex = it; error = null },
+                    label = { Text(stringResource(R.string.github_source_preferred_variant_regex)) },
+                    singleLine = true,
+                )
+                if (mode == GitHubSourceMode.NIGHTLY) {
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        value = branchRegex,
+                        onValueChange = { branchRegex = it; error = null },
+                        label = { Text(stringResource(R.string.github_source_branch_regex)) },
+                        singleLine = true,
                     )
+                    OutlinedTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        value = workflowRegex,
+                        onValueChange = { workflowRegex = it; error = null },
+                        label = { Text(stringResource(R.string.github_source_workflow_regex)) },
+                        singleLine = true,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.github_source_artifact_strategy),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        GitHubArtifactStrategy.AUTO,
+                        GitHubArtifactStrategy.DIRECT_MODULE_ZIP,
+                        GitHubArtifactStrategy.NESTED_ZIP,
+                        GitHubArtifactStrategy.EXTRACTED_MODULE_LAYOUT,
+                        GitHubArtifactStrategy.SINGLE_FOLDER_MODULE_LAYOUT,
+                    ).forEach { strategy ->
+                        FilterChip(
+                            selected = artifactStrategy == strategy,
+                            onClick = { artifactStrategy = strategy },
+                            label = { Text(strategy.displayLabel()) },
+                        )
+                    }
+                }
+                error?.let {
+                    Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
                 MetadataRow(stringResource(R.string.module_source_current_url), source.repoUrl)
             }
@@ -1179,6 +1312,45 @@ private fun GitHubSourceMode.displayLabel(): String =
         GitHubSourceMode.RELEASE -> stringResource(R.string.module_source_release)
         GitHubSourceMode.NIGHTLY -> stringResource(R.string.module_source_nightly_api)
     }
+
+@Composable
+private fun GitHubArtifactStrategy.displayLabel(): String =
+    when (this) {
+        GitHubArtifactStrategy.AUTO -> stringResource(R.string.github_source_strategy_auto)
+        GitHubArtifactStrategy.DIRECT_MODULE_ZIP -> stringResource(R.string.github_source_strategy_direct_zip)
+        GitHubArtifactStrategy.NESTED_ZIP -> stringResource(R.string.github_source_strategy_nested_zip)
+        GitHubArtifactStrategy.EXTRACTED_MODULE_LAYOUT -> stringResource(R.string.github_source_strategy_extracted_module_layout)
+        GitHubArtifactStrategy.SINGLE_FOLDER_MODULE_LAYOUT -> stringResource(R.string.github_source_strategy_single_folder_module_layout)
+    }
+
+private fun validateGitHubSourceRules(vararg rules: Pair<String, String>): Result<Unit> =
+    runCatching {
+        rules.forEach { (label, value) ->
+            val clean = value.trim()
+            if (clean.isBlank()) return@forEach
+            require(clean.length <= 240) { "$label is too long" }
+            runCatching { Regex(clean) }.getOrElse { error("Invalid $label: ${it.message}") }
+        }
+    }
+
+private fun validateGitHubSourceRules(
+    regex: String,
+    assetRegex: String,
+    artifactRegex: String,
+    rejectRegex: String,
+    preferredVariantRegex: String,
+    branchRegex: String,
+    workflowRegex: String,
+): Result<Unit> =
+    validateGitHubSourceRules(
+        "regex" to regex,
+        "asset regex" to assetRegex,
+        "artifact regex" to artifactRegex,
+        "reject regex" to rejectRegex,
+        "preferred variant regex" to preferredVariantRegex,
+        "branch regex" to branchRegex,
+        "workflow regex" to workflowRegex,
+    )
 
 @Composable
 private fun Platform.displayLabel(): String = when (this) {
