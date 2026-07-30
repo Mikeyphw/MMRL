@@ -44,6 +44,10 @@ import com.dergoogler.mmrl.model.state.Permissions
 import com.dergoogler.mmrl.service.ModuleService
 import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserModel
+import com.dergoogler.mmrl.model.unified.UnifiedModuleInputs
+import com.dergoogler.mmrl.model.unified.UnifiedModuleItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleUpdate
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasWebUI
@@ -299,6 +303,75 @@ class ModulesViewModel
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyMap(),
+            )
+
+        private data class UnifiedRootBrowserInputs(
+            val localModules: List<LocalModule>,
+            val onlineModules: List<OnlineModule>,
+            val repositories: List<com.dergoogler.mmrl.database.entity.Repo>,
+            val savedSources: List<LocalModuleSource>,
+        )
+
+        private val unifiedRootBrowserInputs: StateFlow<UnifiedRootBrowserInputs> =
+            combine(
+                localRepository.getLocalAllAsFlow(),
+                localRepository.getOnlineAllAsFlow(),
+                localRepository.getRepoAllAsFlow(),
+                localRepository.getLocalSourcesAsFlow(),
+            ) { localModules, onlineModules, repositories, savedSources ->
+                UnifiedRootBrowserInputs(
+                    localModules = localModules,
+                    onlineModules = onlineModules,
+                    repositories = repositories,
+                    savedSources = savedSources,
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = UnifiedRootBrowserInputs(
+                    localModules = emptyList(),
+                    onlineModules = emptyList(),
+                    repositories = emptyList(),
+                    savedSources = emptyList(),
+                ),
+            )
+
+        val unifiedModules: StateFlow<List<UnifiedModuleItem>> =
+            combine(
+                unifiedRootBrowserInputs,
+                allUpdateCandidates,
+                localRepository.getUpdatableTagsAsFlow(),
+                lockedUpdates,
+                ashManager.state,
+            ) { rootInputs, updateCandidates, updatableTags, lockedUpdateMap, ashState ->
+                val updates = updateCandidates.associate { candidate ->
+                    val canonicalId = ModuleIdentity.canonical(candidate.local.id.id)
+                    canonicalId to UnifiedModuleUpdate(
+                        installedVersion = candidate.local.versionDisplay,
+                        installedVersionCode = candidate.local.versionCode.toLong(),
+                        availableVersion = candidate.version.versionDisplay,
+                        availableVersionCode = candidate.version.versionCode.toLong(),
+                        sourceLabel = candidate.repositoryName,
+                        compatible = candidate.compatible,
+                    )
+                }
+                UnifiedModuleBrowserModel.build(
+                    UnifiedModuleInputs(
+                        rootModules = rootInputs.localModules,
+                        repositoryModules = rootInputs.onlineModules,
+                        savedSources = rootInputs.savedSources,
+                        ashState = ashState,
+                        rootCompatibility = moduleCompatibility,
+                        updateCandidates = updates,
+                        updateAllowed = updatableTags.associate { ModuleIdentity.canonical(it.id) to it.updatable },
+                        lockedUpdates = lockedUpdateMap.keys,
+                        repositoryNames = rootInputs.repositories.associate { it.url to it.name },
+                    ),
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
             )
 
         private suspend fun resolveUpdateCandidate(

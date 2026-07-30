@@ -5,7 +5,7 @@ import org.junit.Test
 import java.io.File
 
 class AshRuntimeRepairContractTest {
-    private val root = File(System.getProperty("user.dir"))
+    private val root = File(System.getProperty("user.dir") ?: ".")
 
     @Test
     fun `root service passes app context so jq can be repaired from bundled assets`() {

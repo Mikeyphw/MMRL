@@ -10866,6 +10866,174 @@
         }
       },
       "history_id": "4595dccb585a43ea8018ed794a8fb8e1"
+    },
+    {
+      "applied_at": "2026-07-30T16:47:19.855752Z",
+      "artifact": "/home/mike/Downloads/mmrl_unified_module_browser_phase10_overlay.zip",
+      "artifact_name": "mmrl_unified_module_browser_phase10_overlay.zip",
+      "type": "overlay",
+      "sha256": "3bdfe732d66b937a73f3799745b96e24f70fde2eac6422f9dfed91e034b9d1df",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "Add unified module browser model phase 10",
+      "commit_hash": "",
+      "file_count": 5,
+      "change_counts": {
+        "add": 3,
+        "modify": 2
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_unified_module_browser_phase10_overlay",
+        "description": "Phase 10: add a canonical unified module browser model for root, repo, GitHub source, LSPosed, local, and AshReXcue rescue module evidence; expose a root unifiedModules stream and fold the AshRuntimeRepairContractTest nullability warning fix.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowser.kt",
+              "action": "add",
+              "sha256": "53df44ce604995b9cf5a93e184e4953c7ccea398609538dfc3d42b98e9189129",
+              "size": 42509
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "364ea37a68cd325159d1c1f9686ef97a6e2c16f0e4025a0c342a2e6ee97ea5b5",
+              "size": 43519,
+              "source_sha256": "61d3cd8ced7196fb9315eb6da8d08de2795a9c4be85e61f69f98bea37bb75caa"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/AshRuntimeRepairContractTest.kt",
+              "action": "modify",
+              "sha256": "2b0add55d1ed680e44503a44c5462df4f86d01b737f4d71025761fb6b878ba18",
+              "size": 2584,
+              "source_sha256": "209ebeae88ee10486195dc8c3738eca0d1da187b9d1f04d8522f7f389ef5cf6b"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserModelTest.kt",
+              "action": "add",
+              "sha256": "278f66d36d7ddb5459e0372bfcf3891c352c675e42c662ce897e94545f9c1981",
+              "size": 10163
+            },
+            {
+              "path": "docs/UNIFIED_MODULE_BROWSER_PHASE10.md",
+              "action": "add",
+              "sha256": "1d30dd2d7ed29d68fe1338d9e1cfbf93fa513ae0a66eafdcbcf985887dd49bd8",
+              "size": 3310
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add unified module browser model phase 10"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true,
+          "notes": [
+            "Preferred validation tasks: :app:testOfficialDebugUnitTest and :app:lintOfficialDebug.",
+            "Sandbox Gradle execution could not run because the Gradle wrapper attempted to download gradle-9.5.0 from services.gradle.org and outbound network is unavailable.",
+            "Performed Kotlin syntax compilation of UnifiedModuleBrowser.kt and UnifiedModuleBrowserModelTest.kt against local stubs with kotlinc; warnings were only in the local stubs, not overlay sources."
+          ]
+        }
+      },
+      "history_id": "f9b33000345649c4a3550fa08b37b461"
+    },
+    {
+      "applied_at": "2026-07-30T16:50:12.382262Z",
+      "artifact": "/home/mike/Downloads/mmrl_unified_module_browser_phase10_overlay.zip",
+      "artifact_name": "mmrl_unified_module_browser_phase10_overlay.zip",
+      "type": "overlay",
+      "sha256": "3bdfe732d66b937a73f3799745b96e24f70fde2eac6422f9dfed91e034b9d1df",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "Add unified module browser model phase 10",
+      "commit_hash": "",
+      "file_count": 5,
+      "change_counts": {
+        "add": 3,
+        "modify": 2
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_unified_module_browser_phase10_overlay",
+        "description": "Phase 10: add a canonical unified module browser model for root, repo, GitHub source, LSPosed, local, and AshReXcue rescue module evidence; expose a root unifiedModules stream and fold the AshRuntimeRepairContractTest nullability warning fix.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowser.kt",
+              "action": "add",
+              "sha256": "53df44ce604995b9cf5a93e184e4953c7ccea398609538dfc3d42b98e9189129",
+              "size": 42509
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "364ea37a68cd325159d1c1f9686ef97a6e2c16f0e4025a0c342a2e6ee97ea5b5",
+              "size": 43519,
+              "source_sha256": "61d3cd8ced7196fb9315eb6da8d08de2795a9c4be85e61f69f98bea37bb75caa"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/AshRuntimeRepairContractTest.kt",
+              "action": "modify",
+              "sha256": "2b0add55d1ed680e44503a44c5462df4f86d01b737f4d71025761fb6b878ba18",
+              "size": 2584,
+              "source_sha256": "209ebeae88ee10486195dc8c3738eca0d1da187b9d1f04d8522f7f389ef5cf6b"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserModelTest.kt",
+              "action": "add",
+              "sha256": "278f66d36d7ddb5459e0372bfcf3891c352c675e42c662ce897e94545f9c1981",
+              "size": 10163
+            },
+            {
+              "path": "docs/UNIFIED_MODULE_BROWSER_PHASE10.md",
+              "action": "add",
+              "sha256": "1d30dd2d7ed29d68fe1338d9e1cfbf93fa513ae0a66eafdcbcf985887dd49bd8",
+              "size": 3310
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add unified module browser model phase 10"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": true,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true,
+          "notes": [
+            "Preferred validation tasks: :app:testOfficialDebugUnitTest and :app:lintOfficialDebug.",
+            "Sandbox Gradle execution could not run because the Gradle wrapper attempted to download gradle-9.5.0 from services.gradle.org and outbound network is unavailable.",
+            "Performed Kotlin syntax compilation of UnifiedModuleBrowser.kt and UnifiedModuleBrowserModelTest.kt against local stubs with kotlinc; warnings were only in the local stubs, not overlay sources."
+          ]
+        }
+      },
+      "history_id": "43e29dcbca47474fb82c0aebfe6aed19"
     }
   ]
 }
