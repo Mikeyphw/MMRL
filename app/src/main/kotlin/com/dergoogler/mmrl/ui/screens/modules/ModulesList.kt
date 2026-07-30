@@ -89,6 +89,7 @@ import com.dergoogler.mmrl.model.online.Blacklist
 import com.dergoogler.mmrl.model.online.VersionItem
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControlsState
 import com.dergoogler.mmrl.model.unified.UnifiedModuleItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleProblemReport
 import com.dergoogler.mmrl.model.unified.UnifiedModuleView
 import com.dergoogler.mmrl.platform.Platform
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
@@ -131,6 +132,7 @@ fun ScaffoldScope.ModulesList(
     unifiedControls: UnifiedModuleBrowserControlsState,
     unifiedModules: List<UnifiedModuleItem>,
     filteredUnifiedModules: List<UnifiedModuleItem>,
+    filteredUnifiedProblemReport: UnifiedModuleProblemReport,
 ) = Box(
     modifier = Modifier.fillMaxSize(),
 ) {
@@ -269,23 +271,45 @@ fun ScaffoldScope.ModulesList(
                 item(key = "unified_${unifiedControls.view}_header") {
                     ModuleGroupHeader(
                         title = unifiedControls.view.label,
-                        count = filteredUnifiedModules.size,
+                        count = if (unifiedControls.view == UnifiedModuleView.PROBLEMS) {
+                            filteredUnifiedProblemReport.total
+                        } else {
+                            filteredUnifiedModules.size
+                        },
                     )
                 }
-                if (filteredUnifiedModules.isEmpty()) {
-                    item(key = "unified_empty_${unifiedControls.view}") {
-                        UnifiedModuleBrowserEmptyState(unifiedControls)
+                if (unifiedControls.view == UnifiedModuleView.PROBLEMS) {
+                    item(key = "unified_problem_digest") {
+                        UnifiedModuleProblemDigest(report = filteredUnifiedProblemReport)
                     }
-                }
-                items(
-                    items = filteredUnifiedModules,
-                    key = { "unified_${it.canonicalId}_${it.sourceMode}_${it.sourceTypes.joinToString("_")}" },
-                    contentType = { "unified_module_browser_card" },
-                ) { item ->
-                    UnifiedModuleBrowserCard(
-                        item = item,
-                        density = unifiedControls.density,
-                    )
+                    if (filteredUnifiedProblemReport.problems.isEmpty()) {
+                        item(key = "unified_empty_${unifiedControls.view}") {
+                            UnifiedModuleBrowserEmptyState(unifiedControls)
+                        }
+                    }
+                    items(
+                        items = filteredUnifiedProblemReport.problems,
+                        key = { "unified_problem_${it.id}" },
+                        contentType = { "unified_module_problem_card" },
+                    ) { problem ->
+                        UnifiedModuleProblemCard(problem = problem)
+                    }
+                } else {
+                    if (filteredUnifiedModules.isEmpty()) {
+                        item(key = "unified_empty_${unifiedControls.view}") {
+                            UnifiedModuleBrowserEmptyState(unifiedControls)
+                        }
+                    }
+                    items(
+                        items = filteredUnifiedModules,
+                        key = { "unified_${it.canonicalId}_${it.sourceMode}_${it.sourceTypes.joinToString("_")}" },
+                        contentType = { "unified_module_browser_card" },
+                    ) { item ->
+                        UnifiedModuleBrowserCard(
+                            item = item,
+                            density = unifiedControls.density,
+                        )
+                    }
                 }
             }
         }

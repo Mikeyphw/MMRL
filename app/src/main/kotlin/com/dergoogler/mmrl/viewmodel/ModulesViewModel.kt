@@ -51,6 +51,8 @@ import com.dergoogler.mmrl.model.unified.UnifiedModuleInputs
 import com.dergoogler.mmrl.model.unified.UnifiedModuleDensityMode
 import com.dergoogler.mmrl.model.unified.UnifiedModuleHealthFilter
 import com.dergoogler.mmrl.model.unified.UnifiedModuleItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleProblemCenter
+import com.dergoogler.mmrl.model.unified.UnifiedModuleProblemReport
 import com.dergoogler.mmrl.model.unified.UnifiedModuleSortMode
 import com.dergoogler.mmrl.model.unified.UnifiedModuleSourceMode
 import com.dergoogler.mmrl.model.unified.UnifiedModuleSourceType
@@ -398,6 +400,24 @@ class ModulesViewModel
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),
             )
+
+        val unifiedProblemReport: StateFlow<UnifiedModuleProblemReport> =
+            unifiedModules
+                .map(UnifiedModuleProblemCenter::build)
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = UnifiedModuleProblemReport(emptyList()),
+                )
+
+        val filteredUnifiedProblemReport: StateFlow<UnifiedModuleProblemReport> =
+            filteredUnifiedModules
+                .map(UnifiedModuleProblemCenter::build)
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = UnifiedModuleProblemReport(emptyList()),
+                )
 
         private suspend fun resolveUpdateCandidate(
             local: LocalModule,

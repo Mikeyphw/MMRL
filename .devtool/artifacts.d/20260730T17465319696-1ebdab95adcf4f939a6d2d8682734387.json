@@ -1,0 +1,124 @@
+{
+  "applied_at": "2026-07-30T17:46:53.196961Z",
+  "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase13_problems_overlay.zip",
+  "artifact_name": "mmrl_unified_browser_phase13_problems_overlay.zip",
+  "type": "overlay",
+  "sha256": "fa649224ac470a31530d7f4bfa80bb483d9b6c9df69065729a72fdffa5ad6b26",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add unified module browser problems phase 13",
+  "commit_hash": "",
+  "file_count": 10,
+  "change_counts": {
+    "add": 4,
+    "modify": 6
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_unified_browser_phase13_problems_overlay",
+    "description": "Phase 13: add unified Problems tab data/report model, roadmap problem vocabulary, action-ready evidence cards, ViewModel problem report streams, problem/severity search fields, UI digest/cards, and contracts/docs.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "baseline": {
+      "commit": "5f9d8008",
+      "overlay": "mmrl_unified_browser_phase12_ui_wiring_overlay.zip",
+      "tests": "252 passed",
+      "diagnostics": "0 warnings, 0 errors"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserControls.kt",
+          "action": "modify",
+          "sha256": "01b4cca1f81733be3960c690f8e391b4e591dcc6f318e3ed66877dd650f2e53d",
+          "size": 11933,
+          "source_sha256": "4566ad886fa6cc657d09154545beca36d9d58e542b74bd249221a81281c65b60"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleProblems.kt",
+          "action": "add",
+          "sha256": "ee5cd3c7f26236cb8eaad3f3cd83fc9b10654361852c074134961f07e086f1cb",
+          "size": 18433
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "ca76676909f2a5e66ff8c8688d67d3e8b743de8a7e46cf4f8dcad843a90141e1",
+          "size": 66351,
+          "source_sha256": "5e1343872ba99baf9bb672f5c873df13cdf7385adaf2f386b58a9ee5f333da87"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+          "action": "modify",
+          "sha256": "a84354ff44a72ad4f299b77448a451ce7163eba3eed3d889f8e321b55451857b",
+          "size": 15680,
+          "source_sha256": "50ad9f7238ca592e56d03b848bebb19db2fcffa037af9134fa5ffaddec5e3a84"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+          "action": "modify",
+          "sha256": "f97d2f43353d5ca8c6ae01b3b406111f10c06174f9de88354290ed1c190f4437",
+          "size": 25680,
+          "source_sha256": "bf6d8fac7ac9caaff9a0e2346e4e88423dcef4750ad576b79c8aaf95039fe926"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+          "action": "modify",
+          "sha256": "fa7c90a2caecae04cf3a16d35fb74434711e69fceff062bd07c5cfc151d327d8",
+          "size": 48083,
+          "source_sha256": "e0209737a441a7deb632306ecd55bd52e302e0ce6065fd980eec4a7a5e2ec749"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleProblemCenterTest.kt",
+          "action": "add",
+          "sha256": "76acf371f5247603ed39825684aa85a42bc39423b5832ca325bd168536ceeee4",
+          "size": 6668
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleProblemWiringContractTest.kt",
+          "action": "add",
+          "sha256": "fa3923bb2acb7e6ae4b63e904c56928b63d0efbecf44da2586c49b4d15fe6b89",
+          "size": 2106
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UnifiedModuleBrowserUiContractTest.kt",
+          "action": "modify",
+          "sha256": "336f84e08d536bbf2f9dac9346305197a01aba55dd6f6d66088fa81d14d2a9f9",
+          "size": 3529,
+          "source_sha256": "bab19a8142d48fce7901fbb517141f279ba69d9e0aa02b435cca97c7898b2452"
+        },
+        {
+          "path": "docs/UNIFIED_MODULE_BROWSER_PHASE13.md",
+          "action": "add",
+          "sha256": "27e4a602560e6a3f58c690369803ff3e7f2dc36335739fcaf9353b7497070175",
+          "size": 3205
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add unified module browser problems phase 13"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true,
+      "notes": [
+        "Preferred validation tasks: :app:testOfficialDebugUnitTest and :app:lintOfficialDebug.",
+        "Sandbox Gradle execution failed because the wrapper distribution is not cached and outbound network to services.gradle.org is unavailable.",
+        "Performed Kotlin syntax compilation for the problem model and problem-center tests against local stubs, source contract checks, manifest preflight, and ZIP integrity validation."
+      ]
+    }
+  },
+  "history_id": "1ebdab95adcf4f939a6d2d8682734387"
+}

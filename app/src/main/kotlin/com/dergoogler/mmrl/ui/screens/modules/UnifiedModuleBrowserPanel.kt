@@ -41,6 +41,8 @@ import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserStats
 import com.dergoogler.mmrl.model.unified.UnifiedModuleDensityMode
 import com.dergoogler.mmrl.model.unified.UnifiedModuleHealthFilter
 import com.dergoogler.mmrl.model.unified.UnifiedModuleItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleProblem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleProblemReport
 import com.dergoogler.mmrl.model.unified.UnifiedModuleSortMode
 import com.dergoogler.mmrl.model.unified.UnifiedModuleSourceType
 import com.dergoogler.mmrl.model.unified.UnifiedModuleView
@@ -308,10 +310,130 @@ fun UnifiedModuleBrowserEmptyState(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Try another unified view, clear filters, or search with a field such as badge:warning or source:github.",
+                text = "Try another unified view, clear filters, or search with a field such as problem:scope, severity:error, badge:warning, or source:github.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+fun UnifiedModuleProblemDigest(report: UnifiedModuleProblemReport) {
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp).fillMaxWidth(),
+        color = if (report.healthy) {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        } else {
+            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.22f)
+        },
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.34f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            Text(
+                text = report.headline,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                text = report.summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                UnifiedTinyPill("${report.errors} errors")
+                UnifiedTinyPill("${report.warnings} warnings")
+                UnifiedTinyPill("${report.notices} notes")
+                UnifiedTinyPill("${report.actionCount} actions")
+            }
+        }
+    }
+}
+
+@Composable
+fun UnifiedModuleProblemCard(problem: UnifiedModuleProblem) {
+    val color = problem.severity.color()
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp).fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.40f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = problem.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = listOfNotNull(problem.moduleTitle, problem.sourceLabel).joinToString(" · ").ifBlank { problem.kind.label },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Surface(
+                    color = color.copy(alpha = 0.10f),
+                    contentColor = color,
+                    shape = RoundedCornerShape(999.dp),
+                    border = BorderStroke(1.dp, color.copy(alpha = 0.35f)),
+                ) {
+                    Text(
+                        text = problem.severity.name.lowercase().replaceFirstChar { it.uppercase() },
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+
+            Text(
+                text = problem.summary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            if (problem.evidence.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    problem.evidence.take(4).forEach { evidence ->
+                        UnifiedDiagnosticText(evidence.label, evidence.value)
+                    }
+                }
+            }
+
+            if (problem.actions.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
+                ) {
+                    problem.actions.forEach { action ->
+                        UnifiedTinyPill(action.label)
+                    }
+                }
+            }
         }
     }
 }

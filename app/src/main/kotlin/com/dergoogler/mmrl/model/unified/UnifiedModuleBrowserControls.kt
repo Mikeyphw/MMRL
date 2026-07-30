@@ -189,6 +189,15 @@ object UnifiedModuleBrowserControls {
             "badge" -> badges.any { badge ->
                 badge.label.contains(value, ignoreCase = true) || badge.detail.contains(value, ignoreCase = true)
             }
+            "problem", "issue" -> hasProblems &&
+                badges.any { badge ->
+                    badge.label.contains(value, ignoreCase = true) ||
+                        badge.detail.contains(value, ignoreCase = true) ||
+                        badge.kind.name.contains(value, ignoreCase = true)
+                }
+            "severity" -> badges.any { badge ->
+                badge.severity.name.contains(value, ignoreCase = true)
+            }
             else -> searchTokens.any { it.contains(term, ignoreCase = true) } ||
                 badges.any { badge ->
                     badge.label.contains(term, ignoreCase = true) || badge.detail.contains(term, ignoreCase = true)

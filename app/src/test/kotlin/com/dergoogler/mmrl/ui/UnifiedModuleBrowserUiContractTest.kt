@@ -21,8 +21,10 @@ class UnifiedModuleBrowserUiContractTest {
         assertTrue(screen.contains("viewModel.unifiedBrowserControls.collectAsStateWithLifecycle()"))
         assertTrue(screen.contains("viewModel.unifiedModules.collectAsStateWithLifecycle()"))
         assertTrue(screen.contains("viewModel.filteredUnifiedModules.collectAsStateWithLifecycle()"))
+        assertTrue(screen.contains("viewModel.filteredUnifiedProblemReport.collectAsStateWithLifecycle()"))
         assertTrue(screen.contains("unifiedControls = unifiedControls"))
         assertTrue(screen.contains("filteredUnifiedModules = filteredUnifiedModules"))
+        assertTrue(screen.contains("filteredUnifiedProblemReport = filteredUnifiedProblemReport"))
     }
 
     @Test
@@ -31,6 +33,8 @@ class UnifiedModuleBrowserUiContractTest {
         assertTrue(list.contains("UnifiedModuleBrowserHeader("))
         assertTrue(list.contains("unifiedControls.view == UnifiedModuleView.INSTALLED"))
         assertTrue(list.contains("UnifiedModuleBrowserCard("))
+        assertTrue(list.contains("UnifiedModuleProblemDigest(report = filteredUnifiedProblemReport)"))
+        assertTrue(list.contains("UnifiedModuleProblemCard(problem = problem)"))
         assertTrue(list.contains("UnifiedModuleBrowserEmptyState(unifiedControls)"))
         assertTrue(list.contains("viewModel::setUnifiedBrowserSort"))
         assertTrue(list.contains("viewModel::setUnifiedBrowserHealthFilter"))
@@ -51,5 +55,8 @@ class UnifiedModuleBrowserUiContractTest {
         assertTrue(panel.contains("item.badges.take"))
         assertTrue(panel.contains("density.showDiagnostics"))
         assertTrue(panel.contains("item.match.explanation"))
+        assertTrue(panel.contains("fun UnifiedModuleProblemDigest"))
+        assertTrue(panel.contains("fun UnifiedModuleProblemCard"))
+        assertTrue(panel.contains("problem.actions.forEach"))
     }
 }
