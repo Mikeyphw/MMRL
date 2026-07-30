@@ -53,6 +53,7 @@ import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ext.systemBarsPaddingEnd
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleView
 import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
 import com.dergoogler.mmrl.ui.component.Loading
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
@@ -91,6 +92,9 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
         val ashState by viewModel.ashState.collectAsStateWithLifecycle()
         val ashFilter by viewModel.ashFilter.collectAsStateWithLifecycle()
+        val unifiedControls by viewModel.unifiedBrowserControls.collectAsStateWithLifecycle()
+        val unifiedModules by viewModel.unifiedModules.collectAsStateWithLifecycle()
+        val filteredUnifiedModules by viewModel.filteredUnifiedModules.collectAsStateWithLifecycle()
         val snackbar = LocalSnackbarHost.current
         var selectedTab by remember { mutableStateOf(ModulesTab.RootModules) }
 
@@ -163,7 +167,12 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                 Loading()
             }
 
-            if (selectedTab == ModulesTab.RootModules && list.isEmpty() && !isLoading) {
+            if (
+                selectedTab == ModulesTab.RootModules &&
+                unifiedControls.view == UnifiedModuleView.INSTALLED &&
+                list.isEmpty() &&
+                !isLoading
+            ) {
                 PageIndicator(
                     icon = R.drawable.keyframes,
                     text = if (viewModel.isSearch) R.string.search_empty else R.string.modules_empty,
@@ -217,6 +226,9 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                             ashState = ashState,
                             ashFilter = ashFilter,
                             onAshFilterSelected = viewModel::setAshFilter,
+                            unifiedControls = unifiedControls,
+                            unifiedModules = unifiedModules,
+                            filteredUnifiedModules = filteredUnifiedModules,
                         )
                     }
                 }

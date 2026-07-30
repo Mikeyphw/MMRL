@@ -87,6 +87,9 @@ import com.dergoogler.mmrl.model.local.groupInstalledModules
 import com.dergoogler.mmrl.model.local.versionDisplay
 import com.dergoogler.mmrl.model.online.Blacklist
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControlsState
+import com.dergoogler.mmrl.model.unified.UnifiedModuleItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleView
 import com.dergoogler.mmrl.platform.Platform
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasModConf
@@ -125,6 +128,9 @@ fun ScaffoldScope.ModulesList(
     ashState: AshManagerState,
     ashFilter: AshModuleFilter,
     onAshFilterSelected: (AshModuleFilter) -> Unit,
+    unifiedControls: UnifiedModuleBrowserControlsState,
+    unifiedModules: List<UnifiedModuleItem>,
+    filteredUnifiedModules: List<UnifiedModuleItem>,
 ) = Box(
     modifier = Modifier.fillMaxSize(),
 ) {
@@ -143,6 +149,28 @@ fun ScaffoldScope.ModulesList(
                 modules = list,
                 updateIds = updateMap.keys.map { com.dergoogler.mmrl.platform.model.ModId(it) }.toSet(),
             )
+        }
+    val visibleInstalledIds =
+        remember(filteredUnifiedModules, unifiedControls.view, unifiedControls.hasExplicitFilters) {
+            if (unifiedControls.view == UnifiedModuleView.INSTALLED && unifiedControls.hasExplicitFilters) {
+                filteredUnifiedModules
+                    .flatMap { item -> listOf(item.canonicalId, item.displayId) + item.aliases }
+                    .mapTo(mutableSetOf(), ModuleIdentity::normalize)
+            } else {
+                emptySet()
+            }
+        }
+    val visibleGroups =
+        remember(groups, visibleInstalledIds, unifiedControls.view, unifiedControls.hasExplicitFilters) {
+            if (unifiedControls.view == UnifiedModuleView.INSTALLED && unifiedControls.hasExplicitFilters) {
+                groups.mapNotNull { group ->
+                    group.copy(
+                        modules = group.modules.filter { ModuleIdentity.normalize(it.id.id) in visibleInstalledIds },
+                    ).takeIf { it.modules.isNotEmpty() }
+                }
+            } else {
+                groups
+            }
         }
 
     if (snapshotDialogOpen) {
@@ -183,36 +211,82 @@ fun ScaffoldScope.ModulesList(
                 )
             }
 
-            if (ashState.snapshot != null) {
-                item(key = "ash_filters") {
-                    AshProtectionFilters(
-                        selected = ashFilter,
-                        protections = ashProtectionMap.values,
-                        onSelected = onAshFilterSelected,
-                    )
-                }
+            item(key = "unified_browser_header") {
+                UnifiedModuleBrowserHeader(
+                    controls = unifiedControls,
+                    allItems = unifiedModules,
+                    shownItems = filteredUnifiedModules,
+                    onViewSelected = viewModel::setUnifiedBrowserView,
+                    onDensitySelected = viewModel::setUnifiedBrowserDensity,
+                    onSortSelected = viewModel::setUnifiedBrowserSort,
+                    onHealthFilterSelected = viewModel::setUnifiedBrowserHealthFilter,
+                    onScopeFilterSelected = viewModel::setUnifiedBrowserScopeFilter,
+                    onSourceTypesSelected = viewModel::setUnifiedBrowserSourceTypes,
+                    onProviderStatesSelected = viewModel::setUnifiedBrowserProviderStates,
+                    onClearFilters = viewModel::clearUnifiedBrowserFilters,
+                )
             }
 
-            groups.forEach { group ->
-                item(key = "group_${group.key}") {
-                    ModuleGroupHeader(
-                        title = stringResource(group.key.titleResource),
-                        count = group.modules.size,
+            if (unifiedControls.view == UnifiedModuleView.INSTALLED) {
+                if (ashState.snapshot != null) {
+                    item(key = "ash_filters") {
+                        AshProtectionFilters(
+                            selected = ashFilter,
+                            protections = ashProtectionMap.values,
+                            onSelected = onAshFilterSelected,
+                        )
+                    }
+                }
+
+                if (visibleGroups.isEmpty()) {
+                    item(key = "installed_unified_empty") {
+                        UnifiedModuleBrowserEmptyState(unifiedControls)
+                    }
+                }
+
+                visibleGroups.forEach { group ->
+                    item(key = "group_${group.key}") {
+                        ModuleGroupHeader(
+                            title = stringResource(group.key.titleResource),
+                            count = group.modules.size,
+                        )
+                    }
+                    moduleRows(
+                        modules = group.modules,
+                        updateMap = updateMap,
+                        lockedUpdates = lockedUpdates,
+                        versionPolicies = versionPolicies,
+                        localSourceMap = localSourceMap,
+                        viewModel = viewModel,
+                        isProviderAlive = isProviderAlive,
+                        onDownload = onDownload,
+                        ashProtectionMap = ashProtectionMap,
+                        ashWritable = ashWritable,
+                        onOpenSnapshots = { snapshotDialogOpen = true },
                     )
                 }
-                moduleRows(
-                    modules = group.modules,
-                    updateMap = updateMap,
-                    lockedUpdates = lockedUpdates,
-                    versionPolicies = versionPolicies,
-                    localSourceMap = localSourceMap,
-                    viewModel = viewModel,
-                    isProviderAlive = isProviderAlive,
-                    onDownload = onDownload,
-                    ashProtectionMap = ashProtectionMap,
-                    ashWritable = ashWritable,
-                    onOpenSnapshots = { snapshotDialogOpen = true },
-                )
+            } else {
+                item(key = "unified_${unifiedControls.view}_header") {
+                    ModuleGroupHeader(
+                        title = unifiedControls.view.label,
+                        count = filteredUnifiedModules.size,
+                    )
+                }
+                if (filteredUnifiedModules.isEmpty()) {
+                    item(key = "unified_empty_${unifiedControls.view}") {
+                        UnifiedModuleBrowserEmptyState(unifiedControls)
+                    }
+                }
+                items(
+                    items = filteredUnifiedModules,
+                    key = { "unified_${it.canonicalId}_${it.sourceMode}_${it.sourceTypes.joinToString("_")}" },
+                    contentType = { "unified_module_browser_card" },
+                ) { item ->
+                    UnifiedModuleBrowserCard(
+                        item = item,
+                        density = unifiedControls.density,
+                    )
+                }
             }
         }
     }

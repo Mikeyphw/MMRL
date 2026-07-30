@@ -1,0 +1,90 @@
+{
+  "applied_at": "2026-07-30T17:27:37.353642Z",
+  "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase12_ui_wiring_overlay.zip",
+  "artifact_name": "mmrl_unified_browser_phase12_ui_wiring_overlay.zip",
+  "type": "overlay",
+  "sha256": "106d4eae741897830ae530a5a8b38fbfeeb17f903d939d099ef19cad73c21e4c",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Wire unified module browser UI phase 12",
+  "commit_hash": "",
+  "file_count": 5,
+  "change_counts": {
+    "add": 3,
+    "modify": 2
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_unified_browser_phase12_ui_wiring_overlay",
+    "description": "Phase 12: wire the unified module browser model into the existing Modules screen with view, density, sort, health, scope, source, provider controls, read-only unified cards for non-installed buckets, badges, diagnostics, and UI contracts without a full redesign.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "baseline": {
+      "commit": "565f081c",
+      "overlay": "mmrl_unified_browser_phase11_controls_overlay.zip",
+      "tests": "249 passed",
+      "diagnostics": "0 warnings, 0 errors"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+          "action": "add",
+          "sha256": "bf6d8fac7ac9caaff9a0e2346e4e88423dcef4750ad576b79c8aaf95039fe926",
+          "size": 20658
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+          "action": "modify",
+          "sha256": "50ad9f7238ca592e56d03b848bebb19db2fcffa037af9134fa5ffaddec5e3a84",
+          "size": 15478,
+          "source_sha256": "d51088966dcac56495f07f6d3bad4f38c11925f17eff6b5fe156732b84ba2030"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "5e1343872ba99baf9bb672f5c873df13cdf7385adaf2f386b58a9ee5f333da87",
+          "size": 65030,
+          "source_sha256": "91c03b17f72f65689ef57e2cb584940c97b320c4f461754151b73bdc92ef73c8"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UnifiedModuleBrowserUiContractTest.kt",
+          "action": "add",
+          "sha256": "bab19a8142d48fce7901fbb517141f279ba69d9e0aa02b435cca97c7898b2452",
+          "size": 2940
+        },
+        {
+          "path": "docs/UNIFIED_MODULE_BROWSER_PHASE12.md",
+          "action": "add",
+          "sha256": "bd222b6d739f2155cfc4f5eb8785e4b953fb422f2aa9c8d479b71f322d55f29a",
+          "size": 2281
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Wire unified module browser UI phase 12"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true,
+      "notes": [
+        "Preferred validation tasks: :app:testOfficialDebugUnitTest and :app:lintOfficialDebug.",
+        "Sandbox Gradle execution failed because the wrapper distribution is not cached and outbound network to services.gradle.org is unavailable.",
+        "Performed source contract checks for the new UI wiring and verified overlay ZIP integrity."
+      ]
+    }
+  },
+  "history_id": "7f961a48960b4ae3a0a4da088849cabc"
+}
