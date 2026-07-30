@@ -1,0 +1,83 @@
+{
+  "applied_at": "2026-07-30T17:05:45.994919Z",
+  "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase11_controls_overlay.zip",
+  "artifact_name": "mmrl_unified_browser_phase11_controls_overlay.zip",
+  "type": "overlay",
+  "sha256": "06278c2a33733e614ede1c081edea3308ec5466c6e029e2f9c78e2dab8fba8b4",
+  "status": "rolled-back",
+  "validation_status": "failed",
+  "commit_message": "Add unified module browser controls phase 11",
+  "commit_hash": "",
+  "file_count": 4,
+  "change_counts": {
+    "add": 3,
+    "modify": 1
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_unified_browser_phase11_controls_overlay",
+    "description": "Phase 11: add unified module browser controls for views, filtering, sorting, fielded search, density modes, ViewModel filtered streams, and contracts/docs without a full UI redesign.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "baseline": {
+      "commit": "93ab2d3e",
+      "overlay": "mmrl_unified_module_browser_phase10_overlay.zip",
+      "tests": "245 passed",
+      "diagnostics": "0 warnings, 0 errors"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserControls.kt",
+          "action": "add",
+          "sha256": "4566ad886fa6cc657d09154545beca36d9d58e542b74bd249221a81281c65b60",
+          "size": 11475
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+          "action": "modify",
+          "sha256": "e0209737a441a7deb632306ecd55bd52e302e0ce6065fd980eec4a7a5e2ec749",
+          "size": 47151,
+          "source_sha256": "364ea37a68cd325159d1c1f9686ef97a6e2c16f0e4025a0c342a2e6ee97ea5b5"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserControlsTest.kt",
+          "action": "add",
+          "sha256": "f6139dd089b859b6240f17d00086a1ca964b5f348f8dd13d98e3f169a7792db8",
+          "size": 10070
+        },
+        {
+          "path": "docs/UNIFIED_MODULE_BROWSER_PHASE11.md",
+          "action": "add",
+          "sha256": "cb1f061a59929ed45a621339c7f3f445935f03c0ad41e361f6c3caa1d17ac7fa",
+          "size": 3206
+        }
+      ]
+    },
+    "apply": {
+      "atomic": true,
+      "conflict_policy": "fail",
+      "path_policy": "repository-relative",
+      "commit": {
+        "enabled": true,
+        "strategy": "single",
+        "message": "Add unified module browser controls phase 11"
+      }
+    },
+    "validation": {
+      "required": true,
+      "restore": true,
+      "build": true,
+      "test": true,
+      "rollback_on_failure": true,
+      "notes": [
+        "Preferred validation tasks: :app:testOfficialDebugUnitTest and :app:lintOfficialDebug.",
+        "Sandbox Gradle execution was not attempted because the wrapper distribution is not cached and outbound network is unavailable.",
+        "Performed local Kotlin syntax compilation of UnifiedModuleBrowserControls.kt and UnifiedModuleBrowserControlsTest.kt against minimal stubs."
+      ]
+    }
+  },
+  "history_id": "944a8418426742e2b53dc1bcf6d05921"
+}

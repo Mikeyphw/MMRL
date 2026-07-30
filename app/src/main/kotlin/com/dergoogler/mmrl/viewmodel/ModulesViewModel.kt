@@ -44,10 +44,20 @@ import com.dergoogler.mmrl.model.state.Permissions
 import com.dergoogler.mmrl.service.ModuleService
 import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControls
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControlsState
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserModel
 import com.dergoogler.mmrl.model.unified.UnifiedModuleInputs
+import com.dergoogler.mmrl.model.unified.UnifiedModuleDensityMode
+import com.dergoogler.mmrl.model.unified.UnifiedModuleHealthFilter
 import com.dergoogler.mmrl.model.unified.UnifiedModuleItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleSortMode
+import com.dergoogler.mmrl.model.unified.UnifiedModuleSourceMode
+import com.dergoogler.mmrl.model.unified.UnifiedModuleSourceType
 import com.dergoogler.mmrl.model.unified.UnifiedModuleUpdate
+import com.dergoogler.mmrl.model.unified.UnifiedModuleView
+import com.dergoogler.mmrl.model.unified.UnifiedProviderCompatibility
+import com.dergoogler.mmrl.model.unified.UnifiedScopeFilter
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasWebUI
@@ -129,6 +139,9 @@ class ModulesViewModel
                     started = SharingStarted.WhileSubscribed(5000),
                     initialValue = emptyList(),
                 )
+
+        private val unifiedBrowserControlsFlow = MutableStateFlow(UnifiedModuleBrowserControlsState())
+        val unifiedBrowserControls: StateFlow<UnifiedModuleBrowserControlsState> = unifiedBrowserControlsFlow.asStateFlow()
 
         val moduleCompatibility: ModuleCompatibility
             get() =
@@ -374,6 +387,18 @@ class ModulesViewModel
                 initialValue = emptyList(),
             )
 
+        val filteredUnifiedModules: StateFlow<List<UnifiedModuleItem>> =
+            combine(
+                unifiedModules,
+                unifiedBrowserControls,
+            ) { modules, controls ->
+                UnifiedModuleBrowserControls.apply(modules, controls)
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
+
         private suspend fun resolveUpdateCandidate(
             local: LocalModule,
             onlineModules: List<OnlineModule>,
@@ -541,6 +566,7 @@ class ModulesViewModel
 
         fun search(key: String) {
             keyFlow.value = key
+            unifiedBrowserControlsFlow.update { it.copy(searchText = key) }
         }
 
         fun openSearch() {
@@ -549,6 +575,63 @@ class ModulesViewModel
 
         fun closeSearch() {
             isSearch = false
+            keyFlow.value = ""
+            unifiedBrowserControlsFlow.update { it.copy(searchText = "") }
+        }
+
+        fun setUnifiedBrowserView(view: UnifiedModuleView) {
+            unifiedBrowserControlsFlow.update { controls ->
+                controls.copy(
+                    view = view,
+                    sortMode = UnifiedModuleBrowserControls.defaultSortForView(view),
+                )
+            }
+        }
+
+        fun setUnifiedBrowserDensity(density: UnifiedModuleDensityMode) {
+            unifiedBrowserControlsFlow.update { it.copy(density = density) }
+        }
+
+        fun setUnifiedBrowserSort(
+            mode: UnifiedModuleSortMode,
+            descending: Boolean = false,
+        ) {
+            unifiedBrowserControlsFlow.update {
+                it.copy(
+                    sortMode = mode,
+                    descending = descending,
+                )
+            }
+        }
+
+        fun setUnifiedBrowserSourceTypes(sourceTypes: Set<UnifiedModuleSourceType>) {
+            unifiedBrowserControlsFlow.update { it.copy(sourceTypes = sourceTypes) }
+        }
+
+        fun setUnifiedBrowserSourceModes(sourceModes: Set<UnifiedModuleSourceMode>) {
+            unifiedBrowserControlsFlow.update { it.copy(sourceModes = sourceModes) }
+        }
+
+        fun setUnifiedBrowserProviderStates(providerStates: Set<UnifiedProviderCompatibility>) {
+            unifiedBrowserControlsFlow.update { it.copy(providerStates = providerStates) }
+        }
+
+        fun setUnifiedBrowserScopeFilter(scopeFilter: UnifiedScopeFilter) {
+            unifiedBrowserControlsFlow.update { it.copy(scopeFilter = scopeFilter) }
+        }
+
+        fun setUnifiedBrowserHealthFilter(healthFilter: UnifiedModuleHealthFilter) {
+            unifiedBrowserControlsFlow.update { it.copy(healthFilter = healthFilter) }
+        }
+
+        fun clearUnifiedBrowserFilters() {
+            unifiedBrowserControlsFlow.update { controls ->
+                UnifiedModuleBrowserControlsState(
+                    view = controls.view,
+                    sortMode = UnifiedModuleBrowserControls.defaultSortForView(controls.view),
+                    density = controls.density,
+                )
+            }
             keyFlow.value = ""
         }
 
