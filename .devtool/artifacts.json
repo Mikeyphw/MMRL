@@ -11752,6 +11752,655 @@
         }
       },
       "history_id": "a02dcd9fbfc24358b0f49cc9f4ba23cf"
+    },
+    {
+      "applied_at": "2026-07-30T18:02:56.606712Z",
+      "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase14_actions_overlay.zip",
+      "artifact_name": "mmrl_unified_browser_phase14_actions_overlay.zip",
+      "type": "overlay",
+      "sha256": "f6bec8c5b58d90d5bcee0804749fcdfabf3ce89527013390debec1ec56d7e02c",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 7,
+      "change_counts": {
+        "add": 4,
+        "modify": 3
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_unified_browser_phase14_actions_overlay",
+        "description": "Phase 14: wire unified browser problem and row action chips to a safe non-destructive action planner, clipboard evidence, provider/repository refresh entry points, installed-view search routing, action contracts, and docs.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "commit": "53b94c18",
+          "overlay": "mmrl_unified_browser_phase13_problems_overlay.zip",
+          "tests": "258 passed",
+          "diagnostics": "0 warnings, 0 errors"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActions.kt",
+              "action": "add",
+              "sha256": "3b5c018bc71c3bf058b58fe5b50f4667bd27d9ac34eab9cd3755600ee022c2ef",
+              "size": 12817
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+              "action": "modify",
+              "sha256": "d0ac93faa76fb15df8b44b02b86bf57250659732082488365971e1a2bc3eb048",
+              "size": 27496,
+              "source_sha256": "f97d2f43353d5ca8c6ae01b3b406111f10c06174f9de88354290ed1c190f4437"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "e318f696bf2b6258895ee22bcb27dc254823244568b79f09fdb779e6db611967",
+              "size": 66556,
+              "source_sha256": "ca76676909f2a5e66ff8c8688d67d3e8b743de8a7e46cf4f8dcad843a90141e1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "d5a824afe3994e59fa41e3037850d3ce1e948d265d6a7577cdfec0ca47a18041",
+              "size": 50913,
+              "source_sha256": "fa7c90a2caecae04cf3a16d35fb74434711e69fceff062bd07c5cfc151d327d8"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionPlannerTest.kt",
+              "action": "add",
+              "sha256": "e676dde3b63b2c71df5b31d4c0c84d14fae0a49560ee9dcb832cadc94d35e740",
+              "size": 4836
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionWiringContractTest.kt",
+              "action": "add",
+              "sha256": "280d287718a285d8db9f2c668fbe170334591b5366614df9d893a9ffe0c8c2fe",
+              "size": 3159
+            },
+            {
+              "path": "docs/UNIFIED_MODULE_BROWSER_PHASE14.md",
+              "action": "add",
+              "sha256": "541fc68360ca0a9fb74cd7d26284bd9e24ee61d62f0e3c375302371d6bbd203c",
+              "size": 2882
+            }
+          ]
+        },
+        "validation": {
+          "expected": {
+            "build": "passed",
+            "tests": "passed",
+            "diagnostics": "passed"
+          },
+          "recommended_tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:lintOfficialDebug"
+          ],
+          "notes": "Gradle validation should be run by devtool on the target repo. Sandbox checks covered Kotlin syntax for the new action model/tests with local stubs plus overlay integrity."
+        },
+        "phase": {
+          "number": 14,
+          "name": "Unified browser actions wiring",
+          "previous_phase": "Phase 13 \u00b7 Problems/health layer",
+          "next_phase_hint": "Route safe actions into existing source/scope/manager sheets and export action evidence into support bundles."
+        }
+      },
+      "history_id": "697a63539ab4446d99a26c24f6ad6407"
+    },
+    {
+      "applied_at": "2026-07-30T18:07:39.159308Z",
+      "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase14_actions_overlay.zip",
+      "artifact_name": "mmrl_unified_browser_phase14_actions_overlay.zip",
+      "type": "overlay",
+      "sha256": "f6bec8c5b58d90d5bcee0804749fcdfabf3ce89527013390debec1ec56d7e02c",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 7,
+      "change_counts": {
+        "add": 4,
+        "modify": 3
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_unified_browser_phase14_actions_overlay",
+        "description": "Phase 14: wire unified browser problem and row action chips to a safe non-destructive action planner, clipboard evidence, provider/repository refresh entry points, installed-view search routing, action contracts, and docs.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "commit": "53b94c18",
+          "overlay": "mmrl_unified_browser_phase13_problems_overlay.zip",
+          "tests": "258 passed",
+          "diagnostics": "0 warnings, 0 errors"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActions.kt",
+              "action": "add",
+              "sha256": "3b5c018bc71c3bf058b58fe5b50f4667bd27d9ac34eab9cd3755600ee022c2ef",
+              "size": 12817
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+              "action": "modify",
+              "sha256": "d0ac93faa76fb15df8b44b02b86bf57250659732082488365971e1a2bc3eb048",
+              "size": 27496,
+              "source_sha256": "f97d2f43353d5ca8c6ae01b3b406111f10c06174f9de88354290ed1c190f4437"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "e318f696bf2b6258895ee22bcb27dc254823244568b79f09fdb779e6db611967",
+              "size": 66556,
+              "source_sha256": "ca76676909f2a5e66ff8c8688d67d3e8b743de8a7e46cf4f8dcad843a90141e1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "d5a824afe3994e59fa41e3037850d3ce1e948d265d6a7577cdfec0ca47a18041",
+              "size": 50913,
+              "source_sha256": "fa7c90a2caecae04cf3a16d35fb74434711e69fceff062bd07c5cfc151d327d8"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionPlannerTest.kt",
+              "action": "add",
+              "sha256": "e676dde3b63b2c71df5b31d4c0c84d14fae0a49560ee9dcb832cadc94d35e740",
+              "size": 4836
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionWiringContractTest.kt",
+              "action": "add",
+              "sha256": "280d287718a285d8db9f2c668fbe170334591b5366614df9d893a9ffe0c8c2fe",
+              "size": 3159
+            },
+            {
+              "path": "docs/UNIFIED_MODULE_BROWSER_PHASE14.md",
+              "action": "add",
+              "sha256": "541fc68360ca0a9fb74cd7d26284bd9e24ee61d62f0e3c375302371d6bbd203c",
+              "size": 2882
+            }
+          ]
+        },
+        "validation": {
+          "expected": {
+            "build": "passed",
+            "tests": "passed",
+            "diagnostics": "passed"
+          },
+          "recommended_tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:lintOfficialDebug"
+          ],
+          "notes": "Gradle validation should be run by devtool on the target repo. Sandbox checks covered Kotlin syntax for the new action model/tests with local stubs plus overlay integrity."
+        },
+        "phase": {
+          "number": 14,
+          "name": "Unified browser actions wiring",
+          "previous_phase": "Phase 13 \u00b7 Problems/health layer",
+          "next_phase_hint": "Route safe actions into existing source/scope/manager sheets and export action evidence into support bundles."
+        }
+      },
+      "history_id": "2cee4b8a27094490991e39518eed414e"
+    },
+    {
+      "applied_at": "2026-07-30T18:11:29.772844Z",
+      "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase14_actions_overlay_r2.zip",
+      "artifact_name": "mmrl_unified_browser_phase14_actions_overlay_r2.zip",
+      "type": "overlay",
+      "sha256": "59e0f1a98609a44ac31edcce7ed37bd0897835ffd7bd655d469d90d29a5a5e03",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 8,
+      "change_counts": {
+        "add": 4,
+        "modify": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_unified_browser_phase14_actions_overlay_r2",
+        "description": "Phase 14 r2: wire unified browser safe actions and update the Phase 12/13 UI source contract so actionable problem cards are expected instead of the older descriptive-only problem card call.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "commit": "53b94c18",
+          "overlay": "mmrl_unified_browser_phase13_problems_overlay.zip",
+          "tests": "258 passed",
+          "diagnostics": "0 warnings, 0 errors"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActions.kt",
+              "action": "add",
+              "sha256": "3b5c018bc71c3bf058b58fe5b50f4667bd27d9ac34eab9cd3755600ee022c2ef",
+              "size": 12817
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+              "action": "modify",
+              "sha256": "d0ac93faa76fb15df8b44b02b86bf57250659732082488365971e1a2bc3eb048",
+              "size": 27496,
+              "source_sha256": "f97d2f43353d5ca8c6ae01b3b406111f10c06174f9de88354290ed1c190f4437"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "e318f696bf2b6258895ee22bcb27dc254823244568b79f09fdb779e6db611967",
+              "size": 66556,
+              "source_sha256": "ca76676909f2a5e66ff8c8688d67d3e8b743de8a7e46cf4f8dcad843a90141e1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "d5a824afe3994e59fa41e3037850d3ce1e948d265d6a7577cdfec0ca47a18041",
+              "size": 50913,
+              "source_sha256": "fa7c90a2caecae04cf3a16d35fb74434711e69fceff062bd07c5cfc151d327d8"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionPlannerTest.kt",
+              "action": "add",
+              "sha256": "e676dde3b63b2c71df5b31d4c0c84d14fae0a49560ee9dcb832cadc94d35e740",
+              "size": 4836
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionWiringContractTest.kt",
+              "action": "add",
+              "sha256": "280d287718a285d8db9f2c668fbe170334591b5366614df9d893a9ffe0c8c2fe",
+              "size": 3159
+            },
+            {
+              "path": "docs/UNIFIED_MODULE_BROWSER_PHASE14.md",
+              "action": "add",
+              "sha256": "541fc68360ca0a9fb74cd7d26284bd9e24ee61d62f0e3c375302371d6bbd203c",
+              "size": 2882
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UnifiedModuleBrowserUiContractTest.kt",
+              "action": "modify",
+              "sha256": "0e37ecca3eee3a607ccb3f3c5db3bfd8b76db22813dc2cee843196526ed10eb1",
+              "size": 3649,
+              "source_sha256": "336f84e08d536bbf2f9dac9346305197a01aba55dd6f6d66088fa81d14d2a9f9"
+            }
+          ]
+        },
+        "validation": {
+          "expected": {
+            "build": "passed",
+            "tests": "passed",
+            "diagnostics": "passed"
+          },
+          "recommended_tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:lintOfficialDebug"
+          ],
+          "notes": "Gradle validation should be run by devtool on the target repo. r2 specifically updates the brittle UI source contract to expect actionable problem cards. Sandbox checks covered updated contract string simulation, Kotlin syntax for new action model/tests from r1, and overlay integrity."
+        },
+        "phase": {
+          "number": 14,
+          "name": "Unified browser actions wiring r2",
+          "previous_phase": "Phase 13 \u00b7 Problems/health layer",
+          "next_phase_hint": "Route safe actions into existing source/scope/manager sheets and export action evidence into support bundles."
+        }
+      },
+      "history_id": "d9671b1ce00b4d6ab47eae45eff8793b"
+    },
+    {
+      "applied_at": "2026-07-30T18:25:26.861939Z",
+      "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase15_action_execution_overlay.zip",
+      "artifact_name": "mmrl_unified_browser_phase15_action_execution_overlay.zip",
+      "type": "overlay",
+      "sha256": "a468aa8dcdedf2d79bbc141757cc62b2bb07bdeb2ed3135c86db73d0e2d12369",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 9,
+      "change_counts": {
+        "add": 2,
+        "modify": 7
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_unified_browser_phase15_action_execution_overlay",
+        "description": "Phase 15: polish unified browser safe action execution with shared result tones, guided destinations, inline result card state, blocked-result feedback, and contracts for no-surprise action handling.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "commit": "53b94c18 + Phase 14 r2 landed clean; commit not reported",
+          "overlay": "mmrl_unified_browser_phase14_actions_overlay_r2.zip",
+          "tests": "264 passed",
+          "diagnostics": "0 warnings, 0 errors"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActions.kt",
+              "action": "modify",
+              "sha256": "29567599522f965846588659c2573d6293b86b34e7b63641cdbdaa0e6b1563db",
+              "size": 17699,
+              "source_sha256": "3b5c018bc71c3bf058b58fe5b50f4667bd27d9ac34eab9cd3755600ee022c2ef"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+              "action": "modify",
+              "sha256": "6ddf5bcd110f27edaf5fbbefaa50a0c55c48cc460444f7834e922389f5a07cfb",
+              "size": 30611,
+              "source_sha256": "d0ac93faa76fb15df8b44b02b86bf57250659732082488365971e1a2bc3eb048"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "6947046dfdf86116ce82e8809121fb3124e3b83cf564632ee84adb174d55e41a",
+              "size": 66913,
+              "source_sha256": "e318f696bf2b6258895ee22bcb27dc254823244568b79f09fdb779e6db611967"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+              "action": "modify",
+              "sha256": "9c1a0acc9bff48d9933e82d653e802f16313b17be53b0a7b2f00bd146cf2b2d5",
+              "size": 15853,
+              "source_sha256": "a84354ff44a72ad4f299b77448a451ce7163eba3eed3d889f8e321b55451857b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "a9b4ccbf06a4e9cf2988bbf02a6149cf53244106561731e88fc70d2e994811ca",
+              "size": 51454,
+              "source_sha256": "d5a824afe3994e59fa41e3037850d3ce1e948d265d6a7577cdfec0ca47a18041"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionWiringContractTest.kt",
+              "action": "modify",
+              "sha256": "6eca3ed39f4c3cd4a63fa216b7d685c32bd56c2eed71a9b016e8df266f32a065",
+              "size": 4109,
+              "source_sha256": "280d287718a285d8db9f2c668fbe170334591b5366614df9d893a9ffe0c8c2fe"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UnifiedModuleBrowserUiContractTest.kt",
+              "action": "modify",
+              "sha256": "c4e2ba62e95116f833cf63b0993ef289417b3db84d11e239340aea626faedcf7",
+              "size": 4048,
+              "source_sha256": "0e37ecca3eee3a607ccb3f3c5db3bfd8b76db22813dc2cee843196526ed10eb1"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionExecutionTest.kt",
+              "action": "add",
+              "sha256": "f95000896884c528ae760df52900940891047056b1c243185f83ca55ffa55134",
+              "size": 2883
+            },
+            {
+              "path": "docs/UNIFIED_MODULE_BROWSER_PHASE15.md",
+              "action": "add",
+              "sha256": "db46a95706af047e1d0da83860fccacd8ceece081237af04adfb41bf6b2d582a",
+              "size": 2972
+            }
+          ]
+        },
+        "validation": {
+          "expected": {
+            "build": "passed",
+            "tests": "passed",
+            "diagnostics": "passed"
+          },
+          "recommended_tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:lintOfficialDebug"
+          ],
+          "notes": "Gradle validation should be run by devtool on the target repo. Sandbox checks covered Kotlin syntax for the action model and new action execution tests with local stubs, source-contract string simulation, manifest SHA preflight, and zip integrity."
+        },
+        "phase": {
+          "number": 15,
+          "name": "Unified browser action execution polish",
+          "previous_phase": "Phase 14 \u00b7 Unified browser actions wiring r2",
+          "next_phase_hint": "Polish the unified browser cards, density behavior, filters, and empty states without changing the safe action execution contract."
+        }
+      },
+      "history_id": "9c30e6a24cd1437b987c8d476be0b5f7"
+    },
+    {
+      "applied_at": "2026-07-30T18:27:26.171691Z",
+      "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase15_action_execution_overlay.zip",
+      "artifact_name": "mmrl_unified_browser_phase15_action_execution_overlay.zip",
+      "type": "overlay",
+      "sha256": "a468aa8dcdedf2d79bbc141757cc62b2bb07bdeb2ed3135c86db73d0e2d12369",
+      "status": "rolled-back",
+      "validation_status": "failed",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 9,
+      "change_counts": {
+        "add": 2,
+        "modify": 7
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_unified_browser_phase15_action_execution_overlay",
+        "description": "Phase 15: polish unified browser safe action execution with shared result tones, guided destinations, inline result card state, blocked-result feedback, and contracts for no-surprise action handling.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "commit": "53b94c18 + Phase 14 r2 landed clean; commit not reported",
+          "overlay": "mmrl_unified_browser_phase14_actions_overlay_r2.zip",
+          "tests": "264 passed",
+          "diagnostics": "0 warnings, 0 errors"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActions.kt",
+              "action": "modify",
+              "sha256": "29567599522f965846588659c2573d6293b86b34e7b63641cdbdaa0e6b1563db",
+              "size": 17699,
+              "source_sha256": "3b5c018bc71c3bf058b58fe5b50f4667bd27d9ac34eab9cd3755600ee022c2ef"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+              "action": "modify",
+              "sha256": "6ddf5bcd110f27edaf5fbbefaa50a0c55c48cc460444f7834e922389f5a07cfb",
+              "size": 30611,
+              "source_sha256": "d0ac93faa76fb15df8b44b02b86bf57250659732082488365971e1a2bc3eb048"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "6947046dfdf86116ce82e8809121fb3124e3b83cf564632ee84adb174d55e41a",
+              "size": 66913,
+              "source_sha256": "e318f696bf2b6258895ee22bcb27dc254823244568b79f09fdb779e6db611967"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+              "action": "modify",
+              "sha256": "9c1a0acc9bff48d9933e82d653e802f16313b17be53b0a7b2f00bd146cf2b2d5",
+              "size": 15853,
+              "source_sha256": "a84354ff44a72ad4f299b77448a451ce7163eba3eed3d889f8e321b55451857b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "a9b4ccbf06a4e9cf2988bbf02a6149cf53244106561731e88fc70d2e994811ca",
+              "size": 51454,
+              "source_sha256": "d5a824afe3994e59fa41e3037850d3ce1e948d265d6a7577cdfec0ca47a18041"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionWiringContractTest.kt",
+              "action": "modify",
+              "sha256": "6eca3ed39f4c3cd4a63fa216b7d685c32bd56c2eed71a9b016e8df266f32a065",
+              "size": 4109,
+              "source_sha256": "280d287718a285d8db9f2c668fbe170334591b5366614df9d893a9ffe0c8c2fe"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UnifiedModuleBrowserUiContractTest.kt",
+              "action": "modify",
+              "sha256": "c4e2ba62e95116f833cf63b0993ef289417b3db84d11e239340aea626faedcf7",
+              "size": 4048,
+              "source_sha256": "0e37ecca3eee3a607ccb3f3c5db3bfd8b76db22813dc2cee843196526ed10eb1"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionExecutionTest.kt",
+              "action": "add",
+              "sha256": "f95000896884c528ae760df52900940891047056b1c243185f83ca55ffa55134",
+              "size": 2883
+            },
+            {
+              "path": "docs/UNIFIED_MODULE_BROWSER_PHASE15.md",
+              "action": "add",
+              "sha256": "db46a95706af047e1d0da83860fccacd8ceece081237af04adfb41bf6b2d582a",
+              "size": 2972
+            }
+          ]
+        },
+        "validation": {
+          "expected": {
+            "build": "passed",
+            "tests": "passed",
+            "diagnostics": "passed"
+          },
+          "recommended_tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:lintOfficialDebug"
+          ],
+          "notes": "Gradle validation should be run by devtool on the target repo. Sandbox checks covered Kotlin syntax for the action model and new action execution tests with local stubs, source-contract string simulation, manifest SHA preflight, and zip integrity."
+        },
+        "phase": {
+          "number": 15,
+          "name": "Unified browser action execution polish",
+          "previous_phase": "Phase 14 \u00b7 Unified browser actions wiring r2",
+          "next_phase_hint": "Polish the unified browser cards, density behavior, filters, and empty states without changing the safe action execution contract."
+        }
+      },
+      "history_id": "a890ab6c4f78493286e7f9a530ec435b"
+    },
+    {
+      "applied_at": "2026-07-30T18:50:14.760083Z",
+      "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase15_action_execution_overlay_r2.zip",
+      "artifact_name": "mmrl_unified_browser_phase15_action_execution_overlay_r2.zip",
+      "type": "overlay",
+      "sha256": "6a67cd73a30e1f41186ead17dc3b11d1d84badbff4e9e743b5c44ae26de47c39",
+      "status": "ok",
+      "validation_status": "ok",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 9,
+      "change_counts": {
+        "add": 2,
+        "modify": 7
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_unified_browser_phase15_action_execution_overlay_r2",
+        "description": "Phase 15 r2: polish unified browser safe action execution and fix the blocked-result contract assertion to match the grammatical runtime copy.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "commit": "53b94c18 + Phase 14 r2 landed clean; commit not reported",
+          "overlay": "mmrl_unified_browser_phase14_actions_overlay_r2.zip",
+          "tests": "264 passed",
+          "diagnostics": "0 warnings, 0 errors"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActions.kt",
+              "action": "modify",
+              "sha256": "29567599522f965846588659c2573d6293b86b34e7b63641cdbdaa0e6b1563db",
+              "size": 17699,
+              "source_sha256": "3b5c018bc71c3bf058b58fe5b50f4667bd27d9ac34eab9cd3755600ee022c2ef"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+              "action": "modify",
+              "sha256": "6ddf5bcd110f27edaf5fbbefaa50a0c55c48cc460444f7834e922389f5a07cfb",
+              "size": 30611,
+              "source_sha256": "d0ac93faa76fb15df8b44b02b86bf57250659732082488365971e1a2bc3eb048"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "6947046dfdf86116ce82e8809121fb3124e3b83cf564632ee84adb174d55e41a",
+              "size": 66913,
+              "source_sha256": "e318f696bf2b6258895ee22bcb27dc254823244568b79f09fdb779e6db611967"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+              "action": "modify",
+              "sha256": "9c1a0acc9bff48d9933e82d653e802f16313b17be53b0a7b2f00bd146cf2b2d5",
+              "size": 15853,
+              "source_sha256": "a84354ff44a72ad4f299b77448a451ce7163eba3eed3d889f8e321b55451857b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "a9b4ccbf06a4e9cf2988bbf02a6149cf53244106561731e88fc70d2e994811ca",
+              "size": 51454,
+              "source_sha256": "d5a824afe3994e59fa41e3037850d3ce1e948d265d6a7577cdfec0ca47a18041"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionWiringContractTest.kt",
+              "action": "modify",
+              "sha256": "6eca3ed39f4c3cd4a63fa216b7d685c32bd56c2eed71a9b016e8df266f32a065",
+              "size": 4109,
+              "source_sha256": "280d287718a285d8db9f2c668fbe170334591b5366614df9d893a9ffe0c8c2fe"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UnifiedModuleBrowserUiContractTest.kt",
+              "action": "modify",
+              "sha256": "c4e2ba62e95116f833cf63b0993ef289417b3db84d11e239340aea626faedcf7",
+              "size": 4048,
+              "source_sha256": "0e37ecca3eee3a607ccb3f3c5db3bfd8b76db22813dc2cee843196526ed10eb1"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionExecutionTest.kt",
+              "action": "add",
+              "sha256": "fca530a132adbd53619b3a44c404089b5305ade8a283f1627b70bcc5ed8f6d89",
+              "size": 2882
+            },
+            {
+              "path": "docs/UNIFIED_MODULE_BROWSER_PHASE15.md",
+              "action": "add",
+              "sha256": "db46a95706af047e1d0da83860fccacd8ceece081237af04adfb41bf6b2d582a",
+              "size": 2972
+            }
+          ]
+        },
+        "validation": {
+          "expected": {
+            "build": "passed",
+            "tests": "passed",
+            "diagnostics": "passed"
+          },
+          "recommended_tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:lintOfficialDebug"
+          ],
+          "notes": "Gradle validation should be run by devtool on the target repo. Sandbox checks covered Kotlin syntax for the action model and new action execution tests with local stubs, source-contract string simulation, manifest SHA preflight, and zip integrity. r2 fixes UnifiedModuleBrowserActionExecutionTest to assert the grammatical blocked-result text: \"require an explicit confirmed flow\"."
+        },
+        "phase": {
+          "number": 15,
+          "name": "Unified browser action execution polish r2",
+          "previous_phase": "Phase 14 \u00b7 Unified browser actions wiring r2",
+          "next_phase_hint": "Polish the unified browser cards, density behavior, filters, and empty states without changing the safe action execution contract."
+        }
+      },
+      "history_id": "6546571a409647278b1e43b6ea6410f1"
     }
   ]
 }

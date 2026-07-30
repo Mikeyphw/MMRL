@@ -22,9 +22,11 @@ class UnifiedModuleBrowserUiContractTest {
         assertTrue(screen.contains("viewModel.unifiedModules.collectAsStateWithLifecycle()"))
         assertTrue(screen.contains("viewModel.filteredUnifiedModules.collectAsStateWithLifecycle()"))
         assertTrue(screen.contains("viewModel.filteredUnifiedProblemReport.collectAsStateWithLifecycle()"))
+        assertTrue(screen.contains("viewModel.unifiedBrowserActionResult.collectAsStateWithLifecycle()"))
         assertTrue(screen.contains("unifiedControls = unifiedControls"))
         assertTrue(screen.contains("filteredUnifiedModules = filteredUnifiedModules"))
         assertTrue(screen.contains("filteredUnifiedProblemReport = filteredUnifiedProblemReport"))
+        assertTrue(screen.contains("unifiedActionResult = unifiedActionResult"))
     }
 
     @Test
@@ -34,8 +36,11 @@ class UnifiedModuleBrowserUiContractTest {
         assertTrue(list.contains("unifiedControls.view == UnifiedModuleView.INSTALLED"))
         assertTrue(list.contains("UnifiedModuleBrowserCard("))
         assertTrue(list.contains("UnifiedModuleProblemDigest(report = filteredUnifiedProblemReport)"))
-        assertTrue(list.contains("UnifiedModuleProblemCard(problem = problem)"))
+        assertTrue(list.contains("UnifiedModuleProblemCard("))
+        assertTrue(list.contains("problem = problem"))
+        assertTrue(list.contains("onAction = viewModel::runUnifiedBrowserAction"))
         assertTrue(list.contains("UnifiedModuleBrowserEmptyState(unifiedControls)"))
+        assertTrue(list.contains("UnifiedModuleActionResultCard(result = result)"))
         assertTrue(list.contains("viewModel::setUnifiedBrowserSort"))
         assertTrue(list.contains("viewModel::setUnifiedBrowserHealthFilter"))
         assertTrue(list.contains("viewModel::setUnifiedBrowserScopeFilter"))
@@ -57,6 +62,8 @@ class UnifiedModuleBrowserUiContractTest {
         assertTrue(panel.contains("item.match.explanation"))
         assertTrue(panel.contains("fun UnifiedModuleProblemDigest"))
         assertTrue(panel.contains("fun UnifiedModuleProblemCard"))
+        assertTrue(panel.contains("fun UnifiedModuleActionResultCard"))
         assertTrue(panel.contains("problem.actions.forEach"))
+        assertTrue(panel.contains("result.tone.label"))
     }
 }

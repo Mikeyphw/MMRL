@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -35,6 +36,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.model.unified.UnifiedBadgeSeverity
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBadge
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserAction
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionPlanner
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionResult
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionTone
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControls
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControlsState
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserStats
@@ -318,6 +323,71 @@ fun UnifiedModuleBrowserEmptyState(
     }
 }
 
+
+@Composable
+fun UnifiedModuleActionResultCard(result: UnifiedModuleBrowserActionResult) {
+    val color = result.tone.color()
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp).fillMaxWidth(),
+        color = color.copy(alpha = 0.10f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.36f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = result.message,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (result.followUp.isNotBlank()) {
+                        Text(
+                            text = result.followUp,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Surface(
+                    color = color.copy(alpha = 0.12f),
+                    contentColor = color,
+                    shape = RoundedCornerShape(999.dp),
+                    border = BorderStroke(1.dp, color.copy(alpha = 0.34f)),
+                ) {
+                    Text(
+                        text = result.tone.label,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                UnifiedModuleBrowserActionPlanner.resultSummary(result).forEach { summary ->
+                    UnifiedTinyPill(summary)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun UnifiedModuleProblemDigest(report: UnifiedModuleProblemReport) {
     Surface(
@@ -361,7 +431,10 @@ fun UnifiedModuleProblemDigest(report: UnifiedModuleProblemReport) {
 }
 
 @Composable
-fun UnifiedModuleProblemCard(problem: UnifiedModuleProblem) {
+fun UnifiedModuleProblemCard(
+    problem: UnifiedModuleProblem,
+    onAction: (UnifiedModuleBrowserAction) -> Unit,
+) {
     val color = problem.severity.color()
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp).fillMaxWidth(),
@@ -430,7 +503,14 @@ fun UnifiedModuleProblemCard(problem: UnifiedModuleProblem) {
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
                     problem.actions.forEach { action ->
-                        UnifiedTinyPill(action.label)
+                        val browserAction = remember(problem, action) {
+                            UnifiedModuleBrowserActionPlanner.forProblem(problem, action)
+                        }
+                        AssistChip(
+                            enabled = browserAction.enabled,
+                            onClick = { onAction(browserAction) },
+                            label = { Text(browserAction.label) },
+                        )
                     }
                 }
             }
@@ -442,6 +522,7 @@ fun UnifiedModuleProblemCard(problem: UnifiedModuleProblem) {
 fun UnifiedModuleBrowserCard(
     item: UnifiedModuleItem,
     density: UnifiedModuleDensityMode,
+    onAction: (UnifiedModuleBrowserAction) -> Unit,
 ) {
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
@@ -506,6 +587,25 @@ fun UnifiedModuleBrowserCard(
                     item.badges.take(density.badgeLimit()).forEach { badge -> UnifiedBadgePill(badge) }
                     val hidden = item.badges.size - density.badgeLimit()
                     if (hidden > 0) UnifiedTinyPill("+$hidden badges")
+                }
+            }
+
+            val actions = remember(item) { UnifiedModuleBrowserActionPlanner.forItem(item) }
+            if (actions.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
+                ) {
+                    actions.take(density.actionLimit()).forEach { action ->
+                        AssistChip(
+                            enabled = action.enabled,
+                            onClick = { onAction(action) },
+                            label = { Text(action.label) },
+                        )
+                    }
+                    val hiddenActions = actions.size - density.actionLimit()
+                    if (hiddenActions > 0) UnifiedTinyPill("+$hiddenActions actions")
                 }
             }
 
@@ -626,6 +726,20 @@ private fun UnifiedModuleDensityMode.badgeLimit(): Int = when (this) {
     UnifiedModuleDensityMode.COMPACT -> 4
     UnifiedModuleDensityMode.COMFORTABLE -> 8
     UnifiedModuleDensityMode.DIAGNOSTIC -> Int.MAX_VALUE
+}
+
+private fun UnifiedModuleDensityMode.actionLimit(): Int = when (this) {
+    UnifiedModuleDensityMode.COMPACT -> 2
+    UnifiedModuleDensityMode.COMFORTABLE -> 4
+    UnifiedModuleDensityMode.DIAGNOSTIC -> Int.MAX_VALUE
+}
+
+@Composable
+private fun UnifiedModuleBrowserActionTone.color(): Color = when (this) {
+    UnifiedModuleBrowserActionTone.SUCCESS -> MaterialTheme.colorScheme.tertiary
+    UnifiedModuleBrowserActionTone.INFO -> MaterialTheme.colorScheme.primary
+    UnifiedModuleBrowserActionTone.WARNING -> MaterialTheme.colorScheme.error
+    UnifiedModuleBrowserActionTone.BLOCKED -> MaterialTheme.colorScheme.error
 }
 
 @Composable

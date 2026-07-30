@@ -1,6 +1,8 @@
 package com.dergoogler.mmrl.viewmodel
 
 import android.app.Application
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
 import android.widget.Toast
@@ -44,6 +46,10 @@ import com.dergoogler.mmrl.model.state.Permissions
 import com.dergoogler.mmrl.service.ModuleService
 import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserAction
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionKind
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionResult
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionPlanner
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControls
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControlsState
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserModel
@@ -131,6 +137,9 @@ class ModulesViewModel
         val ashFilter = ashFilterFlow.asStateFlow()
         private val ashMessagesFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
         val ashMessages = ashMessagesFlow.asSharedFlow()
+
+        private val unifiedBrowserActionResultFlow = MutableStateFlow<UnifiedModuleBrowserActionResult?>(null)
+        val unifiedBrowserActionResult = unifiedBrowserActionResultFlow.asStateFlow()
         val versionPolicies = modulePolicyStore.policies
         val moduleSnapshots = modulePolicyStore.snapshots
         val localSources: StateFlow<List<LocalModuleSource>> =
@@ -654,6 +663,64 @@ class ModulesViewModel
             }
             keyFlow.value = ""
         }
+        fun runUnifiedBrowserAction(action: UnifiedModuleBrowserAction) {
+            val result = if (!action.enabled || action.destructive) {
+                UnifiedModuleBrowserActionPlanner.blockedResult(action)
+            } else {
+                UnifiedModuleBrowserActionPlanner.resultFor(action)
+            }
+            unifiedBrowserActionResultFlow.value = result
+            if (!result.safe || action.destructive) {
+                ashMessagesFlow.tryEmit(result.userMessage)
+                return
+            }
+            viewModelScope.launch {
+                result.copiedText?.takeIf(String::isNotBlank)?.let { text ->
+                    copyUnifiedBrowserText(
+                        label = action.label,
+                        text = text,
+                    )
+                }
+                executeUnifiedBrowserAction(action)
+                ashMessagesFlow.emit(result.userMessage.ifBlank { result.message })
+            }
+        }
+
+        private suspend fun executeUnifiedBrowserAction(action: UnifiedModuleBrowserAction) {
+            when (action.kind) {
+                UnifiedModuleBrowserActionKind.REFRESH_PROVIDER -> {
+                    modulesRepository.getLocalAll()
+                    runCatching { ashManager.refresh() }
+                        .onFailure { Timber.w(it, "Unable to refresh AshReXcue from unified browser action") }
+                }
+                UnifiedModuleBrowserActionKind.REFRESH_REPOSITORY -> modulesRepository.getLocalAll()
+                UnifiedModuleBrowserActionKind.RUN_DEBUG_PROBE -> runCatching { ashManager.refresh() }
+                    .onFailure { Timber.w(it, "Unable to refresh diagnostics from unified browser action") }
+                UnifiedModuleBrowserActionKind.OPEN_MODULE -> {
+                    action.moduleId?.takeIf(String::isNotBlank)?.let { moduleId ->
+                        setUnifiedBrowserView(UnifiedModuleView.INSTALLED)
+                        search("id:$moduleId")
+                    }
+                }
+                UnifiedModuleBrowserActionKind.COPY_EVIDENCE,
+                UnifiedModuleBrowserActionKind.COPY_SOURCE_URL,
+                UnifiedModuleBrowserActionKind.OPEN_GITHUB_SOURCE_RULES,
+                UnifiedModuleBrowserActionKind.OPEN_MANAGER,
+                UnifiedModuleBrowserActionKind.REVIEW_SCOPE,
+                UnifiedModuleBrowserActionKind.REVIEW_RESCUE,
+                UnifiedModuleBrowserActionKind.SUGGEST_FIX,
+                -> Unit
+            }
+        }
+
+        private fun copyUnifiedBrowserText(
+            label: String,
+            text: String,
+        ) {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            clipboard?.setPrimaryClip(ClipData.newPlainText(label, text))
+        }
+
 
         fun getLocalAll() =
             viewModelScope.launch {

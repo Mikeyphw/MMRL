@@ -96,6 +96,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         val unifiedModules by viewModel.unifiedModules.collectAsStateWithLifecycle()
         val filteredUnifiedModules by viewModel.filteredUnifiedModules.collectAsStateWithLifecycle()
         val filteredUnifiedProblemReport by viewModel.filteredUnifiedProblemReport.collectAsStateWithLifecycle()
+        val unifiedActionResult by viewModel.unifiedBrowserActionResult.collectAsStateWithLifecycle()
         val snackbar = LocalSnackbarHost.current
         var selectedTab by remember { mutableStateOf(ModulesTab.RootModules) }
 
@@ -231,6 +232,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                             unifiedModules = unifiedModules,
                             filteredUnifiedModules = filteredUnifiedModules,
                             filteredUnifiedProblemReport = filteredUnifiedProblemReport,
+                            unifiedActionResult = unifiedActionResult,
                         )
                     }
                 }

@@ -87,6 +87,7 @@ import com.dergoogler.mmrl.model.local.groupInstalledModules
 import com.dergoogler.mmrl.model.local.versionDisplay
 import com.dergoogler.mmrl.model.online.Blacklist
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionResult
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControlsState
 import com.dergoogler.mmrl.model.unified.UnifiedModuleItem
 import com.dergoogler.mmrl.model.unified.UnifiedModuleProblemReport
@@ -133,6 +134,7 @@ fun ScaffoldScope.ModulesList(
     unifiedModules: List<UnifiedModuleItem>,
     filteredUnifiedModules: List<UnifiedModuleItem>,
     filteredUnifiedProblemReport: UnifiedModuleProblemReport,
+    unifiedActionResult: UnifiedModuleBrowserActionResult?,
 ) = Box(
     modifier = Modifier.fillMaxSize(),
 ) {
@@ -228,6 +230,11 @@ fun ScaffoldScope.ModulesList(
                     onClearFilters = viewModel::clearUnifiedBrowserFilters,
                 )
             }
+            unifiedActionResult?.let { result ->
+                item(key = "unified_action_result_${result.actionKind}") {
+                    UnifiedModuleActionResultCard(result = result)
+                }
+            }
 
             if (unifiedControls.view == UnifiedModuleView.INSTALLED) {
                 if (ashState.snapshot != null) {
@@ -292,7 +299,10 @@ fun ScaffoldScope.ModulesList(
                         key = { "unified_problem_${it.id}" },
                         contentType = { "unified_module_problem_card" },
                     ) { problem ->
-                        UnifiedModuleProblemCard(problem = problem)
+                        UnifiedModuleProblemCard(
+                            problem = problem,
+                            onAction = viewModel::runUnifiedBrowserAction,
+                        )
                     }
                 } else {
                     if (filteredUnifiedModules.isEmpty()) {
@@ -308,6 +318,7 @@ fun ScaffoldScope.ModulesList(
                         UnifiedModuleBrowserCard(
                             item = item,
                             density = unifiedControls.density,
+                            onAction = viewModel::runUnifiedBrowserAction,
                         )
                     }
                 }

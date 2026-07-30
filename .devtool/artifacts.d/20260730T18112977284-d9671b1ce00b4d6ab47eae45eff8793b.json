@@ -1,0 +1,106 @@
+{
+  "applied_at": "2026-07-30T18:11:29.772844Z",
+  "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase14_actions_overlay_r2.zip",
+  "artifact_name": "mmrl_unified_browser_phase14_actions_overlay_r2.zip",
+  "type": "overlay",
+  "sha256": "59e0f1a98609a44ac31edcce7ed37bd0897835ffd7bd655d469d90d29a5a5e03",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "",
+  "commit_hash": "",
+  "file_count": 8,
+  "change_counts": {
+    "add": 4,
+    "modify": 4
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_unified_browser_phase14_actions_overlay_r2",
+    "description": "Phase 14 r2: wire unified browser safe actions and update the Phase 12/13 UI source contract so actionable problem cards are expected instead of the older descriptive-only problem card call.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "baseline": {
+      "commit": "53b94c18",
+      "overlay": "mmrl_unified_browser_phase13_problems_overlay.zip",
+      "tests": "258 passed",
+      "diagnostics": "0 warnings, 0 errors"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActions.kt",
+          "action": "add",
+          "sha256": "3b5c018bc71c3bf058b58fe5b50f4667bd27d9ac34eab9cd3755600ee022c2ef",
+          "size": 12817
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+          "action": "modify",
+          "sha256": "d0ac93faa76fb15df8b44b02b86bf57250659732082488365971e1a2bc3eb048",
+          "size": 27496,
+          "source_sha256": "f97d2f43353d5ca8c6ae01b3b406111f10c06174f9de88354290ed1c190f4437"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "e318f696bf2b6258895ee22bcb27dc254823244568b79f09fdb779e6db611967",
+          "size": 66556,
+          "source_sha256": "ca76676909f2a5e66ff8c8688d67d3e8b743de8a7e46cf4f8dcad843a90141e1"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+          "action": "modify",
+          "sha256": "d5a824afe3994e59fa41e3037850d3ce1e948d265d6a7577cdfec0ca47a18041",
+          "size": 50913,
+          "source_sha256": "fa7c90a2caecae04cf3a16d35fb74434711e69fceff062bd07c5cfc151d327d8"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionPlannerTest.kt",
+          "action": "add",
+          "sha256": "e676dde3b63b2c71df5b31d4c0c84d14fae0a49560ee9dcb832cadc94d35e740",
+          "size": 4836
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionWiringContractTest.kt",
+          "action": "add",
+          "sha256": "280d287718a285d8db9f2c668fbe170334591b5366614df9d893a9ffe0c8c2fe",
+          "size": 3159
+        },
+        {
+          "path": "docs/UNIFIED_MODULE_BROWSER_PHASE14.md",
+          "action": "add",
+          "sha256": "541fc68360ca0a9fb74cd7d26284bd9e24ee61d62f0e3c375302371d6bbd203c",
+          "size": 2882
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UnifiedModuleBrowserUiContractTest.kt",
+          "action": "modify",
+          "sha256": "0e37ecca3eee3a607ccb3f3c5db3bfd8b76db22813dc2cee843196526ed10eb1",
+          "size": 3649,
+          "source_sha256": "336f84e08d536bbf2f9dac9346305197a01aba55dd6f6d66088fa81d14d2a9f9"
+        }
+      ]
+    },
+    "validation": {
+      "expected": {
+        "build": "passed",
+        "tests": "passed",
+        "diagnostics": "passed"
+      },
+      "recommended_tasks": [
+        ":app:testOfficialDebugUnitTest",
+        ":app:lintOfficialDebug"
+      ],
+      "notes": "Gradle validation should be run by devtool on the target repo. r2 specifically updates the brittle UI source contract to expect actionable problem cards. Sandbox checks covered updated contract string simulation, Kotlin syntax for new action model/tests from r1, and overlay integrity."
+    },
+    "phase": {
+      "number": 14,
+      "name": "Unified browser actions wiring r2",
+      "previous_phase": "Phase 13 · Problems/health layer",
+      "next_phase_hint": "Route safe actions into existing source/scope/manager sheets and export action evidence into support bundles."
+    }
+  },
+  "history_id": "d9671b1ce00b4d6ab47eae45eff8793b"
+}
