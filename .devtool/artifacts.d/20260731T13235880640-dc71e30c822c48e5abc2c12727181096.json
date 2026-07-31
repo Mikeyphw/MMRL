@@ -1,0 +1,98 @@
+{
+  "applied_at": "2026-07-31T13:23:58.806409Z",
+  "artifact": "/home/mike/Downloads/mmrl_unified_browser_phase16_ux_polish_overlay.zip",
+  "artifact_name": "mmrl_unified_browser_phase16_ux_polish_overlay.zip",
+  "type": "overlay",
+  "sha256": "199445b0f4a0f513ae1aa3b95651a04cc1909d10443b184fc8e9628828fa271f",
+  "status": "ok",
+  "validation_status": "ok",
+  "commit_message": "",
+  "commit_hash": "",
+  "file_count": 6,
+  "change_counts": {
+    "add": 3,
+    "modify": 3
+  },
+  "manifest": {
+    "schema_version": 2,
+    "type": "overlay",
+    "name": "mmrl_unified_browser_phase16_ux_polish_overlay",
+    "description": "Phase 16: polish unified browser UX with centralized presentation policy, clearer empty states, badge hierarchy, density-aware cards, and UI contracts.",
+    "target": "mmrl_android",
+    "repository": "MMRL",
+    "baseline": {
+      "commit": "Phase 15 r2 landed clean; commit not reported",
+      "overlay": "mmrl_unified_browser_phase15_action_execution_overlay_r2.zip",
+      "tests": "268 passed",
+      "diagnostics": "0 warnings, 0 errors"
+    },
+    "inventory": {
+      "format": 1,
+      "entries": [
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserPresentation.kt",
+          "action": "add",
+          "sha256": "340f19b07364eb1e5c2c89021d1e36012cd6576c47891cb1d9940f1437dcdb1e",
+          "size": 9598
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/UnifiedModuleBrowserPanel.kt",
+          "action": "modify",
+          "sha256": "42f4fb16585b38c8f7a5013cee5d5edd11e7e0ac8bf91ac6fa2c22d3081dfdcb",
+          "size": 30835,
+          "source_sha256": "6ddf5bcd110f27edaf5fbbefaa50a0c55c48cc460444f7834e922389f5a07cfb"
+        },
+        {
+          "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+          "action": "modify",
+          "sha256": "b1f9aad67602faa3c84ce90d710f88f87ad8cb8da9ce407a8e7f261a47d00248",
+          "size": 67387,
+          "source_sha256": "6947046dfdf86116ce82e8809121fb3124e3b83cf564632ee84adb174d55e41a"
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserPresentationTest.kt",
+          "action": "add",
+          "sha256": "2e0c22eac4ae8db853a6381eb2eb5aaa88659f575774f8632257162c8a5d12a3",
+          "size": 5226
+        },
+        {
+          "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/UnifiedModuleBrowserUiContractTest.kt",
+          "action": "modify",
+          "sha256": "3808aebc09d9c70360ed2dcfc6bc788e08bf9d7b57915ccbbdaa46451f8c1da5",
+          "size": 4437,
+          "source_sha256": "c4e2ba62e95116f833cf63b0993ef289417b3db84d11e239340aea626faedcf7"
+        },
+        {
+          "path": "docs/UNIFIED_MODULE_BROWSER_PHASE16.md",
+          "action": "add",
+          "sha256": "086e03c1b357456762b91dd73f466e1f57804418b8bfd1aa3e609630290842d1",
+          "size": 2372
+        }
+      ]
+    },
+    "validation": {
+      "expected": {
+        "build": "passed",
+        "tests": "passed",
+        "diagnostics": "passed"
+      },
+      "recommended_tasks": [
+        ":app:testOfficialDebugUnitTest",
+        ":app:lintOfficialDebug"
+      ],
+      "notes": "Gradle validation should be run by devtool on the target repo. Sandbox checks covered pure Kotlin syntax for the presentation model/test, source-contract preflight, manifest SHA preflight, and ZIP integrity."
+    },
+    "phase": {
+      "id": "16",
+      "title": "Unified browser UX polish",
+      "summary": [
+        "Centralizes presentation policy for unified module rows.",
+        "Adds filter-aware empty states with clear-filter recovery.",
+        "Promotes problem/update/provider badges before lower-priority badges.",
+        "Differentiates compact, comfortable, and diagnostic density behavior.",
+        "Keeps destructive actions blocked and out of scope."
+      ]
+    }
+  },
+  "history_id": "dc71e30c822c48e5abc2c12727181096"
+}

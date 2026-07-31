@@ -34,13 +34,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.dergoogler.mmrl.model.unified.UnifiedBadgeEmphasis
+import com.dergoogler.mmrl.model.unified.UnifiedBadgePresentation
 import com.dergoogler.mmrl.model.unified.UnifiedBadgeSeverity
-import com.dergoogler.mmrl.model.unified.UnifiedModuleBadge
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserAction
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionPlanner
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionResult
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserActionTone
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControls
+import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserPresentation
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserControlsState
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserStats
 import com.dergoogler.mmrl.model.unified.UnifiedModuleDensityMode
@@ -53,7 +55,6 @@ import com.dergoogler.mmrl.model.unified.UnifiedModuleSourceType
 import com.dergoogler.mmrl.model.unified.UnifiedModuleView
 import com.dergoogler.mmrl.model.unified.UnifiedProviderCompatibility
 import com.dergoogler.mmrl.model.unified.UnifiedScopeFilter
-import com.dergoogler.mmrl.model.unified.UnifiedScopeState
 
 /**
  * Phase 12 bridge UI for the unified module browser.
@@ -78,6 +79,13 @@ fun UnifiedModuleBrowserHeader(
     onClearFilters: () -> Unit,
 ) {
     val stats = remember(allItems) { UnifiedModuleBrowserControls.stats(allItems) }
+    val chrome = remember(controls, stats, shownItems.size) {
+        UnifiedModuleBrowserPresentation.chrome(
+            controls = controls,
+            stats = stats,
+            shownCount = shownItems.size,
+        )
+    }
     val summary = remember(controls) { UnifiedModuleBrowserControls.filterSummary(controls) }
     val availableSourceTypes = remember(allItems) {
         UnifiedModuleSourceType.entries.filter { type -> allItems.any { type in it.sourceTypes } }
@@ -99,19 +107,28 @@ fun UnifiedModuleBrowserHeader(
         ) {
             Column {
                 Text(
-                    text = "Unified browser",
+                    text = chrome.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.semantics { heading() },
                 )
                 Text(
-                    text = buildString {
-                        append("${shownItems.size} shown from ${stats.total} canonical rows. ")
-                        append("Search supports name:, id:, alias:, source:, scope:, and badge:.")
-                    },
+                    text = chrome.summary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Text(
+                    text = chrome.searchHelp,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                chrome.statPills.forEach { label -> UnifiedTinyPill(text = label) }
             }
 
             Row(
@@ -296,7 +313,9 @@ private fun UnifiedFilterSection(
 @Composable
 fun UnifiedModuleBrowserEmptyState(
     controls: UnifiedModuleBrowserControlsState,
+    onClearFilters: () -> Unit,
 ) {
+    val presentation = remember(controls) { UnifiedModuleBrowserPresentation.emptyState(controls) }
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -310,15 +329,27 @@ fun UnifiedModuleBrowserEmptyState(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = "No ${controls.view.label.lowercase()} modules match",
+                text = presentation.title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Try another unified view, clear filters, or search with a field such as problem:scope, severity:error, badge:warning, or source:github.",
+                text = presentation.body,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                presentation.suggestions.forEach { suggestion -> UnifiedTinyPill(suggestion) }
+                if (presentation.canClearFilters) {
+                    TextButton(onClick = onClearFilters) {
+                        Text("Clear filters")
+                    }
+                }
+            }
         }
     }
 }
@@ -524,6 +555,12 @@ fun UnifiedModuleBrowserCard(
     density: UnifiedModuleDensityMode,
     onAction: (UnifiedModuleBrowserAction) -> Unit,
 ) {
+    val presentation = remember(item, density) {
+        UnifiedModuleBrowserPresentation.card(
+            item = item,
+            density = density,
+        )
+    }
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -542,26 +579,26 @@ fun UnifiedModuleBrowserCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = item.title,
+                        text = presentation.title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = item.subtitle.ifBlank { item.displayId },
+                        text = presentation.subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = if (density == UnifiedModuleDensityMode.COMPACT) 1 else 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                UnifiedStatePill(item.state.installState.label)
+                UnifiedStatePill(presentation.stateLabel)
             }
 
-            if (item.description.isNotBlank()) {
+            if (presentation.description.isNotBlank()) {
                 Text(
-                    text = item.description,
+                    text = presentation.description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = density.maxDescriptionLines,
@@ -573,21 +610,14 @@ fun UnifiedModuleBrowserCard(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                UnifiedTinyPill(item.sourceMode.label)
-                item.repositoryName?.takeIf(String::isNotBlank)?.let { UnifiedTinyPill(it) }
-                item.sourceTypes.forEach { UnifiedTinyPill(it.label) }
+                presentation.metadataPills.forEach { label -> UnifiedTinyPill(label) }
             }
 
-            if (density.showBadges && item.badges.isNotEmpty()) {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(7.dp),
-                    verticalArrangement = Arrangement.spacedBy(7.dp),
-                ) {
-                    item.badges.take(density.badgeLimit()).forEach { badge -> UnifiedBadgePill(badge) }
-                    val hidden = item.badges.size - density.badgeLimit()
-                    if (hidden > 0) UnifiedTinyPill("+$hidden badges")
-                }
+            if (density.showBadges && presentation.badges.isNotEmpty()) {
+                UnifiedBadgeStrip(
+                    badges = presentation.badges,
+                    hiddenBadgeCount = presentation.hiddenBadgeCount,
+                )
             }
 
             val actions = remember(item) { UnifiedModuleBrowserActionPlanner.forItem(item) }
@@ -597,40 +627,40 @@ fun UnifiedModuleBrowserCard(
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
-                    actions.take(density.actionLimit()).forEach { action ->
+                    actions.take(presentation.actionLimit).forEach { action ->
                         AssistChip(
                             enabled = action.enabled,
                             onClick = { onAction(action) },
                             label = { Text(action.label) },
                         )
                     }
-                    val hiddenActions = actions.size - density.actionLimit()
+                    val hiddenActions = actions.size - presentation.actionLimit
                     if (hiddenActions > 0) UnifiedTinyPill("+$hiddenActions actions")
                 }
             }
 
-            if (density.showDiagnostics) {
+            if (presentation.diagnosticLines.isNotEmpty()) {
                 HorizontalDivider()
-                UnifiedDiagnosticText("ID", item.displayId)
-                UnifiedDiagnosticText("Canonical", item.canonicalId)
-                UnifiedDiagnosticText("Match", "${item.match.reason} · ${item.match.confidence}% · ${item.match.explanation}")
-                if (item.aliases.isNotEmpty()) {
-                    UnifiedDiagnosticText("Aliases", item.aliases.joinToString())
-                }
-                item.sourceUrl?.takeIf(String::isNotBlank)?.let { UnifiedDiagnosticText("Source", it) }
-                when (val scope = item.state.scope) {
-                    is UnifiedScopeState.Lsposed -> UnifiedDiagnosticText(
-                        "Scope",
-                        buildString {
-                            append("${scope.scopedPackageCount} packages · ")
-                            append(if (scope.enabled) "enabled" else "disabled")
-                            if (scope.autoInclude) append(" · auto")
-                        },
-                    )
-                    UnifiedScopeState.None -> Unit
+                presentation.diagnosticLines.forEach { line ->
+                    UnifiedDiagnosticText(line.label, line.value)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun UnifiedBadgeStrip(
+    badges: List<UnifiedBadgePresentation>,
+    hiddenBadgeCount: Int,
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        badges.forEach { badge -> UnifiedBadgePill(badge) }
+        if (hiddenBadgeCount > 0) UnifiedTinyPill("+$hiddenBadgeCount badges")
     }
 }
 
@@ -652,14 +682,20 @@ private fun UnifiedStatePill(text: String) {
 }
 
 @Composable
-private fun UnifiedBadgePill(badge: UnifiedModuleBadge) {
+private fun UnifiedBadgePill(presentation: UnifiedBadgePresentation) {
+    val badge = presentation.badge
     val color = badge.severity.color()
+    val alpha = when (presentation.emphasis) {
+        UnifiedBadgeEmphasis.HIGH -> 0.16f
+        UnifiedBadgeEmphasis.MEDIUM -> 0.11f
+        UnifiedBadgeEmphasis.LOW -> 0.07f
+    }
     Surface(
         modifier = Modifier.widthIn(max = 240.dp).heightIn(min = 30.dp),
-        color = color.copy(alpha = 0.10f),
+        color = color.copy(alpha = alpha),
         contentColor = color,
         shape = RoundedCornerShape(999.dp),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.35f)),
+        border = BorderStroke(1.dp, color.copy(alpha = if (presentation.emphasis == UnifiedBadgeEmphasis.LOW) 0.22f else 0.40f)),
     ) {
         Text(
             text = badge.label,
@@ -722,17 +758,6 @@ private fun UnifiedModuleSortMode.label(): String = when (this) {
     UnifiedModuleSortMode.NAME_A_Z -> "Name A-Z"
 }
 
-private fun UnifiedModuleDensityMode.badgeLimit(): Int = when (this) {
-    UnifiedModuleDensityMode.COMPACT -> 4
-    UnifiedModuleDensityMode.COMFORTABLE -> 8
-    UnifiedModuleDensityMode.DIAGNOSTIC -> Int.MAX_VALUE
-}
-
-private fun UnifiedModuleDensityMode.actionLimit(): Int = when (this) {
-    UnifiedModuleDensityMode.COMPACT -> 2
-    UnifiedModuleDensityMode.COMFORTABLE -> 4
-    UnifiedModuleDensityMode.DIAGNOSTIC -> Int.MAX_VALUE
-}
 
 @Composable
 private fun UnifiedModuleBrowserActionTone.color(): Color = when (this) {

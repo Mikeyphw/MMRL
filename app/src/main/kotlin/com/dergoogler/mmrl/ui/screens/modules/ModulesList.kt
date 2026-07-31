@@ -249,7 +249,10 @@ fun ScaffoldScope.ModulesList(
 
                 if (visibleGroups.isEmpty()) {
                     item(key = "installed_unified_empty") {
-                        UnifiedModuleBrowserEmptyState(unifiedControls)
+                        UnifiedModuleBrowserEmptyState(
+                            controls = unifiedControls,
+                            onClearFilters = viewModel::clearUnifiedBrowserFilters,
+                        )
                     }
                 }
 
@@ -291,7 +294,10 @@ fun ScaffoldScope.ModulesList(
                     }
                     if (filteredUnifiedProblemReport.problems.isEmpty()) {
                         item(key = "unified_empty_${unifiedControls.view}") {
-                            UnifiedModuleBrowserEmptyState(unifiedControls)
+                            UnifiedModuleBrowserEmptyState(
+                                controls = unifiedControls,
+                                onClearFilters = viewModel::clearUnifiedBrowserFilters,
+                            )
                         }
                     }
                     items(
@@ -307,7 +313,10 @@ fun ScaffoldScope.ModulesList(
                 } else {
                     if (filteredUnifiedModules.isEmpty()) {
                         item(key = "unified_empty_${unifiedControls.view}") {
-                            UnifiedModuleBrowserEmptyState(unifiedControls)
+                            UnifiedModuleBrowserEmptyState(
+                                controls = unifiedControls,
+                                onClearFilters = viewModel::clearUnifiedBrowserFilters,
+                            )
                         }
                     }
                     items(
