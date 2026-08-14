@@ -10,6 +10,7 @@ import com.dergoogler.mmrl.platform.model.ModId.Companion.moduleDir
 import com.dergoogler.mmrl.platform.model.ModId.Companion.removeFile
 import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.platform.util.Shell.submit
+import com.dergoogler.mmrl.platform.util.ShellCommand
 
 open class KernelSUModuleManager : BaseModuleManager() {
     override fun getManagerName(): String = "KernelSU"
@@ -65,7 +66,7 @@ open class KernelSUModuleManager : BaseModuleManager() {
         if (!dir.exists()) callback.onFailure(id, null)
 
         if (useShell) {
-            "ksud module enable $id".submit {
+            ShellCommand.of("ksud", "module", "enable", id.id).submit {
                 if (isSuccess) {
                     callback.onSuccess(id)
                 } else {
@@ -93,7 +94,7 @@ open class KernelSUModuleManager : BaseModuleManager() {
         if (!dir.exists()) return callback.onFailure(id, null)
 
         if (useShell) {
-            "ksud module disable $id".submit {
+            ShellCommand.of("ksud", "module", "disable", id.id).submit {
                 if (isSuccess) {
                     callback.onSuccess(id)
                 } else {
@@ -121,7 +122,7 @@ open class KernelSUModuleManager : BaseModuleManager() {
         if (!dir.exists()) return callback.onFailure(id, null)
 
         if (useShell) {
-            "ksud module uninstall $id".submit {
+            ShellCommand.of("ksud", "module", "uninstall", id.id).submit {
                 if (isSuccess) {
                     callback.onSuccess(id)
                 } else {
@@ -140,9 +141,12 @@ open class KernelSUModuleManager : BaseModuleManager() {
         }
     }
 
-    override fun getInstallCommand(path: String): String = "ksud module install \"$path\""
+    override fun getInstallCommand(path: String): String = ShellCommand.of("ksud", "module", "install", path)
 
-    override fun getActionCommand(id: ModId): String = "ksud module action ${id.id}"
+    override fun getActionCommand(id: ModId): String {
+        id.requireOperational()
+        return ShellCommand.of("ksud", "module", "action", id.id)
+    }
 
     override fun getActionEnvironment(): List<String> =
         listOf(

@@ -174,6 +174,7 @@ fun ModuleUpdatesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                             uri = file.toUri(),
                             confirm = false,
                             parentOperationId = parentOperationId,
+                            expectedModuleId = update.local.id.id,
                         )
                     }
                 },
@@ -198,13 +199,21 @@ fun ModuleUpdatesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                         items = bulkModules,
                         onAllSuccess = { uris ->
                             reviewAll = false
-                            InstallActivity.start(context = context, uri = uris)
+                            InstallActivity.start(
+                                context = context,
+                                uri = uris,
+                                expectedModuleIds = bulkModules.map(BulkModule::id),
+                            )
                         },
                         onFailure = { error ->
                             Timber.e(error)
                             if (error is BulkDownloadException && error.successes.isNotEmpty()) {
                                 reviewAll = false
-                                InstallActivity.start(context = context, uri = error.successes.map { it.uri })
+                                InstallActivity.start(
+                                    context = context,
+                                    uri = error.successes.map { it.uri },
+                                    expectedModuleIds = error.successes.map { it.module.id },
+                                )
                             }
                             scope.launch {
                                 snackbar.showSnackbar(error.message ?: context.getString(R.string.unknown_error))

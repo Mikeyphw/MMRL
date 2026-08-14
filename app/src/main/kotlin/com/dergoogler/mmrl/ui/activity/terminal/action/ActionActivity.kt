@@ -7,10 +7,8 @@ import android.util.Log
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.dergoogler.mmrl.platform.model.ModId
-import com.dergoogler.mmrl.platform.model.ModId.Companion.getModId
-import com.dergoogler.mmrl.platform.model.ModId.Companion.isNullOrEmpty
-import com.dergoogler.mmrl.platform.model.ModId.Companion.putModId
 import com.dergoogler.mmrl.ui.activity.TerminalActivity
+import com.dergoogler.mmrl.ui.activity.terminal.PrivilegedLaunchSessions
 import com.dergoogler.mmrl.ui.activity.setBaseContent
 import com.dergoogler.mmrl.viewmodel.ActionViewModel
 import kotlinx.coroutines.Dispatchers
@@ -23,14 +21,20 @@ class ActionActivity : TerminalActivity() {
         Log.d(TAG, "onCreate")
         super.onCreate(savedInstanceState)
 
-        val modId = intent.getModId()
+        val request =
+            PrivilegedLaunchSessions.getAction(
+                intent.getStringExtra(EXTRA_SESSION_ID),
+            )
+        val modId = request?.moduleId
 
-        if (modId.isNullOrEmpty()) {
+        if (modId == null) {
+            Log.w(TAG, "ActionActivity rejected missing/expired launch session")
             finish()
-        } else {
-            Log.d(TAG, "onCreate: $modId")
-            initAction(modId)
+            return
         }
+
+        Log.d(TAG, "onCreate: $modId")
+        initAction(modId)
 
         setBaseContent {
             ActionScreen(viewModel)
@@ -50,18 +54,17 @@ class ActionActivity : TerminalActivity() {
 
     companion object {
         private const val TAG = "ActionActivity"
+        private const val EXTRA_SESSION_ID = "privilegedLaunchSession"
 
         fun start(
             context: Context,
             modId: ModId,
         ) {
-            val intent =
+            val sessionId = PrivilegedLaunchSessions.createAction(modId)
+            context.startActivity(
                 Intent(context, ActionActivity::class.java)
-                    .apply {
-                        putModId(modId)
-                    }
-
-            context.startActivity(intent)
+                    .putExtra(EXTRA_SESSION_ID, sessionId),
+            )
         }
     }
 }

@@ -151,7 +151,10 @@ fun ScaffoldScope.ModulesList(
         remember(list, updateMap) {
             groupInstalledModules(
                 modules = list,
-                updateIds = updateMap.keys.map { com.dergoogler.mmrl.platform.model.ModId(it) }.toSet(),
+                updateIds =
+                    updateMap.keys
+                        .mapNotNull { com.dergoogler.mmrl.platform.model.ModId.parseOrNull(it) }
+                        .toSet(),
             )
         }
     val visibleInstalledIds =

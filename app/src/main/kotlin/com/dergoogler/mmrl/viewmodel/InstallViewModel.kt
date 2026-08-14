@@ -17,6 +17,7 @@ import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.ext.nullable
 import com.dergoogler.mmrl.github.GitHubSourceSpec
 import com.dergoogler.mmrl.installer.ArchiveInspector
+import com.dergoogler.mmrl.installer.InstallIdentityPolicy
 import com.dergoogler.mmrl.installer.UpdateRollbackStore
 import com.dergoogler.mmrl.ext.tmpDir
 import com.dergoogler.mmrl.ext.toFormattedDateSafely
@@ -91,7 +92,19 @@ constructor(
         uris: List<Uri>,
         parentOperationId: String? = null,
         rollbackMode: Boolean = false,
+        expectedModuleIds: List<String> = emptyList(),
     ) {
+        val expectedIds =
+            runCatching {
+                InstallIdentityPolicy.expectedModuleIds(expectedModuleIds, uris.size)
+            }.getOrElse { error ->
+                val message = error.message ?: "Invalid expected module identity"
+                uris.forEach { recordRejectedInstall(it, message) }
+                log(message)
+                event = Event.FAILED
+                return
+            }
+
         if (!platformReadyDeferred.await()) {
             val message = context.getString(R.string.platform_initialization_failed_cannot_install)
             uris.forEach { recordRejectedInstall(it, message) }
@@ -116,7 +129,7 @@ constructor(
         var blacklistedModuleFound = false
 
         withContext(Dispatchers.IO) {
-            for (uri in uris) {
+            for ((index, uri) in uris.withIndex()) {
                 val archive = context.materializeFileForUri(uri, context.tmpDir)
                 if (archive == null) {
                     withContext(Dispatchers.Main) {
@@ -156,7 +169,30 @@ constructor(
                     continue
                 }
 
-                val blacklist = getBlacklistById(info.id.toString())
+                val identityResult =
+                    runCatching {
+                        InstallIdentityPolicy.verify(
+                            actual = info.id,
+                            expected = expectedIds[index],
+                        )
+                    }
+                if (identityResult.isFailure) {
+                    val message =
+                        identityResult.exceptionOrNull()?.message
+                            ?: "Archive module identity does not match the selected module"
+                    withContext(Dispatchers.Main) { log(message) }
+                    recordRejectedInstall(
+                        uri = uri,
+                        summary = message,
+                        moduleId = info.id.id,
+                        moduleName = info.name,
+                    )
+                    allSucceeded = false
+                    continue
+                }
+                val identity = identityResult.getOrThrow()
+
+                val blacklist = getBlacklistById(identity.moduleId.id)
                 if (Blacklist.isBlacklisted(userPreferences.blacklistAlerts, blacklist)) {
                     withContext(Dispatchers.Main) {
                         log(R.string.cannot_install_blacklisted_modules_settings_security_blacklist_alerts)
@@ -177,6 +213,7 @@ constructor(
                     sourceUri = uri,
                     archive = archive,
                     module = info,
+                    identity = identity,
                 )
             }
         }
@@ -233,6 +270,7 @@ constructor(
         val sourceUri: Uri,
         val archive: File,
         val module: LocalModule,
+        val identity: com.dergoogler.mmrl.installer.ArtifactIdentity,
     ) {
         val bulkModule = BulkModule(id = module.id.toString(), name = module.name)
     }
@@ -286,6 +324,7 @@ constructor(
                 zipPath = archive.path,
                 allBulkModulesInBatch = allBulkModulesInBatch,
                 module = moduleInfo,
+                identity = prepared.identity,
                 sourceUri = prepared.sourceUri.toString(),
                 parentOperationId = parentOperationId,
                 rollbackMode = rollbackMode,
@@ -296,6 +335,7 @@ constructor(
         zipPath: String,
         allBulkModulesInBatch: List<BulkModule>,
         module: LocalModule? = null,
+        identity: com.dergoogler.mmrl.installer.ArtifactIdentity,
         sourceUri: String? = null,
         parentOperationId: String? = null,
         rollbackMode: Boolean = false,
@@ -347,6 +387,41 @@ constructor(
                 return@withContext false
             }
 
+            val inspectedModule =
+                PlatformManager.moduleManager.getModuleInfo(zipPath)
+                    ?: run {
+                        val message = "Unable to re-read module identity from inspected archive"
+                        operationHistoryRepository.fail(historyId, message)
+                        activeOperationId = null
+                        return@withContext false
+                    }
+            runCatching {
+                InstallIdentityPolicy.verifyInspectedModule(
+                    identity = identity,
+                    actual = inspectedModule.id,
+                )
+            }.getOrElse { error ->
+                val message = error.message ?: "Inspected archive module identity changed"
+                operationHistoryRepository.appendLog(historyId, "Blocked: $message")
+                operationHistoryRepository.fail(historyId, message, error)
+                activeOperationId = null
+                return@withContext false
+            }
+
+            val reviewedIdentity =
+                runCatching {
+                    InstallIdentityPolicy.bindInspection(
+                        identity = identity,
+                        file = zipFile,
+                        sha256 = inspection.sha256,
+                    )
+                }.getOrElse { error ->
+                    val message = error.message ?: "Unable to bind the reviewed archive identity"
+                    operationHistoryRepository.fail(historyId, message, error)
+                    activeOperationId = null
+                    return@withContext false
+                }
+
             operationHistoryRepository.phase(historyId, OperationPhase.STAGE, "Preparing rollback and staging files")
             val rollbackArchive =
                 if (previous != null && !rollbackMode) {
@@ -367,6 +442,20 @@ constructor(
                         ?: "Warning: a rollback archive could not be created",
                 )
             }
+
+            runCatching {
+                InstallIdentityPolicy.verifyUnchanged(reviewedIdentity, zipFile)
+            }.getOrElse { error ->
+                val message = error.message ?: "Reviewed archive changed before installation"
+                operationHistoryRepository.appendLog(historyId, "Blocked: $message")
+                operationHistoryRepository.fail(historyId, message, error)
+                activeOperationId = null
+                return@withContext false
+            }
+            operationHistoryRepository.appendLog(
+                historyId,
+                "Archive SHA-256 and size reverified immediately before privileged command construction",
+            )
 
             val installCommand = PlatformManager.moduleManager.getInstallCommand(zipPath)
             if (installCommand.isNullOrBlank()) {

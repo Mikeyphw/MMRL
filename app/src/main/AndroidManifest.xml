@@ -103,8 +103,16 @@
         <activity
             android:name="${__packageName__}.ui.activity.terminal.install.InstallActivity"
             android:excludeFromRecents="true"
+            android:exported="false"
+            android:label="@string/install_activity"
+            android:taskAffinity="${applicationId}.INSTALL" />
+
+        <activity
+            android:name="${__packageName__}.ui.activity.terminal.install.ExternalInstallActivity"
+            android:excludeFromRecents="true"
             android:exported="true"
             android:label="@string/install_activity"
+            android:noHistory="true"
             android:taskAffinity="${applicationId}.INSTALL">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -112,8 +120,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="content" />
-                <data android:mimeType="application/zip" />
+                <data
+                    android:scheme="content"
+                    android:mimeType="application/zip" />
             </intent-filter>
         </activity>
 
@@ -131,15 +140,9 @@
         <activity
             android:name="${__packageName__}.ui.activity.terminal.action.ActionActivity"
             android:excludeFromRecents="true"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/action_activity"
-            android:taskAffinity="${applicationId}.ACTION">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+            android:taskAffinity="${applicationId}.ACTION" />
 
         <activity
             android:name="${__packageName__}.ui.activity.CrashHandlerActivity"

@@ -50,7 +50,8 @@ class LsposedProviderRefreshFinalSealContractTest {
 
         assertTrue(viewModel.contains("providerRefreshRecommended = true"))
         assertTrue(viewModel.contains("fun refreshLsposedProvider()"))
-        assertTrue(viewModel.contains("Event.RunProviderAction(ModId(moduleId))"))
+        assertTrue(viewModel.contains("ModId.parseOrNull(moduleId)"))
+        assertTrue(viewModel.contains("Event.RunProviderAction(canonicalId)"))
         assertTrue(screens.contains("onRefreshProvider = viewModel::refreshLsposedProvider"))
         assertTrue(screens.contains("enabled = providerStatus.refreshBridgeAvailable"))
         assertTrue(screens.contains("lsposed_refresh_provider"))

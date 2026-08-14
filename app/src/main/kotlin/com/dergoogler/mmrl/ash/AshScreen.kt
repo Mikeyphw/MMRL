@@ -158,7 +158,7 @@ fun AshScreen(viewModel: AshViewModel = hiltViewModel()) =
         }
         LaunchedEffect(viewModel, context) {
             viewModel.moduleInstalls.collect { prepared ->
-                InstallActivity.start(context = context, uri = prepared.uri)
+                InstallActivity.start(context = context, uri = prepared.uri, expectedModuleId = prepared.metadata.id)
             }
         }
         LaunchedEffect(state.message) {

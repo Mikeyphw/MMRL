@@ -79,6 +79,7 @@ android {
 }
 
 dependencies {
+    testImplementation(libs.junit)
     compileOnly(projects.hiddenApi)
     implementation(projects.ext)
     implementation(projects.compat)

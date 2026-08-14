@@ -14,7 +14,6 @@ import com.dergoogler.mmrl.model.sort.sortedForRepository
 import com.dergoogler.mmrl.model.state.OnlineState
 import com.dergoogler.mmrl.model.state.OnlineState.Companion.createState
 import com.dergoogler.mmrl.platform.model.ModId
-import com.dergoogler.mmrl.platform.model.ModId.Companion.toModId
 
 @Composable
 fun rememberOnlineModules(
@@ -114,7 +113,7 @@ fun rememberOnlineModule(
     val onlineModules by rememberOnlineModules(repo)
     return remember(onlineModules, id) {
         derivedStateOf {
-            onlineModules.find { it.second.id.toModId() == id }
+            onlineModules.find { ModId.parseOrNull(it.second.id) == id }
         }
     }
 }

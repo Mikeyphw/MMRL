@@ -14,6 +14,8 @@ import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
 import com.dergoogler.mmrl.platform.content.State
 import com.dergoogler.mmrl.platform.model.ModId
+import com.dergoogler.mmrl.platform.model.ModId.Companion.actionFile
+import com.dergoogler.mmrl.platform.util.ShellCommand
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
@@ -159,7 +161,11 @@ constructor(
 
             val command =
                 if (legacy || platform.isMagisk) {
-                    "busybox sh /data/adb/modules/$modId/action.sh"
+                    ShellCommand.of(
+                        "busybox",
+                        "sh",
+                        modId.requireOperational().actionFile.path,
+                    )
                 } else {
                     PlatformManager.moduleManager.getActionCommand(modId)
                 }

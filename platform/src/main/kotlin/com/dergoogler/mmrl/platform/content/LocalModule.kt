@@ -54,20 +54,20 @@ data class LocalModule(
             )
 
         val LocalModule.config get() = id.toModuleConfig()
-        val LocalModule.hasWebUI get() = id.webrootDir.let { it.exists() && it.isDirectory() }
-        val LocalModule.hasModConf get() = id.modconfDir.let { it.exists() && it.isDirectory() }
-        val LocalModule.hasAction get() = id.actionFile.exists()
-        val LocalModule.hasService get() = id.serviceFile.exists()
-        val LocalModule.hasPostFsData get() = id.postFsDataFile.exists()
-        val LocalModule.hasPostMount get() = id.postMountFile.exists()
-        val LocalModule.hasSystemProp get() = id.systemPropFile.exists()
-        val LocalModule.hasBootCompleted get() = id.bootCompletedFile.exists()
-        val LocalModule.hasSepolicy get() = id.sepolicyFile.exists()
-        val LocalModule.hasUninstall get() = id.uninstallFile.exists()
-        val LocalModule.hasSystem get() = id.systemDir.let { it.exists() && it.isDirectory() }
-        val LocalModule.hasDisable get() = id.disableFile.exists()
-        val LocalModule.hasRemove get() = id.removeFile.exists()
-        val LocalModule.hasUpdate get() = id.updateFile.exists()
+        val LocalModule.hasWebUI get() = !isEmpty && id.webrootDir.let { it.exists() && it.isDirectory() }
+        val LocalModule.hasModConf get() = !isEmpty && id.modconfDir.let { it.exists() && it.isDirectory() }
+        val LocalModule.hasAction get() = !isEmpty && id.actionFile.exists()
+        val LocalModule.hasService get() = !isEmpty && id.serviceFile.exists()
+        val LocalModule.hasPostFsData get() = !isEmpty && id.postFsDataFile.exists()
+        val LocalModule.hasPostMount get() = !isEmpty && id.postMountFile.exists()
+        val LocalModule.hasSystemProp get() = !isEmpty && id.systemPropFile.exists()
+        val LocalModule.hasBootCompleted get() = !isEmpty && id.bootCompletedFile.exists()
+        val LocalModule.hasSepolicy get() = !isEmpty && id.sepolicyFile.exists()
+        val LocalModule.hasUninstall get() = !isEmpty && id.uninstallFile.exists()
+        val LocalModule.hasSystem get() = !isEmpty && id.systemDir.let { it.exists() && it.isDirectory() }
+        val LocalModule.hasDisable get() = !isEmpty && id.disableFile.exists()
+        val LocalModule.hasRemove get() = !isEmpty && id.removeFile.exists()
+        val LocalModule.hasUpdate get() = !isEmpty && id.updateFile.exists()
         val LocalModule.isEmpty get() = this == EMPTY
     }
 }

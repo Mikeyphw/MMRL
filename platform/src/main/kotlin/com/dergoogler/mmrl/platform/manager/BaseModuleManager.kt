@@ -12,6 +12,7 @@ import com.dergoogler.mmrl.platform.model.ModId.Companion.removeFile
 import com.dergoogler.mmrl.platform.model.ModId.Companion.updateFile
 import com.dergoogler.mmrl.platform.stub.IModuleManager
 import com.dergoogler.mmrl.platform.util.Shell.exec
+import com.dergoogler.mmrl.platform.util.ShellCommand
 import org.apache.commons.compress.archivers.zip.ZipFile
 
 abstract class BaseModuleManager : IModuleManager.Stub() {
@@ -28,7 +29,9 @@ abstract class BaseModuleManager : IModuleManager.Stub() {
             "/system/bin/input keyevent 26".exec()
         }
 
-        "/system/bin/svc power reboot $reason || /system/bin/reboot $reason".exec()
+        val serviceReboot = ShellCommand.of("/system/bin/svc", "power", "reboot", reason)
+        val directReboot = ShellCommand.of("/system/bin/reboot", reason)
+        "$serviceReboot || $directReboot".exec()
     }
 
     override fun getModules() =
@@ -36,24 +39,24 @@ abstract class BaseModuleManager : IModuleManager.Stub() {
             .listFiles()
             .orEmpty()
             .mapNotNull { dir ->
-                val id = ModId(dir.name)
-                id.readProps?.toModule()
+                val id = ModId.parseOrNull(dir.name) ?: return@mapNotNull null
+                id.readProps?.toModule(expectedId = id)
             }
 
-    override fun getModuleById(id: ModId): LocalModule? = id.readProps?.toModule()
+    override fun getModuleById(id: ModId): LocalModule? =
+        id.readProps?.toModule(expectedId = id)
 
-    override fun getModuleInfo(zipPath: String): LocalModule? {
-        val zipFile = ZipFile.Builder().setFile(zipPath).get()
-        val entry = zipFile.getEntry(ModId.PROP_FILE) ?: return null
-
-        return zipFile.getInputStream(entry).use {
-            it
-                .bufferedReader()
-                .readText()
-                .let(::readProps)
-                .toModule()
+    override fun getModuleInfo(zipPath: String): LocalModule? =
+        ZipFile.Builder().setFile(zipPath).get().use { zipFile ->
+            val entry = zipFile.getEntry(ModId.PROP_FILE) ?: return@use null
+            zipFile.getInputStream(entry).use { input ->
+                input
+                    .bufferedReader()
+                    .readText()
+                    .let(::readProps)
+                    .toModule()
+            }
         }
-    }
 
     protected fun readProps(props: String) =
         props
@@ -103,8 +106,13 @@ abstract class BaseModuleManager : IModuleManager.Stub() {
         return 0L
     }
 
-    protected fun Map<String, String>.toModule(baseDir: String = ModId.ADB_DIR): LocalModule {
-        val id = ModId(getOrDefault("id", "unknown"), baseDir)
+    protected fun Map<String, String>.toModule(
+        baseDir: String = ModId.ADB_DIR,
+        expectedId: ModId? = null,
+    ): LocalModule? {
+        val declaredId = ModId.parseOrNull(get("id"), baseDir) ?: return null
+        if (expectedId != null && declaredId != expectedId) return null
+        val id = expectedId ?: declaredId
 
         val size =
             id.moduleDir.length(

@@ -112,7 +112,7 @@ fun RepositoriesScreen() =
         val progress by viewModel.progress.collectAsStateWithLifecycle()
 
         val pullToRefreshState = rememberPullToRefreshState()
-        
+
         // Use rememberSaveable to persist scroll position across navigation
         val listState = rememberSaveableLazyListState(key = "repositories_list")
 
@@ -178,6 +178,7 @@ fun RepositoriesScreen() =
                         InstallActivity.start(
                             context = context,
                             uri = it,
+                            expectedModuleIds = item.map(BulkModule::id),
                         )
                     } else {
                         Toast.makeText(
@@ -194,7 +195,11 @@ fun RepositoriesScreen() =
                         bulkInstallViewModel.removeBulkModules(successfulIds)
                         if (install && error.successes.isNotEmpty()) {
                             bulkInstallBottomSheet = false
-                            InstallActivity.start(context = context, uri = error.successes.map { it.uri })
+                            InstallActivity.start(
+                                context = context,
+                                uri = error.successes.map { it.uri },
+                                expectedModuleIds = error.successes.map { it.module.id },
+                            )
                         }
                     }
                     Toast.makeText(

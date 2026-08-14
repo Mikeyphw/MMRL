@@ -1,5 +1,6 @@
 package com.dergoogler.mmrl.tasker
 
+import com.dergoogler.mmrl.platform.model.ModId
 import java.net.URI
 
 /**
@@ -20,8 +21,20 @@ internal object TaskerAutomationPolicy {
 
     fun requireSafeModuleId(value: String): String {
         val clean = value.trim()
-        require(clean.matches(Regex("[A-Za-z0-9._-]+"))) { "Invalid module ID" }
+        require(ModId.isValidId(clean)) { "Invalid module ID" }
         return clean
+    }
+
+    fun requireExactModuleMatch(
+        expected: String,
+        actual: String,
+    ): String {
+        val expectedId = requireSafeModuleId(expected)
+        val actualId = requireSafeModuleId(actual)
+        require(expectedId == actualId) {
+            "Module ID mismatch: expected $expectedId, got $actualId"
+        }
+        return actualId
     }
 
     fun sanitizeFilename(value: String): String {

@@ -13,10 +13,10 @@ import androidx.lifecycle.lifecycleScope
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.tmpDir
 import com.dergoogler.mmrl.ui.activity.TerminalActivity
+import com.dergoogler.mmrl.ui.activity.terminal.PrivilegedLaunchSessions
 import com.dergoogler.mmrl.ui.activity.setBaseContent
 import com.dergoogler.mmrl.ui.component.dialog.ConfirmDialog
 import com.dergoogler.mmrl.viewmodel.InstallViewModel
-import dev.dergoogler.mmrl.compat.BuildCompat
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -28,31 +28,26 @@ class InstallActivity : TerminalActivity() {
         Timber.d("InstallActivity onCreate")
         super.onCreate(savedInstanceState)
 
-        val uris: ArrayList<Uri>? =
-            if (intent.data != null) {
-                arrayListOf(intent.data!!)
-            } else {
-                if (BuildCompat.atLeastT) {
-                    intent.getParcelableArrayListExtra("uris", Uri::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    intent.getParcelableArrayListExtra("uris")
-                }
-            }
-
-        Log.d(TAG, "InstallActivity onCreate: $uris")
-
-        val confirm = intent.getBooleanExtra(EXTRA_CONFIRM, true)
-        val parentOperationId = intent.getStringExtra(EXTRA_PARENT_OPERATION_ID)
-        val rollbackMode = intent.getBooleanExtra(EXTRA_ROLLBACK_MODE, false)
-
-        if (uris.isNullOrEmpty()) {
+        val request =
+            PrivilegedLaunchSessions.getInstall(
+                intent.getStringExtra(EXTRA_SESSION_ID),
+            )
+        if (request == null) {
+            Log.w(TAG, "InstallActivity rejected missing/expired launch session")
             finish()
             return
         }
 
+        val uris = request.uris
+        Log.d(TAG, "InstallActivity onCreate: ${uris.size} archive(s)")
+
+        val confirm = request.confirm
+        val parentOperationId = request.parentOperationId
+        val rollbackMode = request.rollbackMode
+        val expectedModuleIds = request.expectedModuleIds
+
         if (!confirm) {
-            initModule(uris.toList(), parentOperationId, rollbackMode)
+            initModule(uris.toList(), parentOperationId, rollbackMode, expectedModuleIds)
         }
 
         setBaseContent {
@@ -66,7 +61,7 @@ class InstallActivity : TerminalActivity() {
                     },
                     onConfirm = {
                         confirmDialog = false
-                        initModule(uris.toList(), parentOperationId, rollbackMode)
+                        initModule(uris.toList(), parentOperationId, rollbackMode, expectedModuleIds)
                     },
                 )
             }
@@ -86,6 +81,7 @@ class InstallActivity : TerminalActivity() {
         uris: List<Uri>,
         parentOperationId: String?,
         rollbackMode: Boolean,
+        expectedModuleIds: List<String>,
     ) {
         val job =
             lifecycleScope.launch {
@@ -93,6 +89,7 @@ class InstallActivity : TerminalActivity() {
                     uris = uris,
                     parentOperationId = parentOperationId,
                     rollbackMode = rollbackMode,
+                    expectedModuleIds = expectedModuleIds,
                 )
             }
 
@@ -101,9 +98,7 @@ class InstallActivity : TerminalActivity() {
 
     companion object {
         private const val TAG = "InstallActivity"
-        private const val EXTRA_CONFIRM = "confirm"
-        private const val EXTRA_PARENT_OPERATION_ID = "parentOperationId"
-        private const val EXTRA_ROLLBACK_MODE = "rollbackMode"
+        private const val EXTRA_SESSION_ID = "privilegedLaunchSession"
 
         fun start(
             context: Context,
@@ -111,17 +106,22 @@ class InstallActivity : TerminalActivity() {
             confirm: Boolean = true,
             parentOperationId: String? = null,
             rollbackMode: Boolean = false,
+            expectedModuleIds: List<String> = emptyList(),
         ) {
-            val intent =
+            val sessionId =
+                PrivilegedLaunchSessions.createInstall(
+                    PrivilegedLaunchSessions.InstallRequest(
+                        uris = uri.toList(),
+                        confirm = confirm,
+                        parentOperationId = parentOperationId,
+                        rollbackMode = rollbackMode,
+                        expectedModuleIds = expectedModuleIds.toList(),
+                    ),
+                )
+            context.startActivity(
                 Intent(context, InstallActivity::class.java)
-                    .apply {
-                        putExtra(EXTRA_CONFIRM, confirm)
-                        putExtra(EXTRA_PARENT_OPERATION_ID, parentOperationId)
-                        putExtra(EXTRA_ROLLBACK_MODE, rollbackMode)
-                        putParcelableArrayListExtra("uris", ArrayList(uri))
-                    }
-
-            context.startActivity(intent)
+                    .putExtra(EXTRA_SESSION_ID, sessionId),
+            )
         }
 
         fun start(
@@ -130,8 +130,39 @@ class InstallActivity : TerminalActivity() {
             confirm: Boolean = true,
             parentOperationId: String? = null,
             rollbackMode: Boolean = false,
+            expectedModuleId: String? = null,
         ) {
-            start(context, listOf(uri), confirm, parentOperationId, rollbackMode)
+            start(
+                context = context,
+                uri = listOf(uri),
+                confirm = confirm,
+                parentOperationId = parentOperationId,
+                rollbackMode = rollbackMode,
+                expectedModuleIds = expectedModuleId?.let(::listOf).orEmpty(),
+            )
+        }
+
+        internal fun startExternalReviewed(
+            context: Context,
+            uri: Uri,
+            grantFlags: Int,
+        ) {
+            val sessionId =
+                PrivilegedLaunchSessions.createInstall(
+                    PrivilegedLaunchSessions.InstallRequest(
+                        uris = listOf(uri),
+                        confirm = true,
+                        parentOperationId = null,
+                        rollbackMode = false,
+                        expectedModuleIds = emptyList(),
+                    ),
+                )
+            context.startActivity(
+                Intent(context, InstallActivity::class.java)
+                    .setData(uri)
+                    .putExtra(EXTRA_SESSION_ID, sessionId)
+                    .addFlags(grantFlags),
+            )
         }
     }
 }

@@ -23,7 +23,11 @@ class PrepareReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
     override fun run(context: Context, input: TaskerInput<TaskerRequestInput>): TaskerPluginResult<TaskerResultOutput> = taskerAction {
         runBlocking(Dispatchers.IO) {
             val request = input.regular
-            val moduleIdInput = request.moduleId?.trim()?.takeIf(String::isNotEmpty)
+            val moduleIdInput =
+                request.moduleId
+                    ?.trim()
+                    ?.takeIf(String::isNotEmpty)
+                    ?.let(TaskerAutomationPolicy::requireSafeModuleId)
             val sourceOperationId = request.operationId?.trim()?.takeIf(String::isNotEmpty)
             require(moduleIdInput != null || sourceOperationId != null) { "Provide a module ID or completed download operation ID" }
             val repos = TaskerRuntime.repositories(context)
@@ -70,14 +74,16 @@ class PrepareReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
                     ?.let(TaskerAutomationPolicy::requireSafeModuleId)
                     ?: throw IllegalArgumentException("Archive module.prop does not contain a valid module ID")
                 if (online != null) {
-                    require(ModuleIdentity.matches(online.id, manifestId)) {
-                        "Repository module ID does not match the downloaded archive"
-                    }
+                    TaskerAutomationPolicy.requireExactModuleMatch(
+                        expected = online.id,
+                        actual = manifestId,
+                    )
                 }
                 if (moduleIdInput != null) {
-                    require(ModuleIdentity.matches(moduleIdInput, manifestId)) {
-                        "Requested module ID does not match the downloaded archive"
-                    }
+                    TaskerAutomationPolicy.requireExactModuleMatch(
+                        expected = moduleIdInput,
+                        actual = manifestId,
+                    )
                 }
                 val moduleId = manifestId
                 val moduleName = online?.name ?: manifest["name"].orEmpty().ifBlank { moduleId }

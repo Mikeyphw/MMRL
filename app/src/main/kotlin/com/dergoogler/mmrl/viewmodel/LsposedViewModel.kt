@@ -230,8 +230,11 @@ class LsposedViewModel @Inject constructor(
         }
         val providerModuleId = repository.lsposedProviderActionModuleId()
         if (providerModuleId != null) {
-            eventsFlow.tryEmit(Event.RunProviderAction(ModId(providerModuleId)))
-            return
+            val canonicalId = ModId.parseOrNull(providerModuleId)
+            if (canonicalId != null) {
+                eventsFlow.tryEmit(Event.RunProviderAction(canonicalId))
+                return
+            }
         }
         eventsFlow.tryEmit(Event.Message("LSPosed, Vector, or another compatible framework provider is not installed or cannot be opened."))
     }
@@ -252,7 +255,12 @@ class LsposedViewModel @Inject constructor(
                 if (moduleId.isNullOrBlank()) {
                     eventsFlow.tryEmit(Event.Message("Provider action bridge is unavailable. Reboot if scope changes do not appear."))
                 } else {
-                    eventsFlow.tryEmit(Event.RunProviderAction(ModId(moduleId)))
+                    val canonicalId = ModId.parseOrNull(moduleId)
+                    if (canonicalId == null) {
+                        eventsFlow.tryEmit(Event.Message("Provider action bridge returned an invalid module id."))
+                    } else {
+                        eventsFlow.tryEmit(Event.RunProviderAction(canonicalId))
+                    }
                 }
             }
             LsposedProviderRefreshMode.REBOOT_REQUIRED -> {

@@ -4,6 +4,7 @@ import android.content.Context
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.platform.file.SuFile
 import com.dergoogler.mmrl.platform.file.inputStream
+import com.dergoogler.mmrl.platform.model.ModId.Companion.moduleDir
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,7 +28,7 @@ class UpdateRollbackStore
             withContext(Dispatchers.IO) {
                 runCatching {
                     prune()
-                    val source = SuFile("/data/adb/modules/${module.id.id}")
+                    val source = module.id.requireOperational().moduleDir
                     require(source.exists() && source.isDirectory) { "Installed module directory is unavailable" }
                     val safeVersion = module.version.replace(Regex("[^A-Za-z0-9._-]"), "_")
                     val destination = File(root, "${module.id.id}-$safeVersion-${System.currentTimeMillis()}.zip")

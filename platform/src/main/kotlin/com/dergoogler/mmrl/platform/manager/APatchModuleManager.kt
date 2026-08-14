@@ -9,6 +9,7 @@ import com.dergoogler.mmrl.platform.model.ModId.Companion.moduleDir
 import com.dergoogler.mmrl.platform.model.ModId.Companion.removeFile
 import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.platform.util.Shell.submit
+import com.dergoogler.mmrl.platform.util.ShellCommand
 
 open class APatchModuleManager : BaseModuleManager() {
     override fun getManagerName(): String = "APatch"
@@ -39,7 +40,7 @@ open class APatchModuleManager : BaseModuleManager() {
         if (!dir.exists()) callback.onFailure(id, null)
 
         if (useShell) {
-            "apd module enable $id".submit {
+            ShellCommand.of("apd", "module", "enable", id.id).submit {
                 if (isSuccess) {
                     callback.onSuccess(id)
                 } else {
@@ -67,7 +68,7 @@ open class APatchModuleManager : BaseModuleManager() {
         if (!dir.exists()) return callback.onFailure(id, null)
 
         if (useShell) {
-            "apd module disable $id".submit {
+            ShellCommand.of("apd", "module", "disable", id.id).submit {
                 if (isSuccess) {
                     callback.onSuccess(id)
                 } else {
@@ -95,7 +96,7 @@ open class APatchModuleManager : BaseModuleManager() {
         if (!dir.exists()) return callback.onFailure(id, null)
 
         if (useShell) {
-            "apd module uninstall $id".submit {
+            ShellCommand.of("apd", "module", "uninstall", id.id).submit {
                 if (isSuccess) {
                     callback.onSuccess(id)
                 } else {
@@ -114,9 +115,12 @@ open class APatchModuleManager : BaseModuleManager() {
         }
     }
 
-    override fun getInstallCommand(path: String): String = "apd module install \"$path\""
+    override fun getInstallCommand(path: String): String = ShellCommand.of("apd", "module", "install", path)
 
-    override fun getActionCommand(id: ModId): String = "apd module action ${id.id}"
+    override fun getActionCommand(id: ModId): String {
+        id.requireOperational()
+        return ShellCommand.of("apd", "module", "action", id.id)
+    }
 
     override fun getActionEnvironment(): List<String> =
         listOf(

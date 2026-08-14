@@ -121,6 +121,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                     InstallActivity.start(
                         context = context,
                         uri = it.toUri(),
+                        expectedModuleId = module.id.id,
                     )
                 }
             })

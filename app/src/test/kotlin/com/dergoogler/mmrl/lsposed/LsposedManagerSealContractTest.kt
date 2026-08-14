@@ -38,7 +38,8 @@ class LsposedManagerSealContractTest {
 
         assertTrue(viewModel.contains("repository.lsposedManagerIntent()"))
         assertTrue(viewModel.contains("repository.lsposedProviderActionModuleId()"))
-        assertTrue(viewModel.contains("Event.RunProviderAction(ModId(providerModuleId))"))
+        assertTrue(viewModel.contains("ModId.parseOrNull(providerModuleId)"))
+        assertTrue(viewModel.contains("Event.RunProviderAction(canonicalId)"))
         assertTrue(screens.contains("providerStatus.managerOpenMode"))
         assertTrue(screens.contains("lsposed_provider_manager_action_bridge"))
         assertTrue(screens.contains("lsposed_provider_update_pending"))

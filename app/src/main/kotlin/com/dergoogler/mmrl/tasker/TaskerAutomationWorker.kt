@@ -16,6 +16,8 @@ import com.dergoogler.mmrl.installer.ArchiveInspector
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
 import com.dergoogler.mmrl.platform.model.ModId
+import com.dergoogler.mmrl.platform.model.ModId.Companion.actionFile
+import com.dergoogler.mmrl.platform.util.ShellCommand
 import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.utils.initPlatform
 import com.dergoogler.mmrl.utils.withNewRootShell
@@ -148,7 +150,8 @@ class TaskerAutomationWorker(
                     if (continuation.isActive) continuation.resume(false)
                 }
             }
-            val id = ModId(request.moduleId)
+            val id = ModId.parseOrNull(request.moduleId)
+                ?: error("Invalid module ID")
             when (request.command) {
                 "ENABLE" -> PlatformManager.moduleManager.enable(id, prefs.useShellForModuleStateChange, callback)
                 "DISABLE" -> PlatformManager.moduleManager.disable(id, prefs.useShellForModuleStateChange, callback)
@@ -156,7 +159,9 @@ class TaskerAutomationWorker(
             }
         }
         check(success) { "Module state change failed" }
-        TaskerRuntime.repositories(applicationContext).modulesRepository().getLocal(ModId(request.moduleId))
+        TaskerRuntime.repositories(applicationContext).modulesRepository().getLocal(
+            ModId.parseOrNull(request.moduleId) ?: error("Invalid module ID"),
+        )
         history.succeed(
             request.operationId,
             "${request.command.lowercase().replaceFirstChar(Char::uppercase)} completed; reboot required",
@@ -178,10 +183,17 @@ class TaskerAutomationWorker(
         check(local.state.name != "DISABLE" && local.state.name != "REMOVE") { "Module is disabled or pending removal" }
         repos.operationHistoryRepository().phase(request.operationId, OperationPhase.INSTALL, "Running module action")
         val preferences = repos.userPreferencesRepository().data.first()
+        val canonicalModuleId =
+            ModId.parseOrNull(request.moduleId)?.requireOperational()
+                ?: error("Invalid module ID")
         val command = if (preferences.useShellForModuleAction || PlatformManager.platform.isMagisk) {
-            "busybox sh /data/adb/modules/${request.moduleId}/action.sh"
+            ShellCommand.of(
+                "busybox",
+                "sh",
+                canonicalModuleId.actionFile.path,
+            )
         } else {
-            PlatformManager.moduleManager.getActionCommand(ModId(request.moduleId))
+            PlatformManager.moduleManager.getActionCommand(canonicalModuleId)
         }
         check(command.isNotBlank()) { "No module action command is available" }
         val output = mutableListOf<String>()
@@ -230,15 +242,27 @@ class TaskerAutomationWorker(
         history.appendLog(request.operationId, "SHA-256: ${inspection.sha256}")
         val module = PlatformManager.moduleManager.getModuleInfo(archive.absolutePath)
             ?: error("Unable to read module metadata")
-        val archiveModuleId = TaskerAutomationPolicy.requireSafeModuleId(module.id.id)
-        check(archiveModuleId.equals(token.moduleId, ignoreCase = true)) {
-            "Reviewed module ID no longer matches archive"
-        }
+        val tokenModuleId = TaskerAutomationPolicy.requireSafeModuleId(token.moduleId)
+        TaskerAutomationPolicy.requireExactModuleMatch(
+            expected = tokenModuleId,
+            actual = module.id.id,
+        )
         val previous = repos.localRepository().getLocalByIdOrNull(module.id.id)
         history.phase(request.operationId, OperationPhase.STAGE, "Creating rollback backup and staging update")
         val rollback = if (previous != null) repos.updateRollbackStore().create(previous).getOrNull() else null
         history.attachRollbackArchive(request.operationId, rollback?.absolutePath, previous?.version, module.version)
         if (previous != null && rollback == null) history.appendLog(request.operationId, "Warning: rollback backup could not be created")
+
+        val finalInspection = ArchiveInspector.inspect(archive)
+        check(finalInspection.canInstall) { "Reviewed archive no longer passes safety inspection" }
+        check(finalInspection.sha256 == token.sha256) { "Reviewed archive changed before privileged execution" }
+        val finalModule = PlatformManager.moduleManager.getModuleInfo(archive.absolutePath)
+            ?: error("Unable to re-read module metadata before privileged execution")
+        TaskerAutomationPolicy.requireExactModuleMatch(
+            expected = tokenModuleId,
+            actual = finalModule.id.id,
+        )
+
         val command = PlatformManager.moduleManager.getInstallCommand(archive.absolutePath)
         check(!command.isNullOrBlank()) { "Unable to create install command" }
         history.phase(request.operationId, OperationPhase.INSTALL, if (previous == null) "Installing reviewed module" else "Installing reviewed update")

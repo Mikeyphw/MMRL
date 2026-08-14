@@ -266,6 +266,7 @@ class ActivityViewModel
                 confirm = false,
                 parentOperationId = entry.id,
                 rollbackMode = true,
+                expectedModuleId = entry.moduleId,
             )
             emitMessage("Rollback installation started")
         }
@@ -317,6 +318,7 @@ class ActivityViewModel
                 uri = uris,
                 confirm = false,
                 parentOperationId = entry.id,
+                expectedModuleIds = entry.moduleId?.let(::listOf).orEmpty(),
             )
         }
 
@@ -329,7 +331,12 @@ class ActivityViewModel
                 emitMessage("The original module is unavailable")
                 return
             }
-            ActionActivity.start(context, ModId(moduleId))
+            val id = ModId.parseOrNull(moduleId)
+            if (id == null) {
+                emitMessage("The original module identity is invalid")
+                return
+            }
+            ActionActivity.start(context, id)
         }
 
         private fun executeModuleState(
@@ -349,7 +356,11 @@ class ActivityViewModel
                     return@launch
                 }
 
-                val id = ModId(moduleId)
+                val id = ModId.parseOrNull(moduleId)
+                if (id == null) {
+                    messagesFlow.emit("The original module identity is invalid")
+                    return@launch
+                }
                 val historyId =
                     historyRepository.start(
                         kind = if (rollback) OperationKind.ROLLBACK else action.toOperationKind(),

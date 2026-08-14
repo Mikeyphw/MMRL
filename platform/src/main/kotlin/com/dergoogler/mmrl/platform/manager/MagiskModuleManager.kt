@@ -7,6 +7,7 @@ import com.dergoogler.mmrl.platform.model.ModId.Companion.disableFile
 import com.dergoogler.mmrl.platform.model.ModId.Companion.moduleDir
 import com.dergoogler.mmrl.platform.model.ModId.Companion.removeFile
 import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
+import com.dergoogler.mmrl.platform.util.ShellCommand
 
 open class MagiskModuleManager : BaseModuleManager() {
     override fun getManagerName(): String = "Magisk"
@@ -75,7 +76,7 @@ open class MagiskModuleManager : BaseModuleManager() {
         }
     }
 
-    override fun getInstallCommand(path: String): String = "magisk --install-module \"$path\""
+    override fun getInstallCommand(path: String): String = ShellCommand.of("magisk", "--install-module", path)
 
     override fun getActionCommand(id: ModId): String = ""
 

@@ -19,6 +19,19 @@ data class ModId(
     val id: String,
     val baseDir: String = ADB_DIR,
 ) : Parcelable {
+    init {
+        require(id.isEmpty() || isValidId(id)) { "Invalid module ID: $id" }
+        require(baseDir == ADB_DIR) { "Invalid module base directory: $baseDir" }
+    }
+
+    val isOperational: Boolean
+        get() = id.isNotEmpty() && baseDir == ADB_DIR && isValidId(id)
+
+    fun requireOperational(): ModId {
+        require(isOperational) { "Module ID is not valid for filesystem/root authority: $id" }
+        return this
+    }
+
     val sanitizedId: String
         get() {
             return id.replace(Regex("[^a-zA-Z0-9_]"), "_")
@@ -64,6 +77,23 @@ data class ModId(
         const val INTENT_ID = "id"
         const val INTENT_BASE_DIR = "BASE_DIR"
 
+        private val MODULE_ID_PATTERN = Regex("^[a-zA-Z][a-zA-Z0-9._-]+$")
+
+        @JvmStatic
+        fun isValidId(value: String): Boolean = MODULE_ID_PATTERN.matches(value)
+
+        @JvmStatic
+        fun parseOrNull(
+            value: String?,
+            baseDir: String = ADB_DIR,
+        ): ModId? {
+            if (baseDir != ADB_DIR) return null
+            return value
+                ?.trim()
+                ?.takeIf(::isValidId)
+                ?.let { ModId(it) }
+        }
+
         fun String.toModId(baseDir: String = ADB_DIR): ModId = ModId(this, baseDir)
 
         val EMPTY = ModId("")
@@ -87,18 +117,23 @@ data class ModId(
             val id = getStringExtra(INTENT_ID)
 
             if (modId != null) {
-                return modId.toModId(baseDir)
+                return parseOrNull(modId, baseDir)
             }
 
             if (id != null) {
-                return id.toModId(baseDir)
+                return parseOrNull(id, baseDir)
             }
 
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                this.getParcelableExtra(INTENT_MOD_ID_AS_PARCELABLE, ModId::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                this.getParcelableExtra<ModId>(INTENT_MOD_ID_AS_PARCELABLE)
+            val parcelable =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    this.getParcelableExtra(INTENT_MOD_ID_AS_PARCELABLE, ModId::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    this.getParcelableExtra<ModId>(INTENT_MOD_ID_AS_PARCELABLE)
+                }
+
+            return parcelable?.takeIf {
+                it.id.isNotEmpty() && it.baseDir == ADB_DIR && isValidId(it.id)
             }
         }
 
@@ -195,9 +230,10 @@ data class ModId(
 
         val ModId.adbDir get() = SuFile(baseDir)
         val ModId.configDir get() = SuFile(adbDir, HIDDEN_CONFIG_DIR)
-        val ModId.moduleConfigDir get() = SuFile(configDir, id)
+        private val ModId.authorityId get() = requireOperational().id
+        val ModId.moduleConfigDir get() = SuFile(configDir, authorityId)
         val ModId.modulesDir get() = SuFile(adbDir, MODULES_DIR)
-        val ModId.moduleDir get() = SuFile(modulesDir, id)
+        val ModId.moduleDir get() = SuFile(modulesDir, authorityId)
         val ModId.webrootDir get() = SuFile(moduleDir, WEBROOT_DIR)
         val ModId.modconfDir get() = SuFile(moduleDir, MODCONF_DIR)
         val ModId.modconfDependenciesDir get() = SuFile(modconfDir, MODCONF_DEPENDENCIES_DIR)

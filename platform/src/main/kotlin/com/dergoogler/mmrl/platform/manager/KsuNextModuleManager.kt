@@ -7,6 +7,7 @@ import com.dergoogler.mmrl.platform.model.ModId.Companion.moduleDir
 import com.dergoogler.mmrl.platform.model.ModId.Companion.removeFile
 import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.platform.util.Shell.submit
+import com.dergoogler.mmrl.platform.util.ShellCommand
 
 open class KsuNextModuleManager : KernelSUModuleManager() {
     override fun getModuleCompatibility() =
@@ -24,7 +25,9 @@ open class KsuNextModuleManager : KernelSUModuleManager() {
         if (!dir.exists()) callback.onFailure(id, null)
 
         if (useShell) {
-            "ksud module restore $id && ksud module enable $id".submit {
+            val restore = ShellCommand.of("ksud", "module", "restore", id.id)
+            val enable = ShellCommand.of("ksud", "module", "enable", id.id)
+            "$restore && $enable".submit {
                 if (isSuccess) {
                     callback.onSuccess(id)
                 } else {

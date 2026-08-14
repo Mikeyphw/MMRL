@@ -33,8 +33,13 @@ class DebugActionRunner(private val context: Context) {
                 status = DebugProbeStatus.FAIL,
                 message = "Provider action bridge did not include a module id.",
             )
+        val canonicalId = ModId.parseOrNull(moduleId)
+            ?: return DebugActionResult(
+                status = DebugProbeStatus.FAIL,
+                message = "Provider action bridge returned an invalid module id.",
+            )
         return runCatching {
-            ActionActivity.start(context, ModId(moduleId))
+            ActionActivity.start(context, canonicalId)
             DebugActionResult(
                 status = DebugProbeStatus.PASS,
                 message = "Started provider action bridge for $moduleId.",

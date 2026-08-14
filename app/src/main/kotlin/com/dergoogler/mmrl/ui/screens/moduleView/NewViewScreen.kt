@@ -219,6 +219,7 @@ fun NewViewScreen(
                         uri = file.toUri(),
                         confirm = false,
                         parentOperationId = parentOperationId,
+                        expectedModuleId = module.id,
                     )
                 }
             },
@@ -241,7 +242,12 @@ fun NewViewScreen(
                     onAllSuccess = { uris ->
                         viewModel.installConfirm = false
                         reviewVersionItem = null
-                        InstallActivity.start(context = context, uri = uris, confirm = false)
+                        InstallActivity.start(
+                            context = context,
+                            uri = uris,
+                            confirm = false,
+                            expectedModuleIds = bulkModules.map(BulkModule::id),
+                        )
                     },
                     onFailure = { error ->
                         installReviewState = InstallReviewState(

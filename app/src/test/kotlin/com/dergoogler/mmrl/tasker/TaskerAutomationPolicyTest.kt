@@ -47,4 +47,15 @@ class TaskerAutomationPolicyTest {
         }
     }
 
+    @Test
+    fun exactModuleMatchPreservesCaseSensitiveCanonicalIdentity() {
+        assertEquals(
+            "Module_A",
+            TaskerAutomationPolicy.requireExactModuleMatch("Module_A", "Module_A"),
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            TaskerAutomationPolicy.requireExactModuleMatch("Module_A", "module_a")
+        }
+    }
+
 }
