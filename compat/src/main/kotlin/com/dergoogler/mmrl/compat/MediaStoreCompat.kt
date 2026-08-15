@@ -54,18 +54,28 @@ object MediaStoreCompat {
     fun Context.createDownloadUri(
         path: String,
         mimeType: String,
-    ) = when {
-        BuildCompat.atLeastR ->
-            runCatching {
-                createMediaStoreUri(
-                    file = File(Environment.DIRECTORY_DOWNLOADS, path),
-                    mimeType = mimeType,
-                )
-            }.getOrElse {
-                createDownloadUri(path)
-            }
+    ) = createPendingDownloadUri(path, mimeType)
 
-        else -> createDownloadUri(path)
+    /** Create an unpublished MediaStore row on Android 10+ so incomplete files are never visible. */
+    fun Context.createPendingDownloadUri(
+        path: String,
+        mimeType: String,
+    ) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        createMediaStoreUri(
+            file = File(Environment.DIRECTORY_DOWNLOADS, path),
+            mimeType = mimeType,
+            pending = true,
+        )
+    } else {
+        createDownloadUri(path)
+    }
+
+    /** Publish a completed MediaStore download. File-scheme fallbacks need no publication update. */
+    fun Context.publishPendingDownloadUri(uri: Uri) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || uri.scheme != "content") return
+        val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+        val updated = contentResolver.update(uri, values, null, null)
+        if (updated <= 0) throw IOException("Cannot publish completed download: $uri")
     }
 
     /**
@@ -184,17 +194,21 @@ object MediaStoreCompat {
             else -> null
         }
 
-    @RequiresApi(Build.VERSION_CODES.R)
+    @RequiresApi(Build.VERSION_CODES.Q)
     fun Context.createMediaStoreUri(
         file: File,
         collection: Uri = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL),
         mimeType: String,
+        pending: Boolean = false,
     ): Uri {
         val entry =
             ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
                 put(MediaStore.MediaColumns.RELATIVE_PATH, file.parent)
                 put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.IS_PENDING, if (pending) 1 else 0)
+                }
             }
 
         return contentResolver.insert(collection, entry) ?: throw IOException("Cannot insert $file")

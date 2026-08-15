@@ -44,7 +44,7 @@ private fun rootAction(
             "ENABLE" -> OperationAction.ENABLE
             "DISABLE" -> OperationAction.DISABLE
             "REMOVE" -> OperationAction.REMOVE
-            else -> OperationAction.RUN_ACTION
+            else -> null
         },
         rollbackAction = when (command) {
             "ENABLE" -> OperationAction.DISABLE
@@ -53,6 +53,7 @@ private fun rootAction(
         },
         useShell = prefs.useShellForModuleStateChange,
         origin = "TASKER",
+        initialStatus = com.dergoogler.mmrl.database.entity.history.OperationStatus.QUEUED,
     )
     repos.operationHistoryRepository().appendLog(operationId, "Tasker requested $command")
     if (decision == TaskerAuthorizationDecision.DENY) {
@@ -79,10 +80,15 @@ private fun rootAction(
         throw error
     }
     if (status == "AWAITING_APPROVAL") {
-        repos.operationHistoryRepository().phase(
-            operationId,
-            com.dergoogler.mmrl.database.entity.history.OperationPhase.APPROVAL,
-            "Waiting for MMRL approval",
+        repos.operationHistoryRepository().transition(
+            id = operationId,
+            to = com.dergoogler.mmrl.database.entity.history.OperationStatus.WAITING_APPROVAL,
+            from = setOf(
+                com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING,
+                com.dergoogler.mmrl.database.entity.history.OperationStatus.QUEUED,
+            ),
+            summary = "Waiting for MMRL approval",
+            phase = com.dergoogler.mmrl.database.entity.history.OperationPhase.APPROVAL,
         )
     }
     taskerResultOutput(
@@ -140,6 +146,7 @@ class RestoreModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerR
                 moduleName = source.moduleName,
                 parentId = source.id,
                 origin = "TASKER",
+                initialStatus = com.dergoogler.mmrl.database.entity.history.OperationStatus.QUEUED,
             )
             if (decision == TaskerAuthorizationDecision.DENY) {
                 repos.operationHistoryRepository().fail(operationId, "Tasker restore is disabled by MMRL policy")
@@ -166,10 +173,15 @@ class RestoreModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerR
                 throw error
             }
             if (status == "AWAITING_APPROVAL") {
-                repos.operationHistoryRepository().phase(
-                    operationId,
-                    com.dergoogler.mmrl.database.entity.history.OperationPhase.APPROVAL,
-                    "Waiting for MMRL approval",
+                repos.operationHistoryRepository().transition(
+                    id = operationId,
+                    to = com.dergoogler.mmrl.database.entity.history.OperationStatus.WAITING_APPROVAL,
+                    from = setOf(
+                        com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING,
+                        com.dergoogler.mmrl.database.entity.history.OperationStatus.QUEUED,
+                    ),
+                    summary = "Waiting for MMRL approval",
+                    phase = com.dergoogler.mmrl.database.entity.history.OperationPhase.APPROVAL,
                 )
             }
             taskerResultOutput(

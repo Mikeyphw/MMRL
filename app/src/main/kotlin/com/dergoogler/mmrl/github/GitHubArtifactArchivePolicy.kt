@@ -16,6 +16,8 @@ import java.util.zip.ZipOutputStream
  * not just the artifact filename.
  */
 internal object GitHubArtifactArchivePolicy {
+    internal const val MAX_MATERIALIZED_ENTRIES = 20_000
+    internal const val MAX_MATERIALIZED_BYTES = 1_073_741_824L
     fun isActionsArtifactArchive(url: String): Boolean {
         val uri = runCatching { URI(url.trim()) }.getOrNull() ?: return false
         val host = uri.host.orEmpty()
@@ -116,7 +118,13 @@ internal object GitHubArtifactArchivePolicy {
         score: (String) -> Int = ::candidateScore,
     ): GitHubArtifactMaterializedFile {
         ZipFile(archive).use { zip ->
-            val entries = zip.entries().asSequence().filterNot { it.isDirectory }.toList()
+            val entries = zip.entries().asSequence()
+                .filterNot { it.isDirectory }
+                .take(MAX_MATERIALIZED_ENTRIES + 1)
+                .toList()
+            require(entries.size <= MAX_MATERIALIZED_ENTRIES) {
+                "GitHub artifact contains too many entries to materialize safely"
+            }
             val analysis = analyze(
                 entryNames = entries.map { it.name },
                 preferredEntryName = preferredEntryName,
@@ -145,10 +153,15 @@ internal object GitHubArtifactArchivePolicy {
                     val output = File(targetDirectory, safeFileName("$outputNamePrefix-${entry.name.substringAfterLast('/')}"))
                     output.parentFile?.mkdirs()
                     output.delete()
-                    zip.getInputStream(entry).buffered().use { input ->
-                        output.outputStream().buffered().use { outputStream ->
-                            input.copyTo(outputStream)
+                    try {
+                        zip.getInputStream(entry).buffered().use { input ->
+                            output.outputStream().buffered().use { outputStream ->
+                                copyBounded(input, outputStream, MAX_MATERIALIZED_BYTES)
+                            }
                         }
+                    } catch (error: Throwable) {
+                        output.delete()
+                        throw error
                     }
                     require(output.isFile && output.length() > 0L) { "Extracted GitHub Actions module ZIP is empty" }
                     GitHubArtifactMaterializedFile(output, analysis.copy(selectedEntryName = entry.name))
@@ -220,19 +233,54 @@ internal object GitHubArtifactArchivePolicy {
         output.delete()
         output.parentFile?.mkdirs()
         val written = mutableSetOf<String>()
-        ZipOutputStream(output.outputStream().buffered()).use { target ->
-            entries
-                .filter { it.name.trimStart('/').startsWith(moduleRoot) }
-                .forEach { entry ->
-                    val relative = entry.name.trimStart('/').removePrefix(moduleRoot).trimStart('/')
-                    if (relative.isBlank() || !written.add(relative)) return@forEach
-                    val targetEntry = ZipEntry(relative).apply { time = entry.time }
-                    target.putNextEntry(targetEntry)
-                    zip.getInputStream(entry).buffered().use { input -> input.copyTo(target) }
-                    target.closeEntry()
-                }
+        var copiedBytes = 0L
+        try {
+            ZipOutputStream(output.outputStream().buffered()).use { target ->
+                entries
+                    .filter { it.name.trimStart('/').startsWith(moduleRoot) }
+                    .forEach { entry ->
+                        val relative = entry.name.trimStart('/').removePrefix(moduleRoot).trimStart('/')
+                        if (relative.isBlank() || !written.add(relative)) return@forEach
+                        require(written.size <= MAX_MATERIALIZED_ENTRIES) { "GitHub module layout contains too many entries" }
+                        val targetEntry = ZipEntry(relative).apply { time = entry.time }
+                        target.putNextEntry(targetEntry)
+                        zip.getInputStream(entry).buffered().use { input ->
+                            copiedBytes = copyBounded(input, target, MAX_MATERIALIZED_BYTES, copiedBytes)
+                        }
+                        target.closeEntry()
+                    }
+            }
+        } catch (error: Throwable) {
+            output.delete()
+            throw error
         }
         require(output.isFile && output.length() > 0L) { "Repacked GitHub Actions module ZIP is empty" }
+    }
+
+    internal fun nextMaterializedBytes(current: Long, emitted: Int, limit: Long = MAX_MATERIALIZED_BYTES): Long {
+        require(current >= 0L && emitted >= 0 && limit >= 0L) { "Materialization byte counts must be non-negative" }
+        val next = runCatching { Math.addExact(current, emitted.toLong()) }
+            .getOrElse { throw IllegalArgumentException("GitHub artifact materialization size overflow", it) }
+        require(next <= limit) { "GitHub artifact materialization exceeds safety limit" }
+        return next
+    }
+
+    private fun copyBounded(
+        input: java.io.InputStream,
+        output: java.io.OutputStream,
+        limit: Long,
+        initial: Long = 0L,
+    ): Long {
+        var total = initial
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            if (count == 0) continue
+            total = nextMaterializedBytes(total, count, limit)
+            output.write(buffer, 0, count)
+        }
+        return total
     }
 
     private fun safeFileName(value: String): String =

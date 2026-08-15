@@ -8,6 +8,7 @@ import com.dergoogler.mmrl.database.entity.history.OperationStatus
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.State
 import com.dergoogler.mmrl.model.online.OnlineModule
+import com.dergoogler.mmrl.operation.RollbackAvailabilityPolicy
 import com.dergoogler.mmrl.repository.RepositoryEntryPoints
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
@@ -77,8 +78,16 @@ internal object TaskerRuntime {
         )
     }
 
-    fun operationOutput(entry: OperationHistoryEntity, logUri: String = ""): TaskerResultOutput =
-        taskerResultOutput(
+    fun operationOutput(entry: OperationHistoryEntity, logUri: String = ""): TaskerResultOutput {
+        val rollbackAction = entry.rollbackAction?.let { runCatching { com.dergoogler.mmrl.database.entity.history.OperationAction.valueOf(it) }.getOrNull() }
+        val status = runCatching { OperationStatus.valueOf(entry.status) }.getOrNull()
+        val rollbackAvailable = status != null && RollbackAvailabilityPolicy.isAvailable(
+            status = status,
+            rollbackAction = rollbackAction,
+            rollbackArchivePath = entry.rollbackArchivePath,
+            rollbackArchiveExists = entry.rollbackArchivePath?.let(::File)?.isFile == true,
+        )
+        return taskerResultOutput(
             success = entry.status == OperationStatus.SUCCEEDED.name || entry.status == OperationStatus.RUNNING.name,
             status = entry.status,
             message = entry.summary,
@@ -89,7 +98,7 @@ internal object TaskerRuntime {
             moduleId = entry.moduleId.orEmpty(),
             moduleName = entry.moduleName.orEmpty(),
             rebootRequired = entry.isPendingReboot,
-            rollbackAvailable = entry.canRollback || !entry.rollbackArchivePath.isNullOrBlank(),
+            rollbackAvailable = rollbackAvailable,
             errorCode = if (entry.isFailed) "OPERATION_FAILED" else "",
             errorMessage = entry.errorMessage.orEmpty(),
             logUri = logUri,
@@ -102,10 +111,11 @@ internal object TaskerRuntime {
                 .put("module_id", entry.moduleId.orEmpty())
                 .put("module_name", entry.moduleName.orEmpty())
                 .put("reboot_required", entry.isPendingReboot)
-                .put("rollback_available", entry.canRollback || !entry.rollbackArchivePath.isNullOrBlank())
+                .put("rollback_available", rollbackAvailable)
                 .put("error", entry.errorMessage.orEmpty())
                 .toString(),
         )
+    }
 
     fun listJson(items: List<TaskerResultOutput>): String {
         val array = JSONArray()

@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import com.dergoogler.mmrl.datastore.model.ModulesMenu
 import com.dergoogler.mmrl.datastore.model.Option
 import com.dergoogler.mmrl.github.GitHubSourceMode
 import com.dergoogler.mmrl.github.GitHubSourceSpec
+import com.dergoogler.mmrl.installer.OperationStagingStore
 import com.dergoogler.mmrl.model.json.UpdateJson
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.LocalModule
@@ -71,11 +73,11 @@ import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasWebUI
 import com.dergoogler.mmrl.platform.content.ModuleCompatibility
 import com.dergoogler.mmrl.platform.model.ModId
-import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.repository.ModulePolicyStore
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
+import com.dergoogler.mmrl.operation.ModuleMutationExecutor
 import com.dergoogler.mmrl.service.DownloadService
 import com.dergoogler.mmrl.utils.Utils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -122,6 +124,8 @@ class ModulesViewModel
         userPreferencesRepository: UserPreferencesRepository,
         operationHistoryRepository: OperationHistoryRepository,
         private val ashManager: AshReXcueManager,
+        private val moduleMutationExecutor: ModuleMutationExecutor,
+        private val operationStagingStore: OperationStagingStore,
         application: Application,
     ) : MMRLViewModel(
             application = application,
@@ -197,41 +201,6 @@ class ModulesViewModel
         private val versionItemCache = mutableStateMapOf<ModId, VersionItem?>()
 
         private val opsTasks = mutableStateListOf<ModId>()
-        private val pendingOperations = mutableMapOf<ModId, PendingModuleOperation>()
-        private val opsCallback =
-            object : IModuleOpsCallback.Stub() {
-                override fun onSuccess(id: ModId) {
-                    viewModelScope.launch {
-                        val pending = pendingOperations.remove(id)
-                        pending?.let {
-                            historyRepository.succeed(
-                                id = it.historyId,
-                                summary = it.successSummary,
-                                requiresReboot = true,
-                                rollbackAction = it.rollbackAction,
-                            )
-                        }
-                        modulesRepository.getLocal(id)
-                        opsTasks.remove(id)
-                    }
-                }
-
-                override fun onFailure(
-                    id: ModId,
-                    msg: String?,
-                ) {
-                    viewModelScope.launch {
-                        pendingOperations.remove(id)?.let {
-                            historyRepository.fail(
-                                id = it.historyId,
-                                summary = msg ?: "Module operation failed",
-                            )
-                        }
-                        opsTasks.remove(id)
-                    }
-                    Timber.w("$id: $msg")
-                }
-            }
 
         init {
             Timber.d("ModulesViewModel init")
@@ -896,9 +865,7 @@ class ModulesViewModel
                             action = OperationAction.DISABLE,
                             rollbackAction = OperationAction.ENABLE,
                             successSummary = "Module disabled; reboot required",
-                        ) {
-                            PlatformManager.moduleManager.disable(module.id, useShell, opsCallback)
-                        }
+                        )
                     },
                     change = {
                         launchModuleOperation(
@@ -909,9 +876,7 @@ class ModulesViewModel
                             rollbackAction =
                                 if (moduleCompatibility.canRestoreModules) OperationAction.ENABLE else null,
                             successSummary = "Module marked for removal; reboot required",
-                        ) {
-                            PlatformManager.moduleManager.remove(module.id, useShell, opsCallback)
-                        }
+                        )
                     },
                 )
 
@@ -926,9 +891,7 @@ class ModulesViewModel
                             action = OperationAction.ENABLE,
                             rollbackAction = OperationAction.DISABLE,
                             successSummary = "Module enabled; reboot required",
-                        ) {
-                            PlatformManager.moduleManager.enable(module.id, useShell, opsCallback)
-                        }
+                        )
                     },
                     change = {
                         launchModuleOperation(
@@ -939,9 +902,7 @@ class ModulesViewModel
                             rollbackAction =
                                 if (moduleCompatibility.canRestoreModules) OperationAction.ENABLE else null,
                             successSummary = "Module marked for removal; reboot required",
-                        ) {
-                            PlatformManager.moduleManager.remove(module.id, useShell, opsCallback)
-                        }
+                        )
                     },
                 )
 
@@ -957,9 +918,7 @@ class ModulesViewModel
                             action = OperationAction.ENABLE,
                             rollbackAction = OperationAction.REMOVE,
                             successSummary = "Module removal cancelled; reboot required",
-                        ) {
-                            PlatformManager.moduleManager.enable(module.id, useShell, opsCallback)
-                        }
+                        )
                     },
                 )
 
@@ -978,41 +937,21 @@ class ModulesViewModel
             action: OperationAction,
             rollbackAction: OperationAction?,
             successSummary: String,
-            execute: () -> Unit,
         ) {
             if (opsTasks.contains(module.id)) return
             opsTasks.add(module.id)
             viewModelScope.launch {
-                val historyId =
-                    historyRepository.start(
-                        kind = kind,
-                        title = module.name,
-                        summary = kind.name.lowercase().replaceFirstChar(Char::uppercaseChar),
-                        moduleId = module.id.id,
-                        moduleName = module.name,
-                        retryAction = action,
-                        rollbackAction = rollbackAction,
-                        useShell = useShell,
-                    )
-                pendingOperations[module.id] =
-                    PendingModuleOperation(
-                        historyId = historyId,
-                        successSummary = successSummary,
-                        rollbackAction = rollbackAction,
-                    )
-                historyRepository.appendLog(historyId, "Module ID: ${module.id.id}")
-                historyRepository.appendLog(historyId, "Root backend: ${PlatformManager.platform.name}")
-                try {
-                    execute()
-                } catch (error: Throwable) {
-                    pendingOperations.remove(module.id)
-                    opsTasks.remove(module.id)
-                    historyRepository.fail(
-                        id = historyId,
-                        summary = error.message ?: "Unable to start module operation",
-                        error = error,
-                    )
+                moduleMutationExecutor.execute(
+                    module = module,
+                    useShell = useShell,
+                    kind = kind,
+                    action = action,
+                    rollbackAction = rollbackAction,
+                    successSummary = successSummary,
+                ).onFailure { error ->
+                    Timber.w(error, "Module state operation failed for ${module.id.id}")
                 }
+                opsTasks.remove(module.id)
             }
         }
 
@@ -1022,12 +961,6 @@ class ModulesViewModel
                 GitHubSourceMode.RELEASE -> "release"
                 GitHubSourceMode.NIGHTLY -> "GitHub API nightly"
             }
-
-        private data class PendingModuleOperation(
-            val historyId: String,
-            val successSummary: String,
-            val rollbackAction: OperationAction?,
-        )
 
         @Composable
         fun getVersionItem(module: LocalModule): VersionItem? {
@@ -1128,64 +1061,61 @@ class ModulesViewModel
             context: Context,
             module: LocalModule,
             item: VersionItem,
-            onSuccess: (File) -> Unit,
+            onSuccess: (Uri) -> Unit,
             onFailure: (Throwable) -> Unit = { Timber.d(it) },
             onOperationStarted: (String) -> Unit = {},
         ) {
-            viewModelScope.launch {
-                val downloadPath =
-                    userPreferencesRepository.data
-                        .first()
-                        .downloadPath
+            val filename =
+                Utils.getFilename(
+                    name = module.name,
+                    version = item.version,
+                    versionCode = item.versionCode,
+                    extension = "zip",
+                )
 
-                val filename =
-                    Utils.getFilename(
-                        name = module.name,
-                        version = item.version,
-                        versionCode = item.versionCode,
-                        extension = "zip",
-                    )
+            val task =
+                DownloadService.TaskItem(
+                    key = item.hashCode(),
+                    url = item.zipUrl,
+                    filename = filename,
+                    title = module.name,
+                    desc = item.versionDisplay,
+                )
 
-                val task =
-                    DownloadService.TaskItem(
-                        key = item.hashCode(),
-                        url = item.zipUrl,
-                        filename = filename,
-                        title = module.name,
-                        desc = item.versionDisplay,
-                    )
+            val listener =
+                object : DownloadService.IDownloadListener {
+                    override fun onStarted(operationId: String) = onOperationStarted(operationId)
 
-                val listener =
-                    object : DownloadService.IDownloadListener {
-                        override fun onStarted(operationId: String) = onOperationStarted(operationId)
+                    override fun getProgress(value: Float) {}
 
-                        override fun getProgress(value: Float) {}
-
-                        override fun onFileExists() {
-                            Toast
-                                .makeText(
-                                    context,
-                                    context.getString(R.string.file_already_exists),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                        }
-
-                        override fun onSuccess() {
-                            onSuccess(File(downloadPath).resolve(filename))
-                        }
-
-                        override fun onFailure(e: Throwable) {
-                            Timber.d(e)
-                            onFailure(e)
-                        }
+                    override fun onFileExists() {
+                        Toast
+                            .makeText(
+                                context,
+                                context.getString(R.string.file_already_exists),
+                                Toast.LENGTH_SHORT,
+                            ).show()
                     }
 
-                DownloadService.start(
-                    context = context,
-                    task = task,
-                    listener = listener,
-                )
-            }
+                    override fun onSuccess(uri: Uri) = onSuccess(uri)
+
+                    override fun onFailure(e: Throwable) {
+                        Timber.d(e)
+                        onFailure(e)
+                    }
+                }
+
+            DownloadService.start(
+                context = context,
+                task = task,
+                listener = listener,
+            )
+        }
+
+        suspend fun stageForReview(uri: Uri): OperationStagingStore.StagedArtifact = operationStagingStore.stage(uri)
+
+        suspend fun releaseReviewStage(operationId: String?) {
+            if (!operationId.isNullOrBlank()) operationStagingStore.release(operationId)
         }
 
         @Composable

@@ -2,17 +2,22 @@ package com.dergoogler.mmrl.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
+import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.BulkModule
+import com.dergoogler.mmrl.installer.DependencyPlanPolicy
+import com.dergoogler.mmrl.installer.BulkDownloadCompletionPolicy
+import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.service.DownloadService
+import com.dergoogler.mmrl.service.DownloadReceiptStore
 import com.dergoogler.mmrl.utils.Utils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CompletableDeferred
@@ -24,7 +29,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
@@ -36,6 +40,7 @@ class BulkInstallViewModel
         localRepository: LocalRepository,
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
+        private val downloadReceiptStore: DownloadReceiptStore,
     ) : MMRLViewModel(application, localRepository, modulesRepository, userPreferencesRepository) {
         private val bulkModulesFlow = MutableStateFlow(listOf<BulkModule>())
         val bulkModules get() = bulkModulesFlow.asStateFlow()
@@ -76,18 +81,17 @@ class BulkInstallViewModel
 
         fun downloadMultiple(
             items: List<BulkModule>,
-            onAllSuccess: (List<Uri>) -> Unit,
+            onAllSuccess: (List<BulkDownloadSuccess>) -> Unit,
             onFailure: (Throwable) -> Unit,
         ) {
             if (items.isEmpty() || downloadingFlow.value) return
 
             viewModelScope.launch {
                 downloadingFlow.value = true
-                val downloadPath = File(userPreferencesRepository.data.first().downloadPath)
-
                 try {
+                    val plannedItems = resolveInstallPlan(items)
                     val results = coroutineScope {
-                        items.map { bulkModule ->
+                        plannedItems.map { bulkModule ->
                             async {
                                 val result = runCatching {
                                     val item = bulkModule.versionItem
@@ -104,15 +108,29 @@ class BulkInstallViewModel
                                         title = bulkModule.name,
                                         desc = item.versionDisplay,
                                     )
-                                    val deferred = CompletableDeferred<Uri>()
+                                    val deferred = CompletableDeferred<BulkDownloadedArtifact>()
                                     val listener = object : DownloadService.IDownloadListener {
                                         override fun onStarted(operationId: String) {
                                             activeOperations[bulkModule.id] = operationId
                                         }
 
-                                        override fun onSuccess() {
+                                        override fun onSuccess(uri: Uri) {
                                             activeOperations.remove(bulkModule.id)
-                                            deferred.complete(downloadPath.resolve(filename).toUri())
+                                            val provenance = downloadReceiptStore.load(uri)
+                                            if (provenance == null || provenance.sourceUrl != item.zipUrl) {
+                                                deferred.completeExceptionally(
+                                                    IllegalStateException("Downloaded artifact provenance verification failed"),
+                                                )
+                                            } else {
+                                                deferred.complete(
+                                                    BulkDownloadedArtifact(
+                                                        uri = uri,
+                                                        sha256 = provenance.sha256,
+                                                        size = provenance.size,
+                                                        sourceUrl = provenance.sourceUrl,
+                                                    ),
+                                                )
+                                            }
                                         }
 
                                         override fun onFailure(e: Throwable) {
@@ -134,14 +152,22 @@ class BulkInstallViewModel
                     }
 
                     val successes = results.mapNotNull { (module, result) ->
-                        result.getOrNull()?.let { BulkDownloadSuccess(module, it) }
+                        result.getOrNull()?.let { artifact ->
+                            BulkDownloadSuccess(
+                                module = module,
+                                uri = artifact.uri,
+                                sha256 = artifact.sha256,
+                                size = artifact.size,
+                                sourceUrl = artifact.sourceUrl,
+                            )
+                        }
                     }
                     val failures = results.mapNotNull { (module, result) ->
                         result.exceptionOrNull()?.let { BulkDownloadFailure(module, it) }
                     }
 
-                    if (failures.isEmpty()) {
-                        onAllSuccess(successes.map { it.uri })
+                    if (BulkDownloadCompletionPolicy.mayInstall(successes.size, failures.size, plannedItems.size)) {
+                        onAllSuccess(successes)
                     } else {
                         failures.forEach { Timber.d(it.error) }
                         onFailure(BulkDownloadException(successes, failures))
@@ -150,6 +176,68 @@ class BulkInstallViewModel
                     activeOperations.clear()
                     downloadingFlow.value = false
                 }
+            }
+        }
+
+        private suspend fun resolveInstallPlan(requested: List<BulkModule>): List<BulkModule> {
+            val rootVersion = PlatformManager.get(-1) { moduleManager.versionCode }
+            require(rootVersion >= 0) { "Root manager is unavailable for dependency preflight" }
+            val installed = localRepository.getLocalAll().map { ModuleIdentity.canonical(it.id.id) }.toSet()
+            val requestedById = requested.associateBy { ModuleIdentity.canonical(it.id) }
+            require(requestedById.size == requested.size) { "Duplicate module identity in install batch" }
+            val selected = linkedMapOf<String, BulkModule>()
+            val nodes = linkedMapOf<String, DependencyPlanPolicy.Node>()
+            val visiting = linkedSetOf<String>()
+
+            suspend fun resolve(rawId: String) {
+                val id = ModuleIdentity.canonical(rawId)
+                if (id in nodes) return
+                require(id !in visiting) { "Dependency cycle encountered while resolving $id" }
+                visiting += id
+                try {
+                    val requestedItem = requestedById[id]
+                    val candidates = localRepository.getOnlineAllById(rawId).ifEmpty {
+                        if (rawId != id) localRepository.getOnlineAllById(id) else emptyList()
+                    }
+                    val compatible = candidates.filter { module ->
+                        module.manager(platform).isCompatible(rootVersion) &&
+                            (module.minApi == null || Build.VERSION.SDK_INT >= module.minApi) &&
+                            (module.maxApi == null || Build.VERSION.SDK_INT <= module.maxApi)
+                    }
+                    val chosen = requestedItem?.let { root ->
+                        compatible.firstOrNull { module ->
+                            module.versions.any { version ->
+                                version.zipUrl == root.versionItem.zipUrl && version.versionCode == root.versionItem.versionCode
+                            }
+                        }
+                    } ?: compatible.maxByOrNull { it.versionCode }
+                    requireNotNull(chosen) { "Missing or incompatible required module: $id" }
+
+                    val alreadyInstalled = requestedItem == null && id in installed
+                    val item = requestedItem?.versionItem ?: if (!alreadyInstalled) {
+                        chosen.versions.filter { it.zipUrl.isNotBlank() }.maxByOrNull { it.versionCode }
+                            ?: error("No downloadable compatible version for dependency: $id")
+                    } else null
+                    if (item != null) selected[id] = requestedItem ?: BulkModule(chosen.id, chosen.name, item)
+
+                    val deps = chosen.manager(platform).require.orEmpty().map(ModuleIdentity::canonical).toSortedSet()
+                    nodes[id] = DependencyPlanPolicy.Node(
+                        id = id,
+                        dependencies = deps,
+                        compatible = true,
+                        alreadyInstalled = alreadyInstalled,
+                    )
+                    deps.forEach { dependency -> resolve(dependency) }
+                } finally {
+                    visiting -= id
+                }
+            }
+
+            requested.forEach { resolve(it.id) }
+            val roots = requested.map { ModuleIdentity.canonical(it.id) }
+            val plan = DependencyPlanPolicy.plan(roots, nodes)
+            return plan.orderedIds.map { id ->
+                selected[id] ?: error("Dependency planner lost downloadable artifact for $id")
             }
         }
 
@@ -169,9 +257,19 @@ private fun downloadKey(module: BulkModule): Int =
 private inline fun <T> Result<T>.mapError(transform: (Throwable) -> Throwable): Result<T> =
     fold(onSuccess = { Result.success(it) }, onFailure = { Result.failure(transform(it)) })
 
+private data class BulkDownloadedArtifact(
+    val uri: Uri,
+    val sha256: String,
+    val size: Long,
+    val sourceUrl: String?,
+)
+
 data class BulkDownloadSuccess(
     val module: BulkModule,
     val uri: Uri,
+    val sha256: String,
+    val size: Long,
+    val sourceUrl: String?,
 )
 
 data class BulkDownloadFailure(

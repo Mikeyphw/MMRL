@@ -127,8 +127,10 @@ fun ModuleUpdatesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                 progress = viewModel.getProgress(update.version),
                 state = reviewState,
                 onClose = {
+                    val reviewStageId = reviewState.reviewStagingOperationId
                     reviewUpdate = null
                     reviewState = InstallReviewState()
+                    scope.launch { viewModel.releaseReviewStage(reviewStageId) }
                 },
                 onDownloadAndInspect = {
                     reviewState = InstallReviewState(phase = InstallReviewPhase.DOWNLOADING)
@@ -136,24 +138,49 @@ fun ModuleUpdatesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                         context = context,
                         module = update.local,
                         item = update.version,
-                        onSuccess = { file ->
+                        onSuccess = { sourceUri ->
                             scope.launch {
-                                reviewState = InstallReviewState(phase = InstallReviewPhase.VERIFYING, file = file, operationId = reviewState.operationId)
+                                val downloadOperationId = reviewState.operationId
+                                val staged = runCatching { viewModel.stageForReview(sourceUri) }.getOrElse { error ->
+                                    reviewState = InstallReviewState(
+                                        phase = InstallReviewPhase.FAILED,
+                                        sourceUri = sourceUri,
+                                        error = error.message,
+                                        operationId = downloadOperationId,
+                                    )
+                                    return@launch
+                                }
+                                reviewState = InstallReviewState(
+                                    phase = InstallReviewPhase.VERIFYING,
+                                    file = staged.file,
+                                    sourceUri = sourceUri,
+                                    reviewStagingOperationId = staged.operationId,
+                                    operationId = downloadOperationId,
+                                )
                                 delay(120)
                                 reviewState = reviewState.copy(phase = InstallReviewPhase.INSPECTING)
                                 reviewState = runCatching {
-                                    withContext(Dispatchers.IO) { ArchiveInspector.inspect(file) }
+                                    withContext(Dispatchers.IO) { ArchiveInspector.inspect(staged.file) }
                                 }.fold(
                                     onSuccess = { inspection ->
                                         InstallReviewState(
                                             phase = if (inspection.canInstall) InstallReviewPhase.READY else InstallReviewPhase.BLOCKED,
-                                            file = file,
+                                            file = staged.file,
+                                            sourceUri = sourceUri,
+                                            reviewStagingOperationId = staged.operationId,
                                             inspection = inspection,
-                                            operationId = reviewState.operationId,
+                                            operationId = downloadOperationId,
                                         )
                                     },
                                     onFailure = { error ->
-                                        InstallReviewState(phase = InstallReviewPhase.FAILED, file = file, error = error.message, operationId = reviewState.operationId)
+                                        InstallReviewState(
+                                            phase = InstallReviewPhase.FAILED,
+                                            file = staged.file,
+                                            sourceUri = sourceUri,
+                                            reviewStagingOperationId = staged.operationId,
+                                            error = error.message,
+                                            operationId = downloadOperationId,
+                                        )
                                     },
                                 )
                             }
@@ -165,17 +192,22 @@ fun ModuleUpdatesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                     )
                 },
                 onInstall = {
-                    reviewState.file?.let { file ->
+                    val sourceUri = reviewState.sourceUri
+                    val inspection = reviewState.inspection
+                    if (sourceUri != null && inspection != null && inspection.canInstall) {
                         val parentOperationId = reviewState.operationId
+                        val reviewStageId = reviewState.reviewStagingOperationId
                         reviewUpdate = null
                         reviewState = InstallReviewState()
                         InstallActivity.start(
                             context = context,
-                            uri = file.toUri(),
+                            uri = sourceUri,
                             confirm = false,
                             parentOperationId = parentOperationId,
                             expectedModuleId = update.local.id.id,
+                            expectedArchiveSha256 = inspection.sha256,
                         )
+                        scope.launch { viewModel.releaseReviewStage(reviewStageId) }
                     }
                 },
                 onInstallWithDependencies = {},
@@ -197,23 +229,19 @@ fun ModuleUpdatesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                         }
                     bulkInstall.downloadMultiple(
                         items = bulkModules,
-                        onAllSuccess = { uris ->
+                        onAllSuccess = { successes ->
                             reviewAll = false
                             InstallActivity.start(
                                 context = context,
-                                uri = uris,
-                                expectedModuleIds = bulkModules.map(BulkModule::id),
+                                uri = successes.map { it.uri },
+                                expectedModuleIds = successes.map { it.module.id },
+                                expectedArchiveSha256 = successes.map { it.sha256 },
                             )
                         },
                         onFailure = { error ->
                             Timber.e(error)
                             if (error is BulkDownloadException && error.successes.isNotEmpty()) {
-                                reviewAll = false
-                                InstallActivity.start(
-                                    context = context,
-                                    uri = error.successes.map { it.uri },
-                                    expectedModuleIds = error.successes.map { it.module.id },
-                                )
+                                Timber.w("Not installing a partial update batch; verified completed downloads may be reused on retry")
                             }
                             scope.launch {
                                 snackbar.showSnackbar(error.message ?: context.getString(R.string.unknown_error))

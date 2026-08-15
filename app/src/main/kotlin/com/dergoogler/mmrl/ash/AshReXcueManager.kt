@@ -260,7 +260,21 @@ class AshReXcueManager @Inject constructor(
         return executeRecoveryPlan(plan)
     }
 
-    suspend fun executeRecoveryPlan(plan: AshRecoveryPlan): OperationResult {
+    suspend fun executeRecoveryPlan(plan: AshRecoveryPlan): OperationResult =
+        executeRecoveryPlanInternal(plan, existingHistoryId = null, externalIdempotencyKey = null)
+
+    internal suspend fun executeRecoveryPlanTracked(
+        plan: AshRecoveryPlan,
+        existingHistoryId: String,
+        externalIdempotencyKey: String,
+    ): OperationResult =
+        executeRecoveryPlanInternal(plan, existingHistoryId, externalIdempotencyKey)
+
+    private suspend fun executeRecoveryPlanInternal(
+        plan: AshRecoveryPlan,
+        existingHistoryId: String?,
+        externalIdempotencyKey: String?,
+    ): OperationResult {
         val current = refresh()
         check(current.source == AshSnapshotSource.Live && !current.readOnly && current.lifecycle.compatible) {
             "Live compatible AshReXcue access is required for this action"
@@ -271,7 +285,7 @@ class AshReXcueManager @Inject constructor(
         check(blockers.isEmpty()) {
             blockers.joinToString(" ") { guard -> "${guard.title}: ${guard.detail}" }
         }
-        return repository.executeRecoveryPlan(plan)
+        return repository.executeRecoveryPlan(plan, existingHistoryId, externalIdempotencyKey)
     }
     suspend fun completeTrial(): OperationResult = writable(repository::completeTrial)
     suspend fun rollbackTrial(): OperationResult = writable(repository::rollbackTrial)

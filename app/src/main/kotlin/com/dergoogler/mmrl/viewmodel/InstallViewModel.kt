@@ -2,12 +2,14 @@ package com.dergoogler.mmrl.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.BuildConfig
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Const.CLEAR_CMD
 import com.dergoogler.mmrl.app.Event
-import com.dergoogler.mmrl.compat.MediaStoreCompat.materializeFileForUri
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
@@ -16,10 +18,15 @@ import com.dergoogler.mmrl.database.entity.Repo.Companion.toRepo
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.ext.nullable
 import com.dergoogler.mmrl.github.GitHubSourceSpec
+import com.dergoogler.mmrl.installer.ArchiveInspection
 import com.dergoogler.mmrl.installer.ArchiveInspector
+import com.dergoogler.mmrl.installer.BatchInstallOutcomePolicy
+import com.dergoogler.mmrl.installer.InstallExecutionAuthorizationPolicy
 import com.dergoogler.mmrl.installer.InstallIdentityPolicy
+import com.dergoogler.mmrl.installer.InstallReconciliationPolicy
 import com.dergoogler.mmrl.installer.UpdateRollbackStore
-import com.dergoogler.mmrl.ext.tmpDir
+import com.dergoogler.mmrl.installer.OperationStagingStore
+import com.dergoogler.mmrl.installer.StagingOwnership
 import com.dergoogler.mmrl.ext.toFormattedDateSafely
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.model.online.Blacklist
@@ -30,9 +37,14 @@ import com.dergoogler.mmrl.platform.file.SuFile.Companion.toFormattedFileSize
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
+import com.dergoogler.mmrl.operation.OneShotOperationGate
+import com.dergoogler.mmrl.operation.PrivilegedOperationCoordinator
+import com.dergoogler.mmrl.operation.PrivilegedOperationCoordinator.OperationCompletion
+import com.dergoogler.mmrl.operation.PrivilegedProcessExecutor
+import com.dergoogler.mmrl.operation.VerifiedMutationFinalizationPolicy
 import com.topjohnwu.superuser.CallbackList
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.mmrlx.terminal.newSuperUserPty
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -53,6 +65,9 @@ constructor(
     userPreferencesRepository: UserPreferencesRepository,
     operationHistoryRepository: OperationHistoryRepository,
     private val updateRollbackStore: UpdateRollbackStore,
+    private val operationStagingStore: OperationStagingStore,
+    private val operationCoordinator: PrivilegedOperationCoordinator,
+    private val privilegedProcessExecutor: PrivilegedProcessExecutor,
 ) : TerminalViewModel(
         application,
         localRepository,
@@ -61,6 +76,55 @@ constructor(
         operationHistoryRepository,
     ) {
     val logfile get() = "Install_${LocalDateTime.now()}.log"
+
+    data class ApprovalRequest(
+        val modules: List<ApprovalModule>,
+    ) {
+        val summary: String
+            get() = modules.joinToString("\n\n") { module ->
+                buildString {
+                    append(module.name).append(" · ").append(module.inspection.summary)
+                    append("\nSHA-256 ").append(module.inspection.sha256.take(16)).append("…")
+                    module.inspection.warnings.take(3).forEach { warning -> append("\n• ").append(warning) }
+                }
+            }
+    }
+
+    data class ApprovalModule(
+        val id: String,
+        val name: String,
+        val inspection: ArchiveInspection,
+    )
+
+    var approvalRequest by mutableStateOf<ApprovalRequest?>(null)
+        private set
+    private var approvalDecision: CompletableDeferred<Boolean>? = null
+    private val installLaunchGate = OneShotOperationGate()
+
+    fun startInstall(
+        uris: List<Uri>,
+        parentOperationId: String? = null,
+        rollbackMode: Boolean = false,
+        expectedModuleIds: List<String> = emptyList(),
+        expectedArchiveSha256: List<String> = emptyList(),
+        requireApproval: Boolean = false,
+    ) {
+        if (!installLaunchGate.tryStart()) return
+        viewModelScope.launch {
+            installModules(
+                uris = uris,
+                parentOperationId = parentOperationId,
+                rollbackMode = rollbackMode,
+                expectedModuleIds = expectedModuleIds,
+                expectedArchiveSha256 = expectedArchiveSha256,
+                requireApproval = requireApproval,
+            )
+        }
+    }
+
+    fun respondToApproval(approved: Boolean) {
+        approvalDecision?.complete(approved)
+    }
 
     init {
         Timber.d("InstallViewModel initialized")
@@ -93,7 +157,22 @@ constructor(
         parentOperationId: String? = null,
         rollbackMode: Boolean = false,
         expectedModuleIds: List<String> = emptyList(),
+        expectedArchiveSha256: List<String> = emptyList(),
+        requireApproval: Boolean = false,
     ) {
+        runCatching {
+            InstallExecutionAuthorizationPolicy.requireAuthorizedLaunch(
+                artifactCount = uris.size,
+                requireApproval = requireApproval,
+                reviewedSha256 = expectedArchiveSha256,
+            )
+        }.getOrElse { error ->
+            val message = error.message ?: "Invalid install authorization"
+            uris.forEach { recordRejectedInstall(it, message) }
+            log(message)
+            event = Event.FAILED
+            return
+        }
         val expectedIds =
             runCatching {
                 InstallIdentityPolicy.expectedModuleIds(expectedModuleIds, uris.size)
@@ -124,25 +203,43 @@ constructor(
         val userPreferences = userPreferencesRepository.data.first()
         event = Event.LOADING
         var allSucceeded = true
+        val batchOperationId = if (uris.size > 1) {
+            operationHistoryRepository.start(
+                kind = OperationKind.PREPARE_INSTALL,
+                title = "Install batch",
+                summary = "Preparing ${uris.size} module artifacts",
+                sourceOperationId = parentOperationId,
+                initialStatus = if (requireApproval) {
+                    com.dergoogler.mmrl.database.entity.history.OperationStatus.WAITING_APPROVAL
+                } else {
+                    com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING
+                },
+            )
+        } else null
 
         val preparedModules = mutableListOf<PreparedInstall>()
         var blacklistedModuleFound = false
 
+        try {
         withContext(Dispatchers.IO) {
             for ((index, uri) in uris.withIndex()) {
-                val archive = context.materializeFileForUri(uri, context.tmpDir)
-                if (archive == null) {
+                val staged = runCatching { operationStagingStore.stage(uri) }.getOrElse { error ->
                     withContext(Dispatchers.Main) {
-                        devLog(
-                            R.string.unable_to_find_path_for_uri,
-                            uri.toString(),
-                        )
+                        devLog(R.string.unable_to_find_path_for_uri, uri.toString())
                     }
-                    recordRejectedInstall(uri, "Unable to open the selected file")
+                    recordRejectedInstall(uri, error.message ?: "Unable to create a verified staging copy")
                     allSucceeded = false
                     continue
                 }
-
+                val archive = staged.file
+                val expectedReviewedHash = expectedArchiveSha256.getOrNull(index)
+                if (expectedReviewedHash != null && !staged.provenance.sha256.equals(expectedReviewedHash, ignoreCase = true)) {
+                    val message = "Archive changed after review; installation requires a new inspection"
+                    recordRejectedInstall(uri, message)
+                    operationStagingStore.release(staged.operationId)
+                    allSucceeded = false
+                    continue
+                }
                 val path = archive.path
                 if (userPreferences.strictMode && !archive.name.endsWith(".zip", ignoreCase = true)) {
                     withContext(Dispatchers.Main) {
@@ -152,6 +249,29 @@ constructor(
                         )
                     }
                     recordRejectedInstall(uri, "The selected file is not a ZIP module")
+                    operationStagingStore.release(staged.operationId)
+                    allSucceeded = false
+                    continue
+                }
+
+                val inspection = runCatching { ArchiveInspector.inspect(archive) }.getOrElse { error ->
+                    val message = error.message ?: "Unable to inspect staged module archive"
+                    recordRejectedInstall(uri, message)
+                    operationStagingStore.release(staged.operationId)
+                    allSucceeded = false
+                    continue
+                }
+                if (!inspection.canInstall) {
+                    val message = inspection.blockedReasons.joinToString("; ").ifBlank { "Archive safety inspection blocked installation" }
+                    recordRejectedInstall(uri, message)
+                    operationStagingStore.release(staged.operationId)
+                    allSucceeded = false
+                    continue
+                }
+                if (expectedReviewedHash != null && !inspection.sha256.equals(expectedReviewedHash, ignoreCase = true)) {
+                    val message = "Archive inspection hash no longer matches the reviewed authorization"
+                    recordRejectedInstall(uri, message)
+                    operationStagingStore.release(staged.operationId)
                     allSucceeded = false
                     continue
                 }
@@ -165,6 +285,7 @@ constructor(
                         )
                     }
                     recordRejectedInstall(uri, "Unable to read module metadata")
+                    operationStagingStore.release(staged.operationId)
                     allSucceeded = false
                     continue
                 }
@@ -187,6 +308,7 @@ constructor(
                         moduleId = info.id.id,
                         moduleName = info.name,
                     )
+                    operationStagingStore.release(staged.operationId)
                     allSucceeded = false
                     continue
                 }
@@ -204,6 +326,7 @@ constructor(
                         moduleId = info.id.id,
                         moduleName = info.name,
                     )
+                    operationStagingStore.release(staged.operationId)
                     allSucceeded = false
                     blacklistedModuleFound = true
                     break
@@ -214,26 +337,61 @@ constructor(
                     archive = archive,
                     module = info,
                     identity = identity,
+                    staged = staged,
+                    inspection = inspection,
                 )
             }
         }
 
-        if (blacklistedModuleFound) return
+        if (blacklistedModuleFound) {
+            preparedModules.forEach { operationStagingStore.release(it.staged.operationId) }
+            batchOperationId?.let { operationHistoryRepository.fail(it, "Batch blocked by module blacklist") }
+            return
+        }
+
+        if (preparedModules.size != uris.size) {
+            preparedModules.forEach { operationStagingStore.release(it.staged.operationId) }
+            batchOperationId?.let { operationHistoryRepository.fail(it, "Install preflight failed; no partial batch will execute") }
+            event = Event.FAILED
+            return
+        }
+
+        if (requireApproval) {
+            val approved = awaitApproval(preparedModules)
+            if (!approved) {
+                preparedModules.forEach { operationStagingStore.release(it.staged.operationId) }
+                batchOperationId?.let { operationHistoryRepository.cancel(it, "Installation cancelled after archive review") }
+                event = Event.FAILED
+                return
+            }
+            batchOperationId?.let { batchId ->
+                operationHistoryRepository.transition(
+                    id = batchId,
+                    to = com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING,
+                    from = setOf(com.dergoogler.mmrl.database.entity.history.OperationStatus.WAITING_APPROVAL),
+                    summary = "Archive review approved; installation starting",
+                    phase = OperationPhase.STAGE,
+                )
+            }
+        }
 
         val validBulkModules = preparedModules.map(PreparedInstall::bulkModule)
+        var installedCount = 0
+        var processedCount = 0
 
         for (prepared in preparedModules) {
             if (userPreferences.clearInstallTerminal && uris.size > 1) {
                 log(CLEAR_CMD)
             }
 
-            val result =
-                loadAndInstallModule(
-                    prepared = prepared,
-                    allBulkModulesInBatch = validBulkModules,
-                    parentOperationId = parentOperationId,
-                    rollbackMode = rollbackMode,
-                )
+            val result = loadAndInstallModule(
+                prepared = prepared,
+                allBulkModulesInBatch = validBulkModules,
+                parentOperationId = batchOperationId ?: parentOperationId,
+                rollbackMode = rollbackMode,
+            )
+            processedCount++
+            if (result) installedCount++
             if (!result) {
                 allSucceeded = false
                 withContext(Dispatchers.Main) {
@@ -242,9 +400,59 @@ constructor(
                 break
             }
         }
-        event = if (allSucceeded) Event.SUCCEEDED else Event.FAILED
+        preparedModules.drop(processedCount).forEach { operationStagingStore.release(it.staged.operationId) }
+        batchOperationId?.let { batchId ->
+            val outcome = BatchInstallOutcomePolicy.classify(
+                totalRequested = uris.size,
+                installed = installedCount,
+                hadFailure = !allSucceeded || installedCount != uris.size,
+            )
+            when (outcome.kind) {
+                BatchInstallOutcomePolicy.Kind.SUCCEEDED -> operationHistoryRepository.succeed(
+                    batchId,
+                    outcome.summary,
+                    requiresReboot = outcome.requiresReboot,
+                )
+                BatchInstallOutcomePolicy.Kind.FAILED,
+                BatchInstallOutcomePolicy.Kind.PARTIAL_SUCCESS -> operationHistoryRepository.fail(
+                    batchId,
+                    outcome.summary,
+                    requiresReboot = outcome.requiresReboot,
+                )
+            }
+        }
+        event = if (allSucceeded && installedCount == preparedModules.size) Event.SUCCEEDED else Event.FAILED
+        } finally {
+            preparedModules.forEach { prepared ->
+                if (prepared.stagingOwnership.callerMayRelease()) {
+                    operationStagingStore.release(prepared.staged.operationId)
+                }
+            }
+        }
     }
 
+
+    private suspend fun awaitApproval(prepared: List<PreparedInstall>): Boolean {
+        val decision = CompletableDeferred<Boolean>()
+        approvalDecision = decision
+        withContext(Dispatchers.Main) {
+            approvalRequest = ApprovalRequest(
+                prepared.map { item ->
+                    ApprovalModule(
+                        id = item.module.id.id,
+                        name = item.module.name,
+                        inspection = item.inspection,
+                    )
+                },
+            )
+        }
+        return try {
+            decision.await()
+        } finally {
+            withContext(Dispatchers.Main) { approvalRequest = null }
+            if (approvalDecision === decision) approvalDecision = null
+        }
+    }
 
     private suspend fun recordRejectedInstall(
         uri: Uri,
@@ -260,7 +468,6 @@ constructor(
                 moduleId = moduleId,
                 moduleName = moduleName,
                 sourceUri = uri.toString(),
-                retryAction = OperationAction.INSTALL,
             )
         operationHistoryRepository.appendLog(historyId, "Source URI: $uri")
         operationHistoryRepository.fail(historyId, summary)
@@ -271,6 +478,9 @@ constructor(
         val archive: File,
         val module: LocalModule,
         val identity: com.dergoogler.mmrl.installer.ArtifactIdentity,
+        val staged: OperationStagingStore.StagedArtifact,
+        val inspection: ArchiveInspection,
+        val stagingOwnership: StagingOwnership = StagingOwnership(),
     ) {
         val bulkModule = BulkModule(id = module.id.toString(), name = module.name)
     }
@@ -284,6 +494,7 @@ constructor(
         rollbackMode: Boolean,
     ): Boolean =
         withContext(Dispatchers.IO) {
+            try {
             val moduleInfo = prepared.module
             val archive = prepared.archive
 
@@ -325,10 +536,19 @@ constructor(
                 allBulkModulesInBatch = allBulkModulesInBatch,
                 module = moduleInfo,
                 identity = prepared.identity,
+                approvedInspection = prepared.inspection,
                 sourceUri = prepared.sourceUri.toString(),
+                sourceUrl = prepared.staged.provenance.sourceUrl,
                 parentOperationId = parentOperationId,
                 rollbackMode = rollbackMode,
+                stagingOperationId = prepared.staged.operationId,
+                onCoordinatorOwnership = prepared.stagingOwnership::handoffToCoordinator,
             )
+            } finally {
+                if (prepared.stagingOwnership.callerMayRelease()) {
+                    operationStagingStore.release(prepared.staged.operationId)
+                }
+            }
         }
 
     private suspend fun install(
@@ -336,9 +556,13 @@ constructor(
         allBulkModulesInBatch: List<BulkModule>,
         module: LocalModule? = null,
         identity: com.dergoogler.mmrl.installer.ArtifactIdentity,
+        approvedInspection: ArchiveInspection,
         sourceUri: String? = null,
+        sourceUrl: String? = null,
         parentOperationId: String? = null,
         rollbackMode: Boolean = false,
+        stagingOperationId: String? = null,
+        onCoordinatorOwnership: () -> Unit = {},
     ): Boolean =
         withContext(Dispatchers.Default) {
             val zipFile = File(zipPath)
@@ -357,6 +581,7 @@ constructor(
                     moduleId = module?.id?.id,
                     moduleName = module?.name,
                     sourceUri = sourceUri,
+                    sourceUrl = sourceUrl,
                     destinationPath = zipPath,
                     retryAction = OperationAction.INSTALL,
                     parentId = parentOperationId,
@@ -372,6 +597,12 @@ constructor(
             val inspection = runCatching { ArchiveInspector.inspect(zipFile) }.getOrElse { error ->
                 val message = error.message ?: "Unable to inspect module archive"
                 operationHistoryRepository.fail(historyId, message, error)
+                activeOperationId = null
+                return@withContext false
+            }
+            if (!inspection.canInstall || !inspection.sha256.equals(approvedInspection.sha256, ignoreCase = true)) {
+                val message = "Staged archive no longer matches the approved safety inspection"
+                operationHistoryRepository.fail(historyId, message)
                 activeOperationId = null
                 return@withContext false
             }
@@ -422,10 +653,18 @@ constructor(
                     return@withContext false
                 }
 
+            val idempotencyKey = "${kind.name.lowercase()}:${identity.moduleId.id}:${reviewedIdentity.sha256}"
+            if (!operationHistoryRepository.claimIdempotencyKey(historyId, idempotencyKey)) {
+                val message = "An identical module mutation is already active"
+                operationHistoryRepository.fail(historyId, message)
+                activeOperationId = null
+                return@withContext false
+            }
+
             operationHistoryRepository.phase(historyId, OperationPhase.STAGE, "Preparing rollback and staging files")
             val rollbackArchive =
                 if (previous != null && !rollbackMode) {
-                    updateRollbackStore.create(previous).getOrNull()
+                    updateRollbackStore.create(previous, historyId).getOrNull()
                 } else {
                     null
                 }
@@ -487,88 +726,158 @@ constructor(
                 return@withContext false
             }*/
 
-            operationHistoryRepository.phase(historyId, OperationPhase.INSTALL, if (rollbackMode) "Restoring previous module version" else "Installing module")
-            val emu = emulatorReady.await()
-            val result = emu.newSuperUserPty(installCommand, env)
-            val success = result.isSuccess
-            if (success) {
-                module.nullable(::insertLocal)
-                if (module != null) {
-                    recordGitHubInstallSource(module, parentOperationId)
-                }
-                operationHistoryRepository.succeed(
-                    id = historyId,
-                    summary = when (kind) {
-                        OperationKind.UPDATE -> "Update installed successfully"
-                        OperationKind.ROLLBACK -> "Previous module version restored"
-                        else -> "Installed successfully"
-                    },
-                    requiresReboot = true,
-                    rollbackAction = when {
-                        rollbackMode -> null
-                        rollbackArchive != null -> OperationAction.INSTALL
-                        previous == null && module != null -> OperationAction.REMOVE
-                        else -> null
-                    },
-                )
-
-                if (userPreferences.deleteZipFile && !updateRollbackStore.isManagedBackup(zipPath)) {
-                    deleteBySu(zipPath)
-                }
-            } else {
-                val message = "Installation failed for ${zipFile.name}"
-                withContext(Dispatchers.Main) {
-                    log("Error: $message. Exit code: ${-999/*result.code*/}")
-                    result.onFailure { devLog("Shell Error: $it") }
-                }
-                var restored = false
-                if (rollbackArchive != null && !rollbackMode) {
-                    operationHistoryRepository.phase(historyId, OperationPhase.ROLLBACK, "Update failed; restoring previous version")
-                    operationHistoryRepository.appendLog(historyId, "Automatic rollback started")
-                    val rollbackCommand = PlatformManager.moduleManager.getInstallCommand(rollbackArchive.absolutePath)
-                    restored = !rollbackCommand.isNullOrBlank() && emu.newSuperUserPty(rollbackCommand, env).isSuccess
-                    operationHistoryRepository.appendLog(
-                        historyId,
-                        if (restored) "Automatic rollback completed" else "Automatic rollback failed; manual restore remains available",
+            operationHistoryRepository.phase(
+                historyId,
+                OperationPhase.INSTALL,
+                if (rollbackMode) "Restoring previous module version" else "Installing module",
+            )
+            onCoordinatorOwnership()
+            val completion = operationCoordinator.execute<Boolean>(
+                historyId = historyId,
+                cleanup = {
+                    stagingOperationId?.let { operationStagingStore.release(it) }
+                },
+            ) {
+                runCatching { InstallIdentityPolicy.verifyUnchanged(reviewedIdentity, zipFile) }.getOrElse { error ->
+                    return@execute OperationCompletion.Failure(
+                        error.message ?: "Reviewed archive changed before privileged execution",
+                        error,
                     )
                 }
-                operationHistoryRepository.fail(
-                    id = historyId,
-                    summary = if (restored) "Update failed; previous version restored" else message,
-                    requiresReboot = restored,
-                    rollbackAction = if (!restored && rollbackArchive != null) OperationAction.INSTALL else null,
-                )
-                if (module != null /*&& !shell.isAlive*/) {
-                    withContext(Dispatchers.IO) {
-                        runCatching {
-                            SuFile("/data/adb/modules_update/${module.id}").deleteRecursively()
-                        }.onFailure {
-                            Timber.e(
-                                it,
-                                "Failed to cleanup /data/adb/modules_update/${module.id}",
+                markMutationStarted()
+                log("Privileged mutation started for SHA-256 ${reviewedIdentity.sha256}")
+                val rootResult = privilegedProcessExecutor.execute(installCommand, env) { line -> log(line) }
+                phase(OperationPhase.RECONCILE, "Reconciling installed state from the root backend")
+
+                suspend fun backendModule(): LocalModule? =
+                    runCatching { PlatformManager.moduleManager.getModuleById(identity.moduleId) }.getOrNull()
+
+                if (rootResult.isSuccess) {
+                    val actual = backendModule()
+                    if (
+                        actual == null ||
+                        !InstallReconciliationPolicy.matchesExpected(
+                            actualId = actual.id.id,
+                            actualVersionCode = actual.versionCode,
+                            expectedId = identity.moduleId.id,
+                            expectedVersionCode = module?.versionCode,
+                        )
+                    ) {
+                        return@execute OperationCompletion.OutcomeUnknown(
+                            summary = "Installer exited successfully but backend state does not match the reviewed module; reconcile before retrying",
+                            requiresReboot = true,
+                            rollbackAction = rollbackArchive?.let { OperationAction.INSTALL },
+                        )
+                    }
+                    val rollbackAction = when {
+                        rollbackMode -> null
+                        rollbackArchive != null -> OperationAction.INSTALL
+                        previous == null -> OperationAction.REMOVE
+                        else -> null
+                    }
+                    val finalizationError = runCatching {
+                        localRepository.insertLocal(actual)
+                        recordGitHubInstallSource(actual, parentOperationId, sourceUrl)
+                    }.exceptionOrNull()
+                    when (
+                        VerifiedMutationFinalizationPolicy.classify(
+                            backendVerified = true,
+                            finalizationSucceeded = finalizationError == null,
+                        )
+                    ) {
+                        VerifiedMutationFinalizationPolicy.Outcome.SUCCESS -> {
+                            if (userPreferences.deleteZipFile && !updateRollbackStore.isManagedBackup(zipPath)) {
+                                runCatching { PlatformManager.fileManager.deleteOnExit(zipPath) }
+                                    .onFailure { log("Warning: unable to schedule staged ZIP deletion: ${it.message}") }
+                            }
+                            OperationCompletion.Success(
+                                value = true,
+                                summary = when (kind) {
+                                    OperationKind.UPDATE -> "Update installed and backend state verified"
+                                    OperationKind.ROLLBACK -> "Previous module version restored and verified"
+                                    else -> "Installed and backend state verified"
+                                },
+                                requiresReboot = true,
+                                rollbackAction = rollbackAction,
                             )
                         }
+                        VerifiedMutationFinalizationPolicy.Outcome.KNOWN_APPLIED_FINALIZATION_FAILED ->
+                            OperationCompletion.Failure(
+                                summary = "Backend state confirms the module was applied, but local/provenance finalization failed; refresh local state before another mutation",
+                                error = finalizationError,
+                                requiresReboot = true,
+                                rollbackAction = rollbackAction,
+                                retryable = false,
+                            )
+                        VerifiedMutationFinalizationPolicy.Outcome.OUTCOME_UNKNOWN ->
+                            OperationCompletion.OutcomeUnknown(
+                                summary = "Installed backend state could not be verified; reconcile before retrying",
+                                requiresReboot = true,
+                                rollbackAction = rollbackAction,
+                            )
+                    }
+                } else {
+                    log("Installer exited with code ${rootResult.exitCode}")
+                    if (rollbackArchive != null && !rollbackMode) {
+                        phase(OperationPhase.ROLLBACK, "Install failed; restoring previous version")
+                        val rollbackCommand = PlatformManager.moduleManager.getInstallCommand(rollbackArchive.absolutePath)
+                        if (!rollbackCommand.isNullOrBlank()) {
+                            val rollbackResult = privilegedProcessExecutor.execute(rollbackCommand, env) { line -> log(line) }
+                            val restored = backendModule()
+                            if (rollbackResult.isSuccess && restored != null && previous != null && restored.versionCode == previous.versionCode) {
+                                val finalizationError = runCatching { localRepository.insertLocal(restored) }.exceptionOrNull()
+                                return@execute OperationCompletion.Failure(
+                                    summary = if (finalizationError == null) {
+                                        "Installation failed; previous version was restored and verified"
+                                    } else {
+                                        "Installation failed and the previous version was restored in the backend, but local state finalization failed"
+                                    },
+                                    error = finalizationError,
+                                    requiresReboot = true,
+                                    retryable = false,
+                                )
+                            }
+                        }
+                        return@execute OperationCompletion.OutcomeUnknown(
+                            summary = "Installation failed and rollback could not be verified; reconcile before retrying",
+                            requiresReboot = true,
+                            rollbackAction = OperationAction.INSTALL,
+                        )
+                    }
+                    val observed = backendModule()
+                    val unchanged = when {
+                        previous == null -> observed == null
+                        observed == null -> false
+                        else -> observed.versionCode == previous.versionCode
+                    }
+                    if (unchanged) {
+                        OperationCompletion.Failure(
+                            summary = "Installation failed and backend state is unchanged",
+                            retryable = false,
+                        )
+                    } else {
+                        OperationCompletion.OutcomeUnknown(
+                            summary = "Installation failed after mutation began and backend state changed; reconcile before retrying",
+                            requiresReboot = true,
+                            rollbackAction = rollbackArchive?.let { OperationAction.INSTALL },
+                        )
                     }
                 }
             }
+            val success = completion is OperationCompletion.Success<*>
             activeOperationId = null
             return@withContext success
         }
 
-    private suspend fun insertLocal(module: LocalModule) {
-        withContext(Dispatchers.IO) {
-            localRepository.insertLocal(module)
-        }
-    }
-
     private suspend fun recordGitHubInstallSource(
         module: LocalModule,
         parentOperationId: String?,
+        sourceUrlOverride: String?,
     ) {
-        val parentId = parentOperationId ?: return
-        val sourceUrl = operationHistoryRepository.getById(parentId)
-            ?.sourceUrl
-            ?.takeIf(String::isNotBlank)
+        val parentId = parentOperationId
+        val sourceUrl = sourceUrlOverride?.takeIf(String::isNotBlank)
+            ?: parentId?.let { operationHistoryRepository.getById(it)?.sourceUrl }
+                ?.takeIf(String::isNotBlank)
             ?: return
         val source = GitHubSourceSpec.fromDownloadUrl(sourceUrl) ?: return
         val repoUrl = source.sourceUrl
@@ -591,27 +900,13 @@ constructor(
                 updatedAt = System.currentTimeMillis(),
             ),
         )
-        operationHistoryRepository.appendLog(
-            parentId,
-            "Linked ${module.id.id} to GitHub ${source.mode.name.lowercase()} source: $repoUrl",
-        )
-    }
-
-    private fun deleteBySu(zipPath: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            runCatching {
-                PlatformManager.fileManager.deleteOnExit(zipPath)
-            }.onFailure {
-                Timber.e(it, "Failed to delete $zipPath via su")
-                withContext(Dispatchers.Main) {
-                    log("Warning: Failed to delete $zipPath after installation.")
-                }
-            }.onSuccess {
-                Timber.d("Deleted: $zipPath")
-                withContext(Dispatchers.Main) {
-                    devLog(R.string.deleted_zip_file, zipPath)
-                }
-            }
+        parentId?.let {
+            operationHistoryRepository.appendLog(
+                it,
+                "Linked ${module.id.id} to GitHub ${source.mode.name.lowercase()} source: $repoUrl",
+            )
         }
     }
+
+
 }

@@ -6,6 +6,7 @@ import com.dergoogler.mmrl.app.utils.NotificationUtils
 import com.dergoogler.mmrl.ash.automation.AshAutomationScheduler
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.network.NetworkUtils
+import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import com.dergoogler.mmrl.service.ModuleService
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.toxicbakery.logging.Arbor
@@ -21,6 +22,7 @@ import javax.inject.Inject
 @HiltAndroidApp
 class App : Application() {
     @Inject lateinit var userPreferencesRepository: UserPreferencesRepository
+    @Inject lateinit var operationHistoryRepository: OperationHistoryRepository
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     init {
         Arbor.sow(LogCatSeedling())
@@ -38,6 +40,9 @@ class App : Application() {
         NetworkUtils.setCacheDir(cacheDir)
 
         applicationScope.launch {
+            operationHistoryRepository.enforceRetention()
+            operationHistoryRepository.recoverAfterProcessRestart()
+            operationHistoryRepository.recoverStaleOperations()
             val preferences = userPreferencesRepository.data.first()
             if (preferences.moduleServiceEnabled) {
                 runCatching { ModuleService.start(this@App, preferences.checkModuleUpdatesInterval) }

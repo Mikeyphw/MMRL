@@ -23,10 +23,16 @@ import com.dergoogler.mmrl.ash.model.QuarantineItem
 import com.dergoogler.mmrl.ash.model.SettingItem
 import com.dergoogler.mmrl.ash.root.AshModuleLocator
 import com.dergoogler.mmrl.ash.root.RootServiceClient
+import com.dergoogler.mmrl.database.entity.history.OperationKind
+import com.dergoogler.mmrl.database.entity.history.OperationPhase
+import com.dergoogler.mmrl.database.entity.history.OperationStatus
+import com.dergoogler.mmrl.operation.PrivilegedOperationCoordinator
+import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.security.MessageDigest
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,6 +42,8 @@ class AshRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val rootClient: RootServiceClient,
     private val activityDao: ActivityDao,
+    private val operationHistory: OperationHistoryRepository,
+    private val operationCoordinator: PrivilegedOperationCoordinator,
 ) {
     suspend fun rootAvailable(): Boolean = rootClient.rootAvailable()
     suspend fun moduleStateRaw(): String {
@@ -192,6 +200,13 @@ class AshRepository @Inject constructor(
         }
 
     suspend fun executeRecoveryPlan(plan: AshRecoveryPlan): OperationResult =
+        executeRecoveryPlan(plan, existingHistoryId = null, externalIdempotencyKey = null)
+
+    internal suspend fun executeRecoveryPlan(
+        plan: AshRecoveryPlan,
+        existingHistoryId: String?,
+        externalIdempotencyKey: String?,
+    ): OperationResult =
         mutation(
             "recovery-plan",
             context.getString(R.string.ash_activity_started_plan, plan.title),
@@ -202,6 +217,8 @@ class AshRepository @Inject constructor(
                 append("modules=").append(plan.affectedFolders.joinToString(",")).append('\n')
                 append("rollback=").append(plan.rollbackStrategy)
             },
+            existingHistoryId = existingHistoryId,
+            externalIdempotencyKey = externalIdempotencyKey,
         ) {
             rootClient.executeRecoveryPlan(plan.id, plan.recoveryRevision, plan.affectedFolders)
         }
@@ -274,17 +291,73 @@ class AshRepository @Inject constructor(
         type: String,
         title: String,
         details: String,
+        existingHistoryId: String? = null,
+        externalIdempotencyKey: String? = null,
         block: suspend () -> String,
     ): OperationResult {
-        val root = parseObject(block())
-        val result = OperationResult(
-            ok = root.optBoolean("ok"),
-            message = root.optString(
-                "message",
-                if (root.optBoolean("ok")) context.getString(R.string.completed) else context.getString(R.string.operation_failed),
-            ),
-            path = root.optString("path").takeIf(String::isNotBlank),
+        val ownership = AshMutationOwnershipPolicy.resolve(
+            existingHistoryId = existingHistoryId,
+            externalIdempotencyKey = externalIdempotencyKey,
+            generatedIdempotencyKey = "ash:$type:${sha256(details)}",
         )
+        val idempotencyKey = ownership.idempotencyKey
+        val historyId = if (ownership.createHistory) {
+            operationHistory.start(
+                kind = ashOperationKind(type),
+                title = title,
+                summary = "Queued AshReXcue mutation",
+                retryAction = null,
+                origin = "ASHREXCUE",
+                initialStatus = OperationStatus.QUEUED,
+                idempotencyKey = idempotencyKey,
+            )
+        } else {
+            val ownedHistoryId = requireNotNull(ownership.existingHistoryId)
+            val existing = operationHistory.getById(ownedHistoryId)
+                ?: error("Existing AshReXcue operation history is unavailable")
+            if (existing.idempotencyKey != idempotencyKey) {
+                check(operationHistory.claimIdempotencyKey(ownedHistoryId, idempotencyKey)) {
+                    "An identical AshReXcue mutation is already active"
+                }
+            }
+            ownedHistoryId
+        }
+        val existing = operationHistory.getById(historyId)
+        if (existing?.status == OperationStatus.OUTCOME_UNKNOWN.name && existing.reconciledAt == null) {
+            return OperationResult(
+                ok = false,
+                message = "A matching AshReXcue mutation has an unknown outcome; reconcile it before retrying",
+            )
+        }
+
+        val completion = operationCoordinator.execute<OperationResult>(historyId) {
+            phase(OperationPhase.INSTALL, "Applying AshReXcue mutation")
+            log(details)
+            markMutationStarted()
+            val root = parseObject(block())
+            val result = OperationResult(
+                ok = root.optBoolean("ok"),
+                message = root.optString(
+                    "message",
+                    if (root.optBoolean("ok")) context.getString(R.string.completed) else context.getString(R.string.operation_failed),
+                ),
+                path = root.optString("path").takeIf(String::isNotBlank),
+            )
+            if (result.ok) {
+                PrivilegedOperationCoordinator.OperationCompletion.Success(
+                    value = result,
+                    summary = result.message,
+                )
+            } else {
+                PrivilegedOperationCoordinator.OperationCompletion.Failure(result.message)
+            }
+        }
+        val result = when (completion) {
+            is PrivilegedOperationCoordinator.OperationCompletion.Success -> completion.value
+            is PrivilegedOperationCoordinator.OperationCompletion.Failure -> OperationResult(false, completion.summary)
+            is PrivilegedOperationCoordinator.OperationCompletion.Cancelled -> OperationResult(false, completion.summary)
+            is PrivilegedOperationCoordinator.OperationCompletion.OutcomeUnknown -> OperationResult(false, completion.summary)
+        }
         val now = System.currentTimeMillis() / 1000L
         activityDao.insert(
             ActivityEntity(
@@ -294,6 +367,7 @@ class AshRepository @Inject constructor(
                 title = title,
                 subtitle = result.message,
                 status = when {
+                    completion is PrivilegedOperationCoordinator.OperationCompletion.OutcomeUnknown -> "outcome_unknown"
                     !result.ok -> "failed"
                     result.message.contains("queued", ignoreCase = true) -> "queued"
                     else -> "success"
@@ -307,6 +381,18 @@ class AshRepository @Inject constructor(
         activityDao.trim(300)
         return result
     }
+
+    private fun ashOperationKind(type: String): OperationKind = when (type) {
+        "restoration", "recovery-plan" -> OperationKind.ASH_RESTORATION
+        "settings", "setting", "trust" -> OperationKind.ASH_SETTINGS
+        "diagnostics", "state-repair" -> OperationKind.ASH_DIAGNOSTICS
+        else -> OperationKind.ASH_RESCUE
+    }
+
+    private fun sha256(value: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(Charsets.UTF_8))
+            .joinToString("") { byte -> "%02x".format(byte) }
 
     private fun parseObject(raw: String): JSONObject = runCatching { JSONObject(raw) }
         .getOrElse { throw IllegalStateException("Invalid AshReXcue response") }

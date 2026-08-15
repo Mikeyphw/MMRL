@@ -4,6 +4,8 @@ import com.dergoogler.mmrl.ash.automation.ASH_EXTERNAL_CONTROL_API_VERSION
 import com.dergoogler.mmrl.ash.automation.ASH_EXTERNAL_CONTROL_SCHEMA
 import com.dergoogler.mmrl.ash.automation.AshExternalControlStore
 import org.json.JSONObject
+import com.dergoogler.mmrl.database.entity.history.OperationPhase
+import com.dergoogler.mmrl.database.entity.history.OperationStatus
 
 import android.app.AlertDialog
 import android.app.NotificationManager
@@ -36,6 +38,20 @@ class TaskerApprovalActivity : ComponentActivity() {
             val history = TaskerRuntime.repositories(this@TaskerApprovalActivity).operationHistoryRepository()
             if (approved) {
                 history.appendLog(request.operationId, "Approved by user")
+                val queued = history.transition(
+                    id = request.operationId,
+                    to = OperationStatus.QUEUED,
+                    from = setOf(OperationStatus.WAITING_APPROVAL, OperationStatus.RUNNING),
+                    summary = "Approved; queued for execution",
+                    phase = OperationPhase.STAGE,
+                )
+                if (!queued) {
+                    releaseAshReservation(request)
+                    TaskerRootRequestStore.remove(this@TaskerApprovalActivity, request.id)
+                    history.appendLog(request.operationId, "Approval ignored because the operation is no longer waiting")
+                    finish()
+                    return@launch
+                }
                 try {
                     TaskerRootDispatcher.enqueue(this@TaskerApprovalActivity, request.id)
                 } catch (error: Throwable) {

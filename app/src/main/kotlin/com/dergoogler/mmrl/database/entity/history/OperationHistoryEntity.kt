@@ -11,6 +11,7 @@ import androidx.room.PrimaryKey
         Index(value = ["status"]),
         Index(value = ["moduleId"]),
         Index(value = ["requiresReboot", "rebootCompletedAt"]),
+        Index(value = ["idempotencyKey"], unique = true),
     ],
 )
 data class OperationHistoryEntity(
@@ -29,6 +30,7 @@ data class OperationHistoryEntity(
     val progress: Int? = null,
     val requiresReboot: Boolean = false,
     val rebootCompletedAt: Long? = null,
+    /** Compatibility field only. New logs live in operationTechnicalLog and list queries synthesize empty text. */
     val technicalLog: String = "",
     val errorMessage: String? = null,
     val retryAction: String? = null,
@@ -41,13 +43,28 @@ data class OperationHistoryEntity(
     val targetVersion: String? = null,
     val inspectionSummary: String? = null,
     val origin: String? = null,
+    val idempotencyKey: String? = null,
+    val sourceOperationId: String? = null,
+    val mutationStartedAt: Long? = null,
+    val reconciledAt: Long? = null,
 ) {
-    val isRunning: Boolean get() = status == OperationStatus.RUNNING.name
-    val isFailed: Boolean get() = status == OperationStatus.FAILED.name
+    val isRunning: Boolean get() = status in OperationStatus.activeNames
+    val isFailed: Boolean get() = status == OperationStatus.FAILED.name || status == OperationStatus.OUTCOME_UNKNOWN.name
     val isPendingReboot: Boolean get() = requiresReboot && rebootCompletedAt == null
-    val canRetry: Boolean get() = !retryAction.isNullOrBlank()
-    val canRollback: Boolean get() = !rollbackAction.isNullOrBlank()
+    val canRetry: Boolean get() =
+        !retryAction.isNullOrBlank() && status == OperationStatus.FAILED.name
+    val canRollback: Boolean get() =
+        !rollbackAction.isNullOrBlank() &&
+            status in OperationStatus.terminalNames &&
+            status != OperationStatus.OUTCOME_UNKNOWN.name
+    val canDelete: Boolean get() = !isRunning && !isPendingReboot && status != OperationStatus.OUTCOME_UNKNOWN.name
 }
+
+@Entity(tableName = "operationTechnicalLog")
+data class OperationTechnicalLogEntity(
+    @PrimaryKey val id: String,
+    val technicalLog: String = "",
+)
 
 enum class OperationKind {
     DOWNLOAD,
@@ -69,10 +86,19 @@ enum class OperationKind {
 }
 
 enum class OperationStatus {
+    QUEUED,
     RUNNING,
+    WAITING_APPROVAL,
+    CANCEL_REQUESTED,
     SUCCEEDED,
     FAILED,
     CANCELLED,
+    OUTCOME_UNKNOWN;
+
+    companion object {
+        val activeNames = setOf(QUEUED.name, RUNNING.name, WAITING_APPROVAL.name, CANCEL_REQUESTED.name)
+        val terminalNames = setOf(SUCCEEDED.name, FAILED.name, CANCELLED.name, OUTCOME_UNKNOWN.name)
+    }
 }
 
 enum class OperationAction {
@@ -93,6 +119,7 @@ enum class OperationPhase {
     INSPECT,
     STAGE,
     INSTALL,
+    RECONCILE,
     RESULT,
     ROLLBACK,
     CHECK_UPDATES,

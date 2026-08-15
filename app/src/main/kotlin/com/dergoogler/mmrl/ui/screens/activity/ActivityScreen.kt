@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,10 +68,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationHistoryEntity
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.database.entity.history.OperationStatus
+import com.dergoogler.mmrl.operation.OperationStatusPresentation
+import com.dergoogler.mmrl.operation.OperationStatusPresentationPolicy
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ui.component.BottomSheet
 import com.dergoogler.mmrl.ui.component.FlatSectionCard
@@ -93,6 +97,7 @@ import com.dergoogler.mmrl.viewmodel.ActivityViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
@@ -102,6 +107,7 @@ import java.util.Date
 fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
     LocalScreenProvider {
         val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         val snackbar = LocalSnackbarHost.current
         val entries by viewModel.visibleHistory.collectAsStateWithLifecycle()
         val filter by viewModel.filter.collectAsStateWithLifecycle()
@@ -152,6 +158,10 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
                     onRollback = {
                         selectedEntry = null
                         viewModel.rollback(context, entry)
+                    },
+                    onReconcile = {
+                        selectedEntry = null
+                        viewModel.reconcile(entry)
                     },
                     onCancel = {
                         selectedEntry = null
@@ -233,7 +243,7 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
                         ActivityHistoryList(
                             entries = entries,
                             bottomPadding = bottomPadding,
-                            onEntryClick = { selectedEntry = it },
+                            onEntryClick = { entry -> scope.launch { selectedEntry = viewModel.loadDetails(entry) } },
                             modifier = Modifier.weight(0.44f),
                         )
                         Surface(
@@ -248,6 +258,7 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
                                     entry = entry,
                                     onRetry = { viewModel.retry(context, entry) },
                                     onRollback = { viewModel.rollback(context, entry) },
+                                    onReconcile = { viewModel.reconcile(entry) },
                                     onCancel = { viewModel.cancel(context, entry) },
                                     onApproveTasker = { viewModel.approveTaskerRequest(context, entry) },
                                     onDenyTasker = { viewModel.denyTaskerRequest(context, entry) },
@@ -273,7 +284,7 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) =
                     ActivityHistoryList(
                         entries = entries,
                         bottomPadding = bottomPadding,
-                        onEntryClick = { selectedEntry = it },
+                        onEntryClick = { entry -> scope.launch { selectedEntry = viewModel.loadDetails(entry) } },
                     )
                 }
             }
@@ -536,6 +547,7 @@ private fun ActivityDetailsSheet(
     onClose: () -> Unit,
     onRetry: () -> Unit,
     onRollback: () -> Unit,
+    onReconcile: () -> Unit,
     onCancel: () -> Unit,
     onApproveTasker: () -> Unit,
     onDenyTasker: () -> Unit,
@@ -547,6 +559,7 @@ private fun ActivityDetailsSheet(
         entry = entry,
         onRetry = onRetry,
         onRollback = onRollback,
+        onReconcile = onReconcile,
         onCancel = onCancel,
         onApproveTasker = onApproveTasker,
         onDenyTasker = onDenyTasker,
@@ -561,6 +574,7 @@ private fun ActivityDetailsContent(
     entry: OperationHistoryEntity,
     onRetry: () -> Unit,
     onRollback: () -> Unit,
+    onReconcile: () -> Unit,
     onCancel: () -> Unit,
     onApproveTasker: () -> Unit,
     onDenyTasker: () -> Unit,
@@ -661,7 +675,7 @@ private fun ActivityDetailsContent(
             TextButton(onClick = onShareLog, enabled = entry.technicalLog.isNotBlank()) {
                 Text(stringResource(R.string.activity_share_log))
             }
-            if (entry.origin != "ashrexcue") {
+            if (entry.origin != "ashrexcue" && entry.canDelete) {
                 TextButton(onClick = onDelete) {
                     Text(stringResource(R.string.activity_delete_entry), color = MaterialTheme.colorScheme.error)
                 }
@@ -688,8 +702,11 @@ private fun ActivityDetailsContent(
                     Text(stringResource(R.string.activity_approve_tasker))
                 }
             }
-            if (entry.isRunning && entry.kind == OperationKind.DOWNLOAD.name) {
+            if (entry.isRunning) {
                 Button(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
+            }
+            if (entry.status == OperationStatus.OUTCOME_UNKNOWN.name) {
+                Button(onClick = onReconcile) { Text(stringResource(R.string.activity_reconcile)) }
             }
             if (entry.canRollback && !entry.isRunning) {
                 Button(onClick = onRollback) { Text(stringResource(R.string.activity_rollback)) }
@@ -712,21 +729,31 @@ private fun DetailLine(
 @Composable
 private fun OperationHistoryEntity.statusColor(): Color {
     val semantic = LocalSemanticColors.current
-    return when (status) {
-        OperationStatus.RUNNING.name -> semantic.info
-        OperationStatus.SUCCEEDED.name -> semantic.success
-        OperationStatus.FAILED.name -> semantic.error
-        else -> semantic.disabled
+    return when (OperationStatusPresentationPolicy.classify(status)) {
+        OperationStatusPresentation.QUEUED,
+        OperationStatusPresentation.RUNNING,
+        OperationStatusPresentation.WAITING_APPROVAL,
+        OperationStatusPresentation.CANCEL_REQUESTED,
+        -> semantic.info
+        OperationStatusPresentation.SUCCEEDED -> semantic.success
+        OperationStatusPresentation.FAILED, OperationStatusPresentation.OUTCOME_UNKNOWN -> semantic.error
+        OperationStatusPresentation.CANCELLED -> semantic.disabled
+        OperationStatusPresentation.UNKNOWN -> semantic.warning
     }
 }
 
 @Composable
 private fun OperationHistoryEntity.statusLabel(): String =
-    when (status) {
-        OperationStatus.RUNNING.name -> stringResource(R.string.activity_status_running)
-        OperationStatus.SUCCEEDED.name -> stringResource(R.string.activity_status_succeeded)
-        OperationStatus.FAILED.name -> stringResource(R.string.activity_status_failed)
-        else -> stringResource(R.string.activity_status_cancelled)
+    when (OperationStatusPresentationPolicy.classify(status)) {
+        OperationStatusPresentation.QUEUED -> stringResource(R.string.activity_status_queued)
+        OperationStatusPresentation.RUNNING -> stringResource(R.string.activity_status_running)
+        OperationStatusPresentation.WAITING_APPROVAL -> stringResource(R.string.activity_status_waiting_approval)
+        OperationStatusPresentation.CANCEL_REQUESTED -> stringResource(R.string.activity_status_cancel_requested)
+        OperationStatusPresentation.SUCCEEDED -> stringResource(R.string.activity_status_succeeded)
+        OperationStatusPresentation.FAILED -> stringResource(R.string.activity_status_failed)
+        OperationStatusPresentation.CANCELLED -> stringResource(R.string.activity_status_cancelled)
+        OperationStatusPresentation.OUTCOME_UNKNOWN -> stringResource(R.string.activity_status_outcome_unknown)
+        OperationStatusPresentation.UNKNOWN -> status
     }
 
 @Composable
@@ -774,13 +801,14 @@ private fun OperationHistoryEntity.icon(): Int =
 
 
 private val OperationHistoryEntity.canOfferRetry: Boolean
-    get() =
-        canRetry &&
-            (
-                !sourceUrl.isNullOrBlank() ||
-                    !sourceUri.isNullOrBlank() ||
-                    !destinationPath.isNullOrBlank()
-            )
+    get() {
+        if (!canRetry) return false
+        return when (runCatching { OperationAction.valueOf(retryAction.orEmpty()) }.getOrNull()) {
+            OperationAction.DOWNLOAD -> !sourceUrl.isNullOrBlank() && !destinationPath.isNullOrBlank()
+            OperationAction.ENABLE, OperationAction.DISABLE, OperationAction.REMOVE -> !moduleId.isNullOrBlank()
+            else -> false
+        }
+    }
 
 private fun OperationHistoryEntity.displayTitle(): String {
     moduleName?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }

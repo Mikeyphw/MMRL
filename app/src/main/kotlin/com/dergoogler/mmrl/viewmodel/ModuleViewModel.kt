@@ -2,6 +2,7 @@ package com.dergoogler.mmrl.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -17,6 +18,7 @@ import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.database.entity.Repo.Companion.UPDATE_JSON
 import com.dergoogler.mmrl.database.entity.Repo.Companion.toRepo
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
+import com.dergoogler.mmrl.installer.OperationStagingStore
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.json.UpdateJson
 import com.dergoogler.mmrl.model.local.LocalModule
@@ -26,11 +28,11 @@ import com.dergoogler.mmrl.model.online.OtherSources
 import com.dergoogler.mmrl.model.online.TrackJson
 import com.dergoogler.mmrl.model.online.VersionItem
 import com.dergoogler.mmrl.model.state.OnlineState
+import com.dergoogler.mmrl.operation.ModuleMutationExecutor
 import com.dergoogler.mmrl.service.ModuleService
 import com.dergoogler.mmrl.model.state.OnlineState.Companion.createState
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.model.ModId
-import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.service.DownloadService
@@ -46,7 +48,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
 
 data class ModuleOps(
     val isOpsRunning: Boolean,
@@ -64,6 +65,8 @@ class ModuleViewModel
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
         application: Application,
+        private val operationStagingStore: OperationStagingStore,
+        private val moduleMutationExecutor: ModuleMutationExecutor,
     ) : MMRLViewModel(
             localRepository = localRepository,
             modulesRepository = modulesRepository,
@@ -212,70 +215,61 @@ class ModuleViewModel
         fun downloader(
             context: Context,
             item: VersionItem,
-            onSuccess: (File) -> Unit,
+            onSuccess: (Uri) -> Unit,
             onFailure: (Throwable) -> Unit = {},
             onOperationStarted: (String) -> Unit = {},
         ) {
-            viewModelScope.launch {
-                val downloadPath =
-                    File(
-                        userPreferencesRepository.data
-                            .first()
-                            .downloadPath,
-                    )
+            val filename =
+                Utils.getFilename(
+                    name = online.name,
+                    version = item.version,
+                    versionCode = item.versionCode,
+                    extension = "zip",
+                )
 
-                val filename =
-                    Utils.getFilename(
-                        name = online.name,
-                        version = item.version,
-                        versionCode = item.versionCode,
-                        extension = "zip",
-                    )
+            val task =
+                DownloadService.TaskItem(
+                    key = item.hashCode(),
+                    url = item.zipUrl,
+                    filename = filename,
+                    title = online.name,
+                    desc = item.versionDisplay,
+                )
 
-                val task =
-                    DownloadService.TaskItem(
-                        key = item.hashCode(),
-                        url = item.zipUrl,
-                        filename = filename,
-                        title = online.name,
-                        desc = item.versionDisplay,
-                    )
+            val listener =
+                object : DownloadService.IDownloadListener {
+                    override fun onStarted(operationId: String) = onOperationStarted(operationId)
 
-                val listener =
-                    object : DownloadService.IDownloadListener {
-                        override fun onStarted(operationId: String) = onOperationStarted(operationId)
+                    override fun getProgress(value: Float) {}
 
-                        override fun getProgress(value: Float) {}
-
-                        override fun onFileExists() {
-                            Toast
-                                .makeText(
-                                    context,
-                                    context.getString(R.string.file_already_exists),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                        }
-
-                        override fun onSuccess() {
-                            if (!downloadPath.exists() && downloadPath.mkdirs()) {
-                                Timber.d("Created directory: $downloadPath")
-                            }
-
-                            onSuccess(downloadPath.resolve(filename))
-                        }
-
-                        override fun onFailure(e: Throwable) {
-                            Timber.d(e)
-                            onFailure(e)
-                        }
+                    override fun onFileExists() {
+                        Toast
+                            .makeText(
+                                context,
+                                context.getString(R.string.file_already_exists),
+                                Toast.LENGTH_SHORT,
+                            ).show()
                     }
 
-                DownloadService.start(
-                    context = context,
-                    task = task,
-                    listener = listener,
-                )
-            }
+                    override fun onSuccess(uri: Uri) = onSuccess(uri)
+
+                    override fun onFailure(e: Throwable) {
+                        Timber.d(e)
+                        onFailure(e)
+                    }
+                }
+
+            DownloadService.start(
+                context = context,
+                task = task,
+                listener = listener,
+            )
+        }
+
+        suspend fun stageForReview(uri: Uri): OperationStagingStore.StagedArtifact = operationStagingStore.stage(uri)
+
+        suspend fun releaseReviewStage(operationId: String?) {
+            if (!operationId.isNullOrBlank()) operationStagingStore.release(operationId)
         }
 
         @Composable
@@ -288,23 +282,33 @@ class ModuleViewModel
         }
 
         private val opsTasks = mutableStateListOf<ModId>()
-        private val opsCallback =
-            object : IModuleOpsCallback.Stub() {
-                override fun onSuccess(id: ModId) {
-                    viewModelScope.launch {
-                        modulesRepository.getLocal(id)
-                        opsTasks.remove(id)
-                    }
-                }
 
-                override fun onFailure(
-                    id: ModId,
-                    msg: String?,
-                ) {
-                    opsTasks.remove(id)
-                    Timber.w("$id: $msg")
+        private fun launchModuleOperation(
+            module: LocalModule,
+            useShell: Boolean,
+            kind: com.dergoogler.mmrl.database.entity.history.OperationKind,
+            action: com.dergoogler.mmrl.database.entity.history.OperationAction,
+            rollbackAction: com.dergoogler.mmrl.database.entity.history.OperationAction?,
+            successSummary: String,
+        ) {
+            if (module.id in opsTasks) return
+            opsTasks.add(module.id)
+            viewModelScope.launch {
+                moduleMutationExecutor.execute(
+                    module = module,
+                    useShell = useShell,
+                    kind = kind,
+                    action = action,
+                    rollbackAction = rollbackAction,
+                    successSummary = successSummary,
+                ).onSuccess {
+                    local = localRepository.getLocalByIdOrNull(module.id.id)
+                }.onFailure { error ->
+                    Timber.w(error, "${module.id}: module mutation failed")
                 }
+                opsTasks.remove(module.id)
             }
+        }
 
         fun createModuleOps(
             useShell: Boolean,
@@ -314,14 +318,22 @@ class ModuleViewModel
                 ModuleOps(
                     isOpsRunning = opsTasks.contains(module.id),
                     toggle = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.disable(module.id, useShell, opsCallback)
+                        launchModuleOperation(
+                            module, useShell,
+                            com.dergoogler.mmrl.database.entity.history.OperationKind.DISABLE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.DISABLE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.ENABLE,
+                            "Module disabled",
+                        )
                     },
                     change = {
-                        Timber.d("Pressed ENABLE")
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.remove(module.id, useShell, opsCallback)
-                        local = local?.copy(state = State.REMOVE)
+                        launchModuleOperation(
+                            module, useShell,
+                            com.dergoogler.mmrl.database.entity.history.OperationKind.REMOVE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.REMOVE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.ENABLE,
+                            "Module marked for removal",
+                        )
                     },
                 )
 
@@ -329,14 +341,22 @@ class ModuleViewModel
                 ModuleOps(
                     isOpsRunning = opsTasks.contains(module.id),
                     toggle = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.enable(module.id, useShell, opsCallback)
+                        launchModuleOperation(
+                            module, useShell,
+                            com.dergoogler.mmrl.database.entity.history.OperationKind.ENABLE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.ENABLE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.DISABLE,
+                            "Module enabled",
+                        )
                     },
                     change = {
-                        Timber.d("Pressed DISABLE")
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.remove(module.id, useShell, opsCallback)
-                        local = local?.copy(state = State.REMOVE)
+                        launchModuleOperation(
+                            module, useShell,
+                            com.dergoogler.mmrl.database.entity.history.OperationKind.REMOVE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.REMOVE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.ENABLE,
+                            "Module marked for removal",
+                        )
                     },
                 )
 
@@ -345,19 +365,17 @@ class ModuleViewModel
                     isOpsRunning = opsTasks.contains(module.id),
                     toggle = {},
                     change = {
-                        Timber.d("Pressed REMOVE")
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.enable(module.id, useShell, opsCallback)
-                        local = local?.copy(state = State.ENABLE)
+                        launchModuleOperation(
+                            module, useShell,
+                            com.dergoogler.mmrl.database.entity.history.OperationKind.ENABLE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.ENABLE,
+                            com.dergoogler.mmrl.database.entity.history.OperationAction.REMOVE,
+                            "Module removal reverted",
+                        )
                     },
                 )
 
-            State.UPDATE ->
-                ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
-                    toggle = {},
-                    change = {},
-                )
+            State.UPDATE -> ModuleOps(isOpsRunning = opsTasks.contains(module.id), toggle = {}, change = {})
         }
 
         @AssistedFactory

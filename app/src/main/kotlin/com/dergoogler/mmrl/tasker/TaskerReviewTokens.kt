@@ -73,6 +73,11 @@ internal object TaskerReviewTokenStore {
     private fun rootDirectory(context: Context) = File(context.filesDir, "tasker-reviews").apply { mkdirs() }
     private fun tokenDirectory(context: Context) = File(rootDirectory(context), "tokens").apply { mkdirs() }
     fun archiveDirectory(context: Context) = File(rootDirectory(context), "archives").apply { mkdirs() }
+    fun archiveDirectory(context: Context, operationId: String): File {
+        val safe = operationId.replace(Regex("[^A-Za-z0-9._-]"), "_")
+        require(safe.isNotBlank()) { "Operation ID is required for review staging" }
+        return File(archiveDirectory(context), safe).apply { mkdirs() }
+    }
 
     private fun safeToken(token: String) = token.replace(Regex("[^A-Za-z0-9._-]"), "_")
     private fun file(context: Context, token: String) = File(tokenDirectory(context), "${safeToken(token)}.json")
@@ -116,7 +121,10 @@ internal object TaskerReviewTokenStore {
         val value = get(context, token)
         file(context, token).delete()
         claimFile(context, token).delete()
-        if (deleteArchive) value?.archivePath?.let(::File)?.takeIf { isManagedArchive(context, it) }?.delete()
+        if (deleteArchive) value?.archivePath?.let(::File)?.takeIf { isManagedArchive(context, it) }?.let { archive ->
+            archive.delete()
+            archive.parentFile?.takeIf { it != archiveDirectory(context) }?.delete()
+        }
     }
 
     suspend fun validate(context: Context, token: String): TaskerReviewToken {
@@ -146,11 +154,17 @@ internal object TaskerReviewTokenStore {
         tokenDirectory(context).listFiles { source -> source.extension == "json" }.orEmpty().forEach { source ->
             val token = runCatching { TaskerReviewToken.fromJson(JSONObject(source.readText())) }.getOrNull()
             if (token == null || token.expiresAt <= now) {
-                token?.archivePath?.let(::File)?.takeIf { isManagedArchive(context, it) }?.delete()
+                token?.archivePath?.let(::File)?.takeIf { isManagedArchive(context, it) }?.let { archive ->
+                    archive.delete()
+                    archive.parentFile?.takeIf { it != archiveDirectory(context) }?.delete()
+                }
                 token?.token?.let { claimFile(context, it).delete() }
                 source.delete()
             }
         }
+        archiveDirectory(context).listFiles { file -> file.isDirectory }.orEmpty()
+            .filter { it.lastModified() < now - TaskerReviewToken.TTL_MS - 60L * 60L * 1000L }
+            .forEach(File::deleteRecursively)
         // Orphaned claims are safe to discard when their token metadata no longer exists.
         tokenDirectory(context).listFiles { source -> source.extension == "claim" }.orEmpty().forEach { claim ->
             val tokenName = claim.nameWithoutExtension

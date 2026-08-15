@@ -20,8 +20,8 @@ import androidx.lifecycle.lifecycleScope
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Const
 import com.dergoogler.mmrl.app.utils.NotificationUtils
-import com.dergoogler.mmrl.compat.MediaStoreCompat.createDownloadUri
-import com.dergoogler.mmrl.compat.NetworkCompat
+import com.dergoogler.mmrl.compat.MediaStoreCompat.createPendingDownloadUri
+import com.dergoogler.mmrl.compat.MediaStoreCompat.publishPendingDownloadUri
 import com.dergoogler.mmrl.compat.PermissionCompat
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
@@ -29,6 +29,9 @@ import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.ext.parcelable
 import com.dergoogler.mmrl.github.GitHubArtifactArchivePolicy
+import com.dergoogler.mmrl.installer.ArtifactDigest
+import com.dergoogler.mmrl.installer.AtomicFilePublication
+import com.dergoogler.mmrl.service.DownloadPublicationPolicy.PublishMode
 import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
@@ -57,6 +60,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
+import okhttp3.Call
 import okhttp3.Request
 import timber.log.Timber
 import java.io.File
@@ -71,9 +75,11 @@ import kotlin.coroutines.coroutineContext
 class DownloadService : LifecycleService() {
     @Inject lateinit var userPreferencesRepository: UserPreferencesRepository
     @Inject lateinit var operationHistoryRepository: OperationHistoryRepository
+    @Inject lateinit var downloadReceiptStore: DownloadReceiptStore
 
     private val tasks = mutableListOf<TaskItem>()
     private val taskJobs = mutableMapOf<String, Job>()
+    private val activeCalls = ConcurrentHashMap<String, Call>()
     private val downloadSlots = Semaphore(MAX_CONCURRENT_DOWNLOADS)
 
     init {
@@ -91,7 +97,7 @@ class DownloadService : LifecycleService() {
             .onEach { (item, progress) ->
                 if (progress != 0f) {
                     onProgressChanged(item, progress)
-                    item.operationId?.let { operationHistoryRepository.progress(it, progress) }
+                    if (progress >= 0f) item.operationId?.let { operationHistoryRepository.progress(it, progress) }
                 }
             }.launchIn(lifecycleScope)
     }
@@ -103,6 +109,10 @@ class DownloadService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        activeCalls.values.forEach(Call::cancel)
+        activeCalls.clear()
+        taskJobs.values.forEach { it.cancel(CancellationException("Download service destroyed")) }
+        taskJobs.clear()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         Timber.d("onDestroy")
         super.onDestroy()
@@ -113,6 +123,7 @@ class DownloadService : LifecycleService() {
             val operationId = intent.getStringExtra(EXTRA_OPERATION_ID)
             if (!operationId.isNullOrBlank()) {
                 cancelRequests += operationId
+                activeCalls.remove(operationId)?.cancel()
                 taskJobs.remove(operationId)?.cancel(CancellationException("Cancelled by user"))
                 lifecycleScope.launch {
                     cleanupTemporaryFile(operationId)
@@ -127,11 +138,17 @@ class DownloadService : LifecycleService() {
             val item = intent?.taskItemOrNull ?: return@launch
             val userPreferences = userPreferencesRepository.data.first()
             val downloadPath = userPreferences.downloadPath
-            val destination = DownloadPathPolicy.destination(
+            val requestedDestination = DownloadPathPolicy.destination(
                 configuredPath = downloadPath,
                 filename = item.filename,
                 publicDownloads = Const.PUBLIC_DOWNLOADS,
             )
+            val reusableReceipt = downloadReceiptStore.verifyDestination(requestedDestination.absolutePath, item.url)
+            val destination = when {
+                reusableReceipt != null -> requestedDestination
+                requestedDestination.exists() -> nonConflictingDestination(requestedDestination)
+                else -> requestedDestination
+            }
             val historyId =
                 item.operationId ?: operationHistoryRepository.start(
                     kind = OperationKind.DOWNLOAD,
@@ -160,29 +177,19 @@ class DownloadService : LifecycleService() {
                     operationHistoryRepository.phase(historyId, OperationPhase.DOWNLOAD, "Downloading module archive")
                     operationHistoryRepository.appendLog(historyId, "Download slot acquired")
 
-                    when (DownloadTargetPolicy.classify(destination)) {
-                        ExistingDownload.VALID -> {
-                            Timber.d("File already exists: ${destination.absolutePath}")
-                            operationHistoryRepository.succeed(
-                                id = historyId,
-                                summary = getString(R.string.file_already_exists),
-                            )
-                            listeners[item]?.onFileExists()
-                            listeners[item]?.onSuccess(destination.toUri())
-                            onDownloadSucceeded(trackedItem)
-                            cleanupTask(item, trackedItem, historyId)
-                            return@withPermit
-                        }
-
-                        ExistingDownload.EMPTY -> {
-                            operationHistoryRepository.appendLog(
-                                historyId,
-                                getString(R.string.download_empty_file_recovered),
-                            )
-                            destination.delete()
-                        }
-
-                        ExistingDownload.MISSING -> Unit
+                    if (reusableReceipt != null) {
+                        val authoritativeUri = Uri.parse(reusableReceipt.sourceUri)
+                        operationHistoryRepository.appendLog(historyId, "Reused verified download receipt ${reusableReceipt.sha256}")
+                        val sourceCommitted = operationHistoryRepository.sourceUri(historyId, authoritativeUri.toString())
+                        val terminalCommitted = operationHistoryRepository.succeed(
+                            id = historyId,
+                            summary = getString(R.string.file_already_exists),
+                        )
+                        DownloadCompletionPolicy.requireDurableSuccess(sourceCommitted, terminalCommitted)
+                        DownloadCompletionPolicy.runPostCommitBestEffort { listeners[item]?.onFileExists() }
+                            ?.let { Timber.w(it, "Download reuse listener failed after durable commit") }
+                        listener.onSuccess(authoritativeUri)
+                        return@withPermit
                     }
 
                     val temporary = temporaryFile(historyId)
@@ -192,6 +199,7 @@ class DownloadService : LifecycleService() {
                     val result =
                         temporary.outputStream().buffered().use { output ->
                             download(
+                                operationId = historyId,
                                 url = item.url,
                                 output = output,
                                 onProgress = listener::getProgress,
@@ -214,17 +222,36 @@ class DownloadService : LifecycleService() {
                     operationHistoryRepository.phase(historyId, OperationPhase.VERIFY, "Publishing completed download")
                     operationHistoryRepository.appendLog(historyId, "Downloaded ${temporary.length()} bytes")
 
+                    var publishSource: File? = null
+                    var publishedUri: Uri? = null
                     try {
-                        val publishSource = unwrapGitHubArtifactIfNeeded(item.url, temporary, historyId)
-                        val publishedUri = publishTemporaryFile(publishSource, destination)
-                        operationHistoryRepository.appendLog(historyId, "Published to $publishedUri")
-                        if (publishSource != temporary) publishSource.delete()
+                        publishSource = unwrapGitHubArtifactIfNeeded(item.url, temporary, historyId)
+                        val published = publishTemporaryFile(publishSource, destination)
+                        publishedUri = published.uri
+                        downloadReceiptStore.record(
+                            uri = published.uri,
+                            sourceUrl = item.url,
+                            sha256 = published.sha256,
+                            size = published.size,
+                            destinationPath = destination.absolutePath,
+                        )
+                        operationHistoryRepository.appendLog(historyId, "Published verified artifact ${published.sha256} to ${published.uri}")
+                        val sourceCommitted = operationHistoryRepository.sourceUri(historyId, published.uri.toString())
+                        val terminalCommitted = operationHistoryRepository.succeed(
+                            id = historyId,
+                            summary = getString(R.string.message_download_success),
+                        )
+                        DownloadCompletionPolicy.requireDurableSuccess(sourceCommitted, terminalCommitted)
                         temporary.delete()
-                        listener.onSuccess(publishedUri)
+                        publishedUri = null // publication and terminal history are durable before success is externally observable
+                        listener.onSuccess(published.uri)
                     } catch (error: Throwable) {
+                        publishedUri?.let(::deleteDestination)
                         destination.takeIf { it.exists() && it.length() == 0L }?.delete()
                         temporary.delete()
                         listener.onFailure(error)
+                    } finally {
+                        publishSource?.takeIf { it != temporary }?.delete()
                     }
                 }
             } catch (cancelled: CancellationException) {
@@ -247,16 +274,13 @@ class DownloadService : LifecycleService() {
         }
 
         override fun onSuccess(uri: Uri) {
-            listeners[original]?.onSuccess(uri)
+            DownloadCompletionPolicy.runPostCommitBestEffort { listeners[original]?.onSuccess(uri) }
+                ?.let { Timber.w(it, "Download success listener failed after durable commit") }
             progressFlow.value = tracked to 0f
-            lifecycleScope.launch {
-                operationHistoryRepository.succeed(
-                    id = historyId,
-                    summary = getString(R.string.message_download_success),
-                )
-            }
-            onDownloadSucceeded(tracked)
-            cleanupTask(original, tracked, historyId)
+            DownloadCompletionPolicy.runPostCommitBestEffort { onDownloadSucceeded(tracked) }
+                ?.let { Timber.w(it, "Download success notification failed after durable commit") }
+            DownloadCompletionPolicy.runPostCommitBestEffort { cleanupTask(original, tracked, historyId) }
+                ?.let { Timber.w(it, "Download task cleanup failed after durable commit") }
         }
 
         override fun onFailure(e: Throwable) {
@@ -273,6 +297,7 @@ class DownloadService : LifecycleService() {
                         id = historyId,
                         summary = e.message ?: getString(R.string.unknown_error),
                         error = e,
+                        retryable = DownloadRetryPolicy.isRetryable(e),
                     )
                 }
             }
@@ -288,8 +313,8 @@ class DownloadService : LifecycleService() {
         url: String,
         archive: File,
         operationId: String,
-    ): File {
-        if (!GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)) return archive
+    ): File = withContext(Dispatchers.IO) {
+        if (!GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)) return@withContext archive
 
         val materialized = GitHubArtifactArchivePolicy.materializeModuleZip(
             archive = archive,
@@ -297,7 +322,7 @@ class DownloadService : LifecycleService() {
             outputNamePrefix = operationId,
         ) { name -> githubArtifactScore(name) }
         operationHistoryRepository.appendLog(operationId, "GitHub artifact selected ${materialized.analysis.summary}")
-        return materialized.file
+        materialized.file
     }
 
     private fun githubArtifactScore(name: String): Int {
@@ -321,58 +346,101 @@ class DownloadService : LifecycleService() {
     }
 
     private suspend fun download(
+        operationId: String,
         url: String,
         output: OutputStream,
         onProgress: (Float) -> Unit,
-    ): Result<*> {
-        if (!url.startsWith("https://api.github.com/", ignoreCase = true) &&
-            !GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)
-        ) {
-            return NetworkCompat.download(url = url, output = output, onProgress = onProgress)
-        }
-
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val token = GitHubTokenStore(this@DownloadService).getToken()?.trim()?.takeIf(String::isNotBlank)
-                val request =
-                    Request
-                        .Builder()
-                        .url(url)
-                        .header("Accept", githubDownloadAccept(url))
-                        .header("X-GitHub-Api-Version", "2022-11-28")
-                        .apply {
-                            token?.let {
-                                header("Authorization", "Bearer $it")
-                            }
-                        }.build()
-
-                NetworkUtils.createOkHttpClient().newCall(request).execute().use { response ->
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val token = if (url.startsWith("https://api.github.com/", ignoreCase = true) ||
+                GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)
+            ) {
+                GitHubTokenStore(this@DownloadService).getToken()?.trim()?.takeIf(String::isNotBlank)
+            } else null
+            val request = Request.Builder().url(url).apply {
+                if (url.startsWith("https://api.github.com/", ignoreCase = true) ||
+                    GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)
+                ) {
+                    header("Accept", githubDownloadAccept(url))
+                    header("X-GitHub-Api-Version", "2022-11-28")
+                    token?.let { header("Authorization", "Bearer $it") }
+                }
+            }.build()
+            val call = NetworkUtils.createOkHttpClient().newCall(request)
+            activeCalls[operationId] = call
+            if (operationId in cancelRequests) {
+                call.cancel()
+                throw CancellationException("Cancelled before HTTP execution")
+            }
+            try {
+                call.execute().use { response ->
                     if (!response.isSuccessful) {
                         val detail = response.body?.string()
-                        throw IOException(
-                            GitHubArtifactArchivePolicy.downloadFailureMessage(
-                                url = url,
-                                code = response.code,
-                                hasToken = token != null,
-                                bodySnippet = detail,
-                            ),
+                        if (url.startsWith("https://api.github.com/", ignoreCase = true) ||
+                            GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)
+                        ) {
+                            throw DownloadHttpException(
+                                response.code,
+                                GitHubArtifactArchivePolicy.downloadFailureMessage(url, response.code, token != null, detail),
+                            )
+                        }
+                        throw DownloadHttpException(
+                            response.code,
+                            "Download failed with HTTP ${response.code}${detail?.take(256)?.let { ": $it" }.orEmpty()}",
                         )
                     }
-                    val body = response.body ?: error("Empty GitHub download response")
-                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    val all = body.contentLength()
+                    val body = response.body ?: error("Empty download response")
+                    val total = body.contentLength()
+                    require(DownloadTransferPolicy.declaredLengthAllowed(total)) {
+                        "Download exceeds the ${DownloadTransferPolicy.MAX_DOWNLOAD_BYTES} byte safety limit"
+                    }
+                    if (total <= 0L) onProgress(-1f)
                     var finished = 0L
-                    var read: Int
                     body.byteStream().buffered().use { input ->
-                        while (input.read(buffer).also { read = it } != -1) {
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        while (true) {
+                            coroutineContext.ensureActive()
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            if (read == 0) continue
+                            finished = DownloadTransferPolicy.addReceived(finished, read)
                             output.write(buffer, 0, read)
-                            finished += read
-                            if (all > 0L) onProgress((finished.toDouble() / all).toFloat())
+                            if (total > 0L) onProgress((finished.toDouble() / total).toFloat().coerceIn(0f, 1f))
                         }
                     }
                     output.flush()
                 }
+            } finally {
+                activeCalls.remove(operationId, call)
             }
+        }
+    }
+
+    private fun publishAtomicFile(
+        temporary: File,
+        destination: File,
+        expected: ArtifactDigest.Digest,
+    ): Uri {
+        destination.parentFile?.let { parent ->
+            if (!parent.exists() && !parent.mkdirs()) throw IOException("Cannot create download directory: ${parent.absolutePath}")
+        }
+        val partial = destination.parentFile!!.resolve(".${destination.name}.${UUID.randomUUID()}.part")
+        try {
+            temporary.inputStream().buffered().use { input ->
+                java.io.FileOutputStream(partial).use { raw ->
+                    val output = raw.buffered()
+                    input.copyTo(output)
+                    output.flush()
+                    raw.fd.sync()
+                }
+            }
+            require(ArtifactDigest.of(partial) == expected) { "Download staging digest mismatch" }
+AtomicFilePublication.move(partial, destination)
+            return destination.toUri()
+        } catch (error: Throwable) {
+            partial.delete()
+            destination.takeIf { it.length() == 0L }?.delete()
+            throw error
         }
     }
 
@@ -387,53 +455,72 @@ class DownloadService : LifecycleService() {
         temporaryFile(operationId).delete()
     }
 
-    private fun publishTemporaryFile(temporary: File, destination: File): Uri {
-        val expectedBytes = temporary.length()
-        require(expectedBytes > 0L) { "Cannot publish an empty download" }
-
+    private suspend fun publishTemporaryFile(temporary: File, destination: File): PublishedArtifact =
+        withContext(Dispatchers.IO) {
+        val expected = ArtifactDigest.of(temporary)
+        require(expected.size > 0L) { "Cannot publish an empty download" }
         val inPublicDownloads = destination.isInside(Const.PUBLIC_DOWNLOADS)
         if (!inPublicDownloads) {
             destination.parentFile?.let { parent ->
-                if (!parent.exists() && !parent.mkdirs()) {
-                    throw IOException("Cannot create download directory: ${parent.absolutePath}")
-                }
+                if (!parent.exists() && !parent.mkdirs()) throw IOException("Cannot create download directory: ${parent.absolutePath}")
             }
         }
 
-        return if (inPublicDownloads) {
-            val relativePath = destination.relativeTo(Const.PUBLIC_DOWNLOADS).path
-            val uri = createDownloadUri(path = relativePath, mimeType = "application/zip")
-            try {
-                val copiedBytes = contentResolver.openOutputStream(uri, "w")?.use { output ->
-                    temporary.inputStream().buffered().use { input -> input.copyTo(output) }
-                } ?: throw IOException("Cannot open download destination")
-                if (copiedBytes != expectedBytes) {
-                    throw IOException("Incomplete publish: $copiedBytes of $expectedBytes bytes")
+        val publishMode = DownloadPublicationPolicy.forDestination(
+            sdkInt = Build.VERSION.SDK_INT,
+            inPublicDownloads = inPublicDownloads,
+        )
+        val uri = when (publishMode) {
+            PublishMode.MEDIASTORE_PENDING -> {
+                val relativePath = destination.relativeTo(Const.PUBLIC_DOWNLOADS).path
+                val pending = createPendingDownloadUri(path = relativePath, mimeType = "application/zip")
+                try {
+                    contentResolver.openOutputStream(pending, "w")?.use { output ->
+                        temporary.inputStream().buffered().use { input -> input.copyTo(output) }
+                    } ?: throw IOException("Cannot open download destination")
+                    val actual = contentResolver.openInputStream(pending)?.buffered()?.use(ArtifactDigest::of)
+                        ?: throw IOException("Cannot verify published download")
+                    require(actual == expected) { "Published download digest mismatch" }
+                    publishPendingDownloadUri(pending)
+                    pending
+                } catch (error: Throwable) {
+                    deleteDestination(pending)
+                    throw error
                 }
-                uri
-            } catch (error: Throwable) {
-                deleteDestination(uri)
-                throw error
             }
-        } else {
-            if (destination.exists() && destination.length() > 0L) {
-                throw IOException("Download already exists: ${destination.absolutePath}")
+
+            PublishMode.ATOMIC_FILE -> publishAtomicFile(temporary, destination, expected)
+        }
+        try {
+            val finalDigest = if (uri.scheme == "file") {
+                ArtifactDigest.of(uri.toFile())
+            } else {
+                contentResolver.openInputStream(uri)?.buffered()?.use(ArtifactDigest::of)
+                    ?: throw IOException("Cannot re-open published download")
             }
-            destination.delete()
-            try {
-                val copiedBytes = temporary.inputStream().buffered().use { input ->
-                    destination.outputStream().buffered().use { output -> input.copyTo(output) }
-                }
-                if (copiedBytes != expectedBytes || destination.length() != expectedBytes) {
-                    throw IOException("Incomplete publish: $copiedBytes of $expectedBytes bytes")
-                }
-                destination.toUri()
-            } catch (error: Throwable) {
-                destination.delete()
-                throw error
-            }
+            require(finalDigest == expected) { "Published download changed before receipt creation" }
+            PublishedArtifact(uri, finalDigest.sha256, finalDigest.size)
+        } catch (error: Throwable) {
+            deleteDestination(uri)
+            throw error
         }
     }
+
+    private fun nonConflictingDestination(destination: File): File {
+        val parent = destination.parentFile ?: return destination
+        val name = destination.name
+        val dot = name.lastIndexOf('.')
+        val stem = if (dot > 0) name.substring(0, dot) else name
+        val ext = if (dot > 0) name.substring(dot) else ""
+        var index = 1
+        while (true) {
+            val candidate = parent.resolve("$stem ($index)$ext")
+            if (!candidate.exists()) return candidate
+            index += 1
+        }
+    }
+
+    private data class PublishedArtifact(val uri: Uri, val sha256: String, val size: Long)
 
     private fun File.isInside(parent: File): Boolean = runCatching {
         val parentPath = parent.canonicalFile.toPath()
@@ -450,6 +537,7 @@ class DownloadService : LifecycleService() {
         listeners.remove(original)
         tasks.remove(tracked)
         taskJobs.remove(operationId)
+        activeCalls.remove(operationId)?.cancel()
         cancelRequests.remove(operationId)
     }
 
@@ -475,8 +563,15 @@ class DownloadService : LifecycleService() {
                 .setSilent(true)
                 .setOngoing(true)
                 .setGroup(GROUP_KEY)
-                .setProgress(100, (progress * 100).toInt(), false)
-                .setContentText("${(progress * 100).toInt()}% · Tap to view Activity")
+                .apply {
+                    if (progress < 0f) {
+                        setProgress(0, 0, true)
+                        setContentText("Downloading · Tap to view Activity")
+                    } else {
+                        setProgress(100, (progress * 100).toInt(), false)
+                        setContentText("${(progress * 100).toInt()}% · Tap to view Activity")
+                    }
+                }
                 .apply { item.operationId?.let { addAction(0, getString(R.string.cancel), cancelPendingIntent(it)) } }
                 .build()
         notify(item.notificationId, notification)
@@ -584,10 +679,7 @@ class DownloadService : LifecycleService() {
         fun onStarted(operationId: String) {}
         fun getProgress(value: Float) {}
         fun onFileExists() {}
-        fun onSuccess() {}
-        fun onSuccess(uri: Uri) {
-            onSuccess()
-        }
+        fun onSuccess(uri: Uri) {}
         fun onFailure(e: Throwable) {}
     }
 
@@ -601,7 +693,7 @@ class DownloadService : LifecycleService() {
 
         private val listeners = ConcurrentHashMap<TaskItem, IDownloadListener>()
         private val progressFlow = MutableStateFlow(TaskItem.empty() to 0f)
-        private val cancelRequests = mutableSetOf<String>()
+        private val cancelRequests = ConcurrentHashMap.newKeySet<String>()
 
         fun getProgressByKey(key: Int): Flow<Float> =
             progressFlow.filter { (item, _) -> item.key == key }.map { (_, progress) -> progress }

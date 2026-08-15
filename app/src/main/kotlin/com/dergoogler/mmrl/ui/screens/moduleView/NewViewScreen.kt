@@ -156,42 +156,60 @@ fun NewViewScreen(
             progress = viewModel.getProgress(reviewVersion),
             state = installReviewState,
             onClose = {
+                val reviewStageId = installReviewState.reviewStagingOperationId
                 viewModel.installConfirm = false
                 installReviewState = InstallReviewState()
                 reviewVersionItem = null
+                scope.launch { viewModel.releaseReviewStage(reviewStageId) }
             },
             onDownloadAndInspect = {
                 installReviewState = InstallReviewState(phase = InstallReviewPhase.DOWNLOADING)
                 viewModel.downloader(
                     context = context,
                     item = reviewVersion,
-                    onSuccess = { file ->
+                    onSuccess = { sourceUri ->
                         scope.launch {
+                            val downloadOperationId = installReviewState.operationId
+                            val staged = runCatching { viewModel.stageForReview(sourceUri) }.getOrElse { error ->
+                                installReviewState = InstallReviewState(
+                                    phase = InstallReviewPhase.FAILED,
+                                    sourceUri = sourceUri,
+                                    error = error.message,
+                                    operationId = downloadOperationId,
+                                )
+                                return@launch
+                            }
                             installReviewState = InstallReviewState(
                                 phase = InstallReviewPhase.VERIFYING,
-                                file = file,
-                                operationId = installReviewState.operationId,
+                                file = staged.file,
+                                sourceUri = sourceUri,
+                                reviewStagingOperationId = staged.operationId,
+                                operationId = downloadOperationId,
                             )
                             delay(120)
                             installReviewState = installReviewState.copy(phase = InstallReviewPhase.INSPECTING)
                             val inspected = runCatching {
-                                withContext(Dispatchers.IO) { ArchiveInspector.inspect(file) }
+                                withContext(Dispatchers.IO) { ArchiveInspector.inspect(staged.file) }
                             }
                             installReviewState = inspected.fold(
                                 onSuccess = { inspection ->
                                     InstallReviewState(
                                         phase = if (inspection.canInstall) InstallReviewPhase.READY else InstallReviewPhase.BLOCKED,
-                                        file = file,
+                                        file = staged.file,
+                                        sourceUri = sourceUri,
+                                        reviewStagingOperationId = staged.operationId,
                                         inspection = inspection,
-                                        operationId = installReviewState.operationId,
+                                        operationId = downloadOperationId,
                                     )
                                 },
                                 onFailure = { error ->
                                     InstallReviewState(
                                         phase = InstallReviewPhase.FAILED,
-                                        file = file,
+                                        file = staged.file,
+                                        sourceUri = sourceUri,
+                                        reviewStagingOperationId = staged.operationId,
                                         error = error.message,
-                                        operationId = installReviewState.operationId,
+                                        operationId = downloadOperationId,
                                     )
                                 },
                             )
@@ -210,17 +228,22 @@ fun NewViewScreen(
                 )
             },
             onInstall = {
-                installReviewState.file?.let { file ->
+                val sourceUri = installReviewState.sourceUri
+                val inspection = installReviewState.inspection
+                if (sourceUri != null && inspection != null && inspection.canInstall) {
                     viewModel.installConfirm = false
                     val parentOperationId = installReviewState.operationId
+                    val reviewStageId = installReviewState.reviewStagingOperationId
                     reviewVersionItem = null
                     InstallActivity.start(
                         context = context,
-                        uri = file.toUri(),
+                        uri = sourceUri,
                         confirm = false,
                         parentOperationId = parentOperationId,
                         expectedModuleId = module.id,
+                        expectedArchiveSha256 = inspection.sha256,
                     )
+                    scope.launch { viewModel.releaseReviewStage(reviewStageId) }
                 }
             },
             onInstallWithDependencies = {
@@ -239,15 +262,27 @@ fun NewViewScreen(
                 }
                 bulkInstallViewModel.downloadMultiple(
                     items = bulkModules,
-                    onAllSuccess = { uris ->
-                        viewModel.installConfirm = false
-                        reviewVersionItem = null
-                        InstallActivity.start(
-                            context = context,
-                            uri = uris,
-                            confirm = false,
-                            expectedModuleIds = bulkModules.map(BulkModule::id),
-                        )
+                    onAllSuccess = { successes ->
+                        val reviewedHash = installReviewState.inspection?.sha256
+                        val reviewedRoot = successes.firstOrNull { ModuleIdentity.matches(it.module.id, module.id) }
+                        if (reviewedHash == null || reviewedRoot == null || !reviewedRoot.sha256.equals(reviewedHash, ignoreCase = true)) {
+                            installReviewState = installReviewState.copy(
+                                phase = InstallReviewPhase.FAILED,
+                                error = "The root module artifact changed after review; inspect the batch again",
+                            )
+                        } else {
+                            val reviewStageId = installReviewState.reviewStagingOperationId
+                            viewModel.installConfirm = false
+                            reviewVersionItem = null
+                            InstallActivity.start(
+                                context = context,
+                                uri = successes.map { it.uri },
+                                confirm = true,
+                                expectedModuleIds = successes.map { it.module.id },
+                                expectedArchiveSha256 = successes.map { it.sha256 },
+                            )
+                            scope.launch { viewModel.releaseReviewStage(reviewStageId) }
+                        }
                     },
                     onFailure = { error ->
                         installReviewState = InstallReviewState(

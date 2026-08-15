@@ -582,10 +582,14 @@
     <string name="activity_view">View</string>
     <string name="activity_retry">Retry</string>
     <string name="activity_rollback">Rollback</string>
+    <string name="activity_reconcile">Reconcile</string>
     <string name="activity_status_running">Running</string>
     <string name="activity_status_succeeded">Succeeded</string>
     <string name="activity_status_failed">Failed</string>
     <string name="activity_status_cancelled">Cancelled</string>
+    <string name="activity_status_waiting_approval">Waiting for approval</string>
+    <string name="activity_status_cancel_requested">Cancellation requested</string>
+    <string name="activity_status_outcome_unknown">Outcome unknown</string>
     <string name="activity_kind_download">Download</string>
     <string name="activity_kind_install">Install</string>
     <string name="activity_kind_update">Update</string>

@@ -1,9 +1,11 @@
 package com.dergoogler.mmrl.tasker
 
 import android.content.Context
+import android.net.Uri
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.installer.ArchiveInspector
+import com.dergoogler.mmrl.installer.AtomicFilePublication
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.joaomgcd.taskerpluginlibrary.action.TaskerPluginRunnerAction
 import com.joaomgcd.taskerpluginlibrary.input.TaskerInput
@@ -16,7 +18,6 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.UUID
 import java.util.zip.ZipFile
 
 class PrepareReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerResultOutput>() {
@@ -51,14 +52,15 @@ class PrepareReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
                         val source = repos.operationHistoryRepository().getById(sourceOperationId)
                             ?: throw NoSuchElementException("Download operation not found")
                         require(source.status == "SUCCEEDED") { "Download operation has not completed successfully" }
-                        source.destinationPath?.let(::File)?.takeIf { it.isFile && it.length() > 0L }
-                            ?: throw IllegalStateException("Downloaded archive is unavailable")
+                        val authoritativeUri = source.sourceUri?.takeIf(String::isNotBlank)?.let(Uri::parse)
+                            ?: throw IllegalStateException("Download operation has no authoritative artifact URI")
+                        stageReviewArchive(context, authoritativeUri, operationId)
                     }
                     online != null -> {
                         val version = online.versions.maxByOrNull { it.versionCode }
                         val url = version?.zipUrl ?: throw IllegalArgumentException("Repository module has no download URL")
                         repos.operationHistoryRepository().phase(operationId, OperationPhase.DOWNLOAD, "Downloading review archive")
-                        downloadReviewArchive(context, url)
+                        downloadReviewArchive(context, url, operationId)
                     }
                     else -> throw NoSuchElementException("Repository module not found: $moduleIdInput")
                 }
@@ -180,6 +182,7 @@ class ExecuteReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
                 destinationPath = token.archivePath,
                 parentId = token.operationId,
                 origin = "TASKER",
+                initialStatus = com.dergoogler.mmrl.database.entity.history.OperationStatus.QUEUED,
             )
             repos.operationHistoryRepository().appendLog(operationId, "Review token: ${token.token.take(8)}…")
             repos.operationHistoryRepository().appendLog(operationId, "Reviewed SHA-256: ${token.sha256}")
@@ -201,10 +204,15 @@ class ExecuteReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
                     decision,
                 )
                 if (status == "AWAITING_APPROVAL") {
-                    repos.operationHistoryRepository().phase(
-                        operationId,
-                        OperationPhase.APPROVAL,
-                        if (token.routine) "Waiting for MMRL approval" else "Non-routine changes require MMRL approval",
+                    repos.operationHistoryRepository().transition(
+                        id = operationId,
+                        to = com.dergoogler.mmrl.database.entity.history.OperationStatus.WAITING_APPROVAL,
+                        from = setOf(
+                            com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING,
+                            com.dergoogler.mmrl.database.entity.history.OperationStatus.QUEUED,
+                        ),
+                        summary = if (token.routine) "Waiting for MMRL approval" else "Non-routine changes require MMRL approval",
+                        phase = OperationPhase.APPROVAL,
                     )
                 }
                 taskerResultOutput(
@@ -247,11 +255,48 @@ class ExecuteReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
     }
 }
 
-private fun downloadReviewArchive(context: Context, rawUrl: String): File {
+private fun stageReviewArchive(context: Context, sourceUri: Uri, operationId: String): File {
+    val directory = TaskerReviewTokenStore.archiveDirectory(context, operationId)
+    val partial = File(directory, "artifact.part")
+    val destination = File(directory, "artifact.zip")
+    var total = 0L
+    try {
+        context.contentResolver.openInputStream(sourceUri)?.buffered().use { input ->
+            requireNotNull(input) { "Downloaded archive URI is no longer readable" }
+            java.io.FileOutputStream(partial).use { raw ->
+                raw.buffered().use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        if (count > 0) {
+                            total += count
+                            require(total <= 512L * 1024L * 1024L) { "Review archive exceeds 512 MiB" }
+                            output.write(buffer, 0, count)
+                        }
+                    }
+                    output.flush()
+                }
+                raw.fd.sync()
+            }
+        }
+        require(total > 0L) { "Downloaded archive is empty" }
+        AtomicFilePublication.move(partial, destination)
+        require(destination.setReadOnly() || !destination.canWrite()) { "Unable to make reviewed archive immutable" }
+        return destination
+    } catch (error: Throwable) {
+        partial.delete()
+        destination.delete()
+        directory.delete()
+        throw error
+    }
+}
+
+private fun downloadReviewArchive(context: Context, rawUrl: String, operationId: String): File {
     val url = TaskerAutomationPolicy.requireSupportedDownloadUrl(rawUrl)
-    val directory = TaskerReviewTokenStore.archiveDirectory(context)
-    val partial = File(directory, "${UUID.randomUUID()}.part")
-    val destination = File(directory, "${UUID.randomUUID()}.zip")
+    val directory = TaskerReviewTokenStore.archiveDirectory(context, operationId)
+    val partial = File(directory, "artifact.part")
+    val destination = File(directory, "artifact.zip")
     var connection: HttpURLConnection? = null
     try {
         connection = URL(url).openConnection() as HttpURLConnection
@@ -262,21 +307,26 @@ private fun downloadReviewArchive(context: Context, rawUrl: String): File {
         require(connection.responseCode in 200..299) { "Download failed with HTTP ${connection.responseCode}" }
         var total = 0L
         connection.inputStream.buffered().use { input ->
-            partial.outputStream().buffered().use { output ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while (true) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    if (count > 0) {
-                        total += count
-                        require(total <= 512L * 1024L * 1024L) { "Review archive exceeds 512 MiB" }
-                        output.write(buffer, 0, count)
+            java.io.FileOutputStream(partial).use { raw ->
+                raw.buffered().use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        if (count > 0) {
+                            total += count
+                            require(total <= 512L * 1024L * 1024L) { "Review archive exceeds 512 MiB" }
+                            output.write(buffer, 0, count)
+                        }
                     }
+                    output.flush()
                 }
+                raw.fd.sync()
             }
         }
         require(total > 0L) { "Downloaded archive is empty" }
-        require(partial.renameTo(destination)) { "Unable to stage reviewed archive" }
+        AtomicFilePublication.move(partial, destination)
+        require(destination.setReadOnly() || !destination.canWrite()) { "Unable to make reviewed archive immutable" }
         return destination
     } catch (error: Throwable) {
         partial.delete()

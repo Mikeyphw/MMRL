@@ -67,6 +67,26 @@ class OperationHistoryEntityTest {
         assertTrue(entry.previousVersion == "1.0")
     }
 
+    @Test
+    fun `outcome unknown blocks retry and rollback until it is classified into a real terminal state`() {
+        val unresolved = OperationHistoryEntity(
+            id = "unknown",
+            kind = OperationKind.UPDATE.name,
+            status = OperationStatus.OUTCOME_UNKNOWN.name,
+            title = "Module",
+            summary = "Unknown",
+            startedAt = 1L,
+            retryAction = OperationAction.INSTALL.name,
+            rollbackAction = OperationAction.INSTALL.name,
+            reconciledAt = null,
+        )
+        assertFalse(unresolved.canRetry)
+        assertFalse(unresolved.canRollback)
+        val merelyStamped = unresolved.copy(reconciledAt = 2L)
+        assertFalse(merelyStamped.canRetry)
+        assertFalse(merelyStamped.canRollback)
+    }
+
     private fun entry(
         status: OperationStatus,
         requiresReboot: Boolean = false,
@@ -85,4 +105,31 @@ class OperationHistoryEntityTest {
         retryAction = retryAction,
         rollbackAction = rollbackAction,
     )
+    @Test
+    fun `success and cancellation never expose retry even when legacy retry action remains`() {
+        assertFalse(entry(status = OperationStatus.SUCCEEDED, retryAction = OperationAction.ENABLE.name).canRetry)
+        assertFalse(entry(status = OperationStatus.CANCELLED, retryAction = OperationAction.ENABLE.name).canRetry)
+    }
+
+    @Test
+    fun `rollback is terminal only and unknown rollback requires classification`() {
+        assertFalse(entry(status = OperationStatus.RUNNING, rollbackAction = OperationAction.DISABLE.name).canRollback)
+        val unknown = entry(
+            status = OperationStatus.OUTCOME_UNKNOWN,
+            rollbackAction = OperationAction.DISABLE.name,
+        )
+        assertFalse(unknown.canRollback)
+        assertFalse(unknown.copy(reconciledAt = 9L).canRollback)
+    }
+
+    @Test
+    fun `active and pending reboot rows cannot be deleted`() {
+        assertFalse(entry(status = OperationStatus.RUNNING).canDelete)
+        assertFalse(entry(status = OperationStatus.WAITING_APPROVAL).canDelete)
+        assertFalse(entry(status = OperationStatus.SUCCEEDED, requiresReboot = true).canDelete)
+        assertFalse(entry(status = OperationStatus.OUTCOME_UNKNOWN).canDelete)
+        assertTrue(entry(status = OperationStatus.SUCCEEDED).canDelete)
+        assertTrue(entry(status = OperationStatus.FAILED).canDelete)
+    }
+
 }

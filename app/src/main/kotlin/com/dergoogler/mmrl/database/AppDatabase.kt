@@ -17,6 +17,7 @@ import com.dergoogler.mmrl.database.dao.VersionDao
 import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.database.entity.VersionItemEntity
 import com.dergoogler.mmrl.database.entity.history.OperationHistoryEntity
+import com.dergoogler.mmrl.database.entity.history.OperationTechnicalLogEntity
 import com.dergoogler.mmrl.database.entity.local.LocalModuleEntity
 import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.database.entity.local.LocalModuleUpdatable
@@ -34,8 +35,9 @@ import dev.dergoogler.mmrl.compat.Converters
         LocalModuleEntity::class,
         BlacklistEntity::class,
         OperationHistoryEntity::class,
+        OperationTechnicalLogEntity::class,
     ],
-    version = 19,
+    version = 20,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -131,6 +133,33 @@ abstract class AppDatabase : RoomDatabase() {
                 }
             }
 
+
+        private val MIGRATION_19_20 =
+            object : Migration(19, 20) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE `operationHistory` ADD COLUMN `idempotencyKey` TEXT")
+                    db.execSQL("ALTER TABLE `operationHistory` ADD COLUMN `sourceOperationId` TEXT")
+                    db.execSQL("ALTER TABLE `operationHistory` ADD COLUMN `mutationStartedAt` INTEGER")
+                    db.execSQL("ALTER TABLE `operationHistory` ADD COLUMN `reconciledAt` INTEGER")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_operationHistory_idempotencyKey` ON `operationHistory` (`idempotencyKey`)")
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `operationTechnicalLog` (
+                            `id` TEXT NOT NULL,
+                            `technicalLog` TEXT NOT NULL,
+                            PRIMARY KEY(`id`)
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        INSERT OR REPLACE INTO `operationTechnicalLog` (`id`, `technicalLog`)
+                        SELECT `id`, `technicalLog` FROM `operationHistory` WHERE `technicalLog` != ''
+                        """.trimIndent(),
+                    )
+                }
+            }
+
         /**
          * Existing fallback behavior is retained for unsupported legacy schemas.
          * Versions 15 to 16, 16 to 17, and 17 to 18 are migrated explicitly so operation history
@@ -143,7 +172,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context,
                     AppDatabase::class.java,
                     "mmrl_v2",
-                ).addMigrations(MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19)
+                ).addMigrations(MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
                 .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
     }

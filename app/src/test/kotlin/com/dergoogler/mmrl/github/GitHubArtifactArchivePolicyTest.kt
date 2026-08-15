@@ -63,4 +63,13 @@ class GitHubArtifactArchivePolicyTest {
             ),
         )
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `github artifact materialization is bounded by bytes actually emitted`() {
+        GitHubArtifactArchivePolicy.nextMaterializedBytes(
+            GitHubArtifactArchivePolicy.MAX_MATERIALIZED_BYTES,
+            1,
+        )
+    }
+
 }

@@ -389,6 +389,7 @@ class AshExecuteRecoveryPlanRunner : TaskerPluginRunnerAction<TaskerRequestInput
                     summary = "Guarded recovery plan requested by Tasker",
                     moduleId = record.prepared.plan.affectedFolders.singleOrNull(),
                     origin = "TASKER_ASH",
+                    initialStatus = com.dergoogler.mmrl.database.entity.history.OperationStatus.QUEUED,
                 )
                 history.appendLog(operationId, "token=${token.take(18)}…")
                 history.appendLog(operationId, "idempotency=$idempotencyKey")
@@ -417,7 +418,16 @@ class AshExecuteRecoveryPlanRunner : TaskerPluginRunnerAction<TaskerRequestInput
                     throw error
                 }
                 if (status == "AWAITING_APPROVAL") {
-                    history.phase(operationId, OperationPhase.APPROVAL, "Waiting for MMRL approval")
+                    history.transition(
+                        id = operationId,
+                        to = com.dergoogler.mmrl.database.entity.history.OperationStatus.WAITING_APPROVAL,
+                        from = setOf(
+                            com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING,
+                            com.dergoogler.mmrl.database.entity.history.OperationStatus.QUEUED,
+                        ),
+                        summary = "Waiting for MMRL approval",
+                        phase = OperationPhase.APPROVAL,
+                    )
                 }
                 val data = JSONObject()
                     .put("operationId", operationId)

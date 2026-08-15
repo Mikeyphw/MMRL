@@ -120,7 +120,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                 if (install) {
                     InstallActivity.start(
                         context = context,
-                        uri = it.toUri(),
+                        uri = it,
                         expectedModuleId = module.id.id,
                     )
                 }

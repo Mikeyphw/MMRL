@@ -5,14 +5,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
 import com.dergoogler.mmrl.platform.model.ModId
 import com.dergoogler.mmrl.ui.activity.TerminalActivity
 import com.dergoogler.mmrl.ui.activity.terminal.PrivilegedLaunchSessions
 import com.dergoogler.mmrl.ui.activity.setBaseContent
 import com.dergoogler.mmrl.viewmodel.ActionViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class ActionActivity : TerminalActivity() {
     private val viewModel by viewModels<ActionViewModel>()
@@ -42,9 +39,7 @@ class ActionActivity : TerminalActivity() {
     }
 
     private fun initAction(modId: ModId) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            viewModel.runAction(modId)
-        }
+        viewModel.startAction(modId)
     }
 
     override fun onDestroy() {

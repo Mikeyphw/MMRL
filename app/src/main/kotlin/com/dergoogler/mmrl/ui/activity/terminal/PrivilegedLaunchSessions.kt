@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.ui.activity.terminal
 
 import android.net.Uri
+import com.dergoogler.mmrl.installer.InstallExecutionAuthorizationPolicy
 import com.dergoogler.mmrl.platform.model.ModId
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -19,6 +20,7 @@ internal object PrivilegedLaunchSessions {
         val parentOperationId: String?,
         val rollbackMode: Boolean,
         val expectedModuleIds: List<String>,
+        val expectedArchiveSha256: List<String>,
     )
 
     data class ActionRequest(
@@ -37,10 +39,16 @@ internal object PrivilegedLaunchSessions {
         request.expectedModuleIds.forEach { value ->
             require(ModId.parseOrNull(value) != null) { "Invalid expected module ID: $value" }
         }
+        InstallExecutionAuthorizationPolicy.requireAuthorizedLaunch(
+            artifactCount = request.uris.size,
+            requireApproval = request.confirm,
+            reviewedSha256 = request.expectedArchiveSha256,
+        )
         return installs.put(
             request.copy(
                 uris = request.uris.toList(),
                 expectedModuleIds = request.expectedModuleIds.toList(),
+                expectedArchiveSha256 = request.expectedArchiveSha256.map(String::lowercase),
             ),
         )
     }

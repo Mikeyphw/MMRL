@@ -6,10 +6,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.viewModels
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.lifecycle.lifecycleScope
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.tmpDir
 import com.dergoogler.mmrl.ui.activity.TerminalActivity
@@ -17,11 +13,9 @@ import com.dergoogler.mmrl.ui.activity.terminal.PrivilegedLaunchSessions
 import com.dergoogler.mmrl.ui.activity.setBaseContent
 import com.dergoogler.mmrl.ui.component.dialog.ConfirmDialog
 import com.dergoogler.mmrl.viewmodel.InstallViewModel
-import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class InstallActivity : TerminalActivity() {
-    private var confirmDialog by mutableStateOf(true)
     private val viewModel by viewModels<InstallViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,24 +39,27 @@ class InstallActivity : TerminalActivity() {
         val parentOperationId = request.parentOperationId
         val rollbackMode = request.rollbackMode
         val expectedModuleIds = request.expectedModuleIds
+        val expectedArchiveSha256 = request.expectedArchiveSha256
 
-        if (!confirm) {
-            initModule(uris.toList(), parentOperationId, rollbackMode, expectedModuleIds)
-        }
+        initModule(
+            uris = uris.toList(),
+            parentOperationId = parentOperationId,
+            rollbackMode = rollbackMode,
+            expectedModuleIds = expectedModuleIds,
+            expectedArchiveSha256 = expectedArchiveSha256,
+            requireApproval = confirm,
+        )
 
         setBaseContent {
-            if (confirm && confirmDialog) {
+            viewModel.approvalRequest?.let { approval ->
                 ConfirmDialog(
-                    title = R.string.install_screen_confirm_title,
-                    description = R.string.install_screen_confirm_text,
+                    title = getString(R.string.install_screen_confirm_title),
+                    description = approval.summary,
                     onClose = {
-                        confirmDialog = false
+                        viewModel.respondToApproval(false)
                         finish()
                     },
-                    onConfirm = {
-                        confirmDialog = false
-                        initModule(uris.toList(), parentOperationId, rollbackMode, expectedModuleIds)
-                    },
+                    onConfirm = { viewModel.respondToApproval(true) },
                 )
             }
 
@@ -82,18 +79,17 @@ class InstallActivity : TerminalActivity() {
         parentOperationId: String?,
         rollbackMode: Boolean,
         expectedModuleIds: List<String>,
+        expectedArchiveSha256: List<String>,
+        requireApproval: Boolean,
     ) {
-        val job =
-            lifecycleScope.launch {
-                viewModel.installModules(
-                    uris = uris,
-                    parentOperationId = parentOperationId,
-                    rollbackMode = rollbackMode,
-                    expectedModuleIds = expectedModuleIds,
-                )
-            }
-
-        terminalJob = job
+        viewModel.startInstall(
+            uris = uris,
+            parentOperationId = parentOperationId,
+            rollbackMode = rollbackMode,
+            expectedModuleIds = expectedModuleIds,
+            expectedArchiveSha256 = expectedArchiveSha256,
+            requireApproval = requireApproval,
+        )
     }
 
     companion object {
@@ -107,6 +103,7 @@ class InstallActivity : TerminalActivity() {
             parentOperationId: String? = null,
             rollbackMode: Boolean = false,
             expectedModuleIds: List<String> = emptyList(),
+            expectedArchiveSha256: List<String> = emptyList(),
         ) {
             val sessionId =
                 PrivilegedLaunchSessions.createInstall(
@@ -116,6 +113,7 @@ class InstallActivity : TerminalActivity() {
                         parentOperationId = parentOperationId,
                         rollbackMode = rollbackMode,
                         expectedModuleIds = expectedModuleIds.toList(),
+                        expectedArchiveSha256 = expectedArchiveSha256.toList(),
                     ),
                 )
             context.startActivity(
@@ -131,6 +129,7 @@ class InstallActivity : TerminalActivity() {
             parentOperationId: String? = null,
             rollbackMode: Boolean = false,
             expectedModuleId: String? = null,
+            expectedArchiveSha256: String? = null,
         ) {
             start(
                 context = context,
@@ -139,6 +138,7 @@ class InstallActivity : TerminalActivity() {
                 parentOperationId = parentOperationId,
                 rollbackMode = rollbackMode,
                 expectedModuleIds = expectedModuleId?.let(::listOf).orEmpty(),
+                expectedArchiveSha256 = expectedArchiveSha256?.let(::listOf).orEmpty(),
             )
         }
 
@@ -155,6 +155,7 @@ class InstallActivity : TerminalActivity() {
                         parentOperationId = null,
                         rollbackMode = false,
                         expectedModuleIds = emptyList(),
+                        expectedArchiveSha256 = emptyList(),
                     ),
                 )
             context.startActivity(

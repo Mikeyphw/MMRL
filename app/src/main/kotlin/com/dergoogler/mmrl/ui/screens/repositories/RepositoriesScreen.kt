@@ -177,8 +177,9 @@ fun RepositoriesScreen() =
                     if (install) {
                         InstallActivity.start(
                             context = context,
-                            uri = it,
-                            expectedModuleIds = item.map(BulkModule::id),
+                            uri = it.map { success -> success.uri },
+                            expectedModuleIds = it.map { success -> success.module.id },
+                            expectedArchiveSha256 = it.map { success -> success.sha256 },
                         )
                     } else {
                         Toast.makeText(
@@ -191,16 +192,9 @@ fun RepositoriesScreen() =
                 onFailure = { error ->
                     Timber.e(error)
                     if (error is BulkDownloadException) {
-                        val successfulIds = error.successes.map { it.module.id }.toSet()
-                        bulkInstallViewModel.removeBulkModules(successfulIds)
-                        if (install && error.successes.isNotEmpty()) {
-                            bulkInstallBottomSheet = false
-                            InstallActivity.start(
-                                context = context,
-                                uri = error.successes.map { it.uri },
-                                expectedModuleIds = error.successes.map { it.module.id },
-                            )
-                        }
+                        // Batch installation is all-or-nothing at preflight/download time.
+                        // Successful downloads remain reusable by provenance, but are never auto-installed as a subset.
+                        Timber.w("Bulk batch blocked: ${error.failures.size} download(s) failed; ${error.successes.size} verified artifact(s) retained for safe reuse")
                     }
                     Toast.makeText(
                         context,

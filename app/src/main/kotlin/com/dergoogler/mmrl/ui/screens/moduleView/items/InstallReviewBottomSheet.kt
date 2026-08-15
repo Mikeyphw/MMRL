@@ -1,5 +1,7 @@
 package com.dergoogler.mmrl.ui.screens.moduleView.items
 
+import android.net.Uri
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,6 +48,9 @@ enum class InstallReviewPhase {
 data class InstallReviewState(
     val phase: InstallReviewPhase = InstallReviewPhase.REVIEW,
     val file: File? = null,
+    /** Authoritative DownloadService result; installation must use this URI, never reconstruct a path. */
+    val sourceUri: Uri? = null,
+    val reviewStagingOperationId: String? = null,
     val inspection: ArchiveInspection? = null,
     val error: String? = null,
     val operationId: String? = null,

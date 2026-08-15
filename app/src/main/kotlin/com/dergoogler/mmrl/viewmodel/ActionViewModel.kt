@@ -8,20 +8,22 @@ import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Event
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
+import com.dergoogler.mmrl.database.entity.history.OperationStatus
+import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
-import com.dergoogler.mmrl.model.terminal.ScriptError
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
 import com.dergoogler.mmrl.platform.content.State
 import com.dergoogler.mmrl.platform.model.ModId
 import com.dergoogler.mmrl.platform.model.ModId.Companion.actionFile
 import com.dergoogler.mmrl.platform.util.ShellCommand
+import com.dergoogler.mmrl.operation.OneShotOperationGate
+import com.dergoogler.mmrl.operation.PrivilegedOperationCoordinator
+import com.dergoogler.mmrl.operation.PrivilegedProcessExecutor
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
-import com.topjohnwu.superuser.CallbackList
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.mmrlx.terminal.newSuperUserPty
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -39,6 +41,8 @@ constructor(
     modulesRepository: ModulesRepository,
     userPreferencesRepository: UserPreferencesRepository,
     operationHistoryRepository: OperationHistoryRepository,
+    private val operationCoordinator: PrivilegedOperationCoordinator,
+    private val privilegedProcessExecutor: PrivilegedProcessExecutor,
 ) : TerminalViewModel(
         application,
         localRepository,
@@ -48,36 +52,16 @@ constructor(
     ) {
     val logfile get() = "Action_${LocalDateTime.now()}.log"
 
+    private val actionLaunchGate = OneShotOperationGate()
+
     init {
         Timber.d("ActionViewModel initialized")
     }
 
-    private val stdoutCallbackList =
-        object : CallbackList<String?>() {
-            override fun onAddElement(msg: String?) {
-                msg?.let {
-                    viewModelScope.launch { log(it) }
-                }
-            }
-        }
-
-    private val stderrCallbackList =
-        object : CallbackList<String?>() {
-            override fun onAddElement(msg: String?) {
-                msg?.let {
-                    viewModelScope.launch {
-                        val error = ScriptError.fromString(it)
-
-                        if (error != null) {
-                            devLog("::error title=${error.title}::At Line ${error.lineNumber}: ${error.message}")
-                            return@launch
-                        }
-
-                        devLog(it)
-                    }
-                }
-            }
-        }
+    fun startAction(modId: ModId) {
+        if (!actionLaunchGate.tryStart()) return
+        viewModelScope.launch(Dispatchers.IO) { runAction(modId) }
+    }
 
     suspend fun runAction(modId: ModId) =
         withContext(Dispatchers.IO) {
@@ -113,74 +97,85 @@ constructor(
                 operationHistoryRepository.start(
                     kind = OperationKind.MODULE_ACTION,
                     title = module.name,
-                    summary = "Running module action",
+                    summary = "Queued module action",
                     moduleId = module.id.id,
                     moduleName = module.name,
-                    retryAction = OperationAction.RUN_ACTION,
+                    retryAction = null,
                     useShell = userPreferences.useShellForModuleAction,
+                    initialStatus = OperationStatus.QUEUED,
                 )
-            activeOperationId = historyId
-            val success = executeAction(modId, userPreferences.useShellForModuleAction)
-
-            if (success) {
-                operationHistoryRepository.succeed(historyId, "Module action completed")
-            } else {
-                operationHistoryRepository.fail(historyId, "Module action failed")
+            val idempotencyKey = "module-action:${module.id.id}"
+            if (!operationHistoryRepository.claimIdempotencyKey(historyId, idempotencyKey)) {
+                operationHistoryRepository.fail(historyId, "An identical module action is already active")
+                withContext(Dispatchers.Main) {
+                    event = Event.FAILED
+                    log("An identical module action is already active")
+                }
+                return@withContext
             }
-            activeOperationId = null
-            event = if (success) Event.SUCCEEDED else Event.FAILED
-        }
+            activeOperationId = historyId
 
-    private suspend fun executeAction(
-        modId: ModId,
-        legacy: Boolean,
-    ): Boolean =
-        withContext(Dispatchers.IO) {
-            val shellEnv =
-                listOf(
-                    "export PATH=/data/adb/ap/bin:/data/adb/ksu/bin:/data/adb/magisk:\$PATH",
-                    "export MMRL=true",
-                    "export MMRL_VER=${BuildConfig.VERSION_NAME}",
-                    "export MMRL_VER_CODE=${BuildConfig.VERSION_CODE}",
-                    "export BOOTMODE=true",
-                    "export ARCH=${Build.SUPPORTED_ABIS.firstOrNull().orEmpty()}",
-                    "export API=${Build.VERSION.SDK_INT}",
-                    "export IS64BIT=${Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()}",
+            val environment =
+                mapOf(
+                    "ASH_STANDALONE" to "1",
+                    "MMRL" to "true",
+                    "MMRL_VER" to BuildConfig.VERSION_NAME,
+                    "MMRL_VER_CODE" to BuildConfig.VERSION_CODE.toString(),
+                    "BOOTMODE" to "true",
+                    "ARCH" to Build.SUPPORTED_ABIS.firstOrNull().orEmpty(),
+                    "API" to Build.VERSION.SDK_INT.toString(),
+                    "IS64BIT" to Build.SUPPORTED_64_BIT_ABIS.isNotEmpty().toString(),
                 )
 
-            val env = mapOf(
-                "ASH_STANDALONE" to "1",
-                "MMRL" to "true",
-                "MMRL_VER" to BuildConfig.VERSION_NAME,
-                "MMRL_VER_CODE" to BuildConfig.VERSION_CODE.toString(),
-                "BOOTMODE" to "true",
-                "ARCH" to Build.SUPPORTED_ABIS.firstOrNull().orEmpty(),
-                "API" to Build.VERSION.SDK_INT.toString(),
-                "IS64BIT" to Build.SUPPORTED_64_BIT_ABIS.isNotEmpty().toString(),
-            )
-
-            val command =
-                if (legacy || platform.isMagisk) {
-                    ShellCommand.of(
-                        "busybox",
-                        "sh",
-                        modId.requireOperational().actionFile.path,
+            val completion = operationCoordinator.execute<Unit>(historyId) {
+                phase(OperationPhase.STAGE, "Preparing module action")
+                val command =
+                    if (userPreferences.useShellForModuleAction || platform.isMagisk) {
+                        ShellCommand.of(
+                            "busybox",
+                            "sh",
+                            modId.requireOperational().actionFile.path,
+                        )
+                    } else {
+                        PlatformManager.moduleManager.getActionCommand(modId)
+                    }
+                check(command.isNotBlank()) { "Module action command is empty" }
+                phase(OperationPhase.INSTALL, "Executing module action")
+                markMutationStarted()
+                val result = privilegedProcessExecutor.execute(
+                    command = command,
+                    environment = environment,
+                    onLine = { line ->
+                        log(line)
+                        this@ActionViewModel.log(line)
+                    },
+                )
+                if (result.isSuccess) {
+                    PrivilegedOperationCoordinator.OperationCompletion.Success(
+                        value = Unit,
+                        summary = "Module action completed",
                     )
                 } else {
-                    PlatformManager.moduleManager.getActionCommand(modId)
-                }
-
-            val emu = emulatorReady.await()
-            val result = emu.newSuperUserPty(command, env)
-            val success = result.isSuccess
-            if (success) {
-                return@withContext true
-            } else {
-                withContext(Dispatchers.Main) {
-                    log(R.string.execution_failed_try_to_use_shell_for_the_action_execution_settings_module_use_shell_for_module_action)
-                    result.onFailure { devLog("Shell Error: $it") }
+                    PrivilegedOperationCoordinator.OperationCompletion.OutcomeUnknown(
+                        summary = "Module action exited with code ${result.exitCode} after privileged execution began; reconcile before retrying",
+                    )
                 }
             }
-            return@withContext false
+            activeOperationId = null
+            withContext(Dispatchers.Main) {
+                when (completion) {
+                    is PrivilegedOperationCoordinator.OperationCompletion.Success -> event = Event.SUCCEEDED
+                    is PrivilegedOperationCoordinator.OperationCompletion.Failure -> {
+                        event = Event.FAILED
+                        log(R.string.execution_failed_try_to_use_shell_for_the_action_execution_settings_module_use_shell_for_module_action)
+                    }
+                    is PrivilegedOperationCoordinator.OperationCompletion.Cancelled -> event = Event.FAILED
+                    is PrivilegedOperationCoordinator.OperationCompletion.OutcomeUnknown -> {
+                        event = Event.FAILED
+                        log("Action outcome is unknown; reconcile before retrying")
+                    }
+                }
+            }
         }
+
 }

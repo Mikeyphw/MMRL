@@ -10,10 +10,14 @@ import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationHistoryEntity
 import com.dergoogler.mmrl.database.entity.history.OperationKind
+import com.dergoogler.mmrl.database.entity.history.OperationStatus
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.model.ModId
-import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
+import com.dergoogler.mmrl.operation.ModuleMutationExecutor
+import com.dergoogler.mmrl.operation.OperationReconciliationPolicy
+import com.dergoogler.mmrl.operation.PrivilegedOperationCoordinator
+import com.dergoogler.mmrl.operation.RollbackAvailabilityPolicy
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
@@ -44,6 +48,8 @@ class ActivityViewModel
         userPreferencesRepository: UserPreferencesRepository,
         private val historyRepository: OperationHistoryRepository,
         private val ashManager: AshReXcueManager,
+        private val moduleMutationExecutor: ModuleMutationExecutor,
+        private val operationCoordinator: PrivilegedOperationCoordinator,
     ) : MMRLViewModel(
             application = application,
             localRepository = localRepository,
@@ -99,6 +105,7 @@ class ActivityViewModel
                 val ashEntries = ashState.snapshot?.activity.orEmpty().map { it.toHistoryEntry() }
                 (entries + ashEntries)
                     .distinctBy(OperationHistoryEntity::id)
+                    .map(::withTruthfulRollbackAvailability)
                     .sortedByDescending(OperationHistoryEntity::startedAt)
                     .filter { entry ->
                         when (filter) {
@@ -120,10 +127,15 @@ class ActivityViewModel
             filterFlow.value = value
         }
 
+        suspend fun loadDetails(entry: OperationHistoryEntity): OperationHistoryEntity =
+            withTruthfulRollbackAvailability(
+                if (entry.origin == ASH_ORIGIN) entry else historyRepository.getById(entry.id) ?: entry,
+            )
+
         fun clearHistory() {
             viewModelScope.launch {
                 historyRepository.clearCompleted()
-                messagesFlow.emit("Completed activity history cleared")
+                messagesFlow.emit("Safely removable completed activity history cleared; protected reconciliation/reboot records were preserved")
             }
         }
 
@@ -132,9 +144,75 @@ class ActivityViewModel
                 emitMessage("AshReXcue events are managed by the protection module")
                 return
             }
+            if (!entry.canDelete) {
+                emitMessage(if (entry.isPendingReboot) "Pending-reboot activity must be preserved" else "Active or unresolved activity cannot be deleted")
+                return
+            }
             viewModelScope.launch {
-                historyRepository.delete(entry.id)
-                messagesFlow.emit("Activity entry removed")
+                if (historyRepository.delete(entry.id)) {
+                    messagesFlow.emit("Activity entry removed")
+                } else {
+                    messagesFlow.emit("Activity entry is active, unresolved, or still requires reboot reconciliation")
+                }
+            }
+        }
+
+        fun reconcile(entry: OperationHistoryEntity) {
+            viewModelScope.launch {
+                val current = historyRepository.getById(entry.id)
+                if (current?.status != OperationStatus.OUTCOME_UNKNOWN.name) {
+                    messagesFlow.emit("This operation no longer requires reconciliation")
+                    return@launch
+                }
+                val kind = runCatching { OperationKind.valueOf(current.kind) }.getOrNull()
+                val moduleId = current.moduleId?.let(ModId::parseOrNull)
+                if (kind == null || moduleId == null || !PlatformManager.isAlive) {
+                    historyRepository.appendLog(current.id, "Reconciliation unavailable: authoritative module backend is not available")
+                    messagesFlow.emit("Unable to reconcile this outcome automatically; backend evidence is unavailable")
+                    return@launch
+                }
+                val actual = runCatching { PlatformManager.moduleManager.getModuleById(moduleId) }.getOrNull()
+                when (
+                    OperationReconciliationPolicy.classify(
+                        kind = kind,
+                        targetVersion = current.targetVersion,
+                        previousVersion = current.previousVersion,
+                        modulePresent = actual != null,
+                        actualVersion = actual?.version,
+                        actualState = actual?.state?.name,
+                    )
+                ) {
+                    OperationReconciliationPolicy.Resolution.SUCCEEDED -> {
+                        historyRepository.resolveUnknown(
+                            current.id,
+                            succeeded = true,
+                            summary = "Reconciliation confirmed the requested backend state",
+                        )
+                        messagesFlow.emit("Reconciliation confirmed success")
+                    }
+                    OperationReconciliationPolicy.Resolution.FAILED_RETRYABLE -> {
+                        historyRepository.resolveUnknown(
+                            current.id,
+                            succeeded = false,
+                            summary = "Reconciliation confirmed the requested module state was not applied",
+                            retryable = true,
+                        )
+                        messagesFlow.emit("Reconciliation confirmed failure; retry is now available")
+                    }
+                    OperationReconciliationPolicy.Resolution.FAILED_NON_RETRYABLE -> {
+                        historyRepository.resolveUnknown(
+                            current.id,
+                            succeeded = false,
+                            summary = "Reconciliation confirmed the reviewed install target was not applied; review a fresh artifact before retrying",
+                            retryable = false,
+                        )
+                        messagesFlow.emit("Reconciliation confirmed failure; a fresh review is required before another install")
+                    }
+                    OperationReconciliationPolicy.Resolution.UNRESOLVED -> {
+                        historyRepository.appendLog(current.id, "Reconciliation could not prove success or a known-safe failure; outcome remains unknown")
+                        messagesFlow.emit("Outcome is still unknown; retry and rollback remain blocked")
+                    }
+                }
             }
         }
 
@@ -149,6 +227,15 @@ class ActivityViewModel
             context: Context,
             entry: OperationHistoryEntity,
         ) {
+            if (!entry.canRetry) {
+                emitMessage(
+                    if (entry.status == com.dergoogler.mmrl.database.entity.history.OperationStatus.OUTCOME_UNKNOWN.name)
+                        "Reconcile the unknown privileged outcome before retrying"
+                    else
+                        "This operation cannot be retried",
+                )
+                return
+            }
             val action = entry.retryAction.toOperationActionOrNull()
             if (action == null) {
                 emitMessage("This operation cannot be retried")
@@ -157,8 +244,8 @@ class ActivityViewModel
 
             when (action) {
                 OperationAction.DOWNLOAD -> retryDownload(context, entry)
-                OperationAction.INSTALL -> retryInstall(context, entry)
-                OperationAction.RUN_ACTION -> retryModuleAction(context, entry)
+                OperationAction.INSTALL -> emitMessage("Install retry requires a fresh archive review")
+                OperationAction.RUN_ACTION -> emitMessage("Module actions are not automatically retryable")
                 OperationAction.ENABLE,
                 OperationAction.DISABLE,
                 OperationAction.REMOVE,
@@ -170,8 +257,21 @@ class ActivityViewModel
 
         fun rollback(context: Context, entry: OperationHistoryEntity) {
             val action = entry.rollbackAction.toOperationActionOrNull()
-            if (action == null) {
-                emitMessage("No safe rollback is available for this operation")
+            val status = runCatching { OperationStatus.valueOf(entry.status) }.getOrNull()
+            val archiveExists = entry.rollbackArchivePath?.let(::File)?.isFile == true
+            val available = status != null && RollbackAvailabilityPolicy.isAvailable(
+                status = status,
+                rollbackAction = action,
+                rollbackArchivePath = entry.rollbackArchivePath,
+                rollbackArchiveExists = archiveExists,
+            )
+            if (!available || action == null) {
+                emitMessage(
+                    if (entry.status == OperationStatus.OUTCOME_UNKNOWN.name)
+                        "Reconcile the unknown privileged outcome before rollback"
+                    else
+                        "No safe rollback is available for this operation",
+                )
                 return
             }
             if (action == OperationAction.INSTALL) {
@@ -194,6 +294,22 @@ class ActivityViewModel
                 }
                 context.getSystemService(NotificationManager::class.java).cancel(request.id.hashCode())
                 historyRepository.appendLog(entry.id, "Approved by user from Activity")
+                val queued = historyRepository.transition(
+                    id = entry.id,
+                    to = OperationStatus.QUEUED,
+                    from = setOf(OperationStatus.WAITING_APPROVAL, OperationStatus.RUNNING),
+                    summary = "Approved; queued for execution",
+                    phase = com.dergoogler.mmrl.database.entity.history.OperationPhase.STAGE,
+                )
+                if (!queued) {
+                    request.reviewToken?.let { token ->
+                        com.dergoogler.mmrl.tasker.TaskerReviewTokenStore.releaseClaim(context, token, entry.id)
+                    }
+                    TaskerRootRequestStore.remove(context, request.id)
+                    historyRepository.appendLog(entry.id, "Approval ignored because the operation is no longer waiting")
+                    messagesFlow.emit("This Tasker request is no longer waiting for approval")
+                    return@launch
+                }
                 try {
                     TaskerRootDispatcher.enqueue(context, request.id)
                     messagesFlow.emit("Tasker action approved")
@@ -242,12 +358,22 @@ class ActivityViewModel
         }
 
         fun cancel(context: Context, entry: OperationHistoryEntity) {
-            if (!entry.isRunning || entry.kind != OperationKind.DOWNLOAD.name) {
+            if (!entry.isRunning) {
                 emitMessage("This operation cannot be cancelled")
                 return
             }
-            DownloadService.cancel(context, entry.id)
-            emitMessage("Download cancellation requested")
+            if (entry.kind == OperationKind.DOWNLOAD.name) {
+                DownloadService.cancel(context, entry.id)
+                emitMessage("Download cancellation requested")
+                return
+            }
+            viewModelScope.launch {
+                if (operationCoordinator.requestCancellation(entry.id)) {
+                    messagesFlow.emit("Privileged cancellation requested")
+                } else {
+                    messagesFlow.emit("This operation can no longer be cancelled")
+                }
+            }
         }
 
         private fun restoreArchive(
@@ -263,7 +389,7 @@ class ActivityViewModel
             InstallActivity.start(
                 context = context,
                 uri = Uri.fromFile(file),
-                confirm = false,
+                confirm = true,
                 parentOperationId = entry.id,
                 rollbackMode = true,
                 expectedModuleId = entry.moduleId,
@@ -298,47 +424,6 @@ class ActivityViewModel
             emitMessage("Download retry started")
         }
 
-        private fun retryInstall(
-            context: Context,
-            entry: OperationHistoryEntity,
-        ) {
-            val uris =
-                entry.sourceUri
-                    ?.lineSequence()
-                    ?.filter { it.isNotBlank() }
-                    ?.map { Uri.parse(it) }
-                    ?.toList()
-                    .orEmpty()
-            if (uris.isEmpty()) {
-                emitMessage("The original installation file is unavailable")
-                return
-            }
-            InstallActivity.start(
-                context = context,
-                uri = uris,
-                confirm = false,
-                parentOperationId = entry.id,
-                expectedModuleIds = entry.moduleId?.let(::listOf).orEmpty(),
-            )
-        }
-
-        private fun retryModuleAction(
-            context: Context,
-            entry: OperationHistoryEntity,
-        ) {
-            val moduleId = entry.moduleId
-            if (moduleId.isNullOrBlank()) {
-                emitMessage("The original module is unavailable")
-                return
-            }
-            val id = ModId.parseOrNull(moduleId)
-            if (id == null) {
-                emitMessage("The original module identity is invalid")
-                return
-            }
-            ActionActivity.start(context, id)
-        }
-
         private fun executeModuleState(
             entry: OperationHistoryEntity,
             action: OperationAction,
@@ -355,72 +440,38 @@ class ActivityViewModel
                     messagesFlow.emit("The root backend is not available")
                     return@launch
                 }
-
-                val id = ModId.parseOrNull(moduleId)
-                if (id == null) {
-                    messagesFlow.emit("The original module identity is invalid")
+                val module = localRepository.getLocalByIdOrNull(moduleId)
+                if (module == null) {
+                    messagesFlow.emit("The original module is unavailable; reconcile installed state first")
                     return@launch
                 }
-                val historyId =
-                    historyRepository.start(
-                        kind = if (rollback) OperationKind.ROLLBACK else action.toOperationKind(),
-                        title = entry.moduleName ?: entry.title,
-                        summary = if (rollback) "Rolling back ${entry.kind.lowercase()}" else "Retrying ${entry.kind.lowercase()}",
-                        moduleId = moduleId,
-                        moduleName = entry.moduleName,
-                        retryAction = action,
-                        rollbackAction = action.inverse(),
-                        useShell = entry.useShell,
-                        parentId = entry.id,
-                    )
-                historyRepository.appendLog(historyId, "Parent operation: ${entry.id}")
-                historyRepository.appendLog(historyId, "Requested action: ${action.name}")
-
-                val callback =
-                    object : IModuleOpsCallback.Stub() {
-                        override fun onSuccess(id: ModId) {
-                            viewModelScope.launch {
-                                historyRepository.succeed(
-                                    id = historyId,
-                                    summary = if (rollback) "Rollback completed; reboot required" else "Retry completed; reboot required",
-                                    requiresReboot = true,
-                                    rollbackAction = action.inverse(),
-                                )
-                                modulesRepository.getLocal(id)
-                                messagesFlow.emit(if (rollback) "Rollback completed" else "Operation completed")
-                            }
-                        }
-
-                        override fun onFailure(
-                            id: ModId,
-                            msg: String?,
-                        ) {
-                            viewModelScope.launch {
-                                historyRepository.fail(
-                                    id = historyId,
-                                    summary = msg ?: "Module operation failed",
-                                )
-                                messagesFlow.emit(msg ?: "Module operation failed")
-                            }
-                        }
-                    }
-
-                try {
-                    when (action) {
-                        OperationAction.ENABLE -> PlatformManager.moduleManager.enable(id, entry.useShell, callback)
-                        OperationAction.DISABLE -> PlatformManager.moduleManager.disable(id, entry.useShell, callback)
-                        OperationAction.REMOVE -> PlatformManager.moduleManager.remove(id, entry.useShell, callback)
-                        else -> error("Unsupported module state action: $action")
-                    }
-                } catch (error: Throwable) {
-                    historyRepository.fail(
-                        id = historyId,
-                        summary = error.message ?: "Unable to start module operation",
-                        error = error,
-                    )
-                    messagesFlow.emit(error.message ?: "Unable to start module operation")
+                moduleMutationExecutor.execute(
+                    module = module,
+                    useShell = entry.useShell,
+                    kind = if (rollback) OperationKind.ROLLBACK else action.toOperationKind(),
+                    action = action,
+                    rollbackAction = action.inverse(),
+                    successSummary = if (rollback) "Rollback completed; reboot required" else "Retry completed; reboot required",
+                    parentId = entry.id,
+                ).onSuccess {
+                    messagesFlow.emit(if (rollback) "Rollback completed" else "Operation completed")
+                }.onFailure { error ->
+                    messagesFlow.emit(error.message ?: "Module operation failed")
                 }
             }
+        }
+
+        private fun withTruthfulRollbackAvailability(entry: OperationHistoryEntity): OperationHistoryEntity {
+            val action = entry.rollbackAction.toOperationActionOrNull()
+            val status = runCatching { OperationStatus.valueOf(entry.status) }.getOrNull()
+            val archiveExists = entry.rollbackArchivePath?.let(::File)?.isFile == true
+            val available = status != null && RollbackAvailabilityPolicy.isAvailable(
+                status = status,
+                rollbackAction = action,
+                rollbackArchivePath = entry.rollbackArchivePath,
+                rollbackArchiveExists = archiveExists,
+            )
+            return if (available || entry.rollbackAction.isNullOrBlank()) entry else entry.copy(rollbackAction = null)
         }
 
         private fun emitMessage(message: String) {
@@ -451,6 +502,7 @@ private fun ActivityItem.toHistoryEntry(): OperationHistoryEntity {
     val operationStatus =
         when (status.lowercase()) {
             "failed", "error" -> com.dergoogler.mmrl.database.entity.history.OperationStatus.FAILED
+            "outcome_unknown", "unknown" -> com.dergoogler.mmrl.database.entity.history.OperationStatus.OUTCOME_UNKNOWN
             "running", "active" -> com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING
             "cancelled", "canceled" -> com.dergoogler.mmrl.database.entity.history.OperationStatus.CANCELLED
             else -> com.dergoogler.mmrl.database.entity.history.OperationStatus.SUCCEEDED
