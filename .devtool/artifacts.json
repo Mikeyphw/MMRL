@@ -13137,6 +13137,660 @@
         }
       },
       "history_id": "a5ed5a634df64bc2990286b453355b34"
+    },
+    {
+      "applied_at": "2026-08-15T04:18:57.434924Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_o2_platform_binder_filesystem_jni_root_correctness_v2.zip",
+      "artifact_name": "mmrl_o2_platform_binder_filesystem_jni_root_correctness_v2.zip",
+      "type": "overlay",
+      "sha256": "2b84bbf0f5dc3e8f8d44516ac0c2324ed3b88956c784d5a67775a1c361f67c27",
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Harden platform Binder filesystem JNI root correctness",
+      "commit_hash": "",
+      "file_count": 91,
+      "change_counts": {
+        "add": 56,
+        "modify": 35
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl-o2-platform-binder-filesystem-jni-root-correctness-v2",
+        "description": "Corrected and re-audited O2 remediation: make provider/Binder readiness generation- and death-aware; contain privileged filesystem operations with fd-relative no-follow traversal and fail-closed mutations; harden KernelSU JNI/current-UAPI compatibility and manager authorization; make SELinux/profile transitions truthful and reconciled; correct root-manager capability, reboot, archive and inventory semantics; and harden shell/hidden-API helpers.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "source_archive": "MMRL-20260814-205745.tar.gz",
+          "source_archive_sha256": "9e545be9edeb3c20b6d032704d1af98fc8b0fea1671535ce91c9f2b9ae8f2052",
+          "reported_o1_commit": "3bc0fb0e",
+          "git_state_note": "Fresh uploaded snapshot contains no .git directory; reported O1 commit is not independently queryable from the snapshot.",
+          "o1_postimage_continuity": "47/47 O1 v2 inventory postimage hashes match the uploaded baseline",
+          "remediation_overlay": "O2",
+          "revision": "v2-re-audited-corrected",
+          "root_causes": [
+            "RC-004",
+            "RC-005",
+            "RC-006",
+            "RC-007",
+            "RC-008",
+            "RC-047",
+            "RC-048"
+          ]
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/App.kt",
+              "action": "modify",
+              "sha256": "89a2c9dfeaf40bc37999cb55d2ba20c4c1d2c3df0baeefcfed447174dde570b5",
+              "size": 1988,
+              "source_sha256": "8cbf4f2f4298ca1d3265b46f53b83a2db7ed08c7a754c8b79230948f7ff40aad"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootBinderCandidateGate.kt",
+              "action": "add",
+              "sha256": "823876a9e9e3b056b97224636fd125f0fdc4b789d191eee4111688c62bfe8deb",
+              "size": 1100
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootBindingLifecyclePolicy.kt",
+              "action": "add",
+              "sha256": "b7c2a2af72c2baac29960da2674d881df6f39936156de26101b591beac5296b5",
+              "size": 1357
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootCallPolicy.kt",
+              "action": "add",
+              "sha256": "564f111fe012fc900f9d875219ad29d254c7a84be421d258a48c303ba3920086",
+              "size": 644
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootServiceClient.kt",
+              "action": "modify",
+              "sha256": "89efef89df4513f061827245206ebfb16c4f5a3e730ea28e6a500221dbf8ad3c",
+              "size": 17989,
+              "source_sha256": "4629f6193c87166d5a16d1212c19ffd6791bbc323802b5772953fbb275fb2441"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAutomationWorker.kt",
+              "action": "modify",
+              "sha256": "adeddaa03d8980d0b6796dc62aa6154b13180371d72b03be14109aa0fac1eb33",
+              "size": 17087,
+              "source_sha256": "548f5e41aa45803e67dc501f72ff2da8e2e5ae89f341f3ad507b4b5369c6ff9d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerRootAwaitPolicy.kt",
+              "action": "add",
+              "sha256": "3bef421861af4ba956ee33b51a90a4dea70d552c11d497ad282abf0756282aeb",
+              "size": 269
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/appProfile/items/RootProfileConfig.kt",
+              "action": "modify",
+              "sha256": "62e7293f6aa6aee94b56dfb51cf9e0db1a44437bf1c08cc91645ce3021df3c44",
+              "size": 10522,
+              "source_sha256": "5a8ebe19883acd11f5b95b97dbd8659ca8dfdbba0f4bcad9212ee8a3086de676"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/appProfile/remember/rememberProfileChange.kt",
+              "action": "modify",
+              "sha256": "eddfa37c9bd2268ae60923672297758d2fb685026a46e1bab2b416a246168c1c",
+              "size": 5456,
+              "source_sha256": "3c4aa7bd3e6a49e7bb28f1b6ad00cb3855ca3731455c86a6af56751154bc6d28"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/home/items/RebootBottomSheet.kt",
+              "action": "modify",
+              "sha256": "571a03e4e347cb28aca8b0c3bba60bcc8a101ca1e55cd5758b270766ac95bcf2",
+              "size": 3676,
+              "source_sha256": "72dd0be8c08c40908333884569e69d06ec2ab8d7acf15ea2e2e770827b50f660"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/home/items/RebootReasonPolicy.kt",
+              "action": "add",
+              "sha256": "96bf03543e890f1c3f9f2f543e5ff510350f79f3c1105a3dc17873af1f756021",
+              "size": 157
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/utils/KsuInitializationPolicy.kt",
+              "action": "add",
+              "sha256": "76687fb47a76c76aceb08f51d5eb62ad39aba2912528ceaac14f78f5aafe12d3",
+              "size": 286
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/utils/LibSuProvider.kt",
+              "action": "modify",
+              "sha256": "1f918c13859bd4e677de4b32d1886f97e4fb8debc71e21fbe50ac465c7b3c01b",
+              "size": 2722,
+              "source_sha256": "2fb8363179b71102aeb929c75b48520846749ec7cae95d99adc49a968fa17598"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/utils/RootPlatformDetector.kt",
+              "action": "add",
+              "sha256": "0a07d0d4a353c8d11c6bbd4d66af7206b9dd31b8f35ce15ec9ce6b2d9b9fc8f1",
+              "size": 832
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/utils/SuService.kt",
+              "action": "modify",
+              "sha256": "f6c18b76bffbfb71af5fd7d16b21a060212a109bffc09ae562592bc07c722d5b",
+              "size": 562,
+              "source_sha256": "6101b0bf41c6d42f52cef2fbfa70ce0865ae3fa7a12515ab96f86fbf1304ff27"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/SuperUserInventoryPolicy.kt",
+              "action": "add",
+              "sha256": "78416a3fdcc4d36eff71f5137cff18155c073247366ad2154648837547a6adb6",
+              "size": 226
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/SuperUserViewModel.kt",
+              "action": "modify",
+              "sha256": "abcbd8ecd90bc5be222181c6e172c6eb1bee9cdaa96852ef063d2436c0fbc0ac",
+              "size": 10751,
+              "source_sha256": "7cd69a718512509d319a4fc47a1464755d36d40d7f42a1f4486abc358bf40788"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/RootBinderCandidateGateTest.kt",
+              "action": "add",
+              "sha256": "6878417faf3d5cc921288a7649085e2c603e9abfb871daab027da5a991088bb3",
+              "size": 1208
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/RootBindingLifecyclePolicyTest.kt",
+              "action": "add",
+              "sha256": "2703d5c9589eff3756928a789bad9d18b4395ab8e6f6cd7fe883cbda7c4b62e2",
+              "size": 2006
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/RootCallPolicyTest.kt",
+              "action": "add",
+              "sha256": "d4d193aac64102d1331275c176118fcd84764c274fc4be3a5c94ed7357dcf3a4",
+              "size": 854
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/tasker/TaskerRootAwaitPolicyTest.kt",
+              "action": "add",
+              "sha256": "c7db4fc890c6901620aa0a0e3dff4a250deec71ae1b23eb173053187e93dddaf",
+              "size": 486
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ui/screens/home/items/RebootReasonPolicyTest.kt",
+              "action": "add",
+              "sha256": "ff8ca4f41356edb744863db61c6537ebeff3bdd37387a1a0f2b43bb2119149b0",
+              "size": 374
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/utils/KsuInitializationPolicyTest.kt",
+              "action": "add",
+              "sha256": "68e82d5664586818d79efdf5196bb14d25124866f296b938165617f5f810767f",
+              "size": 834
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/utils/RootPlatformDetectorTest.kt",
+              "action": "add",
+              "sha256": "d1289d309ff245c27052daeeca81e02c4b2c164617415cbb03b4aaa4d6db77ee",
+              "size": 858
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/viewmodel/SuperUserInventoryPolicyTest.kt",
+              "action": "add",
+              "sha256": "bd87f2f370ff716aa70bdc2f0a97222142a82a0871469eafe888aadbc846dfe7",
+              "size": 430
+            },
+            {
+              "path": "platform/src/main/aidl/com/dergoogler/mmrl/platform/stub/IFileManager.aidl",
+              "action": "modify",
+              "sha256": "6d6864153ce6c1ce42aea90d4ae6e0aede4904a26bab4f6b022c1fe796c775b1",
+              "size": 1176,
+              "source_sha256": "798a2460cb9648bd04d6016d10a069897fcfc24ddf4a2dbe049ee6a1d54c8d63"
+            },
+            {
+              "path": "platform/src/main/jni/file-manager.cpp",
+              "action": "modify",
+              "sha256": "11505a7fe3a654eab03e95f07b9539def5ba80c5173d5d75351a7196f30b38e2",
+              "size": 25949,
+              "source_sha256": "8ea53025b0ba31122fe33898fc4ac225f39eafdca2aae7c003c81fec830ecc4d"
+            },
+            {
+              "path": "platform/src/main/jni/include/file_manager_safe.hpp",
+              "action": "add",
+              "sha256": "cbcb77ad5c53df1a20bcd08dca60194ee5875929f857bc8275d7107272a57c03",
+              "size": 775
+            },
+            {
+              "path": "platform/src/main/jni/include/kernelsu/ksu.hpp",
+              "action": "modify",
+              "sha256": "c22b387fc78a7915ca09f9aea30c7c57335b4dd1a87fa020feead65fb15f7631",
+              "size": 3030,
+              "source_sha256": "ef608007930764da97a927c5ae1d0ec640870379bbb730b642f7f5197366d3f8"
+            },
+            {
+              "path": "platform/src/main/jni/kernelsu/jni.cpp",
+              "action": "modify",
+              "sha256": "f192f86a3d07efc58f668c932f98ddbdb5829efca987b9293f896342d6094cb7",
+              "size": 19511,
+              "source_sha256": "92aa7850dadb5fbdad2af636d1de31ce2bc5654498f7d24608ea7bb51df5c5df"
+            },
+            {
+              "path": "platform/src/main/jni/kernelsu/ksu.cpp",
+              "action": "modify",
+              "sha256": "48bdd0a7c1a9af1cbf0ce17c50f8491fc020f7e2bbc3072ef87c418a2a87e7f3",
+              "size": 22418,
+              "source_sha256": "f968b66134ba23594fb1dda7e2749dd376e02d1c48060b74191b7e91bbd35749"
+            },
+            {
+              "path": "platform/src/main/jni/kernelsu/ksun.cpp",
+              "action": "modify",
+              "sha256": "9be22a6ae0e664b7f62622c1269f5aa2c5c732580e398fa4424d512fd240f863",
+              "size": 372,
+              "source_sha256": "3c980e815d6f2fabc1daf97fa2b0a7a0f2a9fdeabdc59abea99bb2328d968c73"
+            },
+            {
+              "path": "platform/src/main/jni/kernelsu/sukisu.cpp",
+              "action": "modify",
+              "sha256": "e534845b6ba673c3e4c5aec3ce510827162d54fa5068c9bd727ff608dbcff1c1",
+              "size": 783,
+              "source_sha256": "f9d15a402afad8f8e1ab2be79b48f45bbc65fe88e247fa4b735ae753fde10aa9"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/BinderCandidateGate.kt",
+              "action": "add",
+              "sha256": "950c368d5e3a58b315bf119d2fd6d6c67397becafdd692669a318ba4258ee4f1",
+              "size": 1094
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/BinderLifecyclePolicy.kt",
+              "action": "add",
+              "sha256": "9e4fb2a4bd82bb3a262928c503ad6b58e95119328a7e50c1c7673608e5f5d5fa",
+              "size": 1028
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/HiddenApiPolicy.kt",
+              "action": "add",
+              "sha256": "532d9031568bb88394ebe22f7dc097a326675f01de0ccea8e8d817f922be7726",
+              "size": 621
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/Platform.kt",
+              "action": "modify",
+              "sha256": "4af065d0ace17de5bcf9a166407ebcd8b61aa410ddb6ba01162181c5a72dd729",
+              "size": 7537,
+              "source_sha256": "b7d74bd6876572237b484de6c9da204a35fcd7e9d6c2efc04ba7d38530f2e3a7"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/PlatformManager.kt",
+              "action": "modify",
+              "sha256": "16ed34e5ff1a878465e751152597a87d79bb38ddead18cf3694fc2f15c56fa33",
+              "size": 48950,
+              "source_sha256": "6827fd82e202c0ea28696eadeba74ad8a477bc1b5c7b2864efd9d6ed25bd9c5e"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/PlatformReadinessPolicy.kt",
+              "action": "add",
+              "sha256": "296be2a139fb8a832252aa52499fb549dcf8a48e814c19ad336dc81482ed01c6",
+              "size": 321
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/SePolicy.kt",
+              "action": "modify",
+              "sha256": "96ae9ad70283951f08e67a4fb8591d81dc51c72ff4401d4cb1f2a56f304682e7",
+              "size": 3690,
+              "source_sha256": "5cba805f9ff2b25bc6fa443490b78985eff1cb9641b8c3e74765a9a120de552c"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/SePolicyParser.kt",
+              "action": "modify",
+              "sha256": "0698a13b67ea87cd26b186fc75788b02720a304e3d8d2a98d349a06638b52a36",
+              "size": 40561,
+              "source_sha256": "4c45c0f08db82045b25d4628aa46a8bc2127f8ceb2dff679beee971f6e38c1d6"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/DeleteOnExitRegistry.kt",
+              "action": "add",
+              "sha256": "15488a328b58802c5f5750cacef6c9924f90b96ba9372285e2170e103a08adc2",
+              "size": 827
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/ExtFile.kt",
+              "action": "modify",
+              "sha256": "28ef8ceee5576ca58604cd516f7af6c9664f4aaefd91d56182b4ee0e351dcd92",
+              "size": 4547,
+              "source_sha256": "1bf6365133d18faccbdf4fe694a18cc6bdbe0f382b93204ac03d66b5baf92d29"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/FileManager.kt",
+              "action": "modify",
+              "sha256": "0b7c1164a27d41c42386260e6fa66c68f85a0e32e303b86ab67ffd15870af693",
+              "size": 9545,
+              "source_sha256": "bb193945e316398f9a35b567bc4f5f68bf06b45789d159d95e07ea290a09d6bb"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/FileUtils.kt",
+              "action": "modify",
+              "sha256": "358cf540a2727c83a28be765949a38ea3424b9658c62342d5dc4dafa9725778f",
+              "size": 8898,
+              "source_sha256": "78996ea110fa75e51a5c24866ed0c446d379c8229c220e782d5cf0fc8f15153e"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/PrivilegeRouting.kt",
+              "action": "add",
+              "sha256": "0bd5e4315ca9d1d58cfc5f08c596cd474dccaa75f3986c050eece38451833749",
+              "size": 519
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/PrivilegedOpenPolicy.kt",
+              "action": "add",
+              "sha256": "07b41d4888f112d6c95555e32b7b7d7db238e06812e2850a162dd92d153adfcb",
+              "size": 968
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/PrivilegedPathPolicy.kt",
+              "action": "add",
+              "sha256": "c95ebf82a9a8ccab4af8f2c4350808279fd7e538f2473b3015fff1863488ebde",
+              "size": 5588
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/SuContentResolver.kt",
+              "action": "modify",
+              "sha256": "f87025926bc01077569594c4845f335b17a7fc6b4ea762c50595f51a5520d5e0",
+              "size": 1173,
+              "source_sha256": "37d095346e063bdd614db6d0325d8c691731093db8aa56922480e5defa1ea104"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/SuFile.kt",
+              "action": "modify",
+              "sha256": "e4f89bed6d1ebe620e40a5c74d6b6bb3e380a05bee6a9e40216848e0460c8978",
+              "size": 14358,
+              "source_sha256": "c50780cce8b9fc3ef3a478bebed357dc46f41346675395cb4975aa8c1d491c0b"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/KsuInputPolicy.kt",
+              "action": "add",
+              "sha256": "51917d6cfcc29c567ded2393425cc12a02d8c26f98c7c253bcaf96dda86fab62",
+              "size": 932
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/KsuNative.kt",
+              "action": "modify",
+              "sha256": "2fc802b5131da20e7a6a41f425d73bd2653a9444e21379069eef33f01d372384",
+              "size": 6918,
+              "source_sha256": "4c2778e50319f235352f6b192da6c5f4e5d413cc4a5d0345c5678b78fdb3e272"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/KsuNativeQueryPolicy.kt",
+              "action": "add",
+              "sha256": "783c7a2953c5a2fe1c9ebfb0b3e6db15867faf904f97106e253d606476a6f296",
+              "size": 740
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/Profile.kt",
+              "action": "modify",
+              "sha256": "e709f17a6411525b27fa702bb4046c015910661ba5ba5ce0b57d85c797fe7302",
+              "size": 1669,
+              "source_sha256": "79e6f2d2772a65edfc832efc0f5c8085bec4fad252e64cfcbef6266f020bc00c"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/ProfileGroupPolicy.kt",
+              "action": "add",
+              "sha256": "6c8aa6f3ee9fbb8a14f01e157d0503bce0d702b7e2612dc8c4012eaf663c2027",
+              "size": 391
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/ProfileMutationTransaction.kt",
+              "action": "add",
+              "sha256": "2622c1eeb4e44552cdd2575482d5441e76bbee51062a7f4fce482666121deeb4",
+              "size": 3265
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/APatchModuleManager.kt",
+              "action": "modify",
+              "sha256": "32657fbdd5272709fd7cb14cea90e1d200fbfd8c46c5acd2ed0ebd3b274cb5d6",
+              "size": 5157,
+              "source_sha256": "be0660741a2116df540980876539e8c72009bbd342971fa2e3a22d3847abb282"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/BaseModuleManager.kt",
+              "action": "modify",
+              "sha256": "1a50cb61cbaebe08b75314fb162306fe896a07f64583716dd6f7186f3d7d9f46",
+              "size": 5796,
+              "source_sha256": "d0a3a114c0d6e7a48a9da1c1093b27350b75cfc8546eceb0064ed5ec94e56acc"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/KernelSUModuleManager.kt",
+              "action": "modify",
+              "sha256": "0c05277ea6a811d9a2fd07f1dcc1787c114f3d0c278475e13fa2b5c894218753",
+              "size": 6123,
+              "source_sha256": "cf693d081edbc4d703fe8b406c47b5bec0d7cca55c27d2cb62242001bfd2d4a5"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/KsuNextModuleManager.kt",
+              "action": "modify",
+              "sha256": "2214d54121414d07a57e4df734eda669eec57ebfa74237e14e017a37e875c672",
+              "size": 1977,
+              "source_sha256": "4d264c3d1ef255705fa9acbdcdbfcad093bf35c3029594a4c43f19d9d95aa623"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/MagiskModuleManager.kt",
+              "action": "modify",
+              "sha256": "8a0cbb6f4132c95eadb2ce668f9fde65170e78e6c7cedcba84b3303fb73a4b35",
+              "size": 3650,
+              "source_sha256": "e0901e7db1192047e14556aaa4381a49c7fab05f78410ba2582aa879f14a5c66"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/ModuleMarkerMutation.kt",
+              "action": "add",
+              "sha256": "9613209da59a4217dd6d798475c48aa33d8fed1c27abcdefbad176a159e0fd37",
+              "size": 462
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/RootManagerCapabilityPolicy.kt",
+              "action": "add",
+              "sha256": "1f1adeab06008af5f3a5e79bfd2f76c84e970d725154212e63ccb2b52844d66d",
+              "size": 1223
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/ShellFailurePolicy.kt",
+              "action": "add",
+              "sha256": "840f0f3db7a66dc7a2642b6dfe605f1c1eef18d2d0165a1fb0a725fbdec5b7c2",
+              "size": 351
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/SukiSUModuleManager.kt",
+              "action": "modify",
+              "sha256": "8348f305aa5a2688fd2111b08fee5238243d3f245cd74591fde87a4590556574",
+              "size": 500,
+              "source_sha256": "adea43e2bafde40de8265afbac9a0ce85add44bbbe3a349dc30c3c55b9bda93d"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/TerminalSignalGate.kt",
+              "action": "add",
+              "sha256": "bd4af1c50c9341460bc45d7aa59cd2bb415d5f8712dfc03e388a88a275484745",
+              "size": 325
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/service/ServiceManager.kt",
+              "action": "modify",
+              "sha256": "541b1ce4910ed97b1b98889aa790d3ccae4f389186ba031dfcb8f4112cffe86d",
+              "size": 3888,
+              "source_sha256": "4e884f5b4f68805543501f23d3e2bfa0e472ddfc8ec82ecffde88787ddeafdea"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/util/Shell.kt",
+              "action": "modify",
+              "sha256": "b49cf64adfbde158de06f488428da21a51fb48dd3a25a2b296e483c43a658701",
+              "size": 1815,
+              "source_sha256": "02e48764a14d61c79f9e73b45166176368b98334a5f5a17c4bd7b8cff99a2252"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/util/ShellProcessRunner.kt",
+              "action": "add",
+              "sha256": "6b996a2ecbd6b37be8be23bd0c13ca25ffa5b2177e3a61244c546e4cff93e0c0",
+              "size": 921
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/BinderCandidateGateTest.kt",
+              "action": "add",
+              "sha256": "709e5c5c770c38ea60297596791985740abf6096596020c3a28b9997174eb69b",
+              "size": 1166
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/BinderLifecyclePolicyTest.kt",
+              "action": "add",
+              "sha256": "6eaced1054c64949ec54ae85a5ab0422c596f8038afbe6e968103f4301bbd4b0",
+              "size": 2445
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/HiddenApiPolicyTest.kt",
+              "action": "add",
+              "sha256": "d4f80cd5b9a490e96b60ddf80cdb9174fab842b3648fdfd972379ed10c1e3839",
+              "size": 900
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/PlatformReadinessPolicyTest.kt",
+              "action": "add",
+              "sha256": "5aec07d47732338b4009b2c1cbbd2ac8223135ac5a1e25ef515a54f4bd017810",
+              "size": 721
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/PlatformSemanticsTest.kt",
+              "action": "add",
+              "sha256": "c3f821593a68cb3f8efb0814975751572db218909e467308d45cde91208d9c72",
+              "size": 710
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/SePolicyParserBehaviorTest.kt",
+              "action": "add",
+              "sha256": "ca8d6785dd1d80d0599ca5bc5ce445922714536ca5f4a712dff0f143cf8aa806",
+              "size": 1406
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/file/DeleteOnExitRegistryTest.kt",
+              "action": "add",
+              "sha256": "89287ab765c07854889eb184ae8b4dd4fc7c5f7a435c7044ca5d4556b2fe02f6",
+              "size": 801
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/file/PrivilegeRoutingTest.kt",
+              "action": "add",
+              "sha256": "fbfd997eccc626d88402304053c0ef790370d146773214f998d28535f5edcb4a",
+              "size": 660
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/file/PrivilegedOpenPolicyTest.kt",
+              "action": "add",
+              "sha256": "a045f8a939a7fc157844e46be1c78ed31973c995a037c4325d3b804eccaf26ea",
+              "size": 1412
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/file/PrivilegedPathPolicyTest.kt",
+              "action": "add",
+              "sha256": "b1de6c417ce53f68bdba858ed5842abe27367a3fe18d1b8d4f0e052d5ea6d5cf",
+              "size": 3168
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/ksu/KsuInputPolicyTest.kt",
+              "action": "add",
+              "sha256": "bc940c12427c5fd90d0730fc2cc13cfc45426995f6b4ce5c92012832186f9266",
+              "size": 928
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/ksu/KsuNativeQueryPolicyTest.kt",
+              "action": "add",
+              "sha256": "1cc5192a2c370ef6388ba06ba2be6fb1034f501c6d832105016d5c9fbc3c7255",
+              "size": 1411
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/ksu/ProfileGroupPolicyTest.kt",
+              "action": "add",
+              "sha256": "afc7ea9a7a81504dbcdc52514f7ac8cf9f59f3e01b798d96602b4b0111b2d725",
+              "size": 465
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/ksu/ProfileMutationTransactionTest.kt",
+              "action": "add",
+              "sha256": "b60d3838f086f8a599f3203e8f6b8312fbf998fbd16a11a30e83f0842736bdc9",
+              "size": 6495
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/ksu/ProfileWireCompatibilityTest.kt",
+              "action": "add",
+              "sha256": "b84cb02e45a00c419f55f2808a52015335a70d03b77bb99915035bd271702787",
+              "size": 672
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/manager/ModuleMarkerMutationTest.kt",
+              "action": "add",
+              "sha256": "62e14918ee389cab205573caac4c05469af2decaa8af0bfa0c970c10d8fd6e9b",
+              "size": 961
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/manager/RootManagerCapabilityPolicyTest.kt",
+              "action": "add",
+              "sha256": "fbc2c91b7290066df849f9c666efeee5eae00745461bae0649deb35f6d0e1ca0",
+              "size": 2037
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/manager/ShellFailurePolicyTest.kt",
+              "action": "add",
+              "sha256": "ef52cbe4a6c2b020e854f8d765767e8d334f659474cb222bd9e8c018c249836e",
+              "size": 705
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/manager/TerminalSignalGateTest.kt",
+              "action": "add",
+              "sha256": "d4d9f123a36c0d2348640edef967644225afcc9339a895cd36a8c1ec81d5d67a",
+              "size": 383
+            },
+            {
+              "path": "platform/src/test/kotlin/com/dergoogler/mmrl/platform/util/ShellProcessRunnerTest.kt",
+              "action": "add",
+              "sha256": "36d6dd78b7eb9433547f89c9c8c8adf745cc3199204c0095e19154b6b2c93ce4",
+              "size": 620
+            },
+            {
+              "path": "platform/src/testNative/file_manager_safe_contract_test.cpp",
+              "action": "add",
+              "sha256": "68e31c8026c4aa2b77a76b71b7f498de4aefe38e6f0f949087f18013a6475bfd",
+              "size": 3009
+            },
+            {
+              "path": "platform/src/testNative/kernelsu/ksu_compat_contract_test.cpp",
+              "action": "add",
+              "sha256": "4e10e2631d5632ca2bee00ee4c5a4abb816cdadb6ba9ba109ac3092ee8af8fc1",
+              "size": 1529
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "message": "Harden platform Binder filesystem JNI root correctness",
+            "strategy": "single"
+          }
+        },
+        "validation": {
+          "allow_deferred": false,
+          "failure_action": "pause",
+          "minimum_phase": "finalize",
+          "mode": "required",
+          "required": true,
+          "tasks": [
+            ":platform:testDebugUnitTest",
+            ":platform:compileDebugKotlin",
+            ":platform:externalNativeBuildDebug",
+            ":app:testOfficialDebugUnitTest",
+            ":app:compileOfficialDebugSources"
+          ],
+          "notes": "These are eventual targeted O2 tasks for final campaign validation. This overlay is intentionally delivered for application with --no-validate; no Gradle/campaign validation was executed while packaging O2."
+        }
+      },
+      "history_id": "55b52667a692412a900df83195548d10"
     }
   ]
 }

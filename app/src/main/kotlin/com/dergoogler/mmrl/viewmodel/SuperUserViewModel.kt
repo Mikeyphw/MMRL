@@ -20,6 +20,7 @@ import coil3.request.crossfade
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.datastore.model.SuperUserMenu
 import com.dergoogler.mmrl.platform.PlatformManager
+import com.dergoogler.mmrl.platform.SePolicy
 import com.dergoogler.mmrl.platform.ksu.KsuNative
 import com.dergoogler.mmrl.platform.ksu.Profile
 import com.dergoogler.mmrl.repository.LocalRepository
@@ -186,19 +187,43 @@ class SuperUserViewModel
             }
 
         private fun getAppList(): List<AppInfo> {
+            if (!PlatformManager.isAlive || !PlatformManager.platform.isKernelSuVariant) return emptyList()
+
             val pm = context.packageManager
-            val packages = context.packages
-            return packages
-                .map { pkg ->
-                    val appInfo = pkg.applicationInfo!!
-                    val uid = appInfo.uid
-                    val profile = KsuNative.getAppProfile(pkg.packageName, uid)
-                    AppInfo(
-                        label = appInfo.loadLabel(pm).toString(),
-                        packageInfo = pkg,
-                        profile = profile,
-                    )
-                }.filter { it.packageName != context.packageName }
+            val visible = context.packages.associateBy { it.packageName }.toMutableMap()
+            val rootedUids = KsuNative.getAllowList().toSet()
+            val privilegedUidByPackage = buildMap {
+                rootedUids.forEach { uid ->
+                    runCatching { PlatformManager.packageManager.getPackagesForUid(uid) }
+                        .getOrDefault(emptyList())
+                        .forEach { packageName -> putIfAbsent(packageName, uid) }
+                }
+            }
+            val names = SuperUserInventoryPolicy.mergeVisibleWithPrivileged(
+                visible.keys.toList(),
+                privilegedUidByPackage.keys.toList(),
+            )
+
+            return names.mapNotNull { packageName ->
+                val pkg = visible[packageName] ?: runCatching {
+                    val uid = privilegedUidByPackage[packageName] ?: return@runCatching null
+                    val userId = uid / 100000
+                    PlatformManager.packageManager.getPackageInfo(packageName, 0, userId)
+                }.getOrNull() ?: return@mapNotNull null
+
+                val appInfo = pkg.applicationInfo ?: return@mapNotNull null
+                val profile = KsuNative.getAppProfile(packageName, appInfo.uid).also { loaded ->
+                    if (loaded.allowSu && !loaded.rootUseDefault) loaded.rules = SePolicy.getSepolicy(packageName)
+                }
+                val wasVisible = visible.containsKey(packageName)
+                val authoritativeRootProfile = profile.allowSu || !profile.nonRootUseDefault || !profile.rootUseDefault
+                if (!wasVisible && !authoritativeRootProfile) return@mapNotNull null
+                AppInfo(
+                    label = runCatching { appInfo.loadLabel(pm).toString() }.getOrDefault(packageName),
+                    packageInfo = pkg,
+                    profile = profile,
+                )
+            }.filter { it.packageName != context.packageName }
         }
 
         fun updateAppProfile(

@@ -12,13 +12,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.platform.SePolicy
-import com.dergoogler.mmrl.platform.SePolicy.getSepolicy
 import com.dergoogler.mmrl.platform.ksu.KsuNative
 import com.dergoogler.mmrl.platform.ksu.Profile
+import com.dergoogler.mmrl.platform.ksu.ProfileMutationTransaction
 import com.dergoogler.mmrl.ui.providable.LocalSnackbarHost
 import com.dergoogler.mmrl.ui.providable.LocalSuperUserViewModel
 import com.dergoogler.mmrl.viewmodel.SuperUserViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun rememberProfileChange(info: SuperUserViewModel.AppInfo): Pair<Profile, (Profile) -> Unit> {
@@ -27,12 +29,8 @@ fun rememberProfileChange(info: SuperUserViewModel.AppInfo): Pair<Profile, (Prof
     val viewModel = LocalSuperUserViewModel.current
 
     val initialProfile =
-        remember(info.packageName, info.uid) {
-            val profile = KsuNative.getAppProfile(info.packageName, info.uid)
-            if (profile.allowSu) {
-                profile.rules = getSepolicy(info.packageName)
-            }
-            profile
+        remember(info.packageName, info.uid, info.profile) {
+            info.profile ?: Profile(info.packageName, currentUid = info.uid)
         }
 
     var profile by rememberSaveable(info.packageName, info.uid) {
@@ -50,14 +48,15 @@ fun rememberProfileChange(info: SuperUserViewModel.AppInfo): Pair<Profile, (Prof
         }
 
     val updateProfile: (Profile) -> Unit =
-        remember(info, snackBarHost, scope, viewModel) {
+        remember(info, profile, snackBarHost, scope, viewModel) {
             { newProfile ->
                 scope.launch {
                     try {
                         val result =
                             updateProfileSafely(
-                                newProfile,
-                                info,
+                                previousProfile = profile,
+                                profile = newProfile,
+                                info = info,
                                 errorMessages,
                                 snackBarHost,
                             )
@@ -94,38 +93,41 @@ private sealed class UpdateResult {
 }
 
 private suspend fun updateProfileSafely(
+    previousProfile: Profile,
     profile: Profile,
     info: SuperUserViewModel.AppInfo,
     errorMessages: ErrorMessages,
     snackBarHost: SnackbarHostState,
 ): UpdateResult {
-    if (profile.allowSu) {
-        // Validate system UID restrictions
-        if (isSystemUidForbidden(info.uid)) {
-            snackBarHost.showSnackbar(
-                // You'll need to resolve string resource here or pass context
-                "SU not allowed for system UID ${info.uid}",
-            )
-            return UpdateResult.Error(errorMessages.suNotAllowed, listOf(info.label))
-        }
-
-        // Handle SELinux policy updates
-        if (shouldUpdateSepolicy(profile)) {
-            val sepolicyResult = SePolicy.setSePolicy(profile.name, profile.rules)
-            if (!sepolicyResult) {
-                snackBarHost.showSnackbar("Failed to update SEPolicy for ${info.label}")
-                return UpdateResult.Error(errorMessages.failToUpdateSepolicy, listOf(info.label))
-            }
-        }
+    if (profile.allowSu && isSystemUidForbidden(info.uid)) {
+        snackBarHost.showSnackbar("SU not allowed for system UID ${info.uid}")
+        return UpdateResult.Error(errorMessages.suNotAllowed, listOf(info.label))
     }
 
-    // Update app profile
-    val profileUpdateSuccess = KsuNative.setAppProfile(profile)
-    if (!profileUpdateSuccess) {
-        snackBarHost.showSnackbar("Failed to update app profile for ${info.label}")
+    val transaction = withContext(Dispatchers.IO) {
+        ProfileMutationTransaction.execute(
+            previous = previousProfile,
+            target = profile,
+            backend = object : ProfileMutationTransaction.Backend {
+                override fun setProfile(profile: Profile): Boolean = KsuNative.setAppProfile(profile)
+                override fun setPolicy(packageName: String, rules: String): Boolean = SePolicy.setSePolicy(packageName, rules)
+                override fun clearPolicy(packageName: String): Boolean = SePolicy.clearSePolicy(packageName)
+            },
+        )
+    }
+    if (!transaction.success) {
+        val detail = when {
+            transaction.reconciliationRequired -> " Live SELinux state may already have changed; reboot/reconcile before retrying."
+            transaction.rolledBack -> " Previous state was restored."
+            else -> " Reconcile current root state before retrying."
+        }
+        snackBarHost.showSnackbar("Failed to update root profile.${detail}")
         return UpdateResult.Error(errorMessages.failToUpdateAppProfile, listOf(info.uid))
     }
 
+    if (transaction.reconciliationRequired) {
+        snackBarHost.showSnackbar("Profile updated. Reboot/reconcile to retire previous live SELinux rules.")
+    }
     return UpdateResult.Success
 }
 
@@ -134,7 +136,6 @@ private fun isSystemUidForbidden(uid: Int): Boolean {
     return uid < 2000 && uid != 1000
 }
 
-private fun shouldUpdateSepolicy(profile: Profile): Boolean = !profile.rootUseDefault && profile.rules.isNotEmpty()
 
 val LocalProfileChange =
     staticCompositionLocalOf<Pair<Profile, (Profile) -> Unit>> {

@@ -1,7 +1,6 @@
 package com.dergoogler.mmrl.platform.stub;
 
 import android.os.ParcelFileDescriptor;
-import com.dergoogler.mmrl.platform.content.ParcelResult;
 
 interface IFileManager {
     boolean deleteOnExit(String path);
@@ -29,8 +28,6 @@ interface IFileManager {
     boolean setPermissions(String path, int mode);
     boolean setOwner(String path, int owner, int group);
     ParcelFileDescriptor parcelFile(String path);
-    ParcelResult openReadStream(String path, int flags, int mode, in ParcelFileDescriptor fd);
-    ParcelResult openWriteStream(String path, int flags, int mode, in ParcelFileDescriptor fd);
+    ParcelFileDescriptor openFile(String path, int flags, int mode);
     int getMode(String path);
-    boolean loadSharedObjects(in String[] path);
 }

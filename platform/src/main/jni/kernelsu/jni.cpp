@@ -6,17 +6,21 @@
 #include <kernelsu/sukisu.hpp>
 #include <logging.hpp>
 #include <memory>
+#include <vector>
+#include <algorithm>
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_grantRoot(JNIEnv *env, jobject) {
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeGrantRoot(JNIEnv *env, jobject) {
     return grant_root();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_becomeManager(JNIEnv *env, jobject, jstring pkg) {
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeBecomeManager(JNIEnv *env, jobject, jstring pkg) {
+    if (!pkg) return JNI_FALSE;
     auto cpkg = env->GetStringUTFChars(pkg, nullptr);
+    if (!cpkg) return JNI_FALSE;
     auto result = become_manager(cpkg);
     env->ReleaseStringUTFChars(pkg, cpkg);
     return result;
@@ -24,35 +28,51 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_becomeManager(JNIEnv *env, jobje
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getVersion(JNIEnv *env, jobject) {
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeGetVersion(JNIEnv *env, jobject) {
     return get_version();
 }
 
 extern "C"
 JNIEXPORT jintArray JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getAllowList(JNIEnv *env, jobject) {
-    int uids[1024];
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeGetAllowList(JNIEnv *env, jobject) {
+    constexpr int kAllowListCapacity = 65535; // KernelSU current UAPI count is uint16_t.
+    std::vector<int> uids(kAllowListCapacity);
     int size = 0;
-    bool result = get_allow_list(uids, &size);
+    bool result = get_allow_list(uids.data(), kAllowListCapacity, &size);
     LOGD("getAllowList: %d, size: %d", result, size);
-    if (result) {
-        auto array = env->NewIntArray(size);
-        env->SetIntArrayRegion(array, 0, size, uids);
-        return array;
+    if (!result || size < 0 || size > kAllowListCapacity) {
+        return env->NewIntArray(0);
     }
-    return env->NewIntArray(0);
+    auto array = env->NewIntArray(size);
+    if (!array) return nullptr;
+    if (size > 0) env->SetIntArrayRegion(array, 0, size, uids.data());
+    return array;
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_isSafeMode(JNIEnv *env, jobject) {
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeIsSafeMode(JNIEnv *env, jobject) {
     return is_safe_mode();
 }
 
 extern "C"
-JNIEXPORT jobject JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_isLkmMode(JNIEnv *env, jobject thiz) {
-    return reinterpret_cast<jobject>(is_lkm_mode());
+JNIEXPORT jboolean JNICALL
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeIsLkmMode(JNIEnv *, jobject) {
+    return is_lkm_mode() ? JNI_TRUE : JNI_FALSE;
+}
+
+static bool copyJString(JNIEnv* env, jstring value, char* dest, size_t capacity) {
+    if (!value || !dest || capacity == 0) return false;
+    const char* raw = env->GetStringUTFChars(value, nullptr);
+    if (!raw) return false;
+    const size_t length = std::strlen(raw);
+    const bool fits = length < capacity;
+    if (fits) {
+        std::memcpy(dest, raw, length);
+        dest[length] = '\0';
+    }
+    env->ReleaseStringUTFChars(value, raw);
+    return fits;
 }
 
 std::unique_ptr<char[]> jbyteArrayToCString(JNIEnv* env, jbyteArray arr) {
@@ -87,21 +107,24 @@ jbyteArray extractByteArray(JNIEnv* env, jobject policyObj) {
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_applyPolicyRules(
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeApplyPolicyRules(
 		JNIEnv* env,
 		jobject,
 		jobjectArray atomicStatements,
 		jboolean strict
 ) {
+    if (!atomicStatements) return JNI_FALSE;
 	jsize count = env->GetArrayLength(atomicStatements);
 
 	for (jsize i = 0; i < count; ++i) {
+        if (env->PushLocalFrame(48) < 0) return JNI_FALSE;
 		jobject atomicStmt = env->GetObjectArrayElement(atomicStatements, i);
-		if (!atomicStmt) continue;
+		if (!atomicStmt) { env->PopLocalFrame(nullptr); continue; }
 
 		jclass cls = env->GetObjectClass(atomicStmt);
 		if (!cls) {
 			env->DeleteLocalRef(atomicStmt);
+            env->PopLocalFrame(nullptr);
 			continue;
 		}
 
@@ -115,14 +138,16 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_applyPolicyRules(
 		jfieldID sepol6Id = env->GetFieldID(cls, "sepol6", "Lcom/dergoogler/mmrl/platform/PolicyObject;");
 		jfieldID sepol7Id = env->GetFieldID(cls, "sepol7", "Lcom/dergoogler/mmrl/platform/PolicyObject;");
 
-		if (!cmdId || !subcmdId) {
+		if (!cmdId || !subcmdId || !sepol1Id || !sepol2Id || !sepol3Id || !sepol4Id || !sepol5Id || !sepol6Id || !sepol7Id) {
 			env->DeleteLocalRef(cls);
 			env->DeleteLocalRef(atomicStmt);
 			if (strict) {
 				jclass exceptionCls = env->FindClass("java/lang/RuntimeException");
 				env->ThrowNew(exceptionCls, "Failed to get field IDs");
+                env->PopLocalFrame(nullptr);
 				return JNI_FALSE;
 			}
+            env->PopLocalFrame(nullptr);
 			continue;
 		}
 
@@ -168,8 +193,10 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_applyPolicyRules(
 		if (!ok && strict) {
 			jclass exceptionCls = env->FindClass("java/lang/RuntimeException");
 			env->ThrowNew(exceptionCls, "apply rule failed");
+            env->PopLocalFrame(nullptr);
 			return JNI_FALSE;
 		}
+        env->PopLocalFrame(nullptr);
 	}
 
 	return JNI_TRUE;
@@ -183,7 +210,10 @@ static void fillIntArray(JNIEnv *env, jobject list, int *data, int count) {
 	for (int i = 0; i < count; ++i) {
 		auto integer = env->NewObject(integerCls, constructor, data[i]);
 		env->CallBooleanMethod(list, add, integer);
+        env->DeleteLocalRef(integer);
 	}
+    env->DeleteLocalRef(integerCls);
+    env->DeleteLocalRef(cls);
 }
 
 static void addIntToList(JNIEnv *env, jobject list, int ele) {
@@ -193,6 +223,9 @@ static void addIntToList(JNIEnv *env, jobject list, int ele) {
 	auto constructor = env->GetMethodID(integerCls, "<init>", "(I)V");
 	auto integer = env->NewObject(integerCls, constructor, ele);
 	env->CallBooleanMethod(list, add, integer);
+    env->DeleteLocalRef(integer);
+    env->DeleteLocalRef(integerCls);
+    env->DeleteLocalRef(cls);
 }
 
 static uint64_t capListToBits(JNIEnv *env, jobject list) {
@@ -207,18 +240,22 @@ static uint64_t capListToBits(JNIEnv *env, jobject list) {
 		auto integer = env->CallObjectMethod(list, get, i);
 		int data = env->CallIntMethod(integer, intValue);
 
-		if (cap_valid(data)) {
-			result |= (1ULL << data);
-		}
+        if (data >= 0 && data < 64 && cap_valid(data)) {
+            result |= (1ULL << static_cast<unsigned>(data));
+        }
+        env->DeleteLocalRef(integer);
 	}
-
+    env->DeleteLocalRef(integerCls);
+    env->DeleteLocalRef(cls);
 	return result;
 }
 
 static int getListSize(JNIEnv *env, jobject list) {
 	auto cls = env->GetObjectClass(list);
 	auto size = env->GetMethodID(cls, "size", "()I");
-	return env->CallIntMethod(list, size);
+    int result = env->CallIntMethod(list, size);
+    env->DeleteLocalRef(cls);
+	return result;
 }
 
 static void fillArrayWithList(JNIEnv *env, jobject list, int *data, int count) {
@@ -229,28 +266,33 @@ static void fillArrayWithList(JNIEnv *env, jobject list, int *data, int count) {
 	for (int i = 0; i < count; ++i) {
 		auto integer = env->CallObjectMethod(list, get, i);
 		data[i] = env->CallIntMethod(integer, intValue);
+        env->DeleteLocalRef(integer);
 	}
+    env->DeleteLocalRef(integerCls);
+    env->DeleteLocalRef(cls);
 }
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getAppProfile(JNIEnv *env, jobject, jstring pkg, jint uid) {
-	if (env->GetStringLength(pkg) > KSU_MAX_PACKAGE_NAME) {
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeGetAppProfile(JNIEnv *env, jobject, jstring pkg, jint uid) {
+    if (env->PushLocalFrame(64) < 0) return nullptr;
+	p_key_t key = {};
+    if (!copyJString(env, pkg, key, sizeof(key))) {
+        env->PopLocalFrame(nullptr);
 		return nullptr;
 	}
-
-	p_key_t key = {};
-	auto cpkg = env->GetStringUTFChars(pkg, nullptr);
-	strcpy(key, cpkg);
-	env->ReleaseStringUTFChars(pkg, cpkg);
 
 	app_profile profile = {};
 	profile.version = KSU_APP_PROFILE_VER;
 
-	strcpy(profile.key, key);
+	std::memcpy(profile.key, key, sizeof(profile.key));
+    profile.key[sizeof(profile.key) - 1] = '\0';
 	profile.current_uid = uid;
 
 	bool useDefaultProfile = !get_app_profile(key, &profile);
+    profile.key[sizeof(profile.key) - 1] = '\0';
+    profile.rp_config.template_name[sizeof(profile.rp_config.template_name) - 1] = '\0';
+    profile.rp_config.profile.selinux_domain[sizeof(profile.rp_config.profile.selinux_domain) - 1] = '\0';
 
 	auto cls = env->FindClass("com/dergoogler/mmrl/platform/ksu/Profile");
 	auto constructor = env->GetMethodID(cls, "<init>", "()V");
@@ -268,6 +310,7 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getAppProfile(JNIEnv *env, jobje
 	auto capabilitiesField = env->GetFieldID(cls, "capabilities", "Ljava/util/List;");
 	auto domainField = env->GetFieldID(cls, "context", "Ljava/lang/String;");
 	auto namespacesField = env->GetFieldID(cls, "namespace", "I");
+    auto rootFlagsField = env->GetFieldID(cls, "rootFlags", "J");
 
 	auto nonRootUseDefaultField = env->GetFieldID(cls, "nonRootUseDefault", "Z");
 	auto umountModulesField = env->GetFieldID(cls, "umountModules", "Z");
@@ -285,7 +328,7 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getAppProfile(JNIEnv *env, jobje
 		env->SetBooleanField(obj, allowSuField, false);
 		env->SetBooleanField(obj, nonRootUseDefaultField, true);
 
-		return obj;
+		return env->PopLocalFrame(obj);
 	}
 
 	auto allowSu = profile.allow_su;
@@ -302,6 +345,7 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getAppProfile(JNIEnv *env, jobje
 
 		jobject groupList = env->GetObjectField(obj, groupsField);
 		int groupCount = profile.rp_config.profile.groups_count;
+        if (groupCount < 0) groupCount = 0;
 		if (groupCount > KSU_MAX_GROUPS) {
 			// LOGD("kernel group count too large: %d???", groupCount);
 			groupCount = KSU_MAX_GROUPS;
@@ -309,15 +353,17 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getAppProfile(JNIEnv *env, jobje
 		fillIntArray(env, groupList, profile.rp_config.profile.groups, groupCount);
 
 		jobject capList = env->GetObjectField(obj, capabilitiesField);
-		for (int i = 0; i <= CAP_LAST_CAP; i++) {
-			if (profile.rp_config.profile.capabilities.effective & (1ULL << i)) {
-				addIntToList(env, capList, i);
-			}
-		}
+        const int maxCapability = std::min<int>(CAP_LAST_CAP, 63);
+        for (int i = 0; i <= maxCapability; i++) {
+            if (profile.rp_config.profile.capabilities.effective & (1ULL << static_cast<unsigned>(i))) {
+                addIntToList(env, capList, i);
+            }
+        }
 
 		env->SetObjectField(obj, domainField,
 												env->NewStringUTF(profile.rp_config.profile.selinux_domain));
 		env->SetIntField(obj, namespacesField, profile.rp_config.profile.namespaces);
+        env->SetLongField(obj, rootFlagsField, static_cast<jlong>(profile.rp_config.profile.flags));
 		env->SetBooleanField(obj, allowSuField, profile.allow_su);
 	} else {
 		env->SetBooleanField(obj, nonRootUseDefaultField,
@@ -325,12 +371,13 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getAppProfile(JNIEnv *env, jobje
 		env->SetBooleanField(obj, umountModulesField, profile.nrp_config.profile.umount_modules);
 	}
 
-	return obj;
+	return env->PopLocalFrame(obj);
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_setAppProfile(JNIEnv *env, jobject clazz, jobject profile) {
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeSetAppProfile(JNIEnv *env, jobject clazz, jobject profile) {
+    if (!profile || env->PushLocalFrame(64) < 0) return JNI_FALSE;
 	auto cls = env->FindClass("com/dergoogler/mmrl/platform/ksu/Profile");
 
 	auto keyField = env->GetFieldID(cls, "name", "Ljava/lang/String;");
@@ -346,22 +393,22 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_setAppProfile(JNIEnv *env, jobje
 	auto capabilitiesField = env->GetFieldID(cls, "capabilities", "Ljava/util/List;");
 	auto domainField = env->GetFieldID(cls, "context", "Ljava/lang/String;");
 	auto namespacesField = env->GetFieldID(cls, "namespace", "I");
+    auto rootFlagsField = env->GetFieldID(cls, "rootFlags", "J");
 
 	auto nonRootUseDefaultField = env->GetFieldID(cls, "nonRootUseDefault", "Z");
 	auto umountModulesField = env->GetFieldID(cls, "umountModules", "Z");
 
 	auto key = env->GetObjectField(profile, keyField);
 	if (!key) {
-		return false;
-	}
-	if (env->GetStringLength((jstring) key) > KSU_MAX_PACKAGE_NAME) {
-		return false;
+        env->PopLocalFrame(nullptr);
+		return JNI_FALSE;
 	}
 
-	auto cpkg = env->GetStringUTFChars((jstring) key, nullptr);
 	p_key_t p_key = {};
-	strcpy(p_key, cpkg);
-	env->ReleaseStringUTFChars((jstring) key, cpkg);
+    if (!copyJString(env, static_cast<jstring>(key), p_key, sizeof(p_key))) {
+        env->PopLocalFrame(nullptr);
+        return JNI_FALSE;
+    }
 
 	auto currentUid = env->GetIntField(profile, currentUidField);
 
@@ -371,74 +418,83 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_setAppProfile(JNIEnv *env, jobje
 	auto capabilities = env->GetObjectField(profile, capabilitiesField);
 	auto domain = env->GetObjectField(profile, domainField);
 	auto allowSu = env->GetBooleanField(profile, allowSuField);
+    if (allowSu && (!groups || !capabilities || !domain)) {
+        env->PopLocalFrame(nullptr);
+        return JNI_FALSE;
+    }
 	auto umountModules = env->GetBooleanField(profile, umountModulesField);
 
 	app_profile p = {};
 	p.version = KSU_APP_PROFILE_VER;
 
-	strcpy(p.key, p_key);
+	std::memcpy(p.key, p_key, sizeof(p.key));
+    p.key[sizeof(p.key) - 1] = '\0';
 	p.allow_su = allowSu;
 	p.current_uid = currentUid;
 
 	if (allowSu) {
 		p.rp_config.use_default = env->GetBooleanField(profile, rootUseDefaultField);
 		auto templateName = env->GetObjectField(profile, rootTemplateField);
-		if (templateName) {
-			auto ctemplateName = env->GetStringUTFChars((jstring) templateName, nullptr);
-			strcpy(p.rp_config.template_name, ctemplateName);
-			env->ReleaseStringUTFChars((jstring) templateName, ctemplateName);
+		if (templateName && !copyJString(env, static_cast<jstring>(templateName), p.rp_config.template_name, sizeof(p.rp_config.template_name))) {
+            env->PopLocalFrame(nullptr);
+            return JNI_FALSE;
 		}
 
 		p.rp_config.profile.uid = uid;
 		p.rp_config.profile.gid = gid;
 
 		int groups_count = getListSize(env, groups);
-		if (groups_count > KSU_MAX_GROUPS) {
-			LOGD("groups count too large: %d", groups_count);
-			return false;
+		if (groups_count < 0 || groups_count > KSU_MAX_GROUPS) {
+			LOGD("groups count out of bounds: %d", groups_count);
+            env->PopLocalFrame(nullptr);
+			return JNI_FALSE;
 		}
 		p.rp_config.profile.groups_count = groups_count;
 		fillArrayWithList(env, groups, p.rp_config.profile.groups, groups_count);
 
 		p.rp_config.profile.capabilities.effective = capListToBits(env, capabilities);
 
-		auto cdomain = env->GetStringUTFChars((jstring) domain, nullptr);
-		strcpy(p.rp_config.profile.selinux_domain, cdomain);
-		env->ReleaseStringUTFChars((jstring) domain, cdomain);
+        if (!copyJString(env, static_cast<jstring>(domain), p.rp_config.profile.selinux_domain, sizeof(p.rp_config.profile.selinux_domain))) {
+            env->PopLocalFrame(nullptr);
+            return JNI_FALSE;
+        }
 
 		p.rp_config.profile.namespaces = env->GetIntField(profile, namespacesField);
+        p.rp_config.profile.flags = static_cast<uint64_t>(env->GetLongField(profile, rootFlagsField));
 	} else {
 		p.nrp_config.use_default = env->GetBooleanField(profile, nonRootUseDefaultField);
 		p.nrp_config.profile.umount_modules = umountModules;
 	}
 
-	return set_app_profile(&p);
+    const jboolean result = set_app_profile(&p) ? JNI_TRUE : JNI_FALSE;
+    env->PopLocalFrame(nullptr);
+	return result;
 }
 
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_uidShouldUmount(JNIEnv *env, jobject thiz,
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeUidShouldUmount(JNIEnv *env, jobject thiz,
                                                                 jint uid) {
     return uid_should_umount(uid);
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_isSuEnabled(JNIEnv *env, jobject thiz) {
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeIsSuEnabled(JNIEnv *env, jobject thiz) {
     return is_su_enabled();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_setSuEnabled(JNIEnv *env, jobject thiz,
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeSetSuEnabled(JNIEnv *env, jobject thiz,
                                                              jboolean enabled) {
     return set_su_enabled(enabled);
 }
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getHookMode(JNIEnv *env,
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeGetHookMode(JNIEnv *env,
                                                                          jobject thiz) {
     const char *mode = get_ksun_hook_mode();
     return env->NewStringUTF(mode);
@@ -446,14 +502,14 @@ Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getHookMode(JNIEnv *env,
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_isKPMEnabled(JNIEnv *env,
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeIsKPMEnabled(JNIEnv *env,
                                                                          jobject thiz) {
     return is_KPM_enable();
 }
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_dergoogler_mmrl_platform_ksu_KsuNative_getHookType(JNIEnv *env, jobject thiz) {
+Java_com_dergoogler_mmrl_platform_ksu_KsuNative_nativeGetHookType(JNIEnv *env, jobject thiz) {
 
     char hook_type[16];
     get_suki_hook_type(hook_type, sizeof(hook_type));

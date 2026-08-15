@@ -1,6 +1,6 @@
 package com.dergoogler.mmrl.platform.manager
 
-import com.dergoogler.mmrl.platform.content.ModuleCompatibility
+import com.dergoogler.mmrl.platform.Platform
 import com.dergoogler.mmrl.platform.model.ModId
 import com.dergoogler.mmrl.platform.model.ModId.Companion.disableFile
 import com.dergoogler.mmrl.platform.model.ModId.Companion.moduleDir
@@ -9,39 +9,34 @@ import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.platform.util.Shell.submit
 import com.dergoogler.mmrl.platform.util.ShellCommand
 
-open class KsuNextModuleManager : KernelSUModuleManager() {
-    override fun getModuleCompatibility() =
-        ModuleCompatibility(
-            hasMagicMount = false,
-            canRestoreModules = true,
-        )
-
+open class KsuNextModuleManager : KernelSUModuleManager(Platform.KsuNext) {
     override fun enable(
         id: ModId,
         useShell: Boolean,
         callback: IModuleOpsCallback,
     ) {
+        val terminal = singleTerminal(callback)
         val dir = id.moduleDir
-        if (!dir.exists()) callback.onFailure(id, null)
+        if (!dir.exists()) return terminal.onFailure(id, null)
 
         if (useShell) {
             val restore = ShellCommand.of("ksud", "module", "restore", id.id)
             val enable = ShellCommand.of("ksud", "module", "enable", id.id)
             "$restore && $enable".submit {
                 if (isSuccess) {
-                    callback.onSuccess(id)
+                    terminal.onSuccess(id)
                 } else {
-                    callback.onFailure(id, out.joinToString())
+                    terminal.onFailure(id, failureMessage())
                 }
             }
         } else {
             runCatching {
-                id.removeFile.apply { if (exists()) delete() }
-                id.disableFile.apply { if (exists()) delete() }
+                requireMutation(ensureMarkerAbsent(id.removeFile), "Failed to remove module remove marker")
+                requireMutation(ensureMarkerAbsent(id.disableFile), "Failed to remove module disable marker")
             }.onSuccess {
-                callback.onSuccess(id)
+                terminal.onSuccess(id)
             }.onFailure {
-                callback.onFailure(id, it.message)
+                terminal.onFailure(id, it.message)
             }
         }
     }

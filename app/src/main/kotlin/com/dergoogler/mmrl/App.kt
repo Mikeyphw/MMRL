@@ -30,7 +30,9 @@ class App : Application() {
         super.onCreate()
         app = this
 
-        PlatformManager.setHiddenApiExemptions()
+        if (!PlatformManager.setHiddenApiExemptions()) {
+            android.util.Log.e("MMRL", "Required narrow hidden-API exemptions could not be installed")
+        }
 
         NotificationUtils.init(this)
         NetworkUtils.setCacheDir(cacheDir)

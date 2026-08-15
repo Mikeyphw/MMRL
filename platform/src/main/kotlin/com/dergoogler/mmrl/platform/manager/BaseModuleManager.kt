@@ -11,6 +11,8 @@ import com.dergoogler.mmrl.platform.model.ModId.Companion.propFile
 import com.dergoogler.mmrl.platform.model.ModId.Companion.removeFile
 import com.dergoogler.mmrl.platform.model.ModId.Companion.updateFile
 import com.dergoogler.mmrl.platform.stub.IModuleManager
+import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
+import com.dergoogler.mmrl.platform.model.ShellResult
 import com.dergoogler.mmrl.platform.util.Shell.exec
 import com.dergoogler.mmrl.platform.util.ShellCommand
 import org.apache.commons.compress.archivers.zip.ZipFile
@@ -57,6 +59,33 @@ abstract class BaseModuleManager : IModuleManager.Stub() {
                     .toModule()
             }
         }
+
+
+    protected fun singleTerminal(delegate: IModuleOpsCallback): IModuleOpsCallback {
+        val gate = TerminalSignalGate()
+        return object : IModuleOpsCallback.Stub() {
+            override fun onSuccess(id: ModId) {
+                if (gate.claim()) delegate.onSuccess(id)
+            }
+
+            override fun onFailure(id: ModId, msg: String?) {
+                if (gate.claim()) delegate.onFailure(id, msg)
+            }
+        }
+    }
+
+    protected fun ShellResult.failureMessage(): String = ShellFailurePolicy.message(this)
+
+    /** Idempotent marker operations whose Boolean result is part of mutation success. */
+    protected fun ensureMarkerAbsent(file: ExtFile): Boolean =
+        ModuleMarkerMutation.ensureAbsent(file.exists(), file::delete)
+
+    protected fun ensureMarkerPresent(file: ExtFile): Boolean =
+        ModuleMarkerMutation.ensurePresent(file.exists(), file::createNewFile)
+
+    protected fun requireMutation(success: Boolean, description: String) {
+        check(success) { description }
+    }
 
     protected fun readProps(props: String) =
         props

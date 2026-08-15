@@ -3,131 +3,91 @@ package com.dergoogler.mmrl.platform
 import android.util.Log
 import com.dergoogler.mmrl.platform.file.SuFile
 import com.dergoogler.mmrl.platform.file.readText
+import com.dergoogler.mmrl.platform.file.writeText
+import com.dergoogler.mmrl.platform.ksu.KsuInputPolicy
 import com.dergoogler.mmrl.platform.ksu.KsuNative
-import java.io.IOException
 
 object SePolicy {
     private const val TAG = "SePolicy"
+    private const val POLICY_DIR = "/data/adb/ksu/profile/selinux"
 
-    /**
-     * Validates SEPolicy rules using the built-in parser instead of shell commands
-     */
     fun isSepolicyValid(rules: String?): Boolean {
-        if (rules == null) {
-            return true
-        }
-
-        return try {
-            val result = SePolicyParser.parseSepolicy(rules, strict = true)
-            result.isSuccess
-        } catch (e: Exception) {
-            Log.w(TAG, "SEPolicy validation failed: ${e.message}")
-            false
-        }
+        if (rules == null) return true
+        return runCatching { SePolicyParser.parseSepolicy(rules, strict = true).getOrThrow() }
+            .onFailure { Log.w(TAG, "SEPolicy validation failed: ${it.message}") }
+            .isSuccess
     }
 
     fun getSepolicy(pkg: String): String {
+        if (!KsuInputPolicy.validPackage(pkg)) return ""
         return try {
-            val sepolicyFile = SuFile("/data/adb/ksu/profile/selinux/$pkg")
-            if (sepolicyFile.exists()) {
-                val content = sepolicyFile.readText()
-                Log.i(TAG, "Retrieved sepolicy for $pkg: ${content.length} chars")
-                return content
-            }
-
-            Log.i(TAG, "No sepolicy found for package: $pkg")
-            ""
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to read sepolicy for $pkg: ${e.message}")
-            ""
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error getting sepolicy for $pkg: ${e.message}")
+            val file = policyFile(pkg)
+            if (file.exists()) file.readText() else ""
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to read sepolicy for $pkg", error)
             ""
         }
     }
 
-    fun setSePolicy(
-        pkg: String,
-        rules: String,
-    ): Boolean {
+    /**
+     * Applies live rules first and persists only after live application succeeds. If persistence
+     * fails, the previous persisted file is restored best-effort. KernelSU's live allow-rule API
+     * is additive, so a failed transaction never claims that an already-applied rule was removed.
+     */
+    fun setSePolicy(pkg: String, rules: String): Boolean {
+        if (!KsuInputPolicy.validPackage(pkg) || rules.isBlank()) return clearSePolicy(pkg)
+        if (!isSepolicyValid(rules)) return false
+
+        val previous = getSepolicy(pkg)
+        if (!applyPolicyRules(pkg, rules)) return false
+
         return try {
-            if (!isSepolicyValid(rules)) {
-                Log.e(TAG, "Invalid sepolicy rules for $pkg")
-                return false
-            }
-
-            val parseResult = SePolicyParser.parseSepolicy(rules, strict = false)
-            parseResult.fold(
-                onSuccess = { statements ->
-                    Log.i(TAG, "Parsed ${statements.size} policy statements for $pkg")
-
-                    statements.forEach { statement ->
-                        when (statement) {
-                            is PolicyStatement.NormalPermission ->
-                                Log.d(TAG, "Setting permission: ${statement.perm.op}")
-
-                            is PolicyStatement.TypeDefStmt ->
-                                Log.d(TAG, "Setting type: ${statement.typeDef.name}")
-
-                            else -> Log.d(TAG, "Setting policy: ${statement.javaClass.simpleName}")
-                        }
-                    }
-                },
-                onFailure = { error ->
-                    Log.w(TAG, "Parse warning for $pkg: ${error.message}")
-                },
-            )
-
-            val sepolicyDir = SuFile("/data/adb/ksu/profile/selinux")
-            if (!sepolicyDir.exists()) {
-                sepolicyDir.mkdirs()
-            }
-
-            val sepolicyFile = SuFile(sepolicyDir, pkg)
-            sepolicyFile.writeText(rules)
-
-            val success = applyPolicyRules(pkg, rules)
-
-            Log.i(TAG, "Set sepolicy for $pkg: ${if (success) "SUCCESS" else "FAILED"}")
-            success
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to write sepolicy for $pkg: ${e.message}")
-            false
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error setting sepolicy for $pkg: ${e.message}")
+            val dir = SuFile(POLICY_DIR)
+            if (!dir.exists() && !dir.mkdirs()) return false
+            policyFile(pkg).writeText(rules)
+            true
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to persist sepolicy for $pkg; restoring previous persisted state", error)
+            restorePersisted(pkg, previous)
             false
         }
     }
 
-    private fun applyPolicyRules(
-        pkg: String,
-        rules: String,
-    ): Boolean {
+    /** Removes stale custom policy persistence for default/revoked/empty profiles. */
+    fun clearSePolicy(pkg: String): Boolean {
+        if (!KsuInputPolicy.validPackage(pkg)) return false
         return try {
-            val parseResult = SePolicyParser.parseSepolicy(rules, strict = false)
-            parseResult.fold(
-                onSuccess = { statements ->
-                    // Convert to atomic statements for system application
-                    val atomicStatements = statements.flatMap { it.toAtomicStatements() }
-
-                    val success =
-                        KsuNative.applyPolicyRules(atomicStatements.toTypedArray(), strict = false)
-                    if (!success) return false
-
-                    Log.i(
-                        TAG,
-                        "Successfully applied ${atomicStatements.size} atomic policy statements for $pkg",
-                    )
-                    true
-                },
-                onFailure = { error ->
-                    Log.e(TAG, "Failed to parse policy for application: ${error.message}")
-                    false
-                },
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to apply policy rules for $pkg: ${e.message}")
+            val file = policyFile(pkg)
+            !file.exists() || file.delete()
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to clear persisted sepolicy for $pkg", error)
             false
         }
     }
+
+    private fun restorePersisted(pkg: String, previous: String) {
+        runCatching {
+            if (previous.isBlank()) {
+                policyFile(pkg).apply { if (exists()) delete() }
+            } else {
+                val dir = SuFile(POLICY_DIR)
+                if (!dir.exists()) dir.mkdirs()
+                policyFile(pkg).writeText(previous)
+            }
+        }.onFailure { Log.e(TAG, "Failed to restore previous persisted sepolicy for $pkg", it) }
+    }
+
+    private fun policyFile(pkg: String) = SuFile(POLICY_DIR, pkg)
+
+    private fun applyPolicyRules(pkg: String, rules: String): Boolean =
+        try {
+            val statements = SePolicyParser.parseSepolicy(rules, strict = true).getOrThrow()
+            val atomic = statements.flatMap { it.toAtomicStatements() }.toTypedArray()
+            KsuNative.applyPolicyRules(atomic, strict = true).also { success ->
+                Log.i(TAG, "Live sepolicy apply for $pkg (${atomic.size} statements): $success")
+            }
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to apply live sepolicy for $pkg", error)
+            false
+        }
 }

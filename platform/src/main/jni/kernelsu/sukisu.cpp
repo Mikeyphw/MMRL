@@ -1,6 +1,6 @@
 #include <kernelsu/sukisu.hpp>
 #include <kernelsu/ksu.hpp>
-#include <cstring>
+#include <cstdio>
 
 bool is_KPM_enable() {
     int enabled = false;
@@ -15,12 +15,13 @@ bool get_suki_hook_type(char* hook_type, size_t size) {
 
     static char cached_hook_type[16] = {0};
     if (cached_hook_type[0] == '\0') {
+        cached_hook_type[sizeof(cached_hook_type) - 1] = '\0';
         if (!ksuctl(CMD_HOOK_TYPE, cached_hook_type, nullptr)) {
-            strcpy(cached_hook_type, "Unknown");
+            std::snprintf(cached_hook_type, sizeof(cached_hook_type), "%s", "Unknown");
         }
+        cached_hook_type[sizeof(cached_hook_type) - 1] = '\0';
     }
 
-    strncpy(hook_type, cached_hook_type, size);
-    hook_type[size - 1] = '\0';
+    std::snprintf(hook_type, size, "%s", cached_hook_type);
     return true;
 }

@@ -5,11 +5,14 @@ import android.content.ServiceConnection
 import com.dergoogler.mmrl.platform.Platform
 import com.dergoogler.mmrl.platform.Platform.Companion.createPlatformIntent
 import com.dergoogler.mmrl.platform.PlatformManager
+import com.dergoogler.mmrl.platform.ksu.KsuNative
 import com.dergoogler.mmrl.platform.model.IProvider
 import com.dergoogler.mmrl.platform.stub.IServiceManager
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ipc.RootService
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -26,8 +29,8 @@ class LibSuProvider(
             Shell.EXECUTOR.execute {
                 runCatching {
                     Shell.getShell()
-                }.onSuccess {
-                    continuation.resume(true)
+                }.onSuccess { shell ->
+                    continuation.resume(shell.isRoot)
                 }.onFailure {
                     continuation.resume(false)
                 }
@@ -42,7 +45,7 @@ class LibSuProvider(
     }
 
     override fun unbind(connection: ServiceConnection) {
-        RootService.stop(serviceIntent)
+        RootService.unbind(connection)
     }
 }
 
@@ -63,14 +66,21 @@ private suspend fun init(
 suspend fun initPlatform(
     context: Context,
     platform: Platform,
-) = PlatformManager.init {
-    init(platform, context, this)
+): Boolean {
+    val previous = PlatformManager.preferredPlatform
+    PlatformManager.selectPreferred(platform)
+    if (previous != platform) PlatformManager.release()
+    if (platform.isNonRoot || platform.isUnknown) return false
+    val initialized = PlatformManager.init { init(platform, context, this) }
+    if (KsuInitializationPolicy.shouldAttemptManagerAuthorization(initialized, PlatformManager.platform)) {
+        // Manager authorization must precede every app-side KernelSU capability query.
+        KsuNative.becomeManager(context.packageName)
+    }
+    return initialized
 }
 
 suspend fun initPlatform(
     scope: CoroutineScope,
     context: Context,
     platform: Platform,
-) = PlatformManager.init(scope) {
-    init(platform, context, this)
-}
+) = scope.async(Dispatchers.IO) { initPlatform(context, platform) }

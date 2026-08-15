@@ -25,6 +25,8 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -143,20 +145,26 @@ class TaskerAutomationWorker(
         val history = TaskerRuntime.repositories(applicationContext).operationHistoryRepository()
         history.phase(request.operationId, OperationPhase.INSTALL, "Applying module state change")
         val prefs = TaskerRuntime.repositories(applicationContext).userPreferencesRepository().data.first()
-        val success = suspendCancellableCoroutine<Boolean> { continuation ->
-            val callback = object : IModuleOpsCallback.Stub() {
-                override fun onSuccess(id: ModId) { if (continuation.isActive) continuation.resume(true) }
-                override fun onFailure(id: ModId, msg: String?) {
-                    if (continuation.isActive) continuation.resume(false)
+        val success = try {
+            withTimeout(TaskerRootAwaitPolicy.MODULE_STATE_CALLBACK_TIMEOUT_MS) {
+                suspendCancellableCoroutine<Boolean> { continuation ->
+                    val callback = object : IModuleOpsCallback.Stub() {
+                        override fun onSuccess(id: ModId) { if (continuation.isActive) continuation.resume(true) }
+                        override fun onFailure(id: ModId, msg: String?) {
+                            if (continuation.isActive) continuation.resume(false)
+                        }
+                    }
+                    val id = ModId.parseOrNull(request.moduleId)
+                        ?: error("Invalid module ID")
+                    when (request.command) {
+                        "ENABLE" -> PlatformManager.moduleManager.enable(id, prefs.useShellForModuleStateChange, callback)
+                        "DISABLE" -> PlatformManager.moduleManager.disable(id, prefs.useShellForModuleStateChange, callback)
+                        "REMOVE" -> PlatformManager.moduleManager.remove(id, prefs.useShellForModuleStateChange, callback)
+                    }
                 }
             }
-            val id = ModId.parseOrNull(request.moduleId)
-                ?: error("Invalid module ID")
-            when (request.command) {
-                "ENABLE" -> PlatformManager.moduleManager.enable(id, prefs.useShellForModuleStateChange, callback)
-                "DISABLE" -> PlatformManager.moduleManager.disable(id, prefs.useShellForModuleStateChange, callback)
-                "REMOVE" -> PlatformManager.moduleManager.remove(id, prefs.useShellForModuleStateChange, callback)
-            }
+        } catch (_: TimeoutCancellationException) {
+            error(TaskerRootAwaitPolicy.timeoutMessage())
         }
         check(success) { "Module state change failed" }
         TaskerRuntime.repositories(applicationContext).modulesRepository().getLocal(
@@ -307,4 +315,5 @@ class TaskerAutomationWorker(
         )
         TaskerReviewTokenStore.remove(applicationContext, tokenValue)
     }
+
 }

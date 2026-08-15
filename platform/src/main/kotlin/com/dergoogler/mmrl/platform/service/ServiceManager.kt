@@ -36,7 +36,7 @@ open class ServiceManager(
             Platform.RKSU,
             Platform.MKSU,
             Platform.KernelSU,
-            -> KernelSUModuleManager()
+            -> KernelSUModuleManager(platform)
 
             Platform.SukiSU,
             -> SukiSUModuleManager()
@@ -104,17 +104,15 @@ open class ServiceManager(
         val targetFlags = data.readInt()
         val newData = Parcel.obtain()
 
+        var identity: Long? = null
         try {
             newData.appendFrom(data, data.dataPosition(), data.dataAvail())
-
-            val id = Binder.clearCallingIdentity()
+            identity = Binder.clearCallingIdentity()
             targetBinder.transact(targetCode, newData, reply, targetFlags)
-            Binder.restoreCallingIdentity(id)
         } finally {
+            identity?.let { Binder.restoreCallingIdentity(it) }
             newData.recycle()
         }
-
-        true
     } else {
         super.onTransact(code, data, reply, flags)
     }

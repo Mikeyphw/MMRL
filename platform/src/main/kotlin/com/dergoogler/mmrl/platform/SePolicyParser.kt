@@ -259,16 +259,18 @@ data class TypeState(
             var remaining = input.trim()
 
             val opResult =
-                listOf("permissive", "enforce")
-                    .firstNotNullOfOrNull { op ->
-                        if (remaining.startsWith(op)) {
-                            ParseResult.Success(op, remaining.drop(op.length))
+                listOf("permissive", "enforcing", "enforce")
+                    .firstNotNullOfOrNull { token ->
+                        val suffix = remaining.drop(token.length)
+                        if (remaining.startsWith(token) && (suffix.isEmpty() || suffix.first().isWhitespace())) {
+                            val normalized = if (token == "enforce") "enforcing" else token
+                            ParseResult.Success(normalized, suffix)
                         } else {
                             null
                         }
                     } ?: return ParseResult.Error("Expected type state operation")
 
-            remaining = remaining.dropWhile { it.isWhitespace() }
+            remaining = opResult.remaining.dropWhile { it.isWhitespace() }
             if (remaining.isEmpty()) return ParseResult.Error("Expected type after operation")
 
             val typeResult = ParserUtils.parseSeObjNoStar(remaining)
@@ -739,8 +741,10 @@ sealed class PolicyObject {
             }
             if (s == "*") return All
 
+            val bytes = s.toByteArray(Charsets.UTF_8)
+            require(bytes.size < PolicyCommands.SEPOLICY_MAX_LEN) { "SEPolicy token exceeds native capacity" }
             val buf = ByteArray(PolicyCommands.SEPOLICY_MAX_LEN)
-            s.toByteArray().copyInto(buf, 0, 0, s.length)
+            bytes.copyInto(buf, 0, 0, bytes.size)
             return One(buf)
         }
     }
@@ -775,7 +779,14 @@ class SePolicyParser {
                 }
 
                 when (val result = PolicyStatement.parse(trimmedLine)) {
-                    is ParseResult.Success -> statements.add(result.value)
+                    is ParseResult.Success -> {
+                        if (result.remaining.trim().isNotEmpty()) {
+                            return Result.failure(
+                                Exception("Unconsumed policy input: ${result.remaining.trim()} in: $line"),
+                            )
+                        }
+                        statements.add(result.value)
+                    }
                     is ParseResult.Error -> {
                         if (strict) {
                             return Result.failure(Exception("Failed to parse policy statement: $line - ${result.message}"))

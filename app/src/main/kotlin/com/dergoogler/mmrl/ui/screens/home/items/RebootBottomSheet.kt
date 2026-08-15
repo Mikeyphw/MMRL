@@ -76,7 +76,7 @@ private fun ListScope.RebootItem(
             onClose = { confirmReboot = false },
             onConfirm = {
                 confirmReboot = false
-                viewModel.reboot()
+                viewModel.reboot(RebootReasonPolicy.confirmed(reason))
             },
         )
     }

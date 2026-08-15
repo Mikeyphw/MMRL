@@ -1,15 +1,10 @@
 package com.dergoogler.mmrl.platform.manager
 
-import com.dergoogler.mmrl.platform.content.ModuleCompatibility
+import com.dergoogler.mmrl.platform.Platform
 
-open class SukiSUModuleManager : KernelSUModuleManager() {
+open class SukiSUModuleManager : KernelSUModuleManager(Platform.SukiSU) {
     override fun getManagerName(): String = "SukiSU"
 
-    override fun getModuleCompatibility() =
-        ModuleCompatibility(
-            hasMagicMount = true,
-            canRestoreModules = false,
-        )
 
     override fun getActionEnvironment(): List<String> =
         listOf(

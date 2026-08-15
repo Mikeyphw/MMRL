@@ -20,6 +20,7 @@ import com.dergoogler.mmrl.platform.SePolicy.isSepolicyValid
 import com.dergoogler.mmrl.platform.ksu.Capabilities
 import com.dergoogler.mmrl.platform.ksu.Groups
 import com.dergoogler.mmrl.platform.ksu.Profile
+import com.dergoogler.mmrl.platform.ksu.ProfileGroupPolicy
 import com.dergoogler.mmrl.platform.ksu.Profile.Namespace
 import com.dergoogler.mmrl.ui.component.LabelItem
 import com.dergoogler.mmrl.ui.component.listItem.dsl.ListScope
@@ -82,17 +83,14 @@ fun ListScope.RootProfileConfig(
             },
         )
 
-        val selectedGroups =
-            profile.groups.ifEmpty { listOf(0) }.let { e ->
-                e.mapNotNull { g ->
-                    Groups.entries.find { it.gid == g }
-                }
-            }
+        val knownGroupIds = remember { Groups.entries.map { it.gid }.toSet() }
+        val unknownGroups = remember(profile.groups) { ProfileGroupPolicy.unknown(profile.groups, knownGroupIds) }
+        val selectedGroups = profile.groups.mapNotNull { gid -> Groups.entries.find { it.gid == gid } }
 
-        GroupsPanel(selectedGroups) {
+        GroupsPanel(selectedGroups, maxChoices = (32 - unknownGroups.size).coerceAtLeast(0)) {
             onProfileChange(
                 profile.copy(
-                    groups = it.map { group -> group.gid }.ifEmpty { listOf(0) },
+                    groups = ProfileGroupPolicy.merge(unknownGroups, it.map { group -> group.gid }),
                     rootUseDefault = false,
                 ),
             )
@@ -134,6 +132,7 @@ fun ListScope.RootProfileConfig(
 @Composable
 fun ListScope.GroupsPanel(
     selected: List<Groups>,
+    maxChoices: Int = 32,
     closeSelection: (selection: List<Groups>) -> Unit,
 ) {
     val groups =
@@ -168,7 +167,7 @@ fun ListScope.GroupsPanel(
     CheckboxDialogItem(
         strict = false,
         multiple = true,
-        maxChoices = 32,
+        maxChoices = maxChoices,
         options = options,
         onConfirm = {
             closeSelection(it.map { item -> item.value })

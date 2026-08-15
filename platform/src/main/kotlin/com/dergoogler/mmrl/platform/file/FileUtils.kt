@@ -234,33 +234,12 @@ internal object FileUtils {
     }
 
     @Throws(IOException::class)
-    fun openReadPipe(file: SuFile, flags: Int, mode: Int): ParcelFileDescriptor {
-        val pipe = ParcelFileDescriptor.createPipe()
-        try {
-            file.__open_read_stream__(pipe[1], flags, mode)
-        } catch (e: RemoteException) {
-            pipe[0].close()
-            throw IOException(e)
-        } finally {
-            pipe[1].close()
-        }
-        return pipe[0]
-    }
+    fun openReadPipe(file: SuFile, flags: Int, mode: Int): ParcelFileDescriptor =
+        file.__open_file__(flags, mode)
 
     @Throws(IOException::class)
-    fun openWritePipe(file: SuFile, flags: Int, mode: Int): ParcelFileDescriptor {
-        val pipe = ParcelFileDescriptor.createPipe()
-        try {
-            file.__open_write_stream__(pipe[0], flags, mode)
-        } catch (e: RemoteException) {
-            pipe[1].close()
-            throw IOException(e)
-        } finally {
-            pipe[0].close()
-        }
-
-        return pipe[1]
-    }
+    fun openWritePipe(file: SuFile, flags: Int, mode: Int): ParcelFileDescriptor =
+        file.__open_file__(flags, mode)
 
     internal class Flag {
         var read: Boolean = false

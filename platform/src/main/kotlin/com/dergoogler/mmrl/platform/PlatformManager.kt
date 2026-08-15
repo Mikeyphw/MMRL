@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Parcel
+import android.os.RemoteException
 import android.util.Log
 import androidx.compose.runtime.DisallowComposableCalls
 import androidx.compose.runtime.getValue
@@ -33,15 +34,23 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import java.io.FileDescriptor
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resumeWithException
 
 /**
@@ -80,6 +89,38 @@ import kotlin.coroutines.resumeWithException
 object PlatformManager {
     const val TAG = "PlatformManager"
     const val TIMEOUT_MILLIS = 15000L
+    private const val FRAMEWORK_RECONNECT_GRACE_MS = 2_000L
+    private const val RECONNECT_POLL_MS = 25L
+
+    private val initMutex = Mutex()
+    private val providerBindMutex = Mutex()
+    private val reconnectScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val connectionStateLock = Any()
+
+    @Volatile
+    var preferredPlatform: Platform = Platform.Unknown
+        private set
+
+    @Volatile
+    var detectedPlatform: Platform = Platform.Unknown
+        private set
+
+    @Volatile
+    private var activeProvider: IProvider? = null
+
+    @Volatile
+    private var activeConnection: ServiceConnection? = null
+
+    @Volatile
+    private var activeBinder: IBinder? = null
+
+    @Volatile
+    private var activeDeathRecipient: IBinder.DeathRecipient? = null
+
+    /** Monotonic identity for each published platform Binder generation. */
+    @Volatile
+    internal var serviceGeneration: Long = 0L
+        private set
 
     @Volatile
     var mServiceOrNull: IServiceManager? = null
@@ -145,77 +186,80 @@ object PlatformManager {
      *         the provider execution) or if the manager was already alive. Returns `false` if
      *         the provider returns `null` or if an exception occurs during initialization.
      */
-    suspend inline fun init(crossinline provider: suspend PlatformManager.() -> IServiceManager?): Boolean {
-        if (isAlive) {
-            return true
-        }
-        return try {
-            Log.d(TAG, "Starting synchronous initialization.")
-            mServiceOrNull = provider()
-            Log.d(
-                TAG,
-                "Sync provider executed. mServiceOrNull is: ${if (mServiceOrNull == null) "null" else "not null"}",
-            )
-            state()
-        } catch (e: Exception) {
-            mServiceOrNull = null
-            Log.e(TAG, "Failed to init service manager (synchronous)", e)
-            state()
-        }
+    /** Selects the requested working mode without treating it as detected root evidence. */
+    fun selectPreferred(platform: Platform) {
+        preferredPlatform = platform
+    }
+
+    /** Explicitly release the active provider/binder before changing working modes. */
+    suspend fun release() {
+        initMutex.withLock { clearServiceState(unbind = true) }
     }
 
     /**
-     * Asynchronously initializes the [PlatformManager] with the given [provider].
-     *
-     * This function launches a coroutine in the provided [scope] on the [Dispatchers.IO] dispatcher
-     * to perform the initialization. It allows the caller to continue execution without blocking
-     * while the initialization happens in the background.
-     *
-     * If the [PlatformManager] is already alive (initialized), this function returns a
-     * [CompletableDeferred] that is already completed with `true`.
-     *
-     * The [provider] is a suspend lambda function that will be executed to obtain the
-     * [IServiceManager] instance. If the provider successfully returns an [IServiceManager],
-     * `mServiceOrNull` will be set, and the internal state will be updated.
-     * If the provider throws an exception or returns null, `mServiceOrNull` will be set to null,
-     * and the initialization will be considered failed.
-     *
-     * @param scope The [CoroutineScope] in which to launch the asynchronous initialization.
-     * @param provider A suspend lambda function that, when executed, returns an [IServiceManager]
-     *                 instance or null if initialization fails. This lambda has [PlatformManager]
-     *                 as its receiver.
-     * @return A [Deferred] of [Boolean] that will complete with `true` if the initialization
-     *         was successful (or already initialized), and `false` otherwise. The Deferred
-     *         allows the caller to await the result of the asynchronous initialization.
+     * Serializes provider initialization so callers cannot race two root bindings into state.
+     * Readiness requires a live binder and a root platform independently detected by the root service.
      */
-    inline fun init(
-        scope: CoroutineScope,
-        crossinline provider: suspend PlatformManager.() -> IServiceManager?,
-    ): Deferred<Boolean> {
-        if (isAlive) {
-            Log.d(TAG, "Service manager already alive (async init check).")
-            return CompletableDeferred(true)
-        }
-
-        return scope.async(Dispatchers.IO) {
+    suspend fun init(provider: suspend PlatformManager.() -> IServiceManager?): Boolean =
+        initMutex.withLock {
+            if (state()) return@withLock true
             try {
-                Log.d(
-                    TAG,
-                    "Starting background initialization on thread: ${Thread.currentThread().name}",
-                )
-                mServiceOrNull = provider()
-                Log.d(
-                    TAG,
-                    "Async provider executed. mServiceOrNull is: ${if (mServiceOrNull == null) "null" else "not null"}",
-                )
+                Log.d(TAG, "Starting serialized initialization for preferred=$preferredPlatform")
+                val candidate = provider()
+                val detected = if (candidate != null) {
+                    runCatching { Platform.from(candidate.currentPlatform()) }
+                        .getOrElse {
+                            Log.e(TAG, "Unable to query detected root platform", it)
+                            Platform.Unknown
+                        }
+                } else {
+                    Platform.Unknown
+                }
+                synchronized(connectionStateLock) {
+                    mServiceOrNull = candidate
+                    detectedPlatform = detected
+                    if (candidate != null && activeBinder == null) {
+                        activeBinder = candidate.asBinder()
+                        serviceGeneration += 1L
+                    }
+                }
                 state()
-            } catch (e: Exception) {
-                mServiceOrNull = null
-                Log.e(TAG, "Failed to init service manager (asynchronous)", e)
-                state()
+            } catch (error: Exception) {
+                Log.e(TAG, "Failed to initialize service manager", error)
+                clearServiceState()
+                false
             }
         }
+
+    fun init(
+        scope: CoroutineScope,
+        provider: suspend PlatformManager.() -> IServiceManager?,
+    ): Deferred<Boolean> = scope.async(Dispatchers.IO) { init(provider) }
+
+    private fun activeServiceFor(provider: IProvider): IServiceManager? {
+        val snapshot = synchronized(connectionStateLock) {
+            if (activeProvider !== provider) return@synchronized null
+            Triple(mServiceOrNull, activeBinder, activeConnection)
+        } ?: return null
+        val binder = snapshot.second ?: return null
+        if (!binder.isBinderAlive || !binder.pingBinder()) return null
+        return snapshot.first ?: IServiceManager.Stub.asInterface(binder)
     }
+
+    private fun hasTrackedBinding(provider: IProvider): Boolean =
+        synchronized(connectionStateLock) { activeProvider === provider && activeConnection != null }
+
+    private fun isTrackedConnection(provider: IProvider, connection: ServiceConnection): Boolean =
+        synchronized(connectionStateLock) { activeProvider === provider && activeConnection === connection }
+
+    private suspend fun awaitFrameworkReconnect(provider: IProvider): IServiceManager? =
+        withTimeoutOrNull(FRAMEWORK_RECONNECT_GRACE_MS) {
+            while (hasTrackedBinding(provider)) {
+                activeServiceFor(provider)?.let { return@withTimeoutOrNull it }
+                delay(RECONNECT_POLL_MS)
+            }
+            null
+        }
 
     /**
      * Asynchronously retrieves an [IServiceManager] instance from the given [provider].
@@ -243,53 +287,304 @@ object PlatformManager {
     suspend fun get(
         provider: IProvider,
         timeoutMillis: Long = TIMEOUT_MILLIS,
-    ): IServiceManager =
+    ): IServiceManager = providerBindMutex.withLock {
         withTimeout(timeoutMillis) {
-            suspendCancellableCoroutine { continuation ->
-                val connection =
-                    object : ServiceConnection {
-                        override fun onServiceConnected(
-                            name: ComponentName,
-                            binder: IBinder,
-                        ) {
+            activeServiceFor(provider)?.let { return@withTimeout it }
+            when (BinderLifecyclePolicy.acquireAction(false, hasTrackedBinding(provider))) {
+                BinderLifecyclePolicy.AcquireAction.REUSE_LIVE ->
+                    activeServiceFor(provider)?.let { return@withTimeout it }
+                BinderLifecyclePolicy.AcquireAction.WAIT_FOR_TRACKED_RECONNECT -> {
+                    awaitFrameworkReconnect(provider)?.let { return@withTimeout it }
+                    clearServiceState(unbind = true)
+                }
+                BinderLifecyclePolicy.AcquireAction.BIND_NEW -> Unit
+            }
+
+            withContext(Dispatchers.Main.immediate) {
+                suspendCancellableCoroutine { continuation ->
+                    val cancelled = AtomicBoolean(false)
+                    val initialDelivered = AtomicBoolean(false)
+                    val bindingReleased = AtomicBoolean(false)
+                    val binderRef = AtomicReference<IBinder?>(null)
+                    val candidateRef = AtomicReference<BinderCandidateGate?>(null)
+                    lateinit var connection: ServiceConnection
+
+                    fun unbindOnce() {
+                        if (bindingReleased.compareAndSet(false, true)) {
+                            runCatching { provider.unbind(connection) }
+                        }
+                    }
+
+                    fun failInitial(message: String, cause: Throwable? = null) {
+                        unbindOnce()
+                        if (!continuation.isActive) return
+                        val error = cause ?: IllegalStateException(message)
+                        continuation.resumeWithException(error)
+                    }
+
+                    connection = object : ServiceConnection {
+                        override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+                            if (bindingReleased.get()) {
+                                runCatching { provider.unbind(this) }
+                                return
+                            }
                             Log.d(TAG, "Service connected: $name")
+
+                            val candidate = BinderCandidateGate()
+                            candidateRef.set(candidate)
+                            binderRef.set(binder)
                             val service = IServiceManager.Stub.asInterface(binder)
-                            if (continuation.isActive) {
-                                continuation.resume(service) {
-                                    Log.w(
-                                        TAG,
-                                        "Failed to resume onServiceConnected, coroutine likely cancelled for $name.",
-                                    )
+
+                            lateinit var deathRecipient: IBinder.DeathRecipient
+                            deathRecipient = IBinder.DeathRecipient {
+                                candidate.lose {
+                                    if (handleServiceLoss(
+                                            provider = provider,
+                                            connection = this,
+                                            binder = binder,
+                                            reason = BinderLifecyclePolicy.LossReason.BINDER_DIED,
+                                        )
+                                    ) {
+                                        bindingReleased.set(true)
+                                    }
+                                }
+                            }
+
+                            try {
+                                binder.linkToDeath(deathRecipient, 0)
+                            } catch (error: RemoteException) {
+                                failInitial("${provider.name} Binder was already dead", error)
+                                return
+                            }
+
+                            val detected = runCatching { Platform.from(service.currentPlatform()) }
+                                .getOrElse { Platform.Unknown }
+                            val initial = !initialDelivered.get()
+                            val published = candidate.publish(
+                                eligible = {
+                                    !bindingReleased.get() &&
+                                        BinderLifecyclePolicy.canPublish(initial, isTrackedConnection(provider, this)) &&
+                                        (!initial || (!cancelled.get() && continuation.isActive)) &&
+                                        detected.isPrivilegedRoot &&
+                                        binder.isBinderAlive && binder.pingBinder()
+                                },
+                            ) {
+                                synchronized(connectionStateLock) {
+                                    activeProvider = provider
+                                    activeConnection = this
+                                    activeBinder = binder
+                                    activeDeathRecipient = deathRecipient
+                                    serviceGeneration += 1L
+                                    detectedPlatform = detected
+                                }
+                            }
+
+                            if (!published) {
+                                runCatching { binder.unlinkToDeath(deathRecipient, 0) }
+                                if (initial) {
+                                    failInitial("${provider.name} did not provide a live, detected root backend")
+                                }
+                                return
+                            }
+
+                            if (initial) {
+                                initialDelivered.set(true)
+                                continuation.resume(service) { _, _, _ ->
+                                    cancelled.set(true)
+                                    candidate.cancel {
+                                        bindingReleased.set(true)
+                                        if (!handleServiceLoss(
+                                                provider = provider,
+                                                connection = this,
+                                                binder = binder,
+                                                reason = BinderLifecyclePolicy.LossReason.CANCELLED,
+                                            )
+                                        ) {
+                                            runCatching { provider.unbind(this) }
+                                        }
+                                    }
+                                }
+                            } else {
+                                // The same ServiceConnection can reconnect with a new Binder after
+                                // onServiceDisconnected. Adopt only this newly published generation.
+                                val reconnectedConnection = this
+                                reconnectScope.launch {
+                                    initMutex.withLock {
+                                        if (isActiveGeneration(reconnectedConnection, binder)) {
+                                            mServiceOrNull = service
+                                            detectedPlatform = detected
+                                            state()
+                                        }
+                                    }
                                 }
                             }
                         }
 
                         override fun onServiceDisconnected(name: ComponentName) {
                             Log.w(TAG, "Service disconnected: $name")
-                            if (continuation.isActive) {
-                                continuation.resumeWithException(IllegalStateException("IServiceManager ($name) disconnected"))
+                            val binder = binderRef.getAndSet(null)
+                            if (!initialDelivered.get()) {
+                                failInitial("IServiceManager ($name) disconnected before initial connection")
+                                return
+                            }
+                            if (binder != null) {
+                                handleServiceLoss(
+                                    provider = provider,
+                                    connection = this,
+                                    binder = binder,
+                                    reason = BinderLifecyclePolicy.LossReason.DISCONNECTED,
+                                )
                             }
                         }
 
                         override fun onBindingDied(name: ComponentName?) {
                             Log.e(TAG, "Binding died for service: $name")
+                            bindingReleased.set(true)
+                            if (!handleServiceLoss(
+                                    provider = provider,
+                                    connection = this,
+                                    binder = null,
+                                    reason = BinderLifecyclePolicy.LossReason.BINDING_DIED,
+                                )
+                            ) {
+                                runCatching { provider.unbind(this) }
+                            }
                             if (continuation.isActive) {
                                 continuation.resumeWithException(IllegalStateException("IServiceManager ($name) binding died"))
                             }
                         }
+
+                        override fun onNullBinding(name: ComponentName?) {
+                            Log.e(TAG, "Null root binding from: $name")
+                            unbindOnce()
+                            handleServiceLoss(
+                                provider = provider,
+                                connection = this,
+                                binder = null,
+                                reason = BinderLifecyclePolicy.LossReason.NULL_BINDING,
+                            )
+                            if (continuation.isActive) {
+                                continuation.resumeWithException(IllegalStateException("IServiceManager ($name) returned null binding"))
+                            }
+                        }
                     }
-                Log.d(TAG, "Binding to provider: ${provider.name}")
-                provider.bind(connection)
-                continuation.invokeOnCancellation {
-                    Log.d(TAG, "Coroutine cancelled, unbinding from provider: ${provider.name}")
-                    try {
-                        provider.unbind(connection)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error unbinding provider '${provider.name}' on cancellation", e)
+
+                    continuation.invokeOnCancellation {
+                        cancelled.set(true)
+                        val binder = binderRef.get()
+                        val candidate = candidateRef.get()
+                        val cleaned = candidate?.cancel {
+                            bindingReleased.set(true)
+                            if (!handleServiceLoss(
+                                    provider = provider,
+                                    connection = connection,
+                                    binder = binder,
+                                    reason = BinderLifecyclePolicy.LossReason.CANCELLED,
+                                )
+                            ) {
+                                runCatching { provider.unbind(connection) }
+                            }
+                        } == true
+                        if (!cleaned) unbindOnce()
                     }
+
+                    runCatching { provider.bind(connection) }
+                        .onFailure { error -> failInitial("Unable to bind ${provider.name}", error) }
                 }
             }
         }
+    }
+
+    private fun isActiveGeneration(connection: ServiceConnection, binder: IBinder): Boolean =
+        synchronized(connectionStateLock) {
+            activeConnection === connection && activeBinder === binder
+        }
+
+    private data class DetachedBinding(
+        val provider: IProvider?,
+        val connection: ServiceConnection?,
+        val binder: IBinder?,
+        val deathRecipient: IBinder.DeathRecipient?,
+    )
+
+    /** Detach only the Binder generation observed by the callback. */
+    private fun detachBinding(
+        expectedConnection: ServiceConnection? = null,
+        expectedBinder: IBinder? = null,
+        releaseBinding: Boolean,
+    ): DetachedBinding? = synchronized(connectionStateLock) {
+        if (expectedConnection != null && activeConnection !== expectedConnection) return@synchronized null
+        if (expectedBinder != null && activeBinder !== expectedBinder) return@synchronized null
+
+        val snapshot = DetachedBinding(activeProvider, activeConnection, activeBinder, activeDeathRecipient)
+        mServiceOrNull = null
+        activeBinder = null
+        activeDeathRecipient = null
+        detectedPlatform = Platform.Unknown
+        if (releaseBinding) {
+            activeProvider = null
+            activeConnection = null
+        }
+        snapshot
+    }
+
+    private fun handleServiceLoss(
+        provider: IProvider,
+        connection: ServiceConnection,
+        binder: IBinder?,
+        reason: BinderLifecyclePolicy.LossReason,
+    ): Boolean {
+        val releaseBinding = BinderLifecyclePolicy.shouldReleaseBinding(reason)
+        val shouldRebind = BinderLifecyclePolicy.shouldRebind(reason)
+        // Detach synchronously so a cancellation/death callback cannot return while the dead
+        // generation is still globally visible. Slow unbind/rebind work remains off-callback.
+        val detached = detachBinding(
+            expectedConnection = connection,
+            expectedBinder = binder,
+            releaseBinding = releaseBinding,
+        ) ?: return false
+
+        reconnectScope.launch {
+            detached.binder?.let { oldBinder ->
+                detached.deathRecipient?.let { recipient ->
+                    runCatching { oldBinder.unlinkToDeath(recipient, 0) }
+                }
+            }
+            if (releaseBinding && detached.connection != null) {
+                withContext(Dispatchers.Main.immediate) {
+                    runCatching { (detached.provider ?: provider).unbind(detached.connection) }
+                }
+            }
+            publishAlive(false)
+
+            if (shouldRebind && preferredPlatform.isPrivilegedRoot) {
+                runCatching { init { from(provider) } }
+                    .onFailure { Log.e(TAG, "Automatic root-service rebind failed", it) }
+            }
+        }
+        return true
+    }
+
+    private suspend fun clearServiceState(unbind: Boolean = true) {
+        val detached = detachBinding(releaseBinding = unbind)
+        detached?.binder?.let { binder ->
+            detached.deathRecipient?.let { recipient ->
+                runCatching { binder.unlinkToDeath(recipient, 0) }
+            }
+        }
+        if (unbind && detached?.provider != null && detached.connection != null) {
+            withContext(Dispatchers.Main.immediate) {
+                runCatching { detached.provider.unbind(detached.connection) }
+            }
+        }
+        if (detached == null) {
+            synchronized(connectionStateLock) {
+                mServiceOrNull = null
+                detectedPlatform = Platform.Unknown
+            }
+        }
+        publishAlive(false)
+    }
 
     /**
      * Attempts to retrieve an [IServiceManager] from the given [provider].
@@ -308,29 +603,11 @@ object PlatformManager {
     suspend fun from(
         provider: IProvider,
         timeoutMillis: Long = TIMEOUT_MILLIS,
-    ): IServiceManager =
-        withContext(Dispatchers.Main) {
-            Log.d(TAG, "Attempting to get service from provider: ${provider.name}")
-            when {
-                !provider.isAvailable() -> {
-                    Log.w(TAG, "Provider ${provider.name} not available.")
-                    throw IllegalStateException("${provider.name} not available")
-                }
-
-                !provider.isAuthorized() -> {
-                    Log.w(TAG, "Provider ${provider.name} not authorized.")
-                    throw IllegalStateException("${provider.name} not authorized")
-                }
-
-                else -> {
-                    Log.d(
-                        TAG,
-                        "Provider ${provider.name} is available and authorized. Getting service.",
-                    )
-                    get(provider, timeoutMillis)
-                }
-            }
-        }
+    ): IServiceManager {
+        if (!provider.isAvailable()) throw IllegalStateException("${provider.name} not available")
+        if (!provider.isAuthorized()) throw IllegalStateException("${provider.name} not authorized for root")
+        return get(provider, timeoutMillis)
+    }
 
     /**
      * Provides access to the module management functionalities.
@@ -426,16 +703,7 @@ object PlatformManager {
      *
      * @return The current [Platform], or [Platform.Unknown] if an error occurs or the service is unavailable.
      */
-    val platform: Platform
-        get() =
-            serviceOrNull(Platform.Unknown) {
-                try {
-                    Platform.from(currentPlatform())
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error getting current platform from service, defaulting to NonRoot.", e)
-                    Platform.Unknown
-                }
-            }
+    val platform: Platform get() = detectedPlatform
 
     val type get() = platform.type
 
@@ -450,17 +718,26 @@ object PlatformManager {
      * @return `true` if the service manager is initialized (alive), `false` otherwise.
      */
     suspend fun state(): Boolean {
-        val currentService = mServiceOrNull
-        val aliveStatus = currentService != null
-        _isAliveFlow.value = aliveStatus
-        withContext(Dispatchers.Main.immediate) {
-            isAlive = aliveStatus
+        val service = mServiceOrNull
+        val binderAlive = service?.asBinder()?.let { it.isBinderAlive && it.pingBinder() } == true
+        val aliveStatus = PlatformReadinessPolicy.isReady(
+            authorized = service != null,
+            binderAlive = binderAlive,
+            detected = detectedPlatform,
+        )
+        if (!aliveStatus && service != null) {
+            clearServiceState(unbind = true)
+            return false
         }
-        if (aliveStatus && !isAliveDeferred.isCompleted) {
-            isAliveDeferred.complete(true)
-        }
-        Log.d(TAG, "State updated. isAlive: $aliveStatus")
+        publishAlive(aliveStatus)
         return aliveStatus
+    }
+
+    private suspend fun publishAlive(aliveStatus: Boolean) {
+        _isAliveFlow.value = aliveStatus
+        withContext(Dispatchers.Main.immediate) { isAlive = aliveStatus }
+        if (aliveStatus && !isAliveDeferred.isCompleted) isAliveDeferred.complete(true)
+        Log.d(TAG, "State updated. isAlive=$aliveStatus detected=$detectedPlatform preferred=$preferredPlatform")
     }
 
     /**
@@ -534,21 +811,26 @@ object PlatformManager {
      *
      * @param signaturePrefixes A vararg array of strings, where each string is a prefix of a hidden API
      *                          signature to be exempted. For example, "Landroid/app/ActivityThread;"
-     *                          would exempt all members of the `ActivityThread` class. If no prefixes
-     *                          are provided (i.e., an empty array or `arrayOf("")`), it might attempt
-     *                          to exempt all hidden APIs, depending on the `HiddenApiBypass` library's
-     *                          behavior.
+     *                          must exactly match one of MMRL's approved framework descriptors.
+     *                          Empty, broad, and unknown prefixes are rejected before calling the
+     *                          hidden-API bypass library.
      * @return `true` if the exemptions were successfully added (or not needed for the current SDK version),
      *         `false` otherwise (e.g., if `HiddenApiBypass.addHiddenApiExemptions` returns `false`).
      * @see HiddenApiBypass.addHiddenApiExemptions
      */
-    fun setHiddenApiExemptions(vararg signaturePrefixes: String = arrayOf("")): Boolean =
+    fun setHiddenApiExemptions(vararg signaturePrefixes: String = HiddenApiPolicy.DEFAULT_PREFIXES): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (!HiddenApiPolicy.areNarrow(signaturePrefixes.asList())) {
+                Log.e(TAG, "Refusing non-allowlisted hidden-API exemption prefix")
+                return false
+            }
             Log.d(
                 TAG,
                 "Setting Hidden API exemptions with prefixes: ${signaturePrefixes.joinToString()}",
             )
-            HiddenApiBypass.addHiddenApiExemptions(*signaturePrefixes)
+            runCatching { HiddenApiBypass.addHiddenApiExemptions(*signaturePrefixes) }
+                .onFailure { Log.e(TAG, "Hidden API exemption setup failed", it) }
+                .getOrDefault(false)
         } else {
             Log.d(TAG, "Hidden API exemptions not needed on SDK < P.")
             true
@@ -561,7 +843,7 @@ object PlatformManager {
 
             override fun getInterfaceDescriptor(): String? = originalBinder.interfaceDescriptor
 
-            override fun pingBinder(): Boolean = originalBinder.pingBinder()
+            override fun pingBinder(): Boolean = originalBinder.pingBinder() && serviceBinder.pingBinder()
 
             override fun isBinderAlive(): Boolean = originalBinder.isBinderAlive && serviceBinder.isBinderAlive
 
@@ -582,12 +864,22 @@ object PlatformManager {
                 flags: Int,
             ) {
                 originalBinder.linkToDeath(recipient, flags)
+                try {
+                    serviceBinder.linkToDeath(recipient, flags)
+                } catch (error: RemoteException) {
+                    runCatching { originalBinder.unlinkToDeath(recipient, flags) }
+                    throw error
+                }
             }
 
             override fun unlinkToDeath(
                 recipient: IBinder.DeathRecipient,
                 flags: Int,
-            ): Boolean = originalBinder.unlinkToDeath(recipient, flags)
+            ): Boolean {
+                val original = runCatching { originalBinder.unlinkToDeath(recipient, flags) }.getOrDefault(false)
+                val service = runCatching { serviceBinder.unlinkToDeath(recipient, flags) }.getOrDefault(false)
+                return original || service
+            }
 
             override fun transact(
                 code: Int,
@@ -595,7 +887,7 @@ object PlatformManager {
                 reply: Parcel?,
                 flags: Int,
             ): Boolean {
-                if (!serviceBinder.isBinderAlive) {
+                if (!serviceBinder.isBinderAlive || !serviceBinder.pingBinder()) {
                     Log.e(TAG, "Proxy transact: ServiceManager is dead.")
                     return false
                 }

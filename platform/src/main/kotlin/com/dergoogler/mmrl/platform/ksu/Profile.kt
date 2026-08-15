@@ -30,6 +30,8 @@ data class Profile(
     val capabilities: List<Int> = mutableListOf(),
     val context: String = KERNEL_SU_DOMAIN,
     val namespace: Int = Namespace.INHERITED.ordinal,
+    /** KernelSU UAPI v4 root-profile flags. Preserved even when MMRL does not interpret a flag. */
+    val rootFlags: Long = 0L,
     val nonRootUseDefault: Boolean = true,
     val umountModules: Boolean = true,
     var rules: String = "", // this field is save in ksud!!

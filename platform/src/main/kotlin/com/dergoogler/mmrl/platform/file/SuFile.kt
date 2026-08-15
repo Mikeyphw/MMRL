@@ -29,13 +29,12 @@ import kotlin.contracts.contract
 
 /**
  * A [File] abstraction that utilizes root privileges for file operations if available,
- * otherwise falling back to standard [java.io.File] operations.
+ * otherwise using standard [java.io.File] operations for an explicitly non-root mode.
  *
  * This class extends [ExtFile] (which itself extends [java.io.File]) and overrides
  * its methods. If a root-enabled [IFileManager] is available through [Platform.fileManagerOrNull],
- * operations are attempted using root privileges. If the root operation fails or if no
- * root file manager is available, the corresponding `super` (i.e., [ExtFile]'s or [java.io.File]'s)
- * method is called as a fallback.
+ * read-only queries may fall back locally, but privileged mutations fail closed when root mode
+ * is selected and the root file manager is unavailable or fails.
  *
  * This allows for seamless interaction with the file system, attempting privileged
  * operations when possible and gracefully degrading to non-privileged operations otherwise.
@@ -66,13 +65,13 @@ class SuFile(
     }
 
     override fun list(): Array<String>? =
-        fallback(
+        queryFallback(
             { this.list(path) },
             { super.list() },
         )
 
     override fun length(): Long =
-        fallback(
+        queryFallback(
             { this.length(path) },
             { super.length() },
         )
@@ -80,13 +79,13 @@ class SuFile(
     fun stat(): Long = this.lastModified()
 
     override fun lastModified(): Long =
-        fallback(
+        queryFallback(
             { this.stat(path) },
             { super.lastModified() },
         )
 
     override fun exists(): Boolean =
-        fallback(
+        queryFallback(
             { this.exists(path) },
             { super.exists() },
         )
@@ -101,67 +100,67 @@ class SuFile(
     }
 
     override fun isDirectory(): Boolean =
-        fallback(
+        queryFallback(
             { this.isDirectory(path) },
             { super.isDirectory() },
         )
 
     override fun isFile(): Boolean =
-        fallback(
+        queryFallback(
             { this.isFile(path) },
             { super.isFile() },
         )
 
     override fun isBlock(): Boolean =
-        fallback(
+        queryFallback(
             { this.isBlock(path) },
             { super.isBlock() },
         )
 
     override fun isCharacter(): Boolean =
-        fallback(
+        queryFallback(
             { this.isCharacter(path) },
             { super.isCharacter() },
         )
 
     override fun isSymlink(): Boolean =
-        fallback(
+        queryFallback(
             { this.isSymlink(path) },
             { super.isSymlink() },
         )
 
     override fun isNamedPipe(): Boolean =
-        fallback(
+        queryFallback(
             { this.isNamedPipe(path) },
             { super.isNamedPipe() },
         )
 
     override fun isSocket(): Boolean =
-        fallback(
+        queryFallback(
             { this.isSocket(path) },
             { super.isSocket() },
         )
 
     override fun mkdir(): Boolean =
-        fallback(
+        mutationBoolean(
             { this.mkdir(path) },
             { super.mkdir() },
         )
 
     override fun mkdirs(): Boolean =
-        fallback(
+        mutationBoolean(
             { this.mkdirs(path) },
             { super.mkdirs() },
         )
 
     override fun createNewFile(): Boolean =
-        fallback(
+        mutationBoolean(
             { this.createNewFile(path) },
             { super.createNewFile() },
         )
 
     override fun renameTo(dest: File): Boolean =
-        fallback(
+        mutationBoolean(
             { this.renameTo(path, dest.path) },
             { super.renameTo(dest) },
         )
@@ -169,37 +168,37 @@ class SuFile(
     fun copyTo(
         dest: File,
         overwrite: Boolean = false,
-    ) = fallback(
+    ) = mutationUnit(
         { this.copyTo(path, dest.path, overwrite) },
         { File(path).copyTo(dest, overwrite) },
     )
 
     override fun canExecute(): Boolean =
-        fallback(
+        queryFallback(
             { this.canExecute(path) },
             { super.canExecute() },
         )
 
     override fun canRead(): Boolean =
-        fallback(
+        queryFallback(
             { this.canRead(path) },
             { super.canRead() },
         )
 
     override fun canWrite(): Boolean =
-        fallback(
+        queryFallback(
             { this.canWrite(path) },
             { super.canWrite() },
         )
 
     override fun delete(): Boolean =
-        fallback(
+        mutationBoolean(
             { this.delete(path) },
             { super.delete() },
         )
 
     override fun deleteOnExit() {
-        fallback(
+        mutationUnit(
             {
                 this.deleteOnExit(path)
             },
@@ -208,7 +207,7 @@ class SuFile(
     }
 
     override fun isHidden(): Boolean =
-        fallback(
+        queryFallback(
             { this.isHidden(path) },
             { super.isHidden() },
         )
@@ -229,7 +228,7 @@ class SuFile(
         this.setPermissions(permissions.value)
 
     fun setPermissions(permissions: Int): Boolean =
-        fallback(
+        mutationBoolean(
             { this.setPermissions(path, permissions) },
             { false },
         )
@@ -251,7 +250,7 @@ class SuFile(
         uid: Int,
         gid: Int,
     ): Boolean =
-        fallback(
+        mutationBoolean(
             {
                 this.setOwner(path, uid, gid)
             },
@@ -279,93 +278,44 @@ class SuFile(
     }
 
     // I/O helpers
-    /**
-     * @hide
-     */
     @Throws(IOException::class, RemoteException::class)
-    internal fun __open_read_stream__(
-        pfd: ParcelFileDescriptor,
-        flags: Int,
-        mode: Int,
-    ) {
-        fallback(
-            root = {
-                this.openReadStream(path, flags, mode, pfd).checkException()
-            },
-            nonRoot = {
-                this.openReadStream(path, flags, mode, pfd).checkException()
+    internal fun __open_file__(flags: Int, mode: Int): ParcelFileDescriptor {
+        val selectedRoot = PlatformManager.preferredPlatform.isPrivilegedRoot
+        val manager = PlatformManager.fileManagerOrNull
+        return when (PrivilegeRouting.select(selectedRoot, PlatformManager.isAlive && manager != null)) {
+            PrivilegeRouting.Backend.ROOT -> try {
+                requireNotNull(manager).openFile(path, flags, mode)
+            } catch (error: Exception) {
+                throw IOException("Privileged file open failed without local fallback: $path", error)
             }
-        )
-
-    }
-
-    /**
-     * @hide
-     */
-    @Throws(IOException::class, RemoteException::class)
-    internal fun __open_write_stream__(
-        pfd: ParcelFileDescriptor,
-        flags: Int,
-        mode: Int,
-    ) {
-        fallback(
-            root = {
-                this.openWriteStream(path, flags, mode, pfd).checkException()
-            },
-            nonRoot = {
-                this.openWriteStream(path, flags, mode, pfd).checkException()
+            PrivilegeRouting.Backend.UNAVAILABLE ->
+                throw IOException("Privileged file service is unavailable for selected root mode: $path")
+            PrivilegeRouting.Backend.LOCAL -> {
+                val fd = try {
+                    Os.open(path, flags, mode)
+                } catch (error: ErrnoException) {
+                    throw IOException("Local file open failed: $path", error)
+                }
+                try {
+                    ParcelFileDescriptor.dup(fd)
+                } finally {
+                    runCatching { Os.close(fd) }
+                }
             }
-        )
+        }
     }
 
     @Deprecated("Use SuFileInputStream instead")
     @Throws(IOException::class)
     fun newInputStream(): InputStream =
-        // TODO: keep for compatibility
-        fallback(
-            {
-                val flags = O_RDONLY
-                val mode = 0
-                val pipe = ParcelFileDescriptor.createPipe()
-                try {
-                    this.openReadStream(path, flags, mode, pipe[1]).checkException()
-                } catch (e: RemoteException) {
-                    pipe[0].close()
-                    throw IOException(e)
-                } finally {
-                    pipe[1].close()
-                }
-
-                return@fallback ParcelFileDescriptor.AutoCloseInputStream(pipe[0])
-            },
-            {
-                FileInputStream(this)
-            },
-        )
+        ParcelFileDescriptor.AutoCloseInputStream(FileUtils.openReadPipe(this, O_RDONLY, 0))
 
     @Deprecated("Use SuFileOutputStream instead")
     @Throws(IOException::class)
-    fun newOutputStream(append: Boolean): OutputStream =
-        // TODO: keep for compatibility
-        fallback(
-            {
-                val flags = O_CREAT or O_WRONLY or (if (append) O_APPEND else O_TRUNC)
-                val mode = 438
-                val pipe = ParcelFileDescriptor.createPipe()
-                try {
-                    this.openWriteStream(path, flags, mode, pipe[0]).checkException()
-                } catch (e: RemoteException) {
-                    pipe[1].close()
-                    throw IOException(e)
-                } finally {
-                    pipe[0].close()
-                }
-                return@fallback ParcelFileDescriptor.AutoCloseOutputStream(pipe[1])
-            },
-            {
-                FileOutputStream(this)
-            },
-        )
+    fun newOutputStream(append: Boolean): OutputStream {
+        val flags = O_CREAT or O_WRONLY or (if (append) O_APPEND else O_TRUNC)
+        return ParcelFileDescriptor.AutoCloseOutputStream(FileUtils.openWritePipe(this, flags, 438))
+    }
 
     @Throws(IOException::class)
     fun getCanonicalDirPath(): String {
@@ -413,13 +363,6 @@ class SuFile(
          */
         const val MINIMUM_BLOCK_SIZE: Int = 512
 
-        fun loadSharedObjects(vararg paths: String): Boolean =
-            fallback(
-                {
-                    this.loadSharedObjects(paths)
-                },
-                { false },
-            )
 
         fun String.toSuFile(): SuFile = SuFile(this)
 
@@ -457,19 +400,43 @@ class SuFile(
             }
         }
 
-        private fun <R> fallback(
+        private fun <R> queryFallback(
             root: IFileManager.() -> R,
             nonRoot: () -> R,
         ): R {
-            val platform = PlatformManager.platform
             val fileManager = PlatformManager.fileManagerOrNull
-            try {
-                if (fileManager != null && platform.isNotNonRoot) {
-                    return root(fileManager)
+            return try {
+                if (PlatformManager.isAlive && fileManager != null && PlatformManager.platform.isPrivilegedRoot) {
+                    root(fileManager)
+                } else {
+                    nonRoot()
                 }
-                return nonRoot()
-            } catch (e: Exception) {
-                return nonRoot()
+            } catch (_: Exception) {
+                nonRoot()
+            }
+        }
+
+        private fun mutationBoolean(
+            root: IFileManager.() -> Boolean,
+            nonRoot: () -> Boolean,
+        ): Boolean {
+            val manager = PlatformManager.fileManagerOrNull
+            return when (PrivilegeRouting.select(PlatformManager.preferredPlatform.isPrivilegedRoot, PlatformManager.isAlive && manager != null)) {
+                PrivilegeRouting.Backend.ROOT -> runCatching { root(requireNotNull(manager)) }.getOrDefault(false)
+                PrivilegeRouting.Backend.LOCAL -> nonRoot()
+                PrivilegeRouting.Backend.UNAVAILABLE -> false
+            }
+        }
+
+        private fun mutationUnit(
+            root: IFileManager.() -> Unit,
+            nonRoot: () -> Unit,
+        ) {
+            val manager = PlatformManager.fileManagerOrNull
+            when (PrivilegeRouting.select(PlatformManager.preferredPlatform.isPrivilegedRoot, PlatformManager.isAlive && manager != null)) {
+                PrivilegeRouting.Backend.ROOT -> root(requireNotNull(manager))
+                PrivilegeRouting.Backend.LOCAL -> nonRoot()
+                PrivilegeRouting.Backend.UNAVAILABLE -> throw IllegalStateException("Privileged file service is unavailable; refusing local mutation fallback")
             }
         }
     }

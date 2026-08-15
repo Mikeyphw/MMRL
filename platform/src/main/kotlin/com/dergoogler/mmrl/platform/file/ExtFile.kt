@@ -1,16 +1,12 @@
 package com.dergoogler.mmrl.platform.file
 
-import android.os.ParcelFileDescriptor
 import android.os.RemoteException
 import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
-import com.dergoogler.mmrl.platform.content.ParcelResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 /**
  * Represents an extended file object with additional functionalities.
@@ -148,55 +144,4 @@ open class ExtFile(
             0
         }
 
-    private val extFileStreamPool: ExecutorService = Executors.newCachedThreadPool()
-
-    internal fun openReadStream(
-        path: String,
-        flags: Int,
-        mode: Int,
-        fd: ParcelFileDescriptor,
-    ): ParcelResult {
-        val f = OpenFile()
-        return try {
-            // val flags = O_RDONLY
-            // val mode = 0
-
-            f.fd = Os.open(path, flags, mode)
-            f.use { of ->
-                of.write = FileUtils.createFileDescriptor(fd.detachFd())
-                while (of.pread(SuFile.PIPE_CAPACITY, -1) > 0);
-            }
-            ParcelResult()
-        } catch (e: ErrnoException) {
-            f.close()
-            ParcelResult(e)
-        }
-    }
-
-    internal fun openWriteStream(
-        path: String,
-        flags: Int,
-        mode: Int,
-        fd: ParcelFileDescriptor,
-    ): ParcelResult {
-        val f = OpenFile()
-        try {
-            // val flags = O_CREAT or O_WRONLY or (if (append) O_APPEND else O_TRUNC)
-            // val mode = 438
-
-            f.fd = Os.open(path, flags, mode)
-            extFileStreamPool.execute {
-                runCatching {
-                    f.use { of ->
-                        of.read = FileUtils.createFileDescriptor(fd.detachFd())
-                        while (of.pwrite(SuFile.PIPE_CAPACITY.toLong(), -1, false) > 0);
-                    }
-                }
-            }
-            return ParcelResult()
-        } catch (e: ErrnoException) {
-            f.close()
-            return ParcelResult(e)
-        }
-    }
 }

@@ -27,16 +27,17 @@ open class MagiskModuleManager : BaseModuleManager() {
         useShell: Boolean,
         callback: IModuleOpsCallback,
     ) {
+        val terminal = singleTerminal(callback)
         val dir = id.moduleDir
-        if (!dir.exists()) callback.onFailure(id, null)
+        if (!dir.exists()) return terminal.onFailure(id, null)
 
         runCatching {
-            id.removeFile.apply { if (exists()) delete() }
-            id.disableFile.apply { if (exists()) delete() }
+            requireMutation(ensureMarkerAbsent(id.removeFile), "Failed to remove module remove marker")
+            requireMutation(ensureMarkerAbsent(id.disableFile), "Failed to remove module disable marker")
         }.onSuccess {
-            callback.onSuccess(id)
+            terminal.onSuccess(id)
         }.onFailure {
-            callback.onFailure(id, it.message)
+            terminal.onFailure(id, it.message)
         }
     }
 
@@ -45,16 +46,17 @@ open class MagiskModuleManager : BaseModuleManager() {
         useShell: Boolean,
         callback: IModuleOpsCallback,
     ) {
+        val terminal = singleTerminal(callback)
         val dir = id.moduleDir
-        if (!dir.exists()) return callback.onFailure(id, null)
+        if (!dir.exists()) return terminal.onFailure(id, null)
 
         runCatching {
-            id.removeFile.apply { if (exists()) delete() }
-            id.disableFile.createNewFile()
+            requireMutation(ensureMarkerAbsent(id.removeFile), "Failed to remove module remove marker")
+            requireMutation(ensureMarkerPresent(id.disableFile), "Failed to create module disable marker")
         }.onSuccess {
-            callback.onSuccess(id)
+            terminal.onSuccess(id)
         }.onFailure {
-            callback.onFailure(id, it.message)
+            terminal.onFailure(id, it.message)
         }
     }
 
@@ -63,16 +65,17 @@ open class MagiskModuleManager : BaseModuleManager() {
         useShell: Boolean,
         callback: IModuleOpsCallback,
     ) {
+        val terminal = singleTerminal(callback)
         val dir = id.moduleDir
-        if (!dir.exists()) return callback.onFailure(id, null)
+        if (!dir.exists()) return terminal.onFailure(id, null)
 
         runCatching {
-            id.disableFile.apply { if (exists()) delete() }
-            id.removeFile.createNewFile()
+            requireMutation(ensureMarkerAbsent(id.disableFile), "Failed to remove module disable marker")
+            requireMutation(ensureMarkerPresent(id.removeFile), "Failed to create module remove marker")
         }.onSuccess {
-            callback.onSuccess(id)
+            terminal.onSuccess(id)
         }.onFailure {
-            callback.onFailure(id, it.message)
+            terminal.onFailure(id, it.message)
         }
     }
 

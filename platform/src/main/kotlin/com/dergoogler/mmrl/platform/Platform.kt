@@ -117,7 +117,7 @@ enum class Platform(
     companion object {
         private val platformMap = entries.associateBy { it.id }
 
-        fun from(value: String): Platform = platformMap[value] ?: NonRoot
+        fun from(value: String): Platform = platformMap[value] ?: Unknown
 
         /**
          * Creates an [Intent] for a specific platform.
@@ -168,11 +168,14 @@ enum class Platform(
     val isRKSU: Boolean get() = this == RKSU
     val isShizuku: Boolean get() = this == Shizuku
     val isNonRoot: Boolean get() = this == NonRoot
+    val isUnknown: Boolean get() = this == Unknown
+    val isPrivilegedRoot: Boolean
+        get() = this in setOf(Magisk, KernelSU, KsuNext, APatch, MKSU, SukiSU, RKSU)
 
     // Category checks
     val isKernelSuVariant: Boolean get() = type is PlatformType.KernelSU
     val isKernelSuOrNext: Boolean get() = this == KernelSU || this == KsuNext
-    val isValid: Boolean get() = this != NonRoot
+    val isValid: Boolean get() = this != NonRoot && this != Unknown
 
     // Negation checks (computed properties for consistency)
     val isNotMagisk: Boolean get() = !isMagisk

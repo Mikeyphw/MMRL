@@ -36,25 +36,26 @@ open class APatchModuleManager : BaseModuleManager() {
         useShell: Boolean,
         callback: IModuleOpsCallback,
     ) {
+        val terminal = singleTerminal(callback)
         val dir = id.moduleDir
-        if (!dir.exists()) callback.onFailure(id, null)
+        if (!dir.exists()) return terminal.onFailure(id, null)
 
         if (useShell) {
             ShellCommand.of("apd", "module", "enable", id.id).submit {
                 if (isSuccess) {
-                    callback.onSuccess(id)
+                    terminal.onSuccess(id)
                 } else {
-                    callback.onFailure(id, out.joinToString())
+                    terminal.onFailure(id, failureMessage())
                 }
             }
         } else {
             runCatching {
-                dir.resolve("remove").apply { if (exists()) delete() }
-                dir.resolve("disable").apply { if (exists()) delete() }
+                requireMutation(ensureMarkerAbsent(dir.resolve("remove")), "Failed to remove module remove marker")
+                requireMutation(ensureMarkerAbsent(dir.resolve("disable")), "Failed to remove module disable marker")
             }.onSuccess {
-                callback.onSuccess(id)
+                terminal.onSuccess(id)
             }.onFailure {
-                callback.onFailure(id, it.message)
+                terminal.onFailure(id, it.message)
             }
         }
     }
@@ -64,25 +65,26 @@ open class APatchModuleManager : BaseModuleManager() {
         useShell: Boolean,
         callback: IModuleOpsCallback,
     ) {
+        val terminal = singleTerminal(callback)
         val dir = id.moduleDir
-        if (!dir.exists()) return callback.onFailure(id, null)
+        if (!dir.exists()) return terminal.onFailure(id, null)
 
         if (useShell) {
             ShellCommand.of("apd", "module", "disable", id.id).submit {
                 if (isSuccess) {
-                    callback.onSuccess(id)
+                    terminal.onSuccess(id)
                 } else {
-                    callback.onFailure(id, out.joinToString())
+                    terminal.onFailure(id, failureMessage())
                 }
             }
         } else {
             runCatching {
-                id.removeFile.apply { if (exists()) delete() }
-                id.disableFile.createNewFile()
+                requireMutation(ensureMarkerAbsent(id.removeFile), "Failed to remove module remove marker")
+                requireMutation(ensureMarkerPresent(id.disableFile), "Failed to create module disable marker")
             }.onSuccess {
-                callback.onSuccess(id)
+                terminal.onSuccess(id)
             }.onFailure {
-                callback.onFailure(id, it.message)
+                terminal.onFailure(id, it.message)
             }
         }
     }
@@ -92,25 +94,26 @@ open class APatchModuleManager : BaseModuleManager() {
         useShell: Boolean,
         callback: IModuleOpsCallback,
     ) {
+        val terminal = singleTerminal(callback)
         val dir = id.moduleDir
-        if (!dir.exists()) return callback.onFailure(id, null)
+        if (!dir.exists()) return terminal.onFailure(id, null)
 
         if (useShell) {
             ShellCommand.of("apd", "module", "uninstall", id.id).submit {
                 if (isSuccess) {
-                    callback.onSuccess(id)
+                    terminal.onSuccess(id)
                 } else {
-                    callback.onFailure(id, out.joinToString())
+                    terminal.onFailure(id, failureMessage())
                 }
             }
         } else {
             runCatching {
-                id.disableFile.apply { if (exists()) delete() }
-                id.removeFile.createNewFile()
+                requireMutation(ensureMarkerAbsent(id.disableFile), "Failed to remove module disable marker")
+                requireMutation(ensureMarkerPresent(id.removeFile), "Failed to create module remove marker")
             }.onSuccess {
-                callback.onSuccess(id)
+                terminal.onSuccess(id)
             }.onFailure {
-                callback.onFailure(id, it.message)
+                terminal.onFailure(id, it.message)
             }
         }
     }

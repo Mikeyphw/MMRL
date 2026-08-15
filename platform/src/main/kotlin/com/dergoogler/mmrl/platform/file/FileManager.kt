@@ -1,214 +1,203 @@
 package com.dergoogler.mmrl.platform.file
 
-import android.annotation.SuppressLint
 import android.os.ParcelFileDescriptor
-import android.os.RemoteException
-import android.system.ErrnoException
-import android.system.Os
 import android.system.OsConstants
-import android.system.OsConstants.O_RDONLY
-import android.util.LruCache
-import com.dergoogler.mmrl.platform.content.ParcelResult
 import com.dergoogler.mmrl.platform.stub.IFileManager
-import java.io.File
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 
 class FileManager : IFileManager.Stub() {
     init {
         System.loadLibrary("mmrl-file-manager")
     }
 
-    private val mCache: LruCache<String, File> =
-        object : LruCache<String, File>(100) {
-            override fun create(key: String): File = File(key)
-        }
-
-    private external fun nativeSetOwner(
-        path: String,
-        owner: Int,
-        group: Int,
+    private external fun nativeSetOwnerAt(root: String, relative: String, owner: Int, group: Int): Boolean
+    private external fun nativeSetPermissionsAt(root: String, relative: String, mode: Int): Boolean
+    private external fun nativeDeleteAt(root: String, relative: String): Boolean
+    private external fun nativeOpenAt(root: String, relative: String, flags: Int, mode: Int): Int
+    private external fun nativeModeAt(root: String, relative: String): Int
+    private external fun nativeSizeAt(root: String, relative: String): Long
+    private external fun nativeMtimeAt(root: String, relative: String): Long
+    private external fun nativeListAt(root: String, relative: String): Array<String>?
+    private external fun nativeAccessAt(root: String, relative: String, mode: Int): Boolean
+    private external fun nativeMkdirAt(root: String, relative: String, recursive: Boolean): Boolean
+    private external fun nativeCreateAt(root: String, relative: String): Boolean
+    private external fun nativeRenameAt(
+        sourceRoot: String,
+        sourceRelative: String,
+        targetRoot: String,
+        targetRelative: String,
+    ): Boolean
+    private external fun nativeCopyAt(
+        sourceRoot: String,
+        sourceRelative: String,
+        targetRoot: String,
+        targetRelative: String,
+        overwrite: Boolean,
     ): Boolean
 
-    private external fun nativeSetPermissions(
-        path: String,
-        mode: Int,
-    ): Boolean
+    override fun deleteOnExit(path: String): Boolean {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.MUTATE)
+        if (nativeModeAt(resolution.root.toString(), resolution.relative.toString()) == 0) return false
+        if (!ensureDeleteOnExitHook()) return false
+        return deleteOnExitRegistry.register(
+            DeleteOnExitRegistry.Entry(resolution.root.toString(), resolution.relative.toString()),
+        )
+    }
 
-    override fun deleteOnExit(path: String) =
-        with(File(path)) {
-            when {
-                !exists() -> false
-                isFile -> delete()
-                isDirectory -> deleteRecursively()
-                else -> false
-            }
-        }
+    override fun list(path: String): Array<String>? {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.READ)
+        return nativeListAt(resolution.root.toString(), resolution.relative.toString())
+    }
 
-    override fun list(path: String): Array<String>? = mCache.get(path).list()
+    override fun length(path: String): Long {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.READ)
+        return nativeSizeAt(resolution.root.toString(), resolution.relative.toString()).coerceAtLeast(0L)
+    }
 
-    override fun length(path: String): Long = mCache.get(path).length()
-
-    override fun stat(path: String): Long = mCache.get(path).lastModified()
+    override fun stat(path: String): Long {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.READ)
+        return nativeMtimeAt(resolution.root.toString(), resolution.relative.toString()).coerceAtLeast(0L)
+    }
 
     override fun delete(path: String): Boolean {
-        val f = mCache.get(path)
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.MUTATE)
+        if (resolution.relative.toString().isEmpty()) return false
+        return nativeDeleteAt(resolution.root.toString(), resolution.relative.toString())
+    }
 
-        return when {
-            !f.exists() -> false
-            f.isFile -> f.delete()
-            f.isDirectory -> f.deleteRecursively()
-            else -> false
+    override fun exists(path: String): Boolean = getMode(path) != 0
+
+    override fun isDirectory(path: String): Boolean = OsConstants.S_ISDIR(getMode(path))
+
+    override fun isFile(path: String): Boolean = OsConstants.S_ISREG(getMode(path))
+
+    override fun isBlock(path: String): Boolean = OsConstants.S_ISBLK(getMode(path))
+
+    override fun isCharacter(path: String): Boolean = OsConstants.S_ISCHR(getMode(path))
+
+    override fun isSymlink(path: String): Boolean = OsConstants.S_ISLNK(getModeForInspection(path))
+
+    override fun isNamedPipe(path: String): Boolean = OsConstants.S_ISFIFO(getMode(path))
+
+    override fun isSocket(path: String): Boolean = OsConstants.S_ISSOCK(getMode(path))
+
+    override fun mkdir(path: String): Boolean {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.MUTATE)
+        return resolution.relative.toString().isNotEmpty() &&
+            nativeMkdirAt(resolution.root.toString(), resolution.relative.toString(), false)
+    }
+
+    override fun mkdirs(path: String): Boolean {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.MUTATE)
+        return resolution.relative.toString().isNotEmpty() &&
+            nativeMkdirAt(resolution.root.toString(), resolution.relative.toString(), true)
+    }
+
+    override fun createNewFile(path: String): Boolean {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.MUTATE)
+        return resolution.relative.toString().isNotEmpty() &&
+            nativeCreateAt(resolution.root.toString(), resolution.relative.toString())
+    }
+
+    override fun renameTo(target: String, dest: String): Boolean {
+        val source = PrivilegedPathPolicy.resolveWithRoot(target, PrivilegedPathPolicy.Access.MUTATE)
+        val destination = PrivilegedPathPolicy.resolveWithRoot(dest, PrivilegedPathPolicy.Access.MUTATE)
+        if (source.relative.toString().isEmpty() || destination.relative.toString().isEmpty()) return false
+        return nativeRenameAt(
+            source.root.toString(),
+            source.relative.toString(),
+            destination.root.toString(),
+            destination.relative.toString(),
+        )
+    }
+
+    override fun copyTo(path: String, target: String, overwrite: Boolean) {
+        val source = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.READ)
+        val destination = PrivilegedPathPolicy.resolveWithRoot(target, PrivilegedPathPolicy.Access.MUTATE)
+        if (destination.relative.toString().isEmpty() || !nativeCopyAt(
+                source.root.toString(),
+                source.relative.toString(),
+                destination.root.toString(),
+                destination.relative.toString(),
+                overwrite,
+            )
+        ) {
+            throw IOException("Unable to safely copy privileged path ${source.path} to ${destination.path}")
         }
     }
 
-    override fun exists(path: String): Boolean = mCache.get(path).exists()
+    override fun canExecute(path: String): Boolean = nativeAccess(path, OsConstants.X_OK)
+    override fun canWrite(path: String): Boolean = nativeAccess(path, OsConstants.W_OK)
+    override fun canRead(path: String): Boolean = nativeAccess(path, OsConstants.R_OK)
+    override fun isHidden(path: String): Boolean = path.substringAfterLast('/').startsWith('.')
 
-    override fun isDirectory(path: String): Boolean = mCache.get(path).isDirectory
-
-    override fun isFile(path: String): Boolean = mCache.get(path).isFile
-
-    override fun isBlock(path: String): Boolean =
-        try {
-            OsConstants.S_ISBLK(getMode(path))
-        } catch (e: RemoteException) {
-            false
-        }
-
-    override fun isCharacter(path: String): Boolean =
-        try {
-            OsConstants.S_ISCHR(getMode(path))
-        } catch (e: RemoteException) {
-            false
-        }
-
-    override fun isSymlink(path: String): Boolean =
-        try {
-            OsConstants.S_ISLNK(getMode(path))
-        } catch (e: RemoteException) {
-            false
-        }
-
-    override fun isNamedPipe(path: String): Boolean =
-        try {
-            OsConstants.S_ISFIFO(getMode(path))
-        } catch (e: RemoteException) {
-            false
-        }
-
-    override fun isSocket(path: String): Boolean =
-        try {
-            OsConstants.S_ISSOCK(getMode(path))
-        } catch (e: RemoteException) {
-            false
-        }
-
-    override fun mkdir(path: String): Boolean = mCache.get(path).mkdir()
-
-    override fun mkdirs(path: String): Boolean = mCache.get(path).mkdirs()
-
-    override fun createNewFile(path: String): Boolean = mCache.get(path).createNewFile()
-
-    override fun renameTo(
-        target: String,
-        dest: String,
-    ): Boolean = mCache.get(target).renameTo(mCache.get(dest))
-
-    override fun copyTo(
-        path: String,
-        target: String,
-        overwrite: Boolean,
-    ) {
-        mCache.get(path).copyTo(mCache.get(target), overwrite)
+    private fun nativeAccess(path: String, mode: Int): Boolean {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.READ)
+        return nativeAccessAt(resolution.root.toString(), resolution.relative.toString(), mode)
     }
 
-    override fun canExecute(path: String): Boolean = mCache.get(path).canExecute()
+    private fun getModeForInspection(path: String): Int {
+        val resolution = PrivilegedPathPolicy.resolveForInspectionWithRoot(path, PrivilegedPathPolicy.Access.READ)
+        return nativeModeAt(resolution.root.toString(), resolution.relative.toString())
+    }
 
-    override fun canWrite(path: String): Boolean = mCache.get(path).canWrite()
+    override fun setPermissions(path: String, mode: Int): Boolean {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.MUTATE)
+        return nativeSetPermissionsAt(resolution.root.toString(), resolution.relative.toString(), mode)
+    }
 
-    override fun canRead(path: String): Boolean = mCache.get(path).canRead()
-
-    override fun isHidden(path: String): Boolean = mCache.get(path).isHidden
-
-    override fun setPermissions(
-        path: String,
-        mode: Int,
-    ): Boolean = nativeSetPermissions(path, mode)
-
-    override fun setOwner(
-        path: String,
-        owner: Int,
-        group: Int,
-    ): Boolean = nativeSetOwner(path, owner, group)
+    override fun setOwner(path: String, owner: Int, group: Int): Boolean {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, PrivilegedPathPolicy.Access.MUTATE)
+        return nativeSetOwnerAt(resolution.root.toString(), resolution.relative.toString(), owner, group)
+    }
 
     override fun parcelFile(filePath: String): ParcelFileDescriptor =
-        ParcelFileDescriptor.open(File(filePath), ParcelFileDescriptor.MODE_READ_ONLY)
+        openFile(filePath, OsConstants.O_RDONLY, 0)
 
-    private val streamPool: ExecutorService = Executors.newCachedThreadPool()
+    override fun openFile(path: String, flags: Int, mode: Int): ParcelFileDescriptor {
+        val plan = PrivilegedOpenPolicy.plan(flags, mode)
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(path, plan.access)
+        val fd = nativeOpenAt(
+            resolution.root.toString(),
+            resolution.relative.toString(),
+            plan.flags,
+            plan.mode,
+        )
+        if (fd < 0) {
+            throw IOException("Unable to safely open privileged path ${resolution.path} (errno=${-fd})")
+        }
+        return ParcelFileDescriptor.adoptFd(fd)
+    }
 
-    override fun openReadStream(
-        path: String,
-        flags: Int,
-        mode: Int,
-        fd: ParcelFileDescriptor,
-    ): ParcelResult {
-        val f = OpenFile()
-        try {
-            // val flags = O_RDONLY
-            // val mode = 0
+    override fun getMode(path: String?): Int {
+        val resolution = PrivilegedPathPolicy.resolveWithRoot(
+            requireNotNull(path),
+            PrivilegedPathPolicy.Access.READ,
+        )
+        return nativeModeAt(resolution.root.toString(), resolution.relative.toString())
+    }
 
-            f.fd = Os.open(path, O_RDONLY, 0)
-            streamPool.execute {
-                runCatching {
-                    f.use { of ->
-                        of.write = FileUtils.createFileDescriptor(fd.detachFd())
-                        while (of.pread(SuFile.PIPE_CAPACITY, -1) > 0);
-                    }
-                }
-            }
-            return ParcelResult()
-        } catch (e: ErrnoException) {
-            f.close()
-            return ParcelResult(e)
+    private fun ensureDeleteOnExitHook(): Boolean {
+        if (deleteOnExitHookInstalled.get()) return true
+        synchronized(deleteOnExitHookInstalled) {
+            if (deleteOnExitHookInstalled.get()) return true
+            return runCatching {
+                Runtime.getRuntime().addShutdownHook(
+                    Thread({
+                        deleteOnExitRegistry.drain { entry ->
+                            nativeDeleteAt(entry.root, entry.relative)
+                        }
+                    }, "mmrl-delete-on-exit"),
+                )
+                deleteOnExitHookInstalled.set(true)
+                true
+            }.getOrDefault(false)
         }
     }
 
-    override fun openWriteStream(
-        path: String,
-        flags: Int,
-        mode: Int,
-        fd: ParcelFileDescriptor,
-    ): ParcelResult {
-        val f = OpenFile()
-        try {
-            // val flags = O_CREAT or O_WRONLY or (if (append) O_APPEND else O_TRUNC)
-            // val mode = 438
-
-            f.fd = Os.open(path, mode, mode)
-            streamPool.execute {
-                runCatching {
-                    f.use { of ->
-                        of.read = FileUtils.createFileDescriptor(fd.detachFd())
-                        while (of.pwrite(SuFile.PIPE_CAPACITY.toLong(), -1, false) > 0);
-                    }
-                }
-            }
-            return ParcelResult()
-        } catch (e: ErrnoException) {
-            f.close()
-            return ParcelResult(e)
-        }
+    private companion object {
+        val deleteOnExitRegistry = DeleteOnExitRegistry()
+        val deleteOnExitHookInstalled = AtomicBoolean(false)
     }
-
-    override fun getMode(path: String?): Int =
-        try {
-            Os.lstat(path).st_mode
-        } catch (e: ErrnoException) {
-            0
-        }
-
-    @SuppressLint("DiscouragedPrivateApi")
-    override fun loadSharedObjects(path: Array<String>): Boolean = nativeLoadSharedObjects(path)
-
-    private external fun nativeLoadSharedObjects(path: Array<String>): Boolean
 }
