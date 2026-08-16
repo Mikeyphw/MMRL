@@ -11,9 +11,7 @@ import com.dergoogler.mmrl.platform.content.NullableBoolean
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
@@ -73,10 +71,10 @@ class HomeViewModel
                     }
                 }
 
-        fun analytics(context: Context): ModuleAnalytics? =
+        suspend fun analytics(context: Context): ModuleAnalytics? =
             PlatformManager.get(null) {
                 with(moduleManager) {
-                    val local = runBlocking { localRepository.getLocalAllAsFlow().first() }
+                    val local = localRepository.getLocalAll()
                     return@get ModuleAnalytics(
                         context = context,
                         local = local,

@@ -30,10 +30,15 @@ open class MMRLBroadcastReceiver : BroadcastReceiver() {
         context: Context,
         intent: Intent,
     ) {
+        val pending = goAsync()
         synchronized(lock) {
             CoroutineScope(Dispatchers.Main).launch {
-                if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
-                    onBooted(context, intent)
+                try {
+                    if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
+                        onBooted(context.applicationContext, intent)
+                    }
+                } finally {
+                    pending.finish()
                 }
             }
         }

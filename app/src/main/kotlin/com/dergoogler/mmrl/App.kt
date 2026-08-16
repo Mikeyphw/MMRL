@@ -2,12 +2,12 @@ package com.dergoogler.mmrl
 
 import android.app.Application
 import android.content.Context
+import com.dergoogler.mmrl.app.AppCrashHandler
+import com.dergoogler.mmrl.app.AppStartupCoordinator
 import com.dergoogler.mmrl.app.utils.NotificationUtils
-import com.dergoogler.mmrl.ash.automation.AshAutomationScheduler
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
-import com.dergoogler.mmrl.service.ModuleService
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.toxicbakery.logging.Arbor
 import com.toxicbakery.logging.LogCatSeedling
@@ -36,21 +36,16 @@ class App : Application() {
             android.util.Log.e("MMRL", "Required narrow hidden-API exemptions could not be installed")
         }
 
-        NotificationUtils.init(this)
+        AppCrashHandler.install(this)
         NetworkUtils.setCacheDir(cacheDir)
-
         applicationScope.launch {
-            operationHistoryRepository.enforceRetention()
-            operationHistoryRepository.recoverAfterProcessRestart()
-            operationHistoryRepository.recoverStaleOperations()
             val preferences = userPreferencesRepository.data.first()
-            if (preferences.moduleServiceEnabled) {
-                runCatching { ModuleService.start(this@App, preferences.checkModuleUpdatesInterval) }
-            }
-            AshAutomationScheduler.synchronize(
+            NetworkUtils.setEnableDoh(preferences.useDoh)
+            NotificationUtils.init(this@App)
+            AppStartupCoordinator.restore(
                 context = this@App,
-                enabled = preferences.ashHealthChecksEnabled,
-                intervalHours = preferences.ashHealthCheckIntervalHours,
+                preferences = preferences,
+                operationHistoryRepository = operationHistoryRepository,
             )
         }
     }

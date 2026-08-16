@@ -46,11 +46,9 @@ import com.dergoogler.mmrl.viewmodel.SuperUserViewModel
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import dagger.hilt.android.AndroidEntryPoint
 import dev.dergoogler.mmrl.compat.BuildCompat
-import dev.dergoogler.mmrl.compat.core.BrickException
 import dev.dergoogler.mmrl.compat.core.MMRLUriHandlerImpl
 import timber.log.Timber
 import javax.inject.Inject
-import kotlin.system.exitProcess
 
 @AndroidEntryPoint
 open class MMRLComponentActivity : ComponentActivity() {
@@ -75,11 +73,6 @@ open class MMRLComponentActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            throwable.printStackTrace()
-            startCrashActivity(thread, throwable)
-        }
-
         if (windowFlags != 0) {
             Timber.d("Setting window flags")
             this.window.addFlags(windowFlags)
@@ -100,43 +93,6 @@ open class MMRLComponentActivity : ComponentActivity() {
             PermissionCompat.requestPermissions(this, requirePermissions) { state ->
                 permissionsGranted = state.allGranted
             }
-        }
-    }
-
-    private fun startCrashActivity(
-        thread: Thread,
-        throwable: Throwable,
-    ) {
-        val intent =
-            Intent(this, CrashHandlerActivity::class.java).apply {
-                putExtra("message", throwable.message)
-                if (throwable is BrickException) {
-                    putExtra("helpMessage", throwable.helpMessage)
-                }
-                putExtra("stacktrace", formatStackTrace(throwable))
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-        startActivity(intent)
-        finish()
-
-        exitProcess(0)
-    }
-
-    private fun formatStackTrace(
-        throwable: Throwable,
-        numberOfLines: Int = 88,
-    ): String {
-        val stackTrace = throwable.stackTrace
-        val stackTraceElements = stackTrace.joinToString("\n") { it.toString() }
-
-        return if (stackTrace.size > numberOfLines) {
-            val trimmedStackTrace =
-                stackTraceElements.lines().take(numberOfLines).joinToString("\n")
-            val moreCount = stackTrace.size - numberOfLines
-
-            getString(R.string.stack_trace_truncated, trimmedStackTrace, moreCount)
-        } else {
-            stackTraceElements
         }
     }
 

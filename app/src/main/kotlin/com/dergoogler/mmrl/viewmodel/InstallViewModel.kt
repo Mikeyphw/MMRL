@@ -48,7 +48,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
@@ -485,7 +484,15 @@ constructor(
         val bulkModule = BulkModule(id = module.id.toString(), name = module.name)
     }
 
-    private val datePattern = runBlocking { userPreferencesRepository.data.first().datePattern }
+    private var datePattern = "d MMMM yyyy"
+
+    init {
+        viewModelScope.launch {
+            userPreferencesRepository.data.collect { preferences ->
+                datePattern = preferences.datePattern
+            }
+        }
+    }
 
     private suspend fun loadAndInstallModule(
         prepared: PreparedInstall,

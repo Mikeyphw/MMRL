@@ -14,14 +14,14 @@ internal class AshCtlExecutor(
 ) {
     fun moduleAvailable(): Boolean {
         val inspection = moduleLocator.inspect()
-        val jq = repairBundledJqIfNeeded(inspection)
+        val jq = inspectBundledJq(inspection, allowRepair = false)
         return inspection.controlScript != null && jq.executable
     }
 
     fun moduleState(): String {
         val inspection = moduleLocator.inspect()
         val properties = inspection.properties
-        val jq = repairBundledJqIfNeeded(inspection)
+        val jq = inspectBundledJq(inspection, allowRepair = false)
         return JSONObject()
             .put("ok", true)
             .put("installed", inspection.installed)
@@ -127,7 +127,7 @@ internal class AshCtlExecutor(
         val inspection = moduleLocator.inspect()
         val ctl = inspection.controlScript
             ?: return errorJson("AshReXcue module is not installed or its control script could not be found")
-        val jq = repairBundledJqIfNeeded(inspection)
+        val jq = inspectBundledJq(inspection, allowRepair = command !in READ_ONLY_COMMANDS)
         if (!jq.executable) {
             return errorJson(
                 "AshReXcue needs the bundled jq runtime. ${jq.message} Reinstall the bundled module from MMRL if automatic repair cannot restore it.",
@@ -141,7 +141,7 @@ internal class AshCtlExecutor(
 
         val readerExecutor = Executors.newSingleThreadExecutor()
         val outputFuture = readerExecutor.submit<String> {
-            process.inputStream.bufferedReader().use { it.readText() }
+            boundedProcessOutput(process.inputStream)
         }
         return try {
             if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
@@ -168,11 +168,44 @@ internal class AshCtlExecutor(
     }
 
 
-    private fun repairBundledJqIfNeeded(inspection: AshModuleLocator.Inspection): JqRuntimeState {
+    private fun boundedProcessOutput(input: java.io.InputStream): String {
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        val output = java.io.ByteArrayOutputStream()
+        input.use { source ->
+            while (true) {
+                val count = source.read(buffer)
+                if (count < 0) break
+                if (count == 0) continue
+                if (output.size() + count > MAX_ROOT_RESPONSE_BYTES) {
+                    output.write(buffer, 0, (MAX_ROOT_RESPONSE_BYTES - output.size()).coerceAtLeast(0))
+                    return output.toString(Charsets.UTF_8.name()) + "\n" + errorJson("AshReXcue response exceeded bounded output limit")
+                }
+                output.write(buffer, 0, count)
+            }
+        }
+        return output.toString(Charsets.UTF_8.name())
+    }
+
+    private fun inspectBundledJq(
+        inspection: AshModuleLocator.Inspection,
+        allowRepair: Boolean,
+    ): JqRuntimeState {
         val moduleDirectory = inspection.directory
             ?: return JqRuntimeState(message = "No installed AshReXcue module directory was found.")
         val jq = File(moduleDirectory, JQ_RELATIVE_PATH)
         if (jq.isFile) {
+            if (!allowRepair) {
+                return JqRuntimeState(
+                    present = true,
+                    executable = jq.canExecute(),
+                    repaired = false,
+                    message = if (jq.canExecute()) {
+                        "Bundled jq is executable."
+                    } else {
+                        "Bundled jq exists but read-only status checks will not mutate permissions."
+                    },
+                )
+            }
             chmodExecutable(jq)
             return JqRuntimeState(
                 present = true,
@@ -182,6 +215,18 @@ internal class AshCtlExecutor(
                     "Bundled jq is executable."
                 } else {
                     "Bundled jq exists but could not be made executable."
+                },
+            )
+        }
+        if (!allowRepair) {
+            return JqRuntimeState(
+                present = jq.isFile,
+                executable = jq.isFile && jq.canExecute(),
+                repaired = false,
+                message = if (jq.isFile) {
+                    "Bundled jq exists but read-only status checks will not mutate permissions."
+                } else {
+                    "Bundled jq is missing; read-only status checks will not repair app state."
                 },
             )
         }
@@ -290,6 +335,18 @@ internal class AshCtlExecutor(
         const val SYSTEM_CHMOD = "/system/bin/chmod"
         const val JQ_RELATIVE_PATH = "jq/jq"
         const val MAX_RECOVERY_PLAN_MODULES = 8
+        const val MAX_ROOT_RESPONSE_BYTES = 256 * 1024
+        val READ_ONLY_COMMANDS = setOf(
+            "capabilities",
+            "snapshot",
+            "release-gate",
+            "status",
+            "modules",
+            "quarantine",
+            "activity",
+            "settings",
+            "pending-settings",
+        )
         val FOLDER_PATTERN = Regex("^[A-Za-z0-9._-]{1,128}$")
         val PLAN_ID_PATTERN = Regex("^[A-Za-z0-9._-]{1,128}$")
         val REVISION_PATTERN = Regex("^[A-Za-z0-9._:-]{1,128}$")

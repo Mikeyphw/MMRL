@@ -14,9 +14,9 @@ import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.utils.BlurUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -55,11 +55,12 @@ class SettingsViewModel
             Timber.d("SettingsViewModel init")
         }
 
-        val allBlacklistEntriesAsFlow
-            get(): List<Blacklist> =
-                runBlocking {
-                    return@runBlocking localRepository.getAllBlacklistEntriesAsFlow().first()
-                }
+        val allBlacklistEntriesAsFlow = localRepository.getAllBlacklistEntriesAsFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyList(),
+            )
 
         fun setWorkingMode(value: WorkingMode) {
             viewModelScope.launch {

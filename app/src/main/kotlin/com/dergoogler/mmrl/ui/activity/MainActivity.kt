@@ -40,9 +40,7 @@ class MainActivity : MMRLComponentActivity() {
         val splashScreen = installSplashScreen()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(savedInstanceState)
-        openActivityOnLaunch = intent.getBooleanExtra(EXTRA_OPEN_ACTIVITY, false)
-        openUpdatesOnLaunch = intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)
-        openRecoveryOnLaunch = intent.getBooleanExtra(EXTRA_OPEN_RECOVERY, false)
+        applyLaunchRequest(MainLaunchIntentPolicy.consume(intent))
 
         splashScreen.setKeepOnScreenCondition { isLoading }
 
@@ -101,14 +99,16 @@ class MainActivity : MMRLComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (intent.getBooleanExtra(EXTRA_OPEN_ACTIVITY, false)) {
-            openActivityOnLaunch = true
-        }
-        if (intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)) {
-            openUpdatesOnLaunch = true
-        }
-        if (intent.getBooleanExtra(EXTRA_OPEN_RECOVERY, false)) {
-            openRecoveryOnLaunch = true
+        applyLaunchRequest(MainLaunchIntentPolicy.consume(intent))
+    }
+
+
+    private fun applyLaunchRequest(request: MainLaunchIntentPolicy.LaunchRequest) {
+        if (request.openActivity) openActivityOnLaunch = true
+        if (request.openUpdates) openUpdatesOnLaunch = true
+        if (request.openRecovery) openRecoveryOnLaunch = true
+        request.repositoryUrl?.let { url ->
+            lifecycleScope.launch { localRepository.insertRepo(url.toRepo()) }
         }
     }
 

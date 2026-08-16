@@ -24,12 +24,12 @@ class ProviderService : LifecycleService() {
     override fun onCreate() {
         Timber.d("onCreate")
         super.onCreate()
-        isActive = true
+        state = ProviderRuntimeState.STARTING
     }
 
     override fun onDestroy() {
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-        isActive = false
+        state = ProviderRuntimeState.STOPPED
         Timber.d("onDestroy")
         super.onDestroy()
     }
@@ -49,7 +49,13 @@ class ProviderService : LifecycleService() {
         setForeground()
 
         lifecycleScope.launch {
-            isActive = initPlatform(baseContext, intent.getPlatform() ?: return@launch)
+            state = ProviderRuntimeState.STARTING
+            state = if (initPlatform(baseContext, intent.getPlatform() ?: return@launch)) {
+                ProviderRuntimeState.READY
+            } else {
+                ServiceCompat.stopForeground(this@ProviderService, ServiceCompat.STOP_FOREGROUND_REMOVE)
+                ProviderRuntimeState.FAILED
+            }
         }
 
         return START_STICKY
@@ -74,17 +80,25 @@ class ProviderService : LifecycleService() {
     }
 
     companion object {
-        var isActive by mutableStateOf(false)
+        var state by mutableStateOf(ProviderRuntimeState.STOPPED)
             private set
+        val isActive: Boolean get() = state == ProviderRuntimeState.READY
         private const val GROUP_KEY = "PROVIDER_SERVICE_GROUP_KEY"
 
         suspend fun init(
             context: Context,
             platform: Platform,
         ) = if (!isActive) {
-            initPlatform(context, platform)
+            state = ProviderRuntimeState.STARTING
+            if (initPlatform(context, platform)) {
+                state = ProviderRuntimeState.READY
+                true
+            } else {
+                state = ProviderRuntimeState.FAILED
+                false
+            }
         } else {
-            isActive
+            true
         }
 
         fun start(
@@ -110,3 +124,6 @@ class ProviderService : LifecycleService() {
         }
     }
 }
+
+
+enum class ProviderRuntimeState { STOPPED, STARTING, READY, FAILED }

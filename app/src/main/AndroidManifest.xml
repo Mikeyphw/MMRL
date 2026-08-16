@@ -83,20 +83,15 @@
                 <data android:host="repository" />
             </intent-filter>
 
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="http" />
-                <data android:host="mmrl.dev" />
-                <data android:pathPrefix="/repository" />
-
                 <data android:scheme="https" />
                 <data android:host="mmrl.dev" />
                 <data android:pathPrefix="/repository" />
-
             </intent-filter>
         </activity>
 
@@ -129,13 +124,7 @@
         <activity
             android:name="${__packageName__}.ui.activity.ScreenshotsPreviewActivity"
             android:excludeFromRecents="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+            android:exported="false" />
 
         <activity
             android:name="${__packageName__}.ui.activity.terminal.action.ActionActivity"
@@ -147,12 +136,7 @@
         <activity
             android:name="${__packageName__}.ui.activity.CrashHandlerActivity"
             android:excludeFromRecents="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+            android:exported="false" />
 
 
         <!-- Tasker actions: read-only status/update queries and queued downloads. -->
@@ -220,7 +204,11 @@
         <service
             android:name="${__packageName__}.service.ProviderService"
             android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="root_provider_binder_lifecycle" />
+        </service>
 
         <service
             android:name="${__packageName__}.service.LogcatService"
@@ -234,7 +222,7 @@
         <receiver
             android:name="${__packageName__}.receiver.LogcatReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>

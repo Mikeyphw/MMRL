@@ -46,6 +46,7 @@ import com.dergoogler.mmrl.model.local.versionDisplay
 import com.dergoogler.mmrl.model.local.State
 import com.dergoogler.mmrl.model.state.Permissions
 import com.dergoogler.mmrl.service.ModuleService
+import com.dergoogler.mmrl.model.online.Blacklist
 import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.VersionItem
 import com.dergoogler.mmrl.model.unified.UnifiedModuleBrowserAction
@@ -95,7 +96,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
@@ -171,7 +171,14 @@ class ModulesViewModel
                     }
                 }
 
-        fun getBlacklist(id: String?) = runBlocking { getBlacklistById(id) }
+        fun getBlacklist(id: String?): Blacklist? {
+            val key = id?.takeIf(String::isNotBlank) ?: return null
+            blacklistCache[key]?.let { return it }
+            viewModelScope.launch {
+                blacklistCache[key] = getBlacklistById(key)
+            }
+            return null
+        }
 
         private val modulesMenu
             get() =
@@ -199,6 +206,7 @@ class ModulesViewModel
         }
 
         private val versionItemCache = mutableStateMapOf<ModId, VersionItem?>()
+        private val blacklistCache = mutableStateMapOf<String, Blacklist?>()
 
         private val opsTasks = mutableStateListOf<ModId>()
 
@@ -208,6 +216,11 @@ class ModulesViewModel
             dataObserver()
             keyObserver()
             viewModelScope.launch { ashManager.refreshIfStale() }
+            localRepository.getAllBlacklistEntriesAsFlow()
+                .onEach { entries ->
+                    entries.forEach { entry -> blacklistCache[entry.id] = entry }
+                }
+                .launchIn(viewModelScope)
         }
 
         private fun providerObserver() {

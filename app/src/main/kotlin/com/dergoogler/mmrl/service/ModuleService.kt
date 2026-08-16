@@ -53,16 +53,16 @@ class ModuleService : MMRLLifecycleService() {
         if (intent == null) return START_NOT_STICKY
 
         setForeground()
-        val intervalHours = intent.getLongExtra(INTERVAL_KEY, DEFAULT_INTERVAL_HOURS).coerceAtLeast(1L)
         updateJob?.cancel()
         updateJob = lifecycleScope.launch {
-            while (isActive) {
+            try {
                 runCatching { checkForUpdatesAndNotify() }
                     .onFailure { Timber.e(it, "Update check failed") }
-                delay(TimeUnit.HOURS.toMillis(intervalHours))
+            } finally {
+                stopSelf(startId)
             }
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private suspend fun checkForUpdatesAndNotify() = withContext(Dispatchers.IO) {
@@ -184,17 +184,15 @@ class ModuleService : MMRLLifecycleService() {
             ("module-update:${ModuleIdentity.normalize(moduleId)}").hashCode()
 
         fun start(context: Context, interval: Long) {
-            val intent = Intent().apply {
-                component = ComponentName(context.packageName, ModuleService::class.java.name)
-                putExtra(INTERVAL_KEY, interval.coerceAtLeast(1L))
-            }
-            context.startForegroundService(intent)
+            isActive = true
+            ModuleUpdateWorker.schedule(context, interval)
         }
 
         fun restart(context: Context, interval: Long) = start(context, interval)
 
-        fun checkNow(context: Context, interval: Long = DEFAULT_INTERVAL_HOURS) =
-            start(context, interval)
+        fun checkNow(context: Context, interval: Long = DEFAULT_INTERVAL_HOURS) {
+            ModuleUpdateWorker.enqueueOnce(context, reason = "manual")
+        }
 
         fun cancelUpdateNotification(context: Context, moduleId: String) {
             (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
@@ -202,7 +200,13 @@ class ModuleService : MMRLLifecycleService() {
         }
 
         fun stop(context: Context) {
+            isActive = false
+            ModuleUpdateWorker.cancel(context)
             context.stopService(Intent(context, ModuleService::class.java))
+        }
+
+        internal fun markRuntimeRunning(running: Boolean) {
+            if (running) isActive = true
         }
     }
 }

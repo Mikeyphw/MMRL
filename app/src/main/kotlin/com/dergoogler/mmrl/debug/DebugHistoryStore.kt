@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.debug
 
 import android.content.Context
+import android.util.AtomicFile
 import java.io.File
 import java.util.Locale
 
@@ -10,17 +11,18 @@ class DebugHistoryStore(
     private val maxSnapshots: Int = DEFAULT_MAX_SNAPSHOTS,
 ) {
     private val historyFile = File(File(context.filesDir, DIRECTORY).apply { mkdirs() }, FILE_NAME)
+    private val historyAtomic = AtomicFile(historyFile)
 
     fun record(results: List<DebugProbeResult>): DebugHistorySnapshot {
         val snapshot = DebugHistorySnapshot(
             createdAtMillis = System.currentTimeMillis(),
-            entries = results.map { result ->
+            entries = results.take(MAX_ENTRIES_PER_SNAPSHOT).map { result ->
                 DebugHistoryEntry(
                     id = result.id,
                     title = result.title,
                     group = result.group,
                     status = result.status,
-                    summary = DebugRedactor.redact(result.summary),
+                    summary = DebugRedactor.redact(result.summary).take(MAX_SUMMARY_CHARS),
                 )
             },
         )
@@ -34,7 +36,8 @@ class DebugHistoryStore(
 
     fun loadRecent(): List<DebugHistorySnapshot> {
         if (!historyFile.isFile) return emptyList()
-        return historyFile.readLines()
+        if (historyFile.length() > MAX_HISTORY_BYTES) return emptyList()
+        return historyAtomic.readFully().toString(Charsets.UTF_8).lineSequence()
             .mapNotNull { line -> line.toEntryOrNull() }
             .groupBy { it.createdAtMillis }
             .map { (createdAtMillis, rows) ->
@@ -53,21 +56,29 @@ class DebugHistoryStore(
 
     private fun writeSnapshots(snapshots: List<DebugHistorySnapshot>) {
         historyFile.parentFile?.mkdirs()
-        historyFile.writeText(
-            snapshots.flatMap { snapshot ->
-                snapshot.entries.map { entry ->
-                    listOf(
-                        VERSION,
-                        snapshot.createdAtMillis.toString(),
-                        entry.id.escaped(),
-                        entry.title.escaped(),
-                        entry.group.name,
-                        entry.status.name,
-                        entry.summary.escaped(),
-                    ).joinToString("\t")
-                }
-            }.joinToString(separator = "\n", postfix = if (snapshots.isEmpty()) "" else "\n"),
-        )
+        val payload = snapshots.flatMap { snapshot ->
+            snapshot.entries.take(MAX_ENTRIES_PER_SNAPSHOT).map { entry ->
+                listOf(
+                    VERSION,
+                    snapshot.createdAtMillis.toString(),
+                    entry.id.escaped(),
+                    entry.title.escaped(),
+                    entry.group.name,
+                    entry.status.name,
+                    entry.summary.take(MAX_SUMMARY_CHARS).escaped(),
+                ).joinToString("\t")
+            }
+        }.joinToString(separator = "\n", postfix = if (snapshots.isEmpty()) "" else "\n")
+            .take(MAX_HISTORY_BYTES)
+        val output = historyAtomic.startWrite()
+        try {
+            output.write(payload.toByteArray(Charsets.UTF_8))
+            output.flush()
+            historyAtomic.finishWrite(output)
+        } catch (error: Throwable) {
+            historyAtomic.failWrite(output)
+            throw error
+        }
     }
 
     private fun String.escaped(): String = buildString {
@@ -134,6 +145,9 @@ class DebugHistoryStore(
         private const val FILE_NAME = "probe-history.tsv"
         private const val VERSION = "v1"
         private const val FIELD_COUNT = 7
+        private const val MAX_ENTRIES_PER_SNAPSHOT = 64
+        private const val MAX_SUMMARY_CHARS = 512
+        private const val MAX_HISTORY_BYTES = 256 * 1024
 
         fun compare(
             currentResults: List<DebugProbeResult>,

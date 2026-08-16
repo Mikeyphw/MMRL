@@ -9,6 +9,7 @@ import com.dergoogler.mmrl.ui.theme.SemanticColors
 import dev.mmrlx.webui.PathHandler
 import dev.mmrlx.webui.WebUI
 import dev.mmrlx.webui.WebUIResourceRequest
+import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -44,9 +45,20 @@ class InternalPathHandler(
 
 
             if (path.matches(Regex("readme\\.md"))) {
-                val connection = URL(readmeUrl).openConnection() as HttpURLConnection
+                val readmeUri = WebUiContentPolicy.requireReadmeUri(readmeUrl)
+                val connection = URL(readmeUri.toString()).openConnection() as HttpURLConnection
+                connection.instanceFollowRedirects = false
+                connection.connectTimeout = 10_000
+                connection.readTimeout = 15_000
                 connection.connect()
-                return htmlResponse(connection.getInputStream())
+                if (connection.responseCode !in 200..299) return notFoundResponse
+                val length = connection.contentLengthLong
+                if (length > WebUiContentPolicy.boundedReadLimitBytes()) return notFoundResponse
+                val body = connection.inputStream.use { input ->
+                    val bytes = readBounded(input, WebUiContentPolicy.boundedReadLimitBytes())
+                    WebUiContentPolicy.sanitizeMarkdown(bytes.toString(Charsets.UTF_8))
+                }
+                return htmlResponse(ByteArrayInputStream(body.toByteArray(Charsets.UTF_8)))
             }
 
             if (path.matches(Regex("insets\\.css"))) {
@@ -62,5 +74,20 @@ class InternalPathHandler(
             Log.e("InternalPathHandler", "Error opening mmrl asset path: $path", e)
             return notFoundResponse
         }
+    }
+
+
+    private fun readBounded(input: java.io.InputStream, maxBytes: Long): ByteArray {
+        val output = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            if (output.size().toLong() + count > maxBytes) {
+                throw IOException("README response exceeds bounded read limit")
+            }
+            output.write(buffer, 0, count)
+        }
+        return output.toByteArray()
     }
 }

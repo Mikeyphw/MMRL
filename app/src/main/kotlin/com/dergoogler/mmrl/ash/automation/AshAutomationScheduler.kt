@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.ash.automation
 
 import android.content.Context
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -29,6 +30,7 @@ object AshAutomationScheduler {
             TimeUnit.HOURS,
         )
             .setConstraints(defaultConstraints())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30L, TimeUnit.SECONDS)
             .addTag(PERIODIC_WORK)
             .build()
         workManager.enqueueUniquePeriodicWork(
@@ -50,6 +52,7 @@ object AshAutomationScheduler {
         val request = OneTimeWorkRequestBuilder<AshHealthCheckWorker>()
             .setConstraints(defaultConstraints())
             .setInputData(Data.Builder().putString(AshHealthCheckWorker.KEY_REASON, reason).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30L, TimeUnit.SECONDS)
             .setInitialDelay(delayMinutes.coerceAtLeast(0L), TimeUnit.MINUTES)
             .addTag(IMMEDIATE_WORK)
             .build()

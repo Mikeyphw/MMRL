@@ -57,6 +57,9 @@ data class AshGuidanceFeedback(
     val moduleFolder: String,
     val outcome: AshGuidanceOutcome,
     val timestamp: Long,
+    val recoveryRevision: String,
+    val moduleFingerprint: String,
+    val identityBinding: String,
 )
 
 data class AshGuidancePlan(
@@ -132,7 +135,12 @@ object AshGuidanceEngine {
                     "protected" -> add(AshCulpritEvidence("protected", "Protected classification", "Protected modules are excluded from guided destructive actions.", -55))
                 }
                 feedback.values
-                    .filter { it.moduleFolder == module.folder }
+                    .filter {
+                        it.moduleFolder == module.folder &&
+                            it.recoveryRevision == snapshot.recoveryRevision &&
+                            (it.moduleFingerprint.isBlank() || it.moduleFingerprint == module.fingerprint) &&
+                            it.identityBinding.isNotBlank()
+                    }
                     .maxByOrNull(AshGuidanceFeedback::timestamp)
                     ?.let { prior ->
                         when (prior.outcome) {
@@ -270,6 +278,9 @@ object AshGuidanceEngine {
                     moduleFolder = values["module"].orEmpty(),
                     outcome = outcome,
                     timestamp = item.timestamp,
+                    recoveryRevision = values["recoveryRevision"].orEmpty(),
+                    moduleFingerprint = values["moduleFingerprint"].orEmpty(),
+                    identityBinding = values["identityBinding"].orEmpty(),
                 )
             }
             .groupBy(AshGuidanceFeedback::recommendationId)

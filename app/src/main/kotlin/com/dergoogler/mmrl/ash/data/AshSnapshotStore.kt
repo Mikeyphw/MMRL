@@ -29,7 +29,16 @@ class AshSnapshotStore @Inject constructor(
     data class ReadResult(
         val entry: Entry? = null,
         val events: List<String> = emptyList(),
+        val source: Source = Source.None,
     )
+
+    data class WriteResult(
+        val lastSuccessfulSaved: Boolean,
+        val lastGoodSaved: Boolean,
+        val lastGoodError: String? = null,
+    )
+
+    enum class Source { None, LastSuccessful, LastGood }
 
     suspend fun read(): ReadResult = withContext(Dispatchers.IO) {
         if (!primary.baseFile.isFile && !backup.baseFile.isFile) return@withContext ReadResult()
@@ -38,9 +47,9 @@ class AshSnapshotStore @Inject constructor(
         if (primaryResult != null) {
             if (primaryResult.second) {
                 events += "cache-migrated"
-                persist(primaryResult.first)
+                persist(primaryResult.first, lastGoodEligible = true)
             }
-            return@withContext ReadResult(primaryResult.first, events)
+            return@withContext ReadResult(primaryResult.first, events, Source.LastSuccessful)
         }
 
         if (primary.baseFile.isFile) {
@@ -49,10 +58,10 @@ class AshSnapshotStore @Inject constructor(
         }
         val backupResult = readAtomic(backup)
         if (backupResult != null) {
-            persist(backupResult.first)
+            persist(backupResult.first, lastGoodEligible = true)
             events += "cache-recovered"
             if (backupResult.second) events += "cache-migrated"
-            return@withContext ReadResult(backupResult.first, events)
+            return@withContext ReadResult(backupResult.first, events, Source.LastGood)
         }
         if (backup.baseFile.isFile) {
             quarantineCorrupt(backup)
@@ -61,20 +70,34 @@ class AshSnapshotStore @Inject constructor(
         ReadResult(events = events.distinct())
     }
 
+    suspend fun readLastGood(): ReadResult = withContext(Dispatchers.IO) {
+        val backupResult = readAtomic(backup) ?: return@withContext ReadResult()
+        ReadResult(backupResult.first, emptyList(), Source.LastGood)
+    }
+
     suspend fun write(
         moduleStateRaw: String,
         snapshotRaw: String,
         savedAt: Long = System.currentTimeMillis() / 1_000L,
-    ) = withContext(Dispatchers.IO) {
+        lastGoodEligible: Boolean = false,
+    ): WriteResult = withContext(Dispatchers.IO) {
         val normalizedModuleState = JSONObject(moduleStateRaw).toString()
         val normalizedSnapshot = JSONObject(snapshotRaw).toString()
-        persist(Entry(savedAt, normalizedModuleState, normalizedSnapshot))
+        persist(Entry(savedAt, normalizedModuleState, normalizedSnapshot), lastGoodEligible)
     }
 
-    private fun persist(entry: Entry) {
+    private fun persist(entry: Entry, lastGoodEligible: Boolean = true): WriteResult {
         val payload = encode(entry)
         writeAtomic(primary, payload)
-        runCatching { writeAtomic(backup, payload) }
+        if (!lastGoodEligible) {
+            return WriteResult(lastSuccessfulSaved = true, lastGoodSaved = false)
+        }
+        val backupError = runCatching { writeAtomic(backup, payload) }.exceptionOrNull()
+        return WriteResult(
+            lastSuccessfulSaved = true,
+            lastGoodSaved = backupError == null,
+            lastGoodError = backupError?.message,
+        )
     }
 
     private fun readAtomic(source: AtomicFile): Pair<Entry, Boolean>? = runCatching {
@@ -133,8 +156,8 @@ class AshSnapshotStore @Inject constructor(
         corruptDirectory.mkdirs()
         val baseFile = source.baseFile
         val target = File(corruptDirectory, "${baseFile.name}.${System.currentTimeMillis()}.corrupt")
-        runCatching { baseFile.copyTo(target, overwrite = true) }
-        runCatching { source.delete() }
+        val copied = runCatching { baseFile.copyTo(target, overwrite = true) }.isSuccess
+        if (copied) runCatching { source.delete() }
         corruptDirectory.listFiles().orEmpty()
             .sortedByDescending(File::lastModified)
             .drop(MAX_CORRUPT_FILES)

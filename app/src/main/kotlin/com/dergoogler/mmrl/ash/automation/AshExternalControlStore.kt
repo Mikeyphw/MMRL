@@ -236,15 +236,32 @@ internal class AshExternalControlStore(context: Context) {
 
     private fun writeAtomic(target: File, content: String) {
         target.parentFile?.mkdirs()
-        val atomicFile = AtomicFile(target)
-        val output = atomicFile.startWrite()
-        try {
-            output.write(content.toByteArray(Charsets.UTF_8))
-            output.flush()
-            atomicFile.finishWrite(output)
-        } catch (error: Throwable) {
-            atomicFile.failWrite(output)
-            throw error
+        withCrossProcessLock {
+            val atomicFile = AtomicFile(target)
+            val output = atomicFile.startWrite()
+            try {
+                output.write(content.toByteArray(Charsets.UTF_8))
+                output.flush()
+                atomicFile.finishWrite(output)
+            } catch (error: Throwable) {
+                atomicFile.failWrite(output)
+                throw error
+            }
+        }
+    }
+
+    private fun <T> withCrossProcessLock(block: () -> T): T {
+        root.mkdirs()
+        val lockFile = File(root, ".transition.lock")
+        java.io.RandomAccessFile(lockFile, "rw").use { randomAccess ->
+            randomAccess.channel.use { channel ->
+                val lock = channel.lock()
+                try {
+                    return block()
+                } finally {
+                    lock.release()
+                }
+            }
         }
     }
 

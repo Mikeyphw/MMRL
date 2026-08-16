@@ -6,7 +6,9 @@ import com.dergoogler.mmrl.ash.database.ActivityDao
 import com.dergoogler.mmrl.ash.database.ActivityEntity
 import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.ash.model.AshCapabilities
+import com.dergoogler.mmrl.ash.model.AshGuidanceEngine
 import com.dergoogler.mmrl.ash.model.AshGuidanceOutcome
+import com.dergoogler.mmrl.ash.model.AshIncidentIdentityPolicy
 import com.dergoogler.mmrl.ash.model.AshModuleHealth
 import com.dergoogler.mmrl.ash.model.AshModuleInstallation
 import com.dergoogler.mmrl.ash.model.AshModuleReleaseGate
@@ -265,6 +267,26 @@ class AshRepository @Inject constructor(
             "Invalid module folder"
         }
         val now = System.currentTimeMillis() / 1000L
+        val liveSnapshot = runCatching { parseSnapshot(snapshotRaw()) }.getOrNull()
+        val liveRecommendation = liveSnapshot?.let { snapshot ->
+            AshGuidanceEngine.build(snapshot, now).recommendations.firstOrNull { it.id == recommendationId }
+        }
+        val liveModule = liveSnapshot?.modules?.firstOrNull { module ->
+            module.folder == moduleFolder || module.id == moduleFolder
+        }
+        if (liveSnapshot != null) {
+            require(liveRecommendation != null) { "Guidance recommendation is no longer valid for the current recovery revision" }
+            if (moduleFolder.isNotBlank()) {
+                require(liveRecommendation.affectedFolders.isEmpty() || moduleFolder in liveRecommendation.affectedFolders) {
+                    "Guidance feedback does not match the current recommendation scope"
+                }
+            }
+        }
+        val incidentScope = if (liveSnapshot != null && liveModule != null) {
+            runCatching { AshIncidentIdentityPolicy.incidentScope(liveSnapshot, liveModule, now) }.getOrNull()
+        } else {
+            null
+        }
         activityDao.insert(
             ActivityEntity(
                 id = "guidance-${UUID.randomUUID()}",
@@ -277,6 +299,17 @@ class AshRepository @Inject constructor(
                     append("recommendation=").append(recommendationId).append('\n')
                     append("module=").append(moduleFolder).append('\n')
                     append("outcome=").append(outcome.wireValue)
+                    liveSnapshot?.let { snapshot ->
+                        append('\n').append("recoveryRevision=").append(snapshot.recoveryRevision)
+                    }
+                    liveModule?.let { module ->
+                        append('\n').append("moduleFingerprint=").append(module.fingerprint)
+                        append('\n').append("moduleVersionCode=").append(module.versionCode)
+                    }
+                    incidentScope?.let { scope ->
+                        append('\n').append("incidentId=").append(scope.incidentId)
+                        append('\n').append("identityBinding=").append(scope.binding)
+                    }
                 },
             ),
         )
@@ -330,11 +363,18 @@ class AshRepository @Inject constructor(
             )
         }
 
+        val journal = AshMutationJournal(context)
         val completion = operationCoordinator.execute<OperationResult>(historyId) {
             phase(OperationPhase.INSTALL, "Applying AshReXcue mutation")
             log(details)
+            journal.write(historyId, AshMutationJournal.Stage.PREPARING, details, "Preparing AshReXcue mutation")
             markMutationStarted()
-            val root = parseObject(block())
+            journal.write(historyId, AshMutationJournal.Stage.ACTIVE, details, "Root mutation started")
+            val root = runCatching { parseObject(block()) }
+                .getOrElse { error ->
+                    journal.write(historyId, AshMutationJournal.Stage.OUTCOME_UNKNOWN, details, error.message ?: "Root response failed")
+                    throw error
+                }
             val result = OperationResult(
                 ok = root.optBoolean("ok"),
                 message = root.optString(
@@ -344,11 +384,14 @@ class AshRepository @Inject constructor(
                 path = root.optString("path").takeIf(String::isNotBlank),
             )
             if (result.ok) {
+                journal.write(historyId, AshMutationJournal.Stage.COMMITTING, details, result.message)
+                journal.committed(historyId, details, result.message)
                 PrivilegedOperationCoordinator.OperationCompletion.Success(
                     value = result,
                     summary = result.message,
                 )
             } else {
+                journal.write(historyId, AshMutationJournal.Stage.OUTCOME_UNKNOWN, details, result.message)
                 PrivilegedOperationCoordinator.OperationCompletion.Failure(result.message)
             }
         }

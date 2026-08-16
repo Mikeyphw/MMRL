@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.Locale
@@ -118,7 +117,16 @@ constructor(
             return localizedContext.resources
         }
 
-    private val devMode = runBlocking { userPreferencesRepository.data.first().developerMode }
+    @Volatile
+    private var devMode = false
+
+    init {
+        viewModelScope.launch {
+            userPreferencesRepository.data.collect { preferences ->
+                devMode = preferences.developerMode
+            }
+        }
+    }
 
     @MainThread
     protected fun devLog(message: String) {

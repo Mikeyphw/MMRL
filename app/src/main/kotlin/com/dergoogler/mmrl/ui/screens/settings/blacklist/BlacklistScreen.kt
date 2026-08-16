@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ui.component.PageIndicator
@@ -22,7 +24,7 @@ import dev.chrisbanes.haze.hazeSource
 @Composable
 fun BlacklistScreen() {
     val viewModel = LocalSettings.current
-    val blacklist = viewModel.allBlacklistEntriesAsFlow
+    val blacklist by viewModel.allBlacklistEntriesAsFlow.collectAsStateWithLifecycle()
 
     SettingsScaffold(
         modifier = ScaffoldDefaults.settingsScaffoldModifier,

@@ -23,6 +23,8 @@ object Logcat {
                     "threadtime",
                     "--uid",
                     uid.toString(),
+                    "-t",
+                    MAX_LOGCAT_LINES.toString(),
                 )
 
             val process = Runtime.getRuntime().exec(command)
@@ -30,8 +32,11 @@ object Logcat {
                 process.inputStream.use { stream ->
                     stream
                         .reader()
-                        .readLines()
+                        .lineSequence()
                         .filterNot { it.startsWith("------") }
+                        .map { it.take(MAX_LOG_LINE_CHARS) }
+                        .take(MAX_LOGCAT_LINES)
+                        .toList()
                 }
 
             process.waitFor()
@@ -43,7 +48,7 @@ object Logcat {
     fun readLogs(): List<LogText> =
         if (logFile.exists()) {
             val logs = mutableListOf<LogText>()
-            logFile.readLines().forEach { text ->
+            readPersistedLogText().lineSequence().takeLast(MAX_PERSISTED_LOG_LINES).forEach { text ->
                 runCatching {
                     LogText.parse(text)
                 }.onSuccess {
@@ -65,6 +70,26 @@ object Logcat {
 
         val texts = logs.joinToString(separator = "\n", postfix = "\n")
         logFile.appendText(texts)
+        trimPersistedLogIfNeeded()
+    }
+
+    private fun trimPersistedLogIfNeeded() {
+        if (!logFile.exists() || logFile.length() <= MAX_PERSISTED_LOG_BYTES) return
+        val trimmed = readPersistedLogText().lineSequence()
+            .takeLast(MAX_PERSISTED_LOG_LINES)
+            .joinToString(separator = "\n", postfix = "\n")
+        logFile.writeText(trimmed.takeLast(MAX_PERSISTED_LOG_BYTES.toInt()))
+    }
+
+    private fun readPersistedLogText(): String {
+        if (!logFile.exists()) return ""
+        if (logFile.length() <= MAX_PERSISTED_LOG_BYTES) return logFile.readText()
+        val bytes = ByteArray(MAX_PERSISTED_LOG_BYTES.toInt())
+        java.io.RandomAccessFile(logFile, "r").use { input ->
+            input.seek((input.length() - bytes.size).coerceAtLeast(0))
+            input.readFully(bytes)
+        }
+        return bytes.toString(Charsets.UTF_8)
     }
 
     fun shareLogs(context: Context) {
@@ -111,4 +136,9 @@ object Logcat {
         } catch (e: Exception) {
             LogText(0, "", "", "", "")
         }
+
+    private const val MAX_LOGCAT_LINES = 1_000
+    private const val MAX_LOG_LINE_CHARS = 8_192
+    private const val MAX_PERSISTED_LOG_LINES = 2_000
+    private const val MAX_PERSISTED_LOG_BYTES = 512L * 1024L
 }

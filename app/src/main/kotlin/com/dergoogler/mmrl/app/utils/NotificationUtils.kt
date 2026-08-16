@@ -54,7 +54,7 @@ object NotificationUtils {
 
         NotificationManagerCompat.from(context).apply {
             createNotificationChannels(channels)
-            deleteUnlistedNotificationChannels(channels.map { it.id })
+            // Preserve dynamic/user-created channels. Only create or update the app-owned base channels here.
         }
     }
 }

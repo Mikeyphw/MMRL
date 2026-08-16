@@ -16,6 +16,7 @@ import com.dergoogler.mmrl.ash.model.AshRecoveryPlanPreset
 import com.dergoogler.mmrl.ash.model.AshReleaseGateEngine
 import com.dergoogler.mmrl.ash.model.AshSnapshotSource
 import com.dergoogler.mmrl.ash.model.AshStateHealthEngine
+import com.dergoogler.mmrl.ash.model.AshStateHealthLevel
 import com.dergoogler.mmrl.ash.model.OperationResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -100,11 +101,14 @@ class AshReXcueManager @Inject constructor(
                     val snapshot = result.snapshot
                     val lifecycle = result.lifecycle
                     val health = AshStateHealthEngine.assess(snapshot, AshSnapshotSource.Live)
-                    if (lifecycle.compatible) {
+                    val snapshotWrite = if (lifecycle.compatible) {
                         snapshotStore.write(
                             moduleStateRaw = requireNotNull(currentModuleStateRaw),
                             snapshotRaw = snapshotRaw,
+                            lastGoodEligible = health.level == AshStateHealthLevel.Healthy,
                         )
+                    } else {
+                        null
                     }
                     return@withLock publish(
                         AshManagerState(
@@ -114,7 +118,11 @@ class AshReXcueManager @Inject constructor(
                             source = AshSnapshotSource.Live,
                             readOnly = !lifecycle.compatible,
                             lastSuccessfulAt = snapshot.generatedAt,
-                            liveError = if (lifecycle.compatible) null else lifecycle.compatibilityMessage,
+                            liveError = when {
+                                !lifecycle.compatible -> lifecycle.compatibilityMessage
+                                snapshotWrite?.lastGoodError != null -> "Live AshReXcue snapshot was saved, but last-good backup write failed: ${snapshotWrite.lastGoodError}"
+                                else -> null
+                            },
                             health = health,
                             releaseGate = AshReleaseGateEngine.assess(
                                 rootAvailable = true,
@@ -186,8 +194,42 @@ class AshReXcueManager @Inject constructor(
                 )
             }.getOrNull()
             if (cachedState != null) {
+                val stateToPublish = if (
+                    cachedResult.source == AshSnapshotStore.Source.LastSuccessful &&
+                    cachedState.health.level == AshStateHealthLevel.RepairRequired
+                ) {
+                    snapshotStore.readLastGood().entry?.let { lastGood ->
+                        runCatching {
+                            val cachedInstallation = repository.parseModuleInstallation(lastGood.moduleStateRaw)
+                            val snapshot = repository.parseSnapshot(lastGood.snapshotRaw)
+                            val installation = cachedInstallationForLifecycle(
+                                liveInstallation = currentInstallation,
+                                cachedInstallation = cachedInstallation,
+                            )
+                            val health = AshStateHealthEngine.assess(
+                                snapshot = snapshot,
+                                source = AshSnapshotSource.Cache,
+                                cacheEvents = cachedResult.events + "last-good-after-semantic-failure",
+                            )
+                            cachedState.copy(
+                                lifecycle = AshModuleLifecycleResolver.resolve(
+                                    installation = installation,
+                                    bundled = bundled,
+                                    capabilities = snapshot.capabilities,
+                                    liveError = liveError ?: "Last successful snapshot failed semantic validation; showing verified last-good state",
+                                ),
+                                snapshot = snapshot,
+                                lastSuccessfulAt = lastGood.savedAt,
+                                liveError = liveError ?: "Last successful snapshot failed semantic validation; showing verified last-good state",
+                                health = health,
+                            )
+                        }.getOrNull()
+                    } ?: cachedState
+                } else {
+                    cachedState
+                }
                 if (liveError != null) lastRefreshFailedAt = System.currentTimeMillis()
-                return@withLock publish(cachedState)
+                return@withLock publish(stateToPublish)
             }
         }
 

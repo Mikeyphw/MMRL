@@ -59,56 +59,37 @@ class RepositoryService : MMRLLifecycleService() {
 
         setForeground()
 
-        val interval = intent.getLongExtra(INTERVAL_KEY, 60000)
-        val oneShot = intent.getBooleanExtra(ONE_SHOT_KEY, false)
-
         repositoryJob?.cancel()
         repositoryJob = lifecycleScope.launch {
-            suspend fun refreshRepositories() {
-                try {
-                    val repoDao = database.repoDao()
-                    val repos = repoDao.getAll()
-                    processRepos(repos)
-                } catch (e: Exception) {
-                    sendFailureNotification()
-                }
-            }
-
-            if (oneShot) {
-                refreshRepositories()
+            try {
+                val repoDao = database.repoDao()
+                val repos = repoDao.getAll().filter { it.enable }
+                processRepos(repos)
+            } catch (e: Exception) {
+                sendFailureNotification()
+            } finally {
                 stopSelf(startId)
-            } else {
-                lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    while (currentCoroutineContext().isActive) {
-                        refreshRepositories()
-                        delay(interval.hours)
-                    }
-                }
             }
         }
 
-        return if (oneShot) START_NOT_STICKY else START_STICKY
+        return START_NOT_STICKY
     }
 
     private suspend fun processRepos(repos: List<Repo>) {
         coroutineScope {
-            var successCount = 0
-            var failureCount = 0
-
-            repos
+            val results = repos
                 .map { repo ->
                     async {
                         try {
-                            modulesRepository
-                                .getRepo(repo.url.toRepo())
-                                .onSuccess { successCount++ }
-                                .onFailure { failureCount++ }
+                            modulesRepository.getRepo(repo.url.toRepo()).isSuccess
                         } catch (e: Exception) {
                             Timber.e(e)
-                            failureCount++
+                            false
                         }
                     }
                 }.awaitAll()
+            val successCount = results.count { it }
+            val failureCount = results.size - successCount
 
             val repositoriesUpdateMessage =
                 applicationContext.resources.getStringArray(R.array.repositories_update_message)
@@ -136,43 +117,29 @@ class RepositoryService : MMRLLifecycleService() {
             private set
         private const val INTERVAL_KEY = "INTERVAL"
         private const val ONE_SHOT_KEY = "ONE_SHOT"
+        private const val DEFAULT_INTERVAL_HOURS = 6L
 
         fun start(
             context: Context,
             interval: Long,
         ) {
-            val intent =
-                Intent().apply {
-                    component =
-                        ComponentName(
-                            context.packageName,
-                            RepositoryService::class.java.name,
-                        )
-                    putExtra(INTERVAL_KEY, interval)
-                }
-
-            context.startForegroundService(intent)
+            isActive = true
+            RepositoryRefreshWorker.schedule(context, interval)
         }
 
-
         fun refreshOnce(context: Context) {
-            val intent =
-                Intent().apply {
-                    component =
-                        ComponentName(
-                            context.packageName,
-                            RepositoryService::class.java.name,
-                        )
-                    putExtra(INTERVAL_KEY, 1L)
-                    putExtra(ONE_SHOT_KEY, true)
-                }
-
-            context.startForegroundService(intent)
+            RepositoryRefreshWorker.enqueueOnce(context, reason = "manual")
         }
 
         fun stop(context: Context) {
+            isActive = false
+            RepositoryRefreshWorker.cancel(context)
             val intent = Intent(context, RepositoryService::class.java)
             context.stopService(intent)
+        }
+
+        internal fun markRuntimeRunning(running: Boolean) {
+            if (running) isActive = true
         }
     }
 }
