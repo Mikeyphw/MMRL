@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStoreFactory
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStoreFile
 import com.dergoogler.mmrl.datastore.UserPreferencesSerializer
 import com.dergoogler.mmrl.datastore.model.UserPreferences
@@ -30,7 +31,8 @@ class DataStoreProvider(
     ): DataStore<UserPreferences> =
         DataStoreFactory.create(
             serializer = userPreferencesSerializer,
-            migrations = listOf(ThemePreferenceIdMigration),
+            corruptionHandler = ReplaceFileCorruptionHandler { UserPreferences() },
+            migrations = listOf(ThemePreferenceIdMigration, ServicePreferenceMigration),
         ) {
             context.dataStoreFile(fileName)
         }
@@ -53,3 +55,30 @@ private object ThemePreferenceIdMigration : DataMigration<UserPreferences> {
 
     override suspend fun cleanUp() = Unit
 }
+
+
+private object ServicePreferenceMigration : DataMigration<UserPreferences> {
+    override suspend fun shouldMigrate(currentData: UserPreferences): Boolean =
+        currentData.autoUpdateReposInterval != clampInterval(currentData.autoUpdateReposInterval) ||
+            currentData.checkModuleUpdatesInterval != clampInterval(currentData.checkModuleUpdatesInterval) ||
+            currentData.repositoryServiceEnabled ||
+            currentData.moduleServiceEnabled ||
+            currentData.providerServiceEnabled
+
+    override suspend fun migrate(currentData: UserPreferences): UserPreferences =
+        currentData.copy(
+            autoUpdateReposInterval = clampInterval(currentData.autoUpdateReposInterval),
+            checkModuleUpdatesInterval = clampInterval(currentData.checkModuleUpdatesInterval),
+            repositoryServiceEnabled = false,
+            moduleServiceEnabled = false,
+            providerServiceEnabled = false,
+        )
+
+    override suspend fun cleanUp() = Unit
+
+    private fun clampInterval(value: Long): Long =
+        value.coerceIn(MIN_SERVICE_INTERVAL_HOURS, MAX_SERVICE_INTERVAL_HOURS)
+}
+
+private const val MIN_SERVICE_INTERVAL_HOURS = 1L
+private const val MAX_SERVICE_INTERVAL_HOURS = 24L * 14L

@@ -19,21 +19,39 @@ import timber.log.Timber
 import java.io.File
 import java.io.OutputStream
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 object NetworkUtils {
     private var useDoh: Boolean = false
     private var cacheDirOrNull: File? = null
-    private val cacheOrNull: Cache? get() =
-        cacheDirOrNull?.let {
-            Cache(File(it, "okhttp"), 10 * 1024 * 1024)
-        }
+    private var sharedCacheRoot: File? = null
+    private var sharedCache: Cache? = null
+    @Volatile private var sharedClient: OkHttpClient? = null
 
+    @Synchronized
     fun setCacheDir(dir: File) {
+        if (cacheDirOrNull == dir) return
         cacheDirOrNull = dir
+        sharedClient = null
     }
 
+    @Synchronized
     fun setEnableDoh(doh: Boolean) {
+        if (useDoh == doh) return
         useDoh = doh
+        sharedClient = null
+    }
+
+    @Synchronized
+    private fun cacheOrNull(): Cache? {
+        val root = cacheDirOrNull ?: return null
+        val cacheRoot = File(root, "okhttp")
+        if (sharedCacheRoot != cacheRoot) {
+            sharedCache?.close()
+            sharedCacheRoot = cacheRoot
+            sharedCache = Cache(cacheRoot, 10 * 1024 * 1024)
+        }
+        return sharedCache
     }
 
     fun isHTML(text: String) =
@@ -49,7 +67,19 @@ object NetworkUtils {
             .matches(url)
 
     fun createOkHttpClient(): OkHttpClient {
-        val builder = OkHttpClient.Builder().cache(cacheOrNull)
+        sharedClient?.let { return it }
+        return synchronized(this) {
+            sharedClient ?: buildOkHttpClient().also { sharedClient = it }
+        }
+    }
+
+    private fun buildOkHttpClient(): OkHttpClient {
+        val builder = OkHttpClient.Builder()
+            .cache(cacheOrNull())
+            .callTimeout(90, TimeUnit.SECONDS)
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
 
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(
@@ -62,7 +92,8 @@ object NetworkUtils {
             builder.connectionSpecs(listOf(ConnectionSpec.MODERN_TLS))
         }
 
-        builder.dns(DnsResolver(builder.build(), useDoh))
+        val bootstrapClient = builder.build()
+        builder.dns(DnsResolver(bootstrapClient, useDoh))
 
         builder.addInterceptor { chain ->
             val request = chain.request().newBuilder()
@@ -103,7 +134,7 @@ object NetworkUtils {
         request(
             url = url,
             get = { body, _ ->
-                body.string()
+                NetworkPolicy.readUtf8Bounded(body, NetworkPolicy.MAX_REPOSITORY_JSON_BYTES, url)
             },
         )
 
@@ -117,7 +148,7 @@ object NetworkUtils {
                         .build()
                         .adapter<T>()
 
-                adapter.fromJson(body.string())
+                adapter.fromJson(NetworkPolicy.readUtf8Bounded(body, NetworkPolicy.MAX_REPOSITORY_JSON_BYTES, url))
             }
 
         if (result.isSuccess) {
@@ -137,14 +168,18 @@ object NetworkUtils {
         val input = body.byteStream()
 
         val all = body.contentLength()
-        var finished: Long = 0
+        require(NetworkPolicy.declaredDownloadLengthAllowed(all)) {
+            "Download exceeds the ${NetworkPolicy.MAX_DOWNLOAD_BYTES} byte safety limit"
+        }
+        var finished = 0L
         var readying: Int
 
         while (input.read(buffer).also { readying = it } != -1) {
+            if (readying == 0) continue
+            finished = NetworkPolicy.addReceivedBytes(finished, readying)
             output.write(buffer, 0, readying)
-            finished += readying.toLong()
 
-            val progress = (finished * 1.0 / all).toFloat()
+            val progress = if (all > 0L) (finished * 1.0 / all).toFloat() else -1f
             onProgress(progress)
         }
 

@@ -52,6 +52,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -277,7 +278,12 @@ fun RepositoriesScreen() =
                 PullToRefreshBox(
                     state = pullToRefreshState,
                     isRefreshing = state.isRefreshing,
-                    onRefresh = viewModel::getRepoAll,
+                    onRefresh = {
+                        viewModel.getRepoAll { e ->
+                            failure = true
+                            message = e.stackTraceToString()
+                        }
+                    },
                     indicator = {
                         Indicator(
                             modifier =
@@ -564,6 +570,7 @@ private fun GitHubSourceAddDialog(
                     label = { Text(stringResource(R.string.github_source_file_regex)) },
                     placeholder = { Text(stringResource(R.string.github_source_file_regex_placeholder)) },
                     singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
                 OutlinedTextField(
@@ -576,6 +583,7 @@ private fun GitHubSourceAddDialog(
                     label = { Text(stringResource(if (mode == GitHubSourceMode.RELEASE) R.string.github_source_asset_regex else R.string.github_source_artifact_regex)) },
                     placeholder = { Text(stringResource(if (mode == GitHubSourceMode.RELEASE) R.string.github_source_asset_regex_placeholder else R.string.github_source_artifact_regex_placeholder)) },
                     singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
                 OutlinedTextField(
@@ -588,6 +596,7 @@ private fun GitHubSourceAddDialog(
                     label = { Text(stringResource(R.string.github_source_reject_regex)) },
                     placeholder = { Text(stringResource(R.string.github_source_reject_regex_placeholder)) },
                     singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
                 OutlinedTextField(
@@ -600,6 +609,7 @@ private fun GitHubSourceAddDialog(
                     label = { Text(stringResource(R.string.github_source_preferred_variant_regex)) },
                     placeholder = { Text(stringResource(R.string.github_source_preferred_variant_regex_placeholder)) },
                     singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
                 if (mode == GitHubSourceMode.NIGHTLY) {
@@ -664,6 +674,7 @@ private fun GitHubSourceAddDialog(
                     label = { Text(stringResource(if (hasToken) R.string.github_source_token_saved else R.string.github_source_token)) },
                     placeholder = { Text(stringResource(R.string.github_source_token_placeholder)) },
                     singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 )
                 if (hasToken) {

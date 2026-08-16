@@ -9,11 +9,13 @@ import com.dergoogler.mmrl.model.online.ModuleManagerSolution
 data class ModuleManagerEntity(
     @ColumnInfo(name = "magiskManager") val magisk: ModuleManagerSolution? = null,
     @ColumnInfo(name = "kernelsuManager") val kernelsu: ModuleManagerSolution? = null,
+    @ColumnInfo(name = "ksunextManager") val ksunext: ModuleManagerSolution? = null,
     @ColumnInfo(name = "apatchManager") val apatch: ModuleManagerSolution? = null,
 ) {
     constructor(original: ModuleManager?) : this(
         magisk = original?.magisk,
         kernelsu = original?.kernelsu,
+        ksunext = original?.ksunext,
         apatch = original?.apatch,
     )
 
@@ -21,6 +23,7 @@ data class ModuleManagerEntity(
         ModuleManager(
             magisk = magisk,
             kernelsu = kernelsu,
+            ksunext = ksunext,
             apatch = apatch,
         )
 }

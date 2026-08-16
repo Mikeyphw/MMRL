@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.service.ProviderService
@@ -58,6 +59,7 @@ fun OtherScreen() {
             TextEditDialogItem(
                 value = "",
                 strict = false,
+                visualTransformation = PasswordVisualTransformation(),
                 onConfirm = { token ->
                     githubTokenStore.saveToken(token)
                     githubTokenSaved = githubTokenStore.hasToken()

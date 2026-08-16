@@ -16,7 +16,7 @@ class GitHubTokenStore(
     private val appContext = context.applicationContext
     private val preferences = appContext.getSharedPreferences("github_token", Context.MODE_PRIVATE)
 
-    fun hasToken(): Boolean = preferences.contains(KEY_CIPHER_TEXT)
+    fun hasToken(): Boolean = getToken()?.isNotBlank() == true
 
     fun getToken(): String? {
         val cipherText = preferences.getString(KEY_CIPHER_TEXT, null) ?: return null

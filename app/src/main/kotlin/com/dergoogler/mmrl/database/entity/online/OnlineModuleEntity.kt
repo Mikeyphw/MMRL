@@ -2,11 +2,12 @@ package com.dergoogler.mmrl.database.entity.online
 
 import androidx.room.Embedded
 import androidx.room.Entity
+import androidx.room.Index
 import com.dergoogler.mmrl.model.online.Blacklist
 import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.VersionItem
 
-@Entity(tableName = "onlineModules", primaryKeys = ["id", "repoUrl"])
+@Entity(tableName = "onlineModules", primaryKeys = ["id", "repoUrl"], indices = [Index(value = ["id", "repoUrl"]), Index(value = ["repoUrl"])])
 data class OnlineModuleEntity(
     val id: String,
     val repoUrl: String,
@@ -74,11 +75,14 @@ data class OnlineModuleEntity(
         require = original.require,
         devices = original.devices,
         arch = original.arch,
-        blacklist = EmbeddedBlacklist(blacklist),
+        blacklist = null,
         stars = original.stars
     )
 
-    fun toModule(versions: List<VersionItem> = emptyList()) =
+    fun toModule(
+        versions: List<VersionItem> = emptyList(),
+        currentBlacklist: Blacklist? = blacklist?.toBlacklist(),
+    ) =
         OnlineModule(
             repoUrl = repoUrl,
             id = id,
@@ -110,7 +114,7 @@ data class OnlineModuleEntity(
             require = require,
             devices = devices,
             arch = arch,
-            blacklist = blacklist?.toBlacklist(),
+            blacklist = currentBlacklist,
             stars = stars
         )
 }

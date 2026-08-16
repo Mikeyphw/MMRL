@@ -11,6 +11,7 @@ import com.dergoogler.mmrl.model.online.OnlineModule
 import com.dergoogler.mmrl.model.online.TrackJson
 import com.dergoogler.mmrl.model.online.TrackType
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.network.NetworkPolicy
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -61,8 +62,10 @@ internal object RepositorySourceLoader {
                 val json = fetchText(sourceUrl, githubToken)
                 when (json.firstOrNull { !it.isWhitespace() }) {
                     '{' ->
-                        modulesAdapter.fromJson(json)
-                            ?: error("Repository returned an empty JSON object")
+                        RepositoryIngestionPolicy.validateModulesJson(
+                            modulesAdapter.fromJson(json)
+                                ?: error("Repository returned an empty JSON object"),
+                        )
                     '[' -> loadKernelSuCatalog(sourceUrl, json, githubToken)
                     else -> error("Unsupported repository JSON: expected an object or array")
                 }
@@ -144,6 +147,7 @@ internal object RepositorySourceLoader {
                 zipUrl = candidate.apiDownloadUrl ?: candidate.downloadUrl,
                 size = candidate.size?.coerceAtMost(Int.MAX_VALUE.toLong())?.toInt(),
                 changelog = candidate.sourceName,
+                sourceProvenance = candidate.provenanceSummary(),
             )
 
         return ModulesJson(
@@ -176,7 +180,7 @@ internal object RepositorySourceLoader {
                         support = "${github.baseUrl}/issues",
                     ),
                 ),
-        )
+        ).let(RepositoryIngestionPolicy::validateModulesJson)
     }
 
     internal fun resolveModulesUrl(repoUrl: String): String {
@@ -197,7 +201,7 @@ internal object RepositorySourceLoader {
         githubToken: String?,
     ): ModulesJson {
         val entries =
-            parseKernelSuCatalog(json)
+            RepositoryIngestionPolicy.validateKernelSuCatalog(parseKernelSuCatalog(json))
                 .filter { it.visibility == 1 && it.repoUrl.isNotBlank() }
                 .distinctBy { it.repoUrl.trimEnd('/').lowercase(Locale.ROOT) }
 
@@ -240,7 +244,7 @@ internal object RepositorySourceLoader {
                     timestamp = System.currentTimeMillis() / 1000f,
                 ),
             modules = modules,
-        )
+        ).let(RepositoryIngestionPolicy::validateModulesJson)
     }
 
     private fun resolveKernelSuEntry(
@@ -289,6 +293,7 @@ internal object RepositorySourceLoader {
                 version = moduleVersion,
                 versionCode = moduleVersionCode,
                 zipUrl = release.zipUrl,
+                sourceProvenance = "source=ksu-catalog; repo=${github.baseUrl}; tag=${release.tag}",
             )
 
         return OnlineModule(
@@ -323,8 +328,8 @@ internal object RepositorySourceLoader {
                 .build()
         val redirect =
             noRedirectClient.newCall(latestRequest).execute().use { response ->
-                require(response.code in 300..399) {
-                    "GitHub repository has no latest-release redirect: $repoUrl"
+                if (response.code !in 300..399) {
+                    throw NetworkPolicy.httpException(response)
                 }
                 response.header("Location")
                     ?: error("GitHub latest release did not provide a redirect: $repoUrl")
@@ -480,8 +485,14 @@ internal object RepositorySourceLoader {
                 .applyGitHubAuthentication(url, githubToken)
                 .build()
         return httpClient.newCall(request).execute().use { response ->
-            require(response.isSuccessful) { "HTTP ${response.code} while loading $url" }
-            response.body?.string() ?: error("Empty response while loading $url")
+            NetworkPolicy.requireSuccessful(response)
+            val maxBytes = if (NetworkPolicy.shouldAttachGitHubToken(url)) {
+                NetworkPolicy.MAX_GITHUB_JSON_BYTES
+            } else {
+                NetworkPolicy.MAX_REPOSITORY_JSON_BYTES
+            }
+            response.body?.let { NetworkPolicy.readUtf8Bounded(it, maxBytes, url) }
+                ?: error("Empty response while loading $url")
         }
     }
 
@@ -490,15 +501,15 @@ internal object RepositorySourceLoader {
         githubToken: String?,
     ): Request.Builder =
         apply {
-            val host = runCatching { URI(requestUrl).host.orEmpty() }.getOrDefault("")
-            if (host.contains("github", ignoreCase = true)) {
+            if (NetworkPolicy.shouldAttachGitHubToken(requestUrl)) {
                 githubToken?.trim()?.takeIf(String::isNotBlank)?.let {
                     header("Authorization", "Bearer $it")
                 }
-                if (host.equals("api.github.com", ignoreCase = true)) {
-                    header("Accept", "application/vnd.github+json")
-                    header("X-GitHub-Api-Version", "2022-11-28")
-                }
+            }
+            val host = runCatching { URI(requestUrl).host.orEmpty() }.getOrDefault("")
+            if (host.equals("api.github.com", ignoreCase = true)) {
+                header("Accept", "application/vnd.github+json")
+                header("X-GitHub-Api-Version", "2022-11-28")
             }
         }
 

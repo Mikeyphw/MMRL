@@ -3,6 +3,7 @@ package com.dergoogler.mmrl.debug
 import android.content.Context
 import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.network.NetworkUtils
+import com.dergoogler.mmrl.network.NetworkPolicy
 import okhttp3.Request
 import java.net.URI
 
@@ -56,7 +57,7 @@ class LsposedRepoDebugProbe(context: Context) {
                 .get()
                 .build()
             client.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
+                val body = response.body?.let { NetworkPolicy.readUtf8Bounded(it, NetworkPolicy.MAX_REPOSITORY_JSON_BYTES, url) }.orEmpty()
                 EndpointProbeResult(
                     url = url,
                     statusCode = response.code,
@@ -81,8 +82,7 @@ class LsposedRepoDebugProbe(context: Context) {
     }
 
     private fun Request.Builder.applyGithubToken(url: String, token: String?): Request.Builder = apply {
-        val host = runCatching { URI(url).host.orEmpty() }.getOrDefault("")
-        if (host.contains("github", ignoreCase = true)) {
+        if (NetworkPolicy.shouldAttachGitHubToken(url)) {
             token?.trim()?.takeIf(String::isNotBlank)?.let { header("Authorization", "Bearer $it") }
         }
     }

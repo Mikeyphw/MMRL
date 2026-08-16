@@ -32,6 +32,24 @@ data class RepositoriesScreenState(
     val isRefreshing: Boolean = false,
 )
 
+class RepositoryRefreshException(
+    val failures: List<Throwable>,
+) : RuntimeException(
+        buildString {
+            append(failures.size)
+            append(if (failures.size == 1) " repository refresh failed" else " repository refreshes failed")
+            failures.take(5).forEachIndexed { index, failure ->
+                append("\n")
+                append(index + 1)
+                append(". ")
+                append(failure.message ?: failure::class.simpleName ?: "Unknown error")
+            }
+            if (failures.size > 5) {
+                append("\n…")
+            }
+        },
+    )
+
 @HiltViewModel
 class RepositoriesViewModel
     @Inject
@@ -163,10 +181,14 @@ class RepositoriesViewModel
             }
         }
 
-        fun getRepoAll() =
+        fun getRepoAll(onFailure: (Throwable) -> Unit = {}) =
             viewModelScope.launch {
                 refreshing {
-                    modulesRepository.getRepoAll(onlyEnable = false)
+                    val results = modulesRepository.getRepoAll(onlyEnable = false)
+                    val failures = results.mapNotNull { it.exceptionOrNull() }
+                    if (failures.isNotEmpty()) {
+                        onFailure(RepositoryRefreshException(failures))
+                    }
                 }
             }
     }

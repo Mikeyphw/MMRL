@@ -8,17 +8,17 @@ inline fun <reified T> runRequest(run: () -> retrofit2.Response<T>): Result<T> =
             if (data != null) {
                 Result.success(data)
             } else {
-                Result.failure(NullPointerException())
+                Result.failure(NullPointerException("Empty response body"))
             }
         } else {
-            val errorBody = response.errorBody()
-            val error = errorBody?.string() ?: "404 Not Found"
-
-            if (NetworkUtils.isHTML(error)) {
-                Result.failure(RuntimeException("404 Not Found"))
-            } else {
-                Result.failure(RuntimeException(error))
-            }
+            val snippet = NetworkPolicy.readErrorSnippet(response.errorBody())
+            Result.failure(
+                NetworkHttpException(
+                    statusCode = response.code(),
+                    requestUrl = response.raw().request.url.toString(),
+                    responseSnippet = snippet,
+                ),
+            )
         }
     } catch (e: Exception) {
         Result.failure(e)
@@ -30,21 +30,24 @@ inline fun <reified T> runRequest(
 ): Result<T> =
     try {
         val response = run()
-        val body = response.body
-        val headers = response.headers
-        if (response.isSuccessful) {
-            if (body != null) {
-                Result.success(get(body, headers))
+        response.use {
+            val body = it.body
+            val headers = it.headers
+            if (it.isSuccessful) {
+                if (body != null) {
+                    Result.success(get(body, headers))
+                } else {
+                    Result.failure(NullPointerException("Empty response body"))
+                }
             } else {
-                Result.failure(NullPointerException())
-            }
-        } else {
-            val error = body?.string() ?: "404 Not Found"
-
-            if (NetworkUtils.isHTML(error)) {
-                Result.failure(RuntimeException("404 Not Found"))
-            } else {
-                Result.failure(RuntimeException(error))
+                val snippet = NetworkPolicy.readErrorSnippet(body)
+                Result.failure(
+                    NetworkHttpException(
+                        statusCode = it.code,
+                        requestUrl = it.request.url.toString(),
+                        responseSnippet = snippet,
+                    ),
+                )
             }
         }
     } catch (e: Exception) {

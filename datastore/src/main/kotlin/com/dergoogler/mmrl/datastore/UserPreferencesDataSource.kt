@@ -191,7 +191,7 @@ class UserPreferencesDataSource
             withContext(Dispatchers.IO) {
                 userPreferences.updateData {
                     it.copy(
-                        autoUpdateReposInterval = value,
+                        autoUpdateReposInterval = clampServiceInterval(value),
                     )
                 }
             }
@@ -218,7 +218,7 @@ class UserPreferencesDataSource
             withContext(Dispatchers.IO) {
                 userPreferences.updateData {
                     it.copy(
-                        checkModuleUpdatesInterval = value,
+                        checkModuleUpdatesInterval = clampServiceInterval(value),
                     )
                 }
             }
@@ -542,4 +542,12 @@ class UserPreferencesDataSource
 
         private suspend fun update(block: com.dergoogler.mmrl.datastore.model.UserPreferences.() -> com.dergoogler.mmrl.datastore.model.UserPreferences) =
             withContext(Dispatchers.IO) { userPreferences.updateData { it.block() } }
+
+        private fun clampServiceInterval(value: Long): Long =
+            value.coerceIn(MIN_SERVICE_INTERVAL_HOURS, MAX_SERVICE_INTERVAL_HOURS)
+
+        private companion object {
+            private const val MIN_SERVICE_INTERVAL_HOURS = 1L
+            private const val MAX_SERVICE_INTERVAL_HOURS = 24L * 14L
+        }
 }

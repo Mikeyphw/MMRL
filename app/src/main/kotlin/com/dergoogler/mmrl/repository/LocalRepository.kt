@@ -1,5 +1,7 @@
 package com.dergoogler.mmrl.repository
 
+import androidx.room.withTransaction
+import com.dergoogler.mmrl.database.AppDatabase
 import com.dergoogler.mmrl.database.dao.BlacklistDao
 import com.dergoogler.mmrl.database.dao.JoinDao
 import com.dergoogler.mmrl.database.dao.LocalDao
@@ -14,10 +16,13 @@ import com.dergoogler.mmrl.database.entity.local.LocalModuleUpdatable
 import com.dergoogler.mmrl.database.entity.online.BlacklistEntity
 import com.dergoogler.mmrl.database.entity.online.OnlineModuleEntity
 import com.dergoogler.mmrl.ext.merge
+import com.dergoogler.mmrl.github.GitHubSourceSpec
 import com.dergoogler.mmrl.model.ModuleIdentity
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.model.online.Blacklist
+import com.dergoogler.mmrl.model.online.ModulesJson
 import com.dergoogler.mmrl.model.online.OnlineModule
+import com.dergoogler.mmrl.model.online.VersionItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -28,6 +33,7 @@ import javax.inject.Singleton
 class LocalRepository
     @Inject
     constructor(
+        private val db: AppDatabase,
         private val repoDao: RepoDao,
         private val onlineDao: OnlineDao,
         private val versionDao: VersionDao,
@@ -93,6 +99,15 @@ class LocalRepository
                 localDao.deleteAll()
             }
 
+        suspend fun replaceLocalGeneration(list: List<LocalModule>) =
+            withContext(Dispatchers.IO) {
+                db.withTransaction {
+                    localDao.deleteAll()
+                    localDao.insert(list.map { LocalModuleEntity(it) })
+                    pruneUpdatableTagsLocked(list.map { it.id.id })
+                }
+            }
+
         suspend fun insertUpdatableTag(
             id: String,
             updatable: Boolean,
@@ -139,12 +154,18 @@ class LocalRepository
 
         suspend fun clearUpdatableTag(new: List<String>) =
             withContext(Dispatchers.IO) {
-                val retained = new.flatMap { ModuleIdentity.aliasesFor(it) }.map(ModuleIdentity::canonical).toSet()
-                val removed = localDao.getUpdatableTagAll().filter { ModuleIdentity.canonical(it.id) !in retained }
-                localDao.deleteUpdatableTag(removed)
-                val removedSources = localDao.getSourceAll().filter { ModuleIdentity.canonical(it.id) !in retained }
-                localDao.deleteSource(removedSources)
+                db.withTransaction {
+                    pruneUpdatableTagsLocked(new)
+                }
             }
+
+        private suspend fun pruneUpdatableTagsLocked(new: List<String>) {
+            val retained = new.flatMap { ModuleIdentity.aliasesFor(it) }.map(ModuleIdentity::canonical).toSet()
+            val removed = localDao.getUpdatableTagAll().filter { ModuleIdentity.canonical(it.id) !in retained }
+            localDao.deleteUpdatableTag(removed)
+            val removedSources = localDao.getSourceAll().filter { ModuleIdentity.canonical(it.id) !in retained }
+            localDao.deleteSource(removedSources)
+        }
 
         fun getRepoAllAsFlow() = repoDao.getAllAsFlow()
 
@@ -162,7 +183,10 @@ class LocalRepository
 
         suspend fun insertRepo(value: Repo) =
             withContext(Dispatchers.IO) {
-                repoDao.insert(value)
+                db.withTransaction {
+                    deleteStaleGitHubSourceRulesLocked(value)
+                    repoDao.insert(value)
+                }
             }
 
         suspend fun deleteRepo(value: Repo) =
@@ -173,12 +197,12 @@ class LocalRepository
         fun getOnlineAllAsFlow(duplicates: Boolean = false) =
             joinDao.getOnlineAllAsFlow().map { list ->
                 if (duplicates) {
-                    return@map list.map { it.toModule().copy(versions = getVersionById(it.id)) }
+                    return@map list.map { it.toModuleWithCurrentBlacklist(getVersionByIdAndUrl(it.id, it.repoUrl)) }
                 }
 
                 val values = mutableListOf<OnlineModule>()
                 list.forEach { entity ->
-                    val new = entity.toModule()
+                    val new = entity.toModuleWithCurrentBlacklist(emptyList())
 
                     if (new in values) {
                         val old = values.first { it.id == new.id }
@@ -188,7 +212,7 @@ class LocalRepository
                         }
                     } else {
                         values.add(
-                            new.copy(versions = getVersionById(new.id)),
+                            entity.toModuleWithCurrentBlacklist(getVersionByIdAndUrl(new.id, entity.repoUrl)),
                         )
                     }
                 }
@@ -199,7 +223,7 @@ class LocalRepository
             joinDao.getOnlineAllByUrlAsFlow(repoUrl).map { list ->
                 val values = mutableListOf<OnlineModule>()
                 list.forEach { entity ->
-                    val new = entity.toModule()
+                    val new = entity.toModuleWithCurrentBlacklist(emptyList())
 
                     if (new in values) {
                         val old = values.first { it.id == new.id }
@@ -209,7 +233,7 @@ class LocalRepository
                         }
                     } else {
                         values.add(
-                            new.copy(versions = getVersionByIdAndUrl(new.id, repoUrl)),
+                            entity.toModuleWithCurrentBlacklist(getVersionByIdAndUrl(new.id, repoUrl)),
                         )
                     }
                 }
@@ -221,59 +245,107 @@ class LocalRepository
             id: String,
             repoUrl: String,
         ) = withContext(Dispatchers.IO) {
-            joinDao.getOnlineByIdAndUrl(id, repoUrl).toModule(getVersionByIdAndUrl(id, repoUrl))
+            joinDao.getOnlineByIdAndUrl(id, repoUrl).toModuleWithCurrentBlacklist(getVersionByIdAndUrl(id, repoUrl))
         }
 
         suspend fun getOnlineAllById(id: String) =
             withContext(Dispatchers.IO) {
-                onlineDao.getAllById(id).map { it.toModule(getVersionById(it.id)) }
+                onlineDao.getAllById(id).map { it.toModuleWithCurrentBlacklist(getVersionByIdAndUrl(it.id, it.repoUrl)) }
             }
 
         suspend fun getOnlineAllByUrl(url: String) =
             withContext(Dispatchers.IO) {
-                onlineDao.getAllByUrl(url).map { it.toModule(getVersionByIdAndUrl(it.id, url)) }
+                onlineDao.getAllByUrl(url).map { it.toModuleWithCurrentBlacklist(getVersionByIdAndUrl(it.id, url)) }
             }
 
         suspend fun getOnlineAllByIdAndUrl(
             id: String,
             repoUrl: String,
         ) = withContext(Dispatchers.IO) {
-            onlineDao.getAllByIdAndUrl(id, repoUrl).map { it.toModule() }
+            onlineDao.getAllByIdAndUrl(id, repoUrl).map {
+                it.toModuleWithCurrentBlacklist(getVersionByIdAndUrl(it.id, repoUrl))
+            }
+        }
+
+        suspend fun replaceRepositoryGeneration(
+            repo: Repo,
+            modulesJson: ModulesJson,
+        ) = withContext(Dispatchers.IO) {
+            val versions = versionEntities(modulesJson.modules, repo.url)
+            val onlineRows = onlineEntities(modulesJson.modules, repo.url)
+            db.withTransaction {
+                deleteStaleGitHubSourceRulesLocked(repo)
+                repoDao.insert(repo.copy(modulesJson))
+                versionDao.deleteByUrl(repo.url)
+                onlineDao.deleteByUrl(repo.url)
+                versionDao.insert(versions)
+                onlineDao.insert(onlineRows)
+            }
         }
 
         suspend fun insertOnline(
             list: List<OnlineModule>,
             repoUrl: String,
         ) = withContext(Dispatchers.IO) {
-            val versions =
-                list
-                    .map { module ->
-                        module.versions.map {
-                            VersionItemEntity(
-                                original = it,
-                                id = module.id,
-                                repoUrl = repoUrl,
-                            )
-                        }
-                    }.merge()
-
-            versionDao.insert(versions)
-            onlineDao.insert(
-                list.map {
-                    OnlineModuleEntity(
-                        original = it,
-                        repoUrl = repoUrl,
-                        blacklist = getBlacklistById(it.id) ?: Blacklist.EMPTY,
-                    )
-                },
-            )
+            val versions = versionEntities(list, repoUrl)
+            val onlineRows = onlineEntities(list, repoUrl)
+            db.withTransaction {
+                versionDao.insert(versions)
+                onlineDao.insert(onlineRows)
+            }
         }
 
         suspend fun deleteOnlineByUrl(repoUrl: String) =
             withContext(Dispatchers.IO) {
-                versionDao.deleteByUrl(repoUrl)
-                onlineDao.deleteByUrl(repoUrl)
+                db.withTransaction {
+                    versionDao.deleteByUrl(repoUrl)
+                    onlineDao.deleteByUrl(repoUrl)
+                }
             }
+
+        private suspend fun deleteStaleGitHubSourceRulesLocked(repo: Repo) {
+            val canonical = GitHubSourceSpec.fromSourceUrl(repo.url)?.repoUrl ?: return
+            repoDao.getAll()
+                .filter { it.url != repo.url && GitHubSourceSpec.fromSourceUrl(it.url)?.repoUrl == canonical }
+                .forEach { stale ->
+                    versionDao.deleteByUrl(stale.url)
+                    onlineDao.deleteByUrl(stale.url)
+                    repoDao.delete(stale)
+                }
+        }
+
+        private fun versionEntities(
+            list: List<OnlineModule>,
+            repoUrl: String,
+        ): List<VersionItemEntity> =
+            list
+                .map { module ->
+                    module.versions.map {
+                        VersionItemEntity(
+                            original = it,
+                            id = module.id,
+                            repoUrl = repoUrl,
+                        )
+                    }
+                }.merge()
+
+        private suspend fun onlineEntities(
+            list: List<OnlineModule>,
+            repoUrl: String,
+        ): List<OnlineModuleEntity> =
+            list.map {
+                OnlineModuleEntity(
+                    original = it,
+                    repoUrl = repoUrl,
+                    blacklist = Blacklist.EMPTY,
+                )
+            }
+
+        private suspend fun OnlineModuleEntity.toModuleWithCurrentBlacklist(versions: List<VersionItem>): OnlineModule =
+            toModule(
+                versions = versions,
+                currentBlacklist = blacklistDao.getBlacklistEntry(id)?.toBlacklist(),
+            )
 
         suspend fun getVersionById(id: String) =
             withContext(Dispatchers.IO) {

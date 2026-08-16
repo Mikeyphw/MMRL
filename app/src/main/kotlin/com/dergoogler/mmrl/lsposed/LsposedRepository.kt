@@ -9,6 +9,7 @@ import androidx.core.content.FileProvider
 import androidx.core.content.pm.PackageInfoCompat
 import com.dergoogler.mmrl.app.moshi
 import com.dergoogler.mmrl.github.GitHubTokenStore
+import com.dergoogler.mmrl.network.NetworkPolicy
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.dergoogler.mmrl.platform.file.SuFile
 import com.dergoogler.mmrl.platform.file.useLines
@@ -74,11 +75,25 @@ class LsposedRepository(private val context: Context) {
             .get()
             .build()
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                error("Unable to download APK: HTTP ${response.code}")
-            }
+            NetworkPolicy.requireSuccessful(response)
             val body = response.body ?: error("Unable to download APK: empty response")
-            out.outputStream().use { sink -> body.byteStream().copyTo(sink) }
+            val length = body.contentLength()
+            require(NetworkPolicy.declaredDownloadLengthAllowed(length)) {
+                "APK download exceeds the ${NetworkPolicy.MAX_DOWNLOAD_BYTES} byte safety limit"
+            }
+            var received = 0L
+            body.byteStream().buffered().use { input ->
+                out.outputStream().buffered().use { sink ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        if (count == 0) continue
+                        received = NetworkPolicy.addReceivedBytes(received, count)
+                        sink.write(buffer, 0, count)
+                    }
+                }
+            }
         }
         require(out.length() > 0L) { "Downloaded APK is empty" }
         PreparedApk(
@@ -334,10 +349,11 @@ class LsposedRepository(private val context: Context) {
             .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                val snippet = response.body?.string()?.take(220)?.trim()?.takeIf(String::isNotBlank)
+                val snippet = NetworkPolicy.readErrorSnippet(response.body).take(220).trim().takeIf(String::isNotBlank)
                 error(lsposedRepositoryFailureMessage(url, response.code, snippet))
             }
-            return response.body?.string() ?: error("empty response")
+            return response.body?.let { NetworkPolicy.readUtf8Bounded(it, NetworkPolicy.MAX_REPOSITORY_JSON_BYTES, url) }
+                ?: error("empty response")
         }
     }
 
@@ -345,15 +361,15 @@ class LsposedRepository(private val context: Context) {
         requestUrl: String,
         githubToken: String?,
     ): Request.Builder = apply {
-        val host = runCatching { URI(requestUrl).host.orEmpty() }.getOrDefault("")
-        if (host.contains("github", ignoreCase = true)) {
+        if (NetworkPolicy.shouldAttachGitHubToken(requestUrl)) {
             githubToken?.trim()?.takeIf(String::isNotBlank)?.let {
                 header("Authorization", "Bearer $it")
             }
-            if (host.equals("api.github.com", ignoreCase = true)) {
-                header("Accept", "application/vnd.github+json")
-                header("X-GitHub-Api-Version", "2022-11-28")
-            }
+        }
+        val host = runCatching { URI(requestUrl).host.orEmpty() }.getOrDefault("")
+        if (host.equals("api.github.com", ignoreCase = true)) {
+            header("Accept", "application/vnd.github+json")
+            header("X-GitHub-Api-Version", "2022-11-28")
         }
     }
 
@@ -366,9 +382,9 @@ class LsposedRepository(private val context: Context) {
         val guidance = when {
             code == 403 && host.equals("modules.lsposed.org", ignoreCase = true) ->
                 "HTTP 403 from modules.lsposed.org; mirror fallback will be tried"
-            code == 403 && host.contains("github", ignoreCase = true) && !githubTokenStore.hasToken() ->
+            code == 403 && NetworkPolicy.shouldAttachGitHubToken(url) && !githubTokenStore.hasToken() ->
                 "HTTP 403 from GitHub; save a GitHub API token in Settings > Other and retry"
-            code == 403 && host.contains("github", ignoreCase = true) ->
+            code == 403 && NetworkPolicy.shouldAttachGitHubToken(url) ->
                 "HTTP 403 from GitHub; check the saved token permissions or rate limit"
             else -> "HTTP $code"
         }

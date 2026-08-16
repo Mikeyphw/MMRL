@@ -18,6 +18,7 @@ data class VersionItem(
     val zipUrl: String,
     val size: Int? = null,
     val changelog: String = "",
+    val sourceProvenance: String? = null,
 ) {
     val versionDisplay get() = Utils.getVersionDisplay(version, versionCode)
     val hasSize = size != null

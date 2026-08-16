@@ -33,6 +33,7 @@ import com.dergoogler.mmrl.installer.ArtifactDigest
 import com.dergoogler.mmrl.installer.AtomicFilePublication
 import com.dergoogler.mmrl.service.DownloadPublicationPolicy.PublishMode
 import com.dergoogler.mmrl.github.GitHubTokenStore
+import com.dergoogler.mmrl.network.NetworkPolicy
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
 import com.dergoogler.mmrl.ui.activity.MainActivity
@@ -352,15 +353,13 @@ class DownloadService : LifecycleService() {
         onProgress: (Float) -> Unit,
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val token = if (url.startsWith("https://api.github.com/", ignoreCase = true) ||
+            val usesGitHubApi = NetworkPolicy.shouldAttachGitHubToken(url) ||
                 GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)
-            ) {
+            val token = if (usesGitHubApi) {
                 GitHubTokenStore(this@DownloadService).getToken()?.trim()?.takeIf(String::isNotBlank)
             } else null
             val request = Request.Builder().url(url).apply {
-                if (url.startsWith("https://api.github.com/", ignoreCase = true) ||
-                    GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)
-                ) {
+                if (usesGitHubApi) {
                     header("Accept", githubDownloadAccept(url))
                     header("X-GitHub-Api-Version", "2022-11-28")
                     token?.let { header("Authorization", "Bearer $it") }
@@ -375,10 +374,8 @@ class DownloadService : LifecycleService() {
             try {
                 call.execute().use { response ->
                     if (!response.isSuccessful) {
-                        val detail = response.body?.string()
-                        if (url.startsWith("https://api.github.com/", ignoreCase = true) ||
-                            GitHubArtifactArchivePolicy.isActionsArtifactArchive(url)
-                        ) {
+                        val detail = NetworkPolicy.readErrorSnippet(response.body)
+                        if (usesGitHubApi) {
                             throw DownloadHttpException(
                                 response.code,
                                 GitHubArtifactArchivePolicy.downloadFailureMessage(url, response.code, token != null, detail),
@@ -386,7 +383,7 @@ class DownloadService : LifecycleService() {
                         }
                         throw DownloadHttpException(
                             response.code,
-                            "Download failed with HTTP ${response.code}${detail?.take(256)?.let { ": $it" }.orEmpty()}",
+                            "Download failed with HTTP ${response.code}${detail.take(256).takeIf(String::isNotBlank)?.let { ": $it" }.orEmpty()}",
                         )
                     }
                     val body = response.body ?: error("Empty download response")

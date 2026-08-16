@@ -2,6 +2,7 @@ package com.dergoogler.mmrl.github
 
 import android.os.Build
 import com.dergoogler.mmrl.app.moshi
+import com.dergoogler.mmrl.network.NetworkPolicy
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -49,8 +50,21 @@ data class GitHubCandidate(
     val score: Int,
     val nestedZipName: String? = null,
     val artifactStrategy: GitHubArtifactStrategy = GitHubArtifactStrategy.AUTO,
+    val sourceCommit: String? = null,
+    val workflowRunId: Long? = null,
+    val artifactId: Long? = null,
     val diagnostics: String? = null,
-)
+) {
+    fun provenanceSummary(): String =
+        listOfNotNull(
+            "mode=${mode.name.lowercase(Locale.ROOT)}",
+            "id=$id",
+            sourceCommit?.let { "commit=$it" },
+            workflowRunId?.let { "run=$it" },
+            artifactId?.let { "artifact=$it" },
+            diagnostics?.let { "diagnostics=$it" },
+        ).joinToString("; ")
+}
 
 data class GitHubResolveResult(
     val repository: String,
@@ -124,7 +138,11 @@ class GitHubModuleResolver {
         token: String?,
         request: GitHubModuleRequest,
     ): List<GitHubCandidate> {
-        val releases = releasesAdapter.fromJson(apiText(repo, "releases?per_page=30", token)).orEmpty()
+        val releases =
+            (1..NetworkPolicy.MAX_GITHUB_API_PAGES)
+                .flatMap { page ->
+                    releasesAdapter.fromJson(apiText(repo, "releases?per_page=30&page=$page", token)).orEmpty()
+                }
         val release =
             releases.firstOrNull { !it.draft && (includePreReleases || !it.prerelease) }
                 ?: error("No matching GitHub release found")
@@ -151,7 +169,8 @@ class GitHubModuleResolver {
                     mode = GitHubSourceMode.RELEASE,
                     score = score,
                     artifactStrategy = request.artifactStrategy,
-                    diagnostics = "release asset matched saved source rules; strategy=${request.artifactStrategy.queryValue}",
+                    artifactId = asset.id,
+                    diagnostics = "release asset matched saved source rules; strategy=${request.artifactStrategy.queryValue}; release=${release.id}; asset=${asset.id}",
                 )
             }
     }
@@ -162,10 +181,13 @@ class GitHubModuleResolver {
         request: GitHubModuleRequest,
     ): List<GitHubCandidate> {
         val runs =
-            runsAdapter
-                .fromJson(apiText(repo, "actions/runs?status=success&per_page=20", token))
-                ?.workflowRuns
-                .orEmpty()
+            (1..NetworkPolicy.MAX_GITHUB_API_PAGES)
+                .flatMap { page ->
+                    runsAdapter
+                        .fromJson(apiText(repo, "actions/runs?status=success&per_page=20&page=$page", token))
+                        ?.workflowRuns
+                        .orEmpty()
+                }
                 .filter { run -> request.branchNameRegex()?.containsMatchIn(run.headBranch.orEmpty()) ?: true }
                 .filter { run ->
                     val workflow = listOf(run.name, run.path.orEmpty()).joinToString(" ")
@@ -179,10 +201,7 @@ class GitHubModuleResolver {
 
         runs.forEach { run ->
             val artifacts =
-                artifactsAdapter
-                    .fromJson(fetchText(run.artifactsUrl, token))
-                    ?.artifacts
-                    .orEmpty()
+                fetchArtifacts(run.artifactsUrl, token)
                     .filter { !it.expired }
                     .filter { artifact -> artifactRule?.containsMatchIn(artifact.name) ?: true }
                     .filterNot { artifact -> rejectRule?.containsMatchIn(artifact.name) ?: false }
@@ -201,7 +220,10 @@ class GitHubModuleResolver {
                         mode = GitHubSourceMode.NIGHTLY,
                         score = assetScore(artifact.name) + if (preferredRule?.containsMatchIn(artifact.name) == true) 240 else 0,
                         artifactStrategy = request.artifactStrategy,
-                        diagnostics = "nightly artifact matched saved source rules; strategy=${request.artifactStrategy.queryValue}; run=${run.name}; branch=${run.headBranch.orEmpty()}",
+                        sourceCommit = run.headSha.takeIf(String::isNotBlank),
+                        workflowRunId = run.id,
+                        artifactId = artifact.id,
+                        diagnostics = "nightly artifact matched saved source rules; strategy=${request.artifactStrategy.queryValue}; run=${run.name}; branch=${run.headBranch.orEmpty()}; sha=${run.headSha}; artifact=${artifact.id}",
                     )
                 }
             }
@@ -220,9 +242,12 @@ class GitHubModuleResolver {
         val downloadUrl = apiUrl ?: url
         val response = execute(downloadUrl, token, acceptForDownload(downloadUrl))
         response.use {
-            require(it.isSuccessful) { "HTTP ${it.code} while downloading ${destination.name}" }
+            NetworkPolicy.requireSuccessful(it)
             val body = it.body ?: error("Empty download response")
             val length = body.contentLength()
+            require(NetworkPolicy.declaredDownloadLengthAllowed(length)) {
+                "Download exceeds the ${NetworkPolicy.MAX_DOWNLOAD_BYTES} byte safety limit"
+            }
             var finished = 0L
             destination.delete()
             body.byteStream().buffered().use { input ->
@@ -231,9 +256,10 @@ class GitHubModuleResolver {
                     while (true) {
                         val read = input.read(buffer)
                         if (read == -1) break
+                        if (read == 0) continue
+                        finished = NetworkPolicy.addReceivedBytes(finished, read)
                         output.write(buffer, 0, read)
-                        finished += read
-                        if (length > 0L) onProgress((finished.toDouble() / length).toFloat())
+                        if (length > 0L) onProgress((finished.toDouble() / length).toFloat().coerceIn(0f, 1f))
                     }
                 }
             }
@@ -276,14 +302,36 @@ class GitHubModuleResolver {
         token: String?,
     ): String = fetchText("https://api.github.com/repos/${repo.owner}/${repo.name}/$path", token)
 
+    private fun fetchArtifacts(
+        artifactsUrl: String,
+        token: String?,
+    ): List<GitHubArtifact> =
+        (1..NetworkPolicy.MAX_GITHUB_API_PAGES)
+            .flatMap { page ->
+                artifactsAdapter
+                    .fromJson(fetchText(appendPageQuery(artifactsUrl, page), token))
+                    ?.artifacts
+                    .orEmpty()
+            }.distinctBy { it.id }
+
+    private fun appendPageQuery(
+        url: String,
+        page: Int,
+    ): String {
+        val separator = if ('?' in url) "&" else "?"
+        return "$url${separator}per_page=100&page=$page"
+    }
+
     private fun fetchText(
         url: String,
         token: String?,
     ): String {
         val response = execute(url, token, "application/vnd.github+json")
         response.use {
-            require(it.isSuccessful) { "GitHub returned HTTP ${it.code}" }
-            return it.body?.string() ?: error("GitHub returned an empty response")
+            NetworkPolicy.requireSuccessful(it)
+            return it.body?.let { body ->
+                NetworkPolicy.readUtf8Bounded(body, NetworkPolicy.MAX_GITHUB_JSON_BYTES, url)
+            } ?: error("GitHub returned an empty response")
         }
     }
 
@@ -298,8 +346,10 @@ class GitHubModuleResolver {
                 .url(url)
                 .header("Accept", accept)
                 .header("X-GitHub-Api-Version", "2022-11-28")
-        token?.trim()?.takeIf(String::isNotBlank)?.let {
-            builder.header("Authorization", "Bearer $it")
+        if (NetworkPolicy.shouldAttachGitHubToken(url)) {
+            token?.trim()?.takeIf(String::isNotBlank)?.let {
+                builder.header("Authorization", "Bearer $it")
+            }
         }
         return client.newCall(builder.build()).execute()
     }
@@ -411,6 +461,7 @@ class GitHubModuleResolver {
 
     @JsonClass(generateAdapter = true)
     internal data class GitHubArtifactsResponse(
+        @param:Json(name = "total_count") val totalCount: Int = 0,
         val artifacts: List<GitHubArtifact> = emptyList(),
     )
 

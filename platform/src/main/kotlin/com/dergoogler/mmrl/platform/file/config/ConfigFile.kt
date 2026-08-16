@@ -267,8 +267,8 @@ abstract class ConfigFile<T> : IConfig<T> {
                     SuFile(parent.absolutePath).mkdirs()
                 }
 
-                // Write updated override file
-                targetFile.writeText(
+                // Write updated override file through a sibling temp file first.
+                targetFile.writeTextAtomically(
                     text = mapAdapter.indent("  ").toJson(existingMap),
                 )
 
@@ -282,6 +282,23 @@ abstract class ConfigFile<T> : IConfig<T> {
                         configCache[id] = MutableStateFlow(newConfig)
                     }
                 }
+            }
+        }
+    }
+
+    private fun SuFile.writeTextAtomically(text: String) {
+        parentFile?.let { parent ->
+            SuFile(parent.absolutePath).mkdirs()
+        }
+        val temp = SuFile("$absolutePath.tmp-${System.nanoTime()}")
+        try {
+            temp.writeText(text)
+            if (!temp.renameTo(this)) {
+                throw IOException("Failed to atomically replace $absolutePath")
+            }
+        } finally {
+            if (temp.exists()) {
+                temp.delete()
             }
         }
     }
@@ -342,7 +359,7 @@ abstract class ConfigFile<T> : IConfig<T> {
                 parentDir.nullable {
                     SuFile(it.absolutePath).mkdirs()
                 }
-                file.writeText("{}")
+                file.writeTextAtomically("{}")
             }
         }
     }

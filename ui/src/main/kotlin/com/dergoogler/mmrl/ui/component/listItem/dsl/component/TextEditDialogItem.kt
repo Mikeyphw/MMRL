@@ -22,6 +22,7 @@ import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.ext.nullable
 import com.dergoogler.mmrl.ui.R
@@ -49,6 +50,7 @@ fun ListScope.TextEditDialogItem(
     onConfirm: (String) -> Unit,
     keyboardOptions: KeyboardOptions? = null,
     keyboardActions: KeyboardActions? = null,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     content: @Composable (ListItemScope.(TextEditDialogItemData) -> Unit),
 ) {
     var open by remember { mutableStateOf(false) }
@@ -176,6 +178,7 @@ fun ListScope.TextEditDialogItem(
                                         isError = isError,
                                         keyboardOptions = kbOptions,
                                         keyboardActions = kbActions,
+                                        visualTransformation = visualTransformation,
                                         shape = RoundedCornerShape(15.dp),
                                     )
                                 }

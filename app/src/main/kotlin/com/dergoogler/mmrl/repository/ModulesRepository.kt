@@ -25,11 +25,7 @@ class ModulesRepository
 
         suspend fun getLocalAll() =
             withContext(Dispatchers.IO) {
-                with(PlatformManager.moduleManager.modules) {
-                    localRepository.deleteLocalAll()
-                    localRepository.insertLocal(this)
-                    localRepository.clearUpdatableTag(map { it.id.id })
-                }
+                localRepository.replaceLocalGeneration(PlatformManager.moduleManager.modules)
             }
 
         suspend fun getLocal(id: ModId) =
@@ -47,15 +43,11 @@ class ModulesRepository
                     getRepo(it)
                 }
 
-        suspend fun getRepo(repo: Repo) =
+        suspend fun getRepo(repo: Repo): Result<Unit> =
             withContext(Dispatchers.IO) {
-                RepositorySourceLoader.load(repo.url, githubTokenStore.getToken()).onSuccess { modulesJson ->
-                    localRepository.insertRepo(repo.copy(modulesJson))
-                    localRepository.deleteOnlineByUrl(repo.url)
-                    localRepository.insertOnline(
-                        list = modulesJson.modules,
-                        repoUrl = repo.url,
-                    )
+                runCatching {
+                    val modulesJson = RepositorySourceLoader.load(repo.url, githubTokenStore.getToken()).getOrThrow()
+                    localRepository.replaceRepositoryGeneration(repo, modulesJson)
                 }.onFailure {
                     Timber.e(it, "getRepo: ${repo.url}")
                 }

@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.model.json
 
 import com.dergoogler.mmrl.model.online.VersionItem
+import com.dergoogler.mmrl.network.NetworkPolicy
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -47,7 +48,7 @@ data class UpdateJson(
                             .build()
                             .adapter<UpdateJson>()
 
-                    adapter.fromJson(body.string()) to headers
+                    adapter.fromJson(NetworkPolicy.readUtf8Bounded(body, NetworkPolicy.MAX_REPOSITORY_JSON_BYTES, url)) to headers
                 }
 
             if (result.isSuccess) {
