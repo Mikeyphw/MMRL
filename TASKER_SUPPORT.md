@@ -17,13 +17,13 @@ Uses cached repository data or forces a repository refresh. Per-module ignored u
 Input: MMRL operation ID. Returns operation type, status, phase, progress, errors, reboot state, rollback availability, and JSON.
 
 ### Download module
-Inputs: repository module ID or direct HTTP/HTTPS ZIP URL, plus an optional filename. Downloads use MMRL's atomic two-slot queue and immediately return an operation ID.
+Inputs: repository module ID or direct HTTP/HTTPS ZIP URL, plus an optional filename. Downloads use MMRL's atomic two-slot queue and immediately return an operation ID. Direct URLs must not contain embedded credentials; query strings and fragments are redacted before MMRL stores history or Tasker output JSON.
 
 ### Cancel download
 Input: running download operation ID.
 
 ### Export technical log
-Input: operation ID. Returns a temporary read-only `content://` URI in `%mmrl_log_uri`; cache exports expire after 24 hours.
+Input: operation ID. Returns a temporary read-only `content://` URI in `%mmrl_log_uri`; cache exports expire after 24 hours. Export returns a new `%mmrl_operation_id` for the export operation while `%mmrl_result_json.source_operation_id` records the source operation that was exported. URI grant failure is treated as export failure instead of success.
 
 ## Controlled root actions
 
@@ -94,10 +94,10 @@ Requests awaiting approval appear both as a high-priority notification and in Ac
 ## Events
 
 ### Update discovered
-Triggered when MMRL discovers a new tracked version. Ignored updates do not trigger it.
+Triggered when MMRL discovers a new tracked version. Ignored updates do not trigger it. The global Tasker integration toggle is checked at delivery time; publish failures are stored in a bounded durable retry queue with attempt/error metadata.
 
 ### Operation failed
-Triggered when a persisted operation fails, including Tasker-controlled root actions and reviewed installs.
+Triggered when a persisted operation fails, including Tasker-controlled root actions and reviewed installs. The same delivery-time toggle and bounded retry semantics apply.
 
 ## Main output variables
 
@@ -113,7 +113,9 @@ Triggered when a persisted operation fails, including Tasker-controlled root act
 - `%mmrl_installed`
 - `%mmrl_enabled`
 - `%mmrl_installed_version`
+- `%mmrl_installed_version_code`
 - `%mmrl_available_version`
+- `%mmrl_available_version_code`
 - `%mmrl_update_available`
 - `%mmrl_update_ignored`
 - `%mmrl_repository`
@@ -133,6 +135,14 @@ Triggered when a persisted operation fails, including Tasker-controlled root act
 - `%mmrl_module_names()`
 - `%mmrl_versions()`
 - `%mmrl_states()`
+- `%mmrl_contract_version`
+- `%mmrl_contract_schema`
+- `%mmrl_freshness`
+- `%mmrl_partial`
+- `%mmrl_stale`
+- `%mmrl_generated_at`
+- `%mmrl_delivery_status`
+- `%mmrl_source`
 
 ## Safety boundary
 
@@ -141,3 +151,15 @@ MMRL does not expose generic root shell execution. Root changes are asynchronous
 ## AshReXcue recovery automation
 
 Phase H adds typed AshReXcue Tasker actions for capabilities, recovery status, module evidence, guarded plan preview/execution, guidance outcomes, and evidence refresh. Mutating actions require the dedicated AshReXcue recovery capability switch. Plans are revision-bound, idempotent, rate limited, auditable, and executed through one-shot 30-minute tokens. High-risk plans always wait for MMRL approval, and no action exposes arbitrary shell execution. See `docs/ASHREXCUE_PHASE_H.md` for the JSON contract and shell equivalents.
+
+## Stable output contract v2
+
+Every public Tasker response now carries stable metadata in addition to the action-specific fields above:
+
+- `%mmrl_contract_version` and `%mmrl_contract_schema` identify the response shape.
+- `%mmrl_freshness`, `%mmrl_partial`, and `%mmrl_stale` tell automations whether data came from a fresh source, a stale cache, or a partial fallback.
+- `%mmrl_generated_at` is Unix time in milliseconds for result generation.
+- `%mmrl_delivery_status` records whether the payload was returned inline or by another delivery path.
+- `%mmrl_source` names MMRL as the result producer.
+
+Root-backed Tasker jobs are persisted atomically, have a bounded approval/execution window, and re-check the enabled capability at worker execution time. Turning off a capability after enqueue but before the WorkManager job starts now blocks the privileged action instead of honoring stale authorization.

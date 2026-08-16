@@ -32,7 +32,7 @@ internal object TaskerRuntime {
 
     suspend fun moduleStatus(context: Context, moduleId: String): TaskerResultOutput {
         val repos = repositories(context)
-        runCatching { repos.modulesRepository().getLocalAll() }
+        val refreshFailure = runCatching { repos.modulesRepository().getLocalAll() }.exceptionOrNull()
         val normalized = ModuleIdentity.normalize(moduleId)
         val local = repos.localRepository().getLocalByIdOrNull(normalized)
         val online = newestOnline(context, normalized)
@@ -62,6 +62,10 @@ internal object TaskerRuntime {
             updateIgnored = !tracked,
             repository = online?.repoUrl.orEmpty(),
             rebootRequired = pendingReboot,
+            freshness = if (refreshFailure == null) TaskerFreshness.FRESH.name else TaskerFreshness.PARTIAL.name,
+            partial = refreshFailure != null,
+            stale = refreshFailure != null,
+            errorMessage = refreshFailure?.message.orEmpty(),
             resultJson = JSONObject()
                 .put("module_id", local?.id?.id ?: online?.id ?: normalized)
                 .put("installed", local != null)
@@ -74,6 +78,10 @@ internal object TaskerRuntime {
                 .put("update_ignored", !tracked)
                 .put("repository", online?.repoUrl.orEmpty())
                 .put("reboot_required", pendingReboot)
+                .put("freshness", if (refreshFailure == null) TaskerFreshness.FRESH.name else TaskerFreshness.PARTIAL.name)
+                .put("partial", refreshFailure != null)
+                .put("stale", refreshFailure != null)
+                .put("refresh_error", refreshFailure?.message.orEmpty())
                 .toString(),
         )
     }
@@ -147,9 +155,7 @@ internal object TaskerLogExporter {
             },
         )
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-        runCatching {
-            context.grantUriPermission(TASKER_PACKAGE, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
+        context.grantUriPermission(TASKER_PACKAGE, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         return uri.toString()
     }
 

@@ -49,6 +49,14 @@ public class TaskerResultOutput {
     public String risk;
     public boolean dryRun;
     public boolean replayed;
+    public int contractVersion;
+    public String contractSchema;
+    public String freshness;
+    public boolean partial;
+    public boolean stale;
+    public long generatedAt;
+    public String deliveryStatus;
+    public String source;
 
     public TaskerResultOutput() {
         this(
@@ -159,10 +167,18 @@ public class TaskerResultOutput {
         this.moduleNames = moduleNames;
         this.versions = versions;
         this.states = states;
+        this.contractVersion = TaskerPublicContract.VERSION;
+        this.contractSchema = TaskerPublicContract.SCHEMA;
+        this.freshness = TaskerFreshness.FRESH.name();
+        this.partial = false;
+        this.stale = false;
+        this.generatedAt = System.currentTimeMillis();
+        this.deliveryStatus = TaskerPublicContract.DELIVERY_INLINE;
+        this.source = TaskerPublicContract.SOURCE;
     }
 
     @TaskerOutputVariable(
-            name = "success",
+            name = "mmrl_success",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_success_label",
@@ -172,7 +188,7 @@ public class TaskerResultOutput {
     public void setSuccess(boolean value) { success = value; }
 
     @TaskerOutputVariable(
-            name = "status",
+            name = "mmrl_status",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_status_label",
@@ -182,7 +198,7 @@ public class TaskerResultOutput {
     public void setStatus(String value) { status = value; }
 
     @TaskerOutputVariable(
-            name = "message",
+            name = "mmrl_message",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_message_label",
@@ -192,7 +208,7 @@ public class TaskerResultOutput {
     public void setMessage(String value) { message = value; }
 
     @TaskerOutputVariable(
-            name = "operation_id",
+            name = "mmrl_operation_id",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_operation_id_label",
@@ -202,7 +218,7 @@ public class TaskerResultOutput {
     public void setOperationId(String value) { operationId = value; }
 
     @TaskerOutputVariable(
-            name = "operation_type",
+            name = "mmrl_operation_type",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_operation_type_label",
@@ -212,7 +228,7 @@ public class TaskerResultOutput {
     public void setOperationType(String value) { operationType = value; }
 
     @TaskerOutputVariable(
-            name = "phase",
+            name = "mmrl_phase",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_phase_label",
@@ -222,7 +238,7 @@ public class TaskerResultOutput {
     public void setPhase(String value) { phase = value; }
 
     @TaskerOutputVariable(
-            name = "progress",
+            name = "mmrl_progress",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_progress_label",
@@ -232,7 +248,7 @@ public class TaskerResultOutput {
     public void setProgress(int value) { progress = value; }
 
     @TaskerOutputVariable(
-            name = "module_id",
+            name = "mmrl_module_id",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_module_id_label",
@@ -242,7 +258,7 @@ public class TaskerResultOutput {
     public void setModuleId(String value) { moduleId = value; }
 
     @TaskerOutputVariable(
-            name = "module_name",
+            name = "mmrl_module_name",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_module_name_label",
@@ -252,7 +268,7 @@ public class TaskerResultOutput {
     public void setModuleName(String value) { moduleName = value; }
 
     @TaskerOutputVariable(
-            name = "installed",
+            name = "mmrl_installed",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_installed_label",
@@ -262,7 +278,7 @@ public class TaskerResultOutput {
     public void setInstalled(boolean value) { installed = value; }
 
     @TaskerOutputVariable(
-            name = "enabled",
+            name = "mmrl_enabled",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_enabled_label",
@@ -272,7 +288,7 @@ public class TaskerResultOutput {
     public void setEnabled(boolean value) { enabled = value; }
 
     @TaskerOutputVariable(
-            name = "installed_version",
+            name = "mmrl_installed_version",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_installed_version_label",
@@ -282,7 +298,7 @@ public class TaskerResultOutput {
     public void setInstalledVersion(String value) { installedVersion = value; }
 
     @TaskerOutputVariable(
-            name = "installed_version_code",
+            name = "mmrl_installed_version_code",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_installed_version_code_label",
@@ -292,7 +308,7 @@ public class TaskerResultOutput {
     public void setInstalledVersionCode(int value) { installedVersionCode = value; }
 
     @TaskerOutputVariable(
-            name = "available_version",
+            name = "mmrl_available_version",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_available_version_label",
@@ -302,7 +318,7 @@ public class TaskerResultOutput {
     public void setAvailableVersion(String value) { availableVersion = value; }
 
     @TaskerOutputVariable(
-            name = "available_version_code",
+            name = "mmrl_available_version_code",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_available_version_code_label",
@@ -312,7 +328,7 @@ public class TaskerResultOutput {
     public void setAvailableVersionCode(int value) { availableVersionCode = value; }
 
     @TaskerOutputVariable(
-            name = "update_available",
+            name = "mmrl_update_available",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_update_available_label",
@@ -322,7 +338,7 @@ public class TaskerResultOutput {
     public void setUpdateAvailable(boolean value) { updateAvailable = value; }
 
     @TaskerOutputVariable(
-            name = "update_ignored",
+            name = "mmrl_update_ignored",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_update_ignored_label",
@@ -332,7 +348,7 @@ public class TaskerResultOutput {
     public void setUpdateIgnored(boolean value) { updateIgnored = value; }
 
     @TaskerOutputVariable(
-            name = "repository",
+            name = "mmrl_repository",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_repository_label",
@@ -342,7 +358,7 @@ public class TaskerResultOutput {
     public void setRepository(String value) { repository = value; }
 
     @TaskerOutputVariable(
-            name = "reboot_required",
+            name = "mmrl_reboot_required",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_reboot_required_label",
@@ -352,7 +368,7 @@ public class TaskerResultOutput {
     public void setRebootRequired(boolean value) { rebootRequired = value; }
 
     @TaskerOutputVariable(
-            name = "rollback_available",
+            name = "mmrl_rollback_available",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_rollback_available_label",
@@ -362,7 +378,7 @@ public class TaskerResultOutput {
     public void setRollbackAvailable(boolean value) { rollbackAvailable = value; }
 
     @TaskerOutputVariable(
-            name = "error_code",
+            name = "mmrl_error_code",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_error_code_label",
@@ -372,7 +388,7 @@ public class TaskerResultOutput {
     public void setErrorCode(String value) { errorCode = value; }
 
     @TaskerOutputVariable(
-            name = "error_message",
+            name = "mmrl_error_message",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_error_message_label",
@@ -382,7 +398,7 @@ public class TaskerResultOutput {
     public void setErrorMessage(String value) { errorMessage = value; }
 
     @TaskerOutputVariable(
-            name = "log_uri",
+            name = "mmrl_log_uri",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_log_uri_label",
@@ -392,7 +408,7 @@ public class TaskerResultOutput {
     public void setLogUri(String value) { logUri = value; }
 
     @TaskerOutputVariable(
-            name = "review_token",
+            name = "mmrl_review_token",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_review_token_label",
@@ -402,7 +418,7 @@ public class TaskerResultOutput {
     public void setReviewToken(String value) { reviewToken = value; }
 
     @TaskerOutputVariable(
-            name = "review_expires_at",
+            name = "mmrl_review_expires_at",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_review_expires_at_label",
@@ -412,7 +428,7 @@ public class TaskerResultOutput {
     public void setReviewExpiresAt(long value) { reviewExpiresAt = value; }
 
     @TaskerOutputVariable(
-            name = "approval_required",
+            name = "mmrl_approval_required",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_approval_required_label",
@@ -422,7 +438,7 @@ public class TaskerResultOutput {
     public void setApprovalRequired(boolean value) { approvalRequired = value; }
 
     @TaskerOutputVariable(
-            name = "safety_level",
+            name = "mmrl_safety_level",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_safety_level_label",
@@ -432,7 +448,7 @@ public class TaskerResultOutput {
     public void setSafetyLevel(String value) { safetyLevel = value; }
 
     @TaskerOutputVariable(
-            name = "inspection_summary",
+            name = "mmrl_inspection_summary",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_inspection_summary_label",
@@ -442,7 +458,7 @@ public class TaskerResultOutput {
     public void setInspectionSummary(String value) { inspectionSummary = value; }
 
     @TaskerOutputVariable(
-            name = "result_json",
+            name = "mmrl_result_json",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_result_json_label",
@@ -452,7 +468,7 @@ public class TaskerResultOutput {
     public void setResultJson(String value) { resultJson = value; }
 
     @TaskerOutputVariable(
-            name = "count",
+            name = "mmrl_count",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_count_label",
@@ -462,7 +478,7 @@ public class TaskerResultOutput {
     public void setCount(int value) { count = value; }
 
     @TaskerOutputVariable(
-            name = "module_ids",
+            name = "mmrl_module_ids",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_module_ids_label",
@@ -472,7 +488,7 @@ public class TaskerResultOutput {
     public void setModuleIds(String[] value) { moduleIds = value; }
 
     @TaskerOutputVariable(
-            name = "module_names",
+            name = "mmrl_module_names",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_module_names_label",
@@ -482,7 +498,7 @@ public class TaskerResultOutput {
     public void setModuleNames(String[] value) { moduleNames = value; }
 
     @TaskerOutputVariable(
-            name = "versions",
+            name = "mmrl_versions",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_versions_label",
@@ -492,7 +508,7 @@ public class TaskerResultOutput {
     public void setVersions(String[] value) { versions = value; }
 
     @TaskerOutputVariable(
-            name = "states",
+            name = "mmrl_states",
             labelResId = 0,
             htmlLabelResId = 0,
             labelResIdName = "tasker_var_states_label",
@@ -500,40 +516,72 @@ public class TaskerResultOutput {
     )
     public String[] getStates() { return states; }
     public void setStates(String[] value) { states = value; }
-    @TaskerOutputVariable(name = "ash_protocol_version", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_protocol_version_label", htmlLabelResIdName = "tasker_var_ash_protocol_version_description")
+    @TaskerOutputVariable(name = "mmrl_ash_protocol_version", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_protocol_version_label", htmlLabelResIdName = "tasker_var_ash_protocol_version_description")
     public int getProtocolVersion() { return protocolVersion; }
     public void setProtocolVersion(int value) { protocolVersion = value; }
 
-    @TaskerOutputVariable(name = "ash_schema", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_schema_label", htmlLabelResIdName = "tasker_var_ash_schema_description")
+    @TaskerOutputVariable(name = "mmrl_ash_schema", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_schema_label", htmlLabelResIdName = "tasker_var_ash_schema_description")
     public String getSchema() { return schema; }
     public void setSchema(String value) { schema = value; }
 
-    @TaskerOutputVariable(name = "ash_automation_token", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_token_label", htmlLabelResIdName = "tasker_var_ash_token_description")
+    @TaskerOutputVariable(name = "mmrl_ash_automation_token", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_token_label", htmlLabelResIdName = "tasker_var_ash_token_description")
     public String getAutomationToken() { return automationToken; }
     public void setAutomationToken(String value) { automationToken = value; }
 
-    @TaskerOutputVariable(name = "ash_automation_expires_at", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_expires_label", htmlLabelResIdName = "tasker_var_ash_expires_description")
+    @TaskerOutputVariable(name = "mmrl_ash_automation_expires_at", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_expires_label", htmlLabelResIdName = "tasker_var_ash_expires_description")
     public long getAutomationExpiresAt() { return automationExpiresAt; }
     public void setAutomationExpiresAt(long value) { automationExpiresAt = value; }
 
-    @TaskerOutputVariable(name = "ash_plan_id", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_plan_id_label", htmlLabelResIdName = "tasker_var_ash_plan_id_description")
+    @TaskerOutputVariable(name = "mmrl_ash_plan_id", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_plan_id_label", htmlLabelResIdName = "tasker_var_ash_plan_id_description")
     public String getPlanId() { return planId; }
     public void setPlanId(String value) { planId = value; }
 
-    @TaskerOutputVariable(name = "ash_recovery_revision", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_revision_label", htmlLabelResIdName = "tasker_var_ash_revision_description")
+    @TaskerOutputVariable(name = "mmrl_ash_recovery_revision", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_revision_label", htmlLabelResIdName = "tasker_var_ash_revision_description")
     public String getRecoveryRevision() { return recoveryRevision; }
     public void setRecoveryRevision(String value) { recoveryRevision = value; }
 
-    @TaskerOutputVariable(name = "ash_risk", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_risk_label", htmlLabelResIdName = "tasker_var_ash_risk_description")
+    @TaskerOutputVariable(name = "mmrl_ash_risk", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_risk_label", htmlLabelResIdName = "tasker_var_ash_risk_description")
     public String getRisk() { return risk; }
     public void setRisk(String value) { risk = value; }
 
-    @TaskerOutputVariable(name = "ash_dry_run", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_dry_run_label", htmlLabelResIdName = "tasker_var_ash_dry_run_description")
+    @TaskerOutputVariable(name = "mmrl_ash_dry_run", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_dry_run_label", htmlLabelResIdName = "tasker_var_ash_dry_run_description")
     public boolean isDryRun() { return dryRun; }
     public void setDryRun(boolean value) { dryRun = value; }
 
-    @TaskerOutputVariable(name = "ash_replayed", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_replayed_label", htmlLabelResIdName = "tasker_var_ash_replayed_description")
+    @TaskerOutputVariable(name = "mmrl_ash_replayed", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_ash_replayed_label", htmlLabelResIdName = "tasker_var_ash_replayed_description")
     public boolean isReplayed() { return replayed; }
     public void setReplayed(boolean value) { replayed = value; }
+
+    @TaskerOutputVariable(name = "mmrl_contract_version", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_contract_version_label", htmlLabelResIdName = "tasker_var_contract_version_description")
+    public int getContractVersion() { return contractVersion; }
+    public void setContractVersion(int value) { contractVersion = value; }
+
+    @TaskerOutputVariable(name = "mmrl_contract_schema", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_contract_schema_label", htmlLabelResIdName = "tasker_var_contract_schema_description")
+    public String getContractSchema() { return contractSchema; }
+    public void setContractSchema(String value) { contractSchema = value; }
+
+    @TaskerOutputVariable(name = "mmrl_freshness", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_freshness_label", htmlLabelResIdName = "tasker_var_freshness_description")
+    public String getFreshness() { return freshness; }
+    public void setFreshness(String value) { freshness = value; }
+
+    @TaskerOutputVariable(name = "mmrl_partial", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_partial_label", htmlLabelResIdName = "tasker_var_partial_description")
+    public boolean isPartial() { return partial; }
+    public void setPartial(boolean value) { partial = value; }
+
+    @TaskerOutputVariable(name = "mmrl_stale", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_stale_label", htmlLabelResIdName = "tasker_var_stale_description")
+    public boolean isStale() { return stale; }
+    public void setStale(boolean value) { stale = value; }
+
+    @TaskerOutputVariable(name = "mmrl_generated_at", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_generated_at_label", htmlLabelResIdName = "tasker_var_generated_at_description")
+    public long getGeneratedAt() { return generatedAt; }
+    public void setGeneratedAt(long value) { generatedAt = value; }
+
+    @TaskerOutputVariable(name = "mmrl_delivery_status", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_delivery_status_label", htmlLabelResIdName = "tasker_var_delivery_status_description")
+    public String getDeliveryStatus() { return deliveryStatus; }
+    public void setDeliveryStatus(String value) { deliveryStatus = value; }
+
+    @TaskerOutputVariable(name = "mmrl_source", labelResId = 0, htmlLabelResId = 0, labelResIdName = "tasker_var_source_label", htmlLabelResIdName = "tasker_var_source_description")
+    public String getSource() { return source; }
+    public void setSource(String value) { source = value; }
 
 }

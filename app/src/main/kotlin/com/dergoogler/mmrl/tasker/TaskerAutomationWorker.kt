@@ -42,13 +42,14 @@ class TaskerAutomationWorker(
         val history = repos.operationHistoryRepository()
         return try {
             val preferences = repos.userPreferencesRepository().data.first()
+            TaskerAuthorizationPolicy.requireExecutionAllowed(applicationContext, preferences, request)
             if (request.command != "ASH_EXECUTE_PLAN") {
                 if (!PlatformManager.isAlive) {
                     initPlatform(applicationContext, preferences.workingMode.toPlatform())
                 }
                 check(PlatformManager.isAlive) { "Root backend is unavailable" }
             }
-            history.appendLog(request.operationId, "Tasker automation worker started")
+            history.appendLog(request.operationId, "Tasker automation worker started after execution-time policy check")
             when (request.command) {
                 "ENABLE", "DISABLE", "REMOVE" -> executeModuleState(request)
                 "RUN_ACTION" -> executeModuleAction(request)

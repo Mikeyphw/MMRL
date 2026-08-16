@@ -160,6 +160,7 @@ class RestoreModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerR
                         command = "RESTORE",
                         moduleId = moduleId,
                         moduleName = source.moduleName.orEmpty(),
+                        capability = TaskerCapability.REMOVAL.name,
                         targetOperationId = source.id,
                     ),
                     decision,

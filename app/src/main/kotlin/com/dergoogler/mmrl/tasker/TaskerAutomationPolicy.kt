@@ -16,7 +16,22 @@ internal object TaskerAutomationPolicy {
             "Only HTTP and HTTPS downloads are supported"
         }
         require(!uri.host.isNullOrBlank()) { "Download URL must include a host" }
+        require(uri.userInfo.isNullOrBlank()) { "Download URL must not include embedded credentials" }
         return trimmed
+    }
+
+    fun redactUrlForHistory(value: String): String {
+        val uri = runCatching { URI(value.trim()) }.getOrNull() ?: return "<invalid-url>"
+        val sanitized = URI(
+            uri.scheme,
+            null,
+            uri.host,
+            uri.port,
+            uri.path,
+            uri.query?.takeIf { it.isNotBlank() }?.let { "redacted=1" },
+            null,
+        )
+        return sanitized.toString()
     }
 
     fun requireSafeModuleId(value: String): String {

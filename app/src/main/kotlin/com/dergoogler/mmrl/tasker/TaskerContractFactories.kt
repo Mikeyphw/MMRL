@@ -84,6 +84,14 @@ internal fun taskerResultOutput(
     risk: String = "",
     dryRun: Boolean = false,
     replayed: Boolean = false,
+    contractVersion: Int = TaskerPublicContract.VERSION,
+    contractSchema: String = TaskerPublicContract.SCHEMA,
+    freshness: String = TaskerFreshness.FRESH.name,
+    partial: Boolean = false,
+    stale: Boolean = false,
+    generatedAt: Long = System.currentTimeMillis(),
+    deliveryStatus: String = TaskerPublicContract.DELIVERY_INLINE,
+    source: String = TaskerPublicContract.SOURCE,
 ): TaskerResultOutput = TaskerResultOutput().apply {
     this.success = success
     this.status = status
@@ -128,6 +136,14 @@ internal fun taskerResultOutput(
     this.risk = risk
     this.dryRun = dryRun
     this.replayed = replayed
+    this.contractVersion = contractVersion
+    this.contractSchema = contractSchema
+    this.freshness = freshness
+    this.partial = partial
+    this.stale = stale
+    this.generatedAt = generatedAt
+    this.deliveryStatus = deliveryStatus
+    this.source = source
 }
 
 internal fun taskerUpdateEvent(

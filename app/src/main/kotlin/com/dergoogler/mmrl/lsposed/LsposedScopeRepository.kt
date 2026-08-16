@@ -7,11 +7,14 @@ import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
 import com.dergoogler.mmrl.utils.withNewRootShell
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
 class LsposedScopeRepository(private val context: Context) {
     private val scopeCacheDir: File by lazy { File(context.cacheDir, "lsposed-scope").apply { mkdirs() } }
+    private val applyMutex = Mutex()
 
     suspend fun readState(): LsposedScopeState = withContext(Dispatchers.IO) {
         val copied = copyConfigDbForRead()
@@ -31,22 +34,33 @@ class LsposedScopeRepository(private val context: Context) {
 
     fun installedTargets(): List<LsposedScopeTarget> {
         val pm = context.packageManager
-        return installedPackages(pm).map { info ->
-            val label = info.applicationInfo?.loadLabel(pm)?.toString().orEmpty().ifBlank { info.packageName }
-            LsposedScopeTarget(
-                packageName = info.packageName,
-                label = label,
-                userId = 0,
-            )
-        }.sortedWith(compareBy<LsposedScopeTarget> { it.label.lowercase() }.thenBy { it.packageName })
+        val labels = installedPackages(pm).associate { info ->
+            info.packageName to info.applicationInfo?.loadLabel(pm)?.toString().orEmpty().ifBlank { info.packageName }
+        }
+        val targets = linkedMapOf<String, LsposedScopeTarget>()
+        labels.forEach { (packageName, label) ->
+            val target = LsposedScopeTarget(packageName = packageName, label = label, userId = 0)
+            targets["0:$packageName"] = target
+        }
+        rootUserPackageTargets().forEach { target ->
+            val label = labels[target.packageName] ?: target.label
+            targets.putIfAbsent("${target.userId}:${target.packageName}", target.copy(label = label))
+        }
+        return targets.values.sortedWith(
+            compareBy<LsposedScopeTarget> { it.label.lowercase() }
+                .thenBy { it.userId }
+                .thenBy { it.packageName },
+        )
     }
 
-    suspend fun applyPlan(plan: LsposedScopeEditPlan): LsposedScopeState = withContext(Dispatchers.IO) {
-        val working = copyConfigDbForRead()
-            ?: error("LSPosed config DB was not found or could not be copied with root.")
-        writePlanToCopy(working, plan)
-        restoreConfigDbFromCopy(working)
-        readState()
+    suspend fun applyPlan(plan: LsposedScopeEditPlan): LsposedScopeState = applyMutex.withLock {
+        withContext(Dispatchers.IO) {
+            val working = copyConfigDbForRead()
+                ?: error("LSPosed config DB was not found or could not be copied with root.")
+            writePlanToCopy(working, plan)
+            restoreConfigDbFromCopy(working)
+            readState()
+        }
     }
 
     private fun writePlanToCopy(file: File, plan: LsposedScopeEditPlan) {
@@ -73,6 +87,9 @@ class LsposedScopeRepository(private val context: Context) {
             } finally {
                 db.endTransaction()
             }
+            db.rawQuery("PRAGMA wal_checkpoint(FULL)", emptyArray()).use { cursor ->
+                if (cursor.moveToFirst()) Unit
+            }
         }
     }
 
@@ -91,18 +108,26 @@ class LsposedScopeRepository(private val context: Context) {
         val command = """
             db=${shellQuote(LsposedScopeState.DEFAULT_DB_PATH)}
             src=${shellQuote(file.absolutePath)}
+            lock="${'$'}db${LsposedScopeTransactionPolicy.ROOT_LOCK_SUFFIX}"
             if [ ! -f "${'$'}db" ]; then
               echo missing
               exit 1
             fi
+            if ! mkdir "${'$'}lock" 2>/dev/null; then
+              echo locked
+              exit 1
+            fi
+            trap 'rmdir "${'$'}lock" 2>/dev/null || true' EXIT INT TERM
             backup="${'$'}db.mmrl-bak-${'$'}(date +%Y%m%d%H%M%S)"
             cp -p "${'$'}db" "${'$'}backup" || exit 1
             [ -f "${'$'}db-wal" ] && cp -p "${'$'}db-wal" "${'$'}backup-wal" || true
             [ -f "${'$'}db-shm" ] && cp -p "${'$'}db-shm" "${'$'}backup-shm" || true
             owner=${'$'}(stat -c '%u:%g' "${'$'}db" 2>/dev/null || echo 0:0)
-            cp -f "${'$'}src" "${'$'}db" || exit 1
-            chown "${'$'}owner" "${'$'}db" 2>/dev/null || true
-            chmod 600 "${'$'}db" 2>/dev/null || true
+            tmp="${'$'}db.mmrl-tmp-${'$'}${'$'}"
+            cp -f "${'$'}src" "${'$'}tmp" || exit 1
+            chown "${'$'}owner" "${'$'}tmp" 2>/dev/null || true
+            chmod 600 "${'$'}tmp" 2>/dev/null || true
+            mv -f "${'$'}tmp" "${'$'}db" || exit 1
             rm -f "${'$'}db-wal" "${'$'}db-shm"
             echo ok:${'$'}backup
         """.trimIndent()
@@ -115,6 +140,7 @@ class LsposedScopeRepository(private val context: Context) {
     private fun readCopiedState(file: File): LsposedScopeState {
         val modules = mutableListOf<LsposedModuleScope>()
         SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            require(integrityOk(db)) { "Copied LSPosed config DB failed integrity check" }
             val hasAutoInclude = tableHasColumn(db, "modules", "auto_include")
             val moduleSql = if (hasAutoInclude) {
                 "SELECT mid, module_pkg_name, apk_path, enabled, auto_include FROM modules ORDER BY module_pkg_name"
@@ -156,6 +182,12 @@ class LsposedScopeRepository(private val context: Context) {
         return targets
     }
 
+    private fun integrityOk(db: SQLiteDatabase): Boolean {
+        db.rawQuery("PRAGMA integrity_check", emptyArray()).use { cursor ->
+            return cursor.moveToFirst() && LsposedScopeTransactionPolicy.integrityOk(cursor.getString(0))
+        }
+    }
+
     private fun tableHasColumn(db: SQLiteDatabase, table: String, column: String): Boolean {
         db.rawQuery("PRAGMA table_info($table)", emptyArray()).use { cursor ->
             while (cursor.moveToNext()) {
@@ -171,8 +203,33 @@ class LsposedScopeRepository(private val context: Context) {
         pm.getApplicationInfo(packageName, 0).loadLabel(pm).toString()
     }.getOrDefault(packageName)
 
+
+    private fun rootUserPackageTargets(): List<LsposedScopeTarget> {
+        val output = mutableListOf<String>()
+        val errors = mutableListOf<String>()
+        val command = """
+            users=${'$'}(cmd user list 2>/dev/null | sed -n 's/.*UserInfo{\([0-9][0-9]*\):.*/\1/p')
+            [ -n "${'$'}users" ] || users=0
+            for user in ${'$'}users; do
+              cmd package list packages --user "${'$'}user" 2>/dev/null | sed 's/^package://' | while read pkg; do
+                [ -n "${'$'}pkg" ] && echo "${'$'}user:${'$'}pkg"
+              done
+            done
+        """.trimIndent()
+        val result = runCatching { withNewRootShell { newJob().add(command).to(output, errors).exec() } }.getOrNull()
+        if (result?.isSuccess != true) return emptyList()
+        return output.mapNotNull { raw ->
+            val user = raw.substringBefore(':').toIntOrNull() ?: return@mapNotNull null
+            val pkg = raw.substringAfter(':', "").trim().takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            LsposedScopeTarget(packageName = pkg, label = pkg, userId = user)
+        }
+    }
+
     private fun copyConfigDbForRead(): File? {
         val out = File(scopeCacheDir, "modules_config_read.db")
+        File("${out.absolutePath}-wal").delete()
+        File("${out.absolutePath}-shm").delete()
+        out.delete()
         val uid = context.applicationInfo.uid
         val output = mutableListOf<String>()
         val errors = mutableListOf<String>()
@@ -183,7 +240,12 @@ class LsposedScopeRepository(private val context: Context) {
               echo missing
               exit 0
             fi
-            cp -f "${'$'}db" "${'$'}out" && chown $uid:$uid "${'$'}out" && chmod 600 "${'$'}out" && echo ok
+            cp -f "${'$'}db" "${'$'}out" || exit 1
+            if [ -f "${'$'}db-wal" ]; then cp -f "${'$'}db-wal" "${'$'}out-wal" || exit 1; else rm -f "${'$'}out-wal"; fi
+            if [ -f "${'$'}db-shm" ]; then cp -f "${'$'}db-shm" "${'$'}out-shm" || exit 1; else rm -f "${'$'}out-shm"; fi
+            chown $uid:$uid "${'$'}out" "${'$'}out-wal" "${'$'}out-shm" 2>/dev/null || true
+            chmod 600 "${'$'}out" "${'$'}out-wal" "${'$'}out-shm" 2>/dev/null || true
+            echo ok
         """.trimIndent()
         val result = runCatching { withNewRootShell { newJob().add(command).to(output, errors).exec() } }.getOrNull()
         return out.takeIf { result?.isSuccess == true && output.any { it.trim() == "ok" } && it.isFile && it.length() > 0L }

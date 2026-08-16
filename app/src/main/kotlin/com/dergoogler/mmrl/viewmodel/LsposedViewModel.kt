@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.dergoogler.mmrl.lsposed.LsposedCacheFreshness
 import com.dergoogler.mmrl.lsposed.LsposedIdentity
 import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
 import com.dergoogler.mmrl.lsposed.LsposedPolicyStore
@@ -50,6 +51,13 @@ class LsposedViewModel @Inject constructor(
         val policies: Map<String, LsposedVersionPolicy> = emptyMap(),
         val snapshots: List<LsposedSnapshot> = emptyList(),
         val snapshotPlan: List<LsposedSnapshotPlanItem> = emptyList(),
+        val repositoryFreshness: LsposedCacheFreshness = LsposedCacheFreshness.EMPTY,
+        val repositoryFetchedAt: Long = 0L,
+        val repositorySourceUrl: String = "",
+        val repositoryPartial: Boolean = false,
+        val repositoryStale: Boolean = false,
+        val pendingEvent: Event? = null,
+        val pendingEventId: Long = 0L,
     )
 
     sealed interface Event {
@@ -65,6 +73,20 @@ class LsposedViewModel @Inject constructor(
     val state = stateFlow.asStateFlow()
     private val eventsFlow = MutableSharedFlow<Event>(extraBufferCapacity = 1)
     val events = eventsFlow.asSharedFlow()
+    private var refreshGeneration: Long = 0L
+    private var nextEventId: Long = 0L
+
+    fun acknowledgeEvent(id: Long) {
+        stateFlow.update { current ->
+            if (current.pendingEventId == id) current.copy(pendingEvent = null) else current
+        }
+    }
+
+    private fun emitEvent(event: Event) {
+        val id = ++nextEventId
+        stateFlow.update { it.copy(pendingEvent = event, pendingEventId = id) }
+        eventsFlow.tryEmit(event)
+    }
 
     init {
         refresh(force = false)
@@ -85,14 +107,17 @@ class LsposedViewModel @Inject constructor(
     }
 
     fun refresh(force: Boolean = true) {
+        val generation = ++refreshGeneration
         viewModelScope.launch {
             stateFlow.update { it.copy(loading = true, error = null) }
             val providerStatus = repository.providerStatus()
             val scopeState = repository.scopeState()
-            val modulesResult = runCatching { repository.loadModules(forceRefresh = force) }
-            val modules = modulesResult.getOrDefault(emptyList())
+            val modulesResult = runCatching { repository.loadModulesWithState(forceRefresh = force) }
+            val moduleState = modulesResult.getOrNull()
+            val modules = moduleState?.modules.orEmpty()
             val installed = repository.installedModules(modules, scopeState)
             val targets = runCatching { repository.installedTargets() }.getOrDefault(emptyList())
+            if (generation != refreshGeneration) return@launch
             stateFlow.update {
                 it.copy(
                     loading = false,
@@ -103,7 +128,12 @@ class LsposedViewModel @Inject constructor(
                     providerRefreshRecommended = false,
                     scopeState = scopeState,
                     scopeTargets = targets,
-                    error = modulesResult.exceptionOrNull()?.message,
+                    repositoryFreshness = moduleState?.freshness ?: LsposedCacheFreshness.EMPTY,
+                    repositoryFetchedAt = moduleState?.fetchedAt ?: 0L,
+                    repositorySourceUrl = moduleState?.sourceUrl.orEmpty(),
+                    repositoryPartial = moduleState?.partial == true,
+                    repositoryStale = moduleState?.stale == true,
+                    error = modulesResult.exceptionOrNull()?.message ?: moduleState?.errorMessage,
                 )
             }
         }
@@ -113,28 +143,28 @@ class LsposedViewModel @Inject constructor(
     fun followLatest(packageName: String) {
         viewModelScope.launch {
             policyStore.setPolicy(LsposedVersionPolicy.follow(packageName))
-            eventsFlow.tryEmit(Event.Message("LSPosed module follows latest updates."))
+            emitEvent(Event.Message("LSPosed module follows latest updates."))
         }
     }
 
     fun ignoreUpdates(packageName: String) {
         viewModelScope.launch {
             policyStore.setPolicy(LsposedVersionPolicy.ignore(packageName))
-            eventsFlow.tryEmit(Event.Message("LSPosed APK updates ignored."))
+            emitEvent(Event.Message("LSPosed APK updates ignored."))
         }
     }
 
     fun pinCurrent(module: LsposedInstalledModule) {
         viewModelScope.launch {
             policyStore.setPolicy(LsposedVersionPolicy.pinCurrent(module))
-            eventsFlow.tryEmit(Event.Message("LSPosed APK version locked."))
+            emitEvent(Event.Message("LSPosed APK version locked."))
         }
     }
 
     fun maxCurrent(module: LsposedInstalledModule) {
         viewModelScope.launch {
             policyStore.setPolicy(LsposedVersionPolicy.maxCurrent(module))
-            eventsFlow.tryEmit(Event.Message("LSPosed APK updates limited to current version."))
+            emitEvent(Event.Message("LSPosed APK updates limited to current version."))
         }
     }
 
@@ -145,7 +175,7 @@ class LsposedViewModel @Inject constructor(
                 modules = stateFlow.value.installed,
                 policies = stateFlow.value.policies,
             )
-            eventsFlow.tryEmit(Event.Message("Saved LSPosed snapshot with ${snapshot.installedCount} APK modules."))
+            emitEvent(Event.Message("Saved LSPosed snapshot with ${snapshot.installedCount} APK modules."))
         }
     }
 
@@ -153,7 +183,7 @@ class LsposedViewModel @Inject constructor(
         viewModelScope.launch {
             policyStore.deleteSnapshot(snapshotId)
             stateFlow.update { it.copy(snapshotPlan = emptyList()) }
-            eventsFlow.tryEmit(Event.Message("Deleted LSPosed snapshot."))
+            emitEvent(Event.Message("Deleted LSPosed snapshot."))
         }
     }
 
@@ -174,7 +204,7 @@ class LsposedViewModel @Inject constructor(
         viewModelScope.launch {
             val plan = runCatching { LsposedScopePlanner.plan(module, enabled, autoInclude, targets) }
                 .getOrElse { error ->
-                    eventsFlow.tryEmit(Event.Message(error.message ?: "Unable to prepare LSPosed scope changes"))
+                    emitEvent(Event.Message(error.message ?: "Unable to prepare LSPosed scope changes"))
                     return@launch
                 }
             stateFlow.update { it.copy(applyingScopePackage = module.packageName, error = null) }
@@ -195,10 +225,10 @@ class LsposedViewModel @Inject constructor(
                         LsposedProviderRefreshMode.ACTION_BRIDGE -> "Applied LSPosed scope changes. Use Refresh provider to run the active provider bridge."
                         LsposedProviderRefreshMode.REBOOT_REQUIRED -> "Applied LSPosed scope changes. Reboot if the provider does not refresh immediately."
                     }
-                    eventsFlow.tryEmit(Event.Message(message))
+                    emitEvent(Event.Message(message))
                 }
                 .onFailure { error ->
-                    eventsFlow.tryEmit(Event.Message(error.message ?: "Unable to apply LSPosed scope changes"))
+                    emitEvent(Event.Message(error.message ?: "Unable to apply LSPosed scope changes"))
                 }
             stateFlow.update { it.copy(applyingScopePackage = null) }
         }
@@ -210,9 +240,9 @@ class LsposedViewModel @Inject constructor(
             stateFlow.update { it.copy(installingPackage = module.packageName, error = null) }
             runCatching { repository.prepareApk(module) }
                 .onSuccess { prepared ->
-                    eventsFlow.tryEmit(Event.InstallApk(prepared.uri))
+                    emitEvent(Event.InstallApk(prepared.uri))
                 }.onFailure { throwable ->
-                    eventsFlow.tryEmit(Event.Message(throwable.message ?: "Unable to prepare APK installer"))
+                    emitEvent(Event.Message(throwable.message ?: "Unable to prepare APK installer"))
                 }
             stateFlow.update { it.copy(installingPackage = null) }
         }
@@ -225,18 +255,18 @@ class LsposedViewModel @Inject constructor(
     fun openLsposed() {
         val intent = repository.lsposedManagerIntent()
         if (intent != null) {
-            eventsFlow.tryEmit(Event.OpenIntent(intent))
+            emitEvent(Event.OpenIntent(intent))
             return
         }
         val providerModuleId = repository.lsposedProviderActionModuleId()
         if (providerModuleId != null) {
             val canonicalId = ModId.parseOrNull(providerModuleId)
             if (canonicalId != null) {
-                eventsFlow.tryEmit(Event.RunProviderAction(canonicalId))
+                emitEvent(Event.RunProviderAction(canonicalId))
                 return
             }
         }
-        eventsFlow.tryEmit(Event.Message("LSPosed, Vector, or another compatible framework provider is not installed or cannot be opened."))
+        emitEvent(Event.Message("LSPosed, Vector, or another compatible framework provider is not installed or cannot be opened."))
     }
 
     fun refreshLsposedProvider() {
@@ -245,26 +275,26 @@ class LsposedViewModel @Inject constructor(
             LsposedProviderRefreshMode.OPEN_MANAGER -> {
                 val intent = repository.lsposedManagerIntent()
                 if (intent != null) {
-                    eventsFlow.tryEmit(Event.OpenIntent(intent))
+                    emitEvent(Event.OpenIntent(intent))
                 } else {
-                    eventsFlow.tryEmit(Event.Message("LSPosed manager is no longer available. Refresh the provider status."))
+                    emitEvent(Event.Message("LSPosed manager is no longer available. Refresh the provider status."))
                 }
             }
             LsposedProviderRefreshMode.ACTION_BRIDGE -> {
                 val moduleId = refreshPlan.moduleId
                 if (moduleId.isNullOrBlank()) {
-                    eventsFlow.tryEmit(Event.Message("Provider action bridge is unavailable. Reboot if scope changes do not appear."))
+                    emitEvent(Event.Message("Provider action bridge is unavailable. Reboot if scope changes do not appear."))
                 } else {
                     val canonicalId = ModId.parseOrNull(moduleId)
                     if (canonicalId == null) {
-                        eventsFlow.tryEmit(Event.Message("Provider action bridge returned an invalid module id."))
+                        emitEvent(Event.Message("Provider action bridge returned an invalid module id."))
                     } else {
-                        eventsFlow.tryEmit(Event.RunProviderAction(canonicalId))
+                        emitEvent(Event.RunProviderAction(canonicalId))
                     }
                 }
             }
             LsposedProviderRefreshMode.REBOOT_REQUIRED -> {
-                eventsFlow.tryEmit(Event.Message("Provider refresh bridge is unavailable. Reboot if scope changes do not appear."))
+                emitEvent(Event.Message("Provider refresh bridge is unavailable. Reboot if scope changes do not appear."))
             }
         }
     }
@@ -272,9 +302,9 @@ class LsposedViewModel @Inject constructor(
     fun openApp(packageName: String) {
         val intent = repository.launchAppIntent(packageName)
         if (intent == null) {
-            eventsFlow.tryEmit(Event.Message("This module does not expose a launcher activity."))
+            emitEvent(Event.Message("This module does not expose a launcher activity."))
         } else {
-            eventsFlow.tryEmit(Event.OpenIntent(intent))
+            emitEvent(Event.OpenIntent(intent))
         }
     }
 }

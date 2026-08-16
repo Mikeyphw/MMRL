@@ -67,7 +67,6 @@ import com.dergoogler.mmrl.lsposed.LsposedUiContract
 import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
 import com.dergoogler.mmrl.ui.activity.terminal.action.ActionActivity
 import com.dergoogler.mmrl.viewmodel.LsposedViewModel
-import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun LsposedRepositoryTab(
@@ -98,6 +97,9 @@ fun LsposedRepositoryTab(
                 installedCount = modules.count { it.packageName in installedPackages },
                 sourceCount = modules.count { !it.sourceUrl.isNullOrBlank() },
                 managerAvailable = state.managerAvailable,
+                repositoryFreshness = state.repositoryFreshness.name,
+                repositoryStale = state.repositoryStale,
+                repositoryPartial = state.repositoryPartial,
                 onOpenLsposed = viewModel::openLsposed,
             )
         },
@@ -882,6 +884,9 @@ private fun LsposedRepositorySideRail(
     installedCount: Int,
     sourceCount: Int,
     managerAvailable: Boolean,
+    repositoryFreshness: String,
+    repositoryStale: Boolean,
+    repositoryPartial: Boolean,
     onOpenLsposed: () -> Unit,
 ) {
     GuidanceCard(
@@ -893,10 +898,13 @@ private fun LsposedRepositorySideRail(
     )
     LsposedMetricCard(
         title = stringResource(R.string.lsposed_adaptive_repository_summary_title),
-        metrics = listOf(
+        metrics = listOfNotNull(
             stringResource(R.string.lsposed_repo_total_modules, visibleCount),
             stringResource(R.string.lsposed_repo_installed_modules, installedCount),
             stringResource(R.string.lsposed_repo_source_links, sourceCount),
+            stringResource(R.string.lsposed_repo_freshness, repositoryFreshness),
+            if (repositoryStale) stringResource(R.string.lsposed_repo_stale_cache) else null,
+            if (repositoryPartial) stringResource(R.string.lsposed_repo_partial_result) else null,
         ),
     )
 }
@@ -1034,8 +1042,11 @@ private fun EmptyLsposedCard(text: String) {
 @Composable
 private fun LsposedEvents(viewModel: LsposedViewModel) {
     val context = LocalContext.current
-    LaunchedEffect(viewModel, context) {
-        viewModel.events.collectLatest { event ->
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val event = state.pendingEvent
+    LaunchedEffect(state.pendingEventId, event, context) {
+        event ?: return@LaunchedEffect
+        try {
             when (event) {
                 is LsposedViewModel.Event.InstallApk -> {
                     runCatching {
@@ -1054,6 +1065,8 @@ private fun LsposedEvents(viewModel: LsposedViewModel) {
                 is LsposedViewModel.Event.RunProviderAction -> ActionActivity.start(context, event.moduleId)
                 is LsposedViewModel.Event.Message -> Toast.makeText(context, event.text, Toast.LENGTH_LONG).show()
             }
+        } finally {
+            viewModel.acknowledgeEvent(state.pendingEventId)
         }
     }
 }

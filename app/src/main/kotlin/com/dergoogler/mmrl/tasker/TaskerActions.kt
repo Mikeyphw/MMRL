@@ -57,7 +57,7 @@ class ListModulesRunner : TaskerPluginRunnerAction<TaskerEmptyInput, TaskerResul
         taskerAction {
             runBlocking(Dispatchers.IO) {
                 val repos = TaskerRuntime.repositories(context)
-                runCatching { repos.modulesRepository().getLocalAll() }
+                val refreshFailure = runCatching { repos.modulesRepository().getLocalAll() }.exceptionOrNull()
                 val locals = repos.localRepository().getLocalAll()
                 val online = repos.localRepository().getOnlineAllAsFlow(duplicates = true).first()
                     .groupBy { ModuleIdentity.normalize(it.id) }
@@ -87,7 +87,17 @@ class ListModulesRunner : TaskerPluginRunnerAction<TaskerEmptyInput, TaskerResul
                     moduleNames = locals.map { it.name }.toTypedArray(),
                     versions = locals.map { it.version }.toTypedArray(),
                     states = locals.map { it.state }.toTypedArray(),
-                    resultJson = JSONArray(items).toString(),
+                    freshness = if (refreshFailure == null) TaskerFreshness.FRESH.name else TaskerFreshness.PARTIAL.name,
+                    partial = refreshFailure != null,
+                    stale = refreshFailure != null,
+                    errorMessage = refreshFailure?.message.orEmpty(),
+                    resultJson = JSONObject()
+                        .put("items", JSONArray(items))
+                        .put("freshness", if (refreshFailure == null) TaskerFreshness.FRESH.name else TaskerFreshness.PARTIAL.name)
+                        .put("partial", refreshFailure != null)
+                        .put("stale", refreshFailure != null)
+                        .put("refresh_error", refreshFailure?.message.orEmpty())
+                        .toString(),
                 )
             }
         }
@@ -107,8 +117,9 @@ class CheckUpdatesRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerRe
                 )
                 try {
                     history.appendLog(operationId, "Requested by Tasker")
-                    runCatching { repos.modulesRepository().getLocalAll() }
+                    val refreshFailure = runCatching { repos.modulesRepository().getLocalAll() }
                         .onFailure { history.appendLog(operationId, "Installed-module refresh failed; using cached state: ${it.message}") }
+                        .exceptionOrNull()
                     if (input.regular.forceRefresh) {
                         history.phase(operationId, OperationPhase.DOWNLOAD, "Refreshing repositories")
                         repos.modulesRepository().getRepoAll()
@@ -142,7 +153,17 @@ class CheckUpdatesRunner : TaskerPluginRunnerAction<TaskerRequestInput, TaskerRe
                         moduleNames = updates.map { it.getString("module_name") }.toTypedArray(),
                         versions = updates.map { it.getString("available_version") }.toTypedArray(),
                         states = Array(updates.size) { "UPDATE_AVAILABLE" },
-                        resultJson = JSONArray(updates).toString(),
+                        freshness = if (refreshFailure == null) TaskerFreshness.FRESH.name else TaskerFreshness.PARTIAL.name,
+                        partial = refreshFailure != null,
+                        stale = refreshFailure != null,
+                        errorMessage = refreshFailure?.message.orEmpty(),
+                        resultJson = JSONObject()
+                            .put("items", JSONArray(updates))
+                            .put("freshness", if (refreshFailure == null) TaskerFreshness.FRESH.name else TaskerFreshness.PARTIAL.name)
+                            .put("partial", refreshFailure != null)
+                            .put("stale", refreshFailure != null)
+                            .put("refresh_error", refreshFailure?.message.orEmpty())
+                            .toString(),
                     )
                 } catch (error: Throwable) {
                     history.fail(operationId, error.message ?: "Update check failed", error)
@@ -179,6 +200,7 @@ class DownloadModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, Tasker
                 val url = request.url?.trim()?.takeIf(String::isNotEmpty) ?: version?.zipUrl
                     ?: throw IllegalArgumentException("Provide a repository module ID or download URL")
                 val validatedUrl = TaskerAutomationPolicy.requireSupportedDownloadUrl(url)
+                val historyUrl = TaskerAutomationPolicy.redactUrlForHistory(validatedUrl)
                 val uri = java.net.URI(validatedUrl)
                 val defaultName = module?.let { "${it.id}-${version?.versionCode ?: it.versionCode}.zip" }
                     ?: uri.path.substringAfterLast('/').takeIf { it.endsWith(".zip", true) }
@@ -205,7 +227,7 @@ class DownloadModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, Tasker
                     summary = "Queued by Tasker",
                     moduleId = module?.id,
                     moduleName = module?.name,
-                    sourceUrl = validatedUrl,
+                    sourceUrl = historyUrl,
                     destinationPath = destination.absolutePath,
                     retryAction = OperationAction.DOWNLOAD,
                     origin = "TASKER",
@@ -240,7 +262,7 @@ class DownloadModuleRunner : TaskerPluginRunnerAction<TaskerRequestInput, Tasker
                     resultJson = JSONObject()
                         .put("operation_id", operationId)
                         .put("status", "RUNNING")
-                        .put("url", validatedUrl)
+                        .put("url", historyUrl)
                         .put("filename", filename)
                         .toString(),
                 )
@@ -296,7 +318,11 @@ class ExportOperationLogRunner : TaskerPluginRunnerAction<TaskerRequestInput, Ta
                     val uri = TaskerLogExporter.export(context, source)
                     repos.operationHistoryRepository().appendLog(exportId, "Exported log for ${source.id} to $uri")
                     repos.operationHistoryRepository().succeed(exportId, "Technical log exported")
-                    TaskerRuntime.operationOutput(source, uri).copyForExport(uri)
+                    TaskerRuntime.operationOutput(source, uri).copyForExport(
+                        sourceOperationId = source.id,
+                        exportOperationId = exportId,
+                        uri = uri,
+                    )
                 } catch (error: Throwable) {
                     repos.operationHistoryRepository().fail(exportId, error.message ?: "Log export failed", error)
                     throw error
@@ -304,21 +330,33 @@ class ExportOperationLogRunner : TaskerPluginRunnerAction<TaskerRequestInput, Ta
             }
         }
 
-    private fun TaskerResultOutput.copyForExport(uri: String) = taskerResultOutput(
-        success = success,
-        status = status,
+    private fun TaskerResultOutput.copyForExport(
+        sourceOperationId: String,
+        exportOperationId: String,
+        uri: String,
+    ) = taskerResultOutput(
+        success = true,
+        status = OperationStatus.SUCCEEDED.name,
         message = "Technical log exported",
-        operationId = operationId,
-        operationType = operationType,
-        phase = phase,
-        progress = progress,
+        operationId = exportOperationId,
+        operationType = OperationKind.EXPORT_LOG.name,
+        phase = OperationPhase.EXPORT_LOG.name,
+        progress = 100,
         moduleId = moduleId,
         moduleName = moduleName,
         rebootRequired = rebootRequired,
         rollbackAvailable = rollbackAvailable,
-        errorCode = errorCode,
-        errorMessage = errorMessage,
+        errorCode = "",
+        errorMessage = "",
         logUri = uri,
-        resultJson = JSONObject(resultJson).put("log_uri", uri).toString(),
+        deliveryStatus = TaskerPublicContract.DELIVERY_URI_GRANT,
+        resultJson = JSONObject(resultJson)
+            .put("source_operation_id", sourceOperationId)
+            .put("export_operation_id", exportOperationId)
+            .put("operation_id", exportOperationId)
+            .put("type", OperationKind.EXPORT_LOG.name)
+            .put("status", OperationStatus.SUCCEEDED.name)
+            .put("log_uri", uri)
+            .toString(),
     )
 }

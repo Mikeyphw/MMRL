@@ -142,4 +142,36 @@ class TaskerAuthorizationPolicyTest {
         assertEquals(request, TaskerRootRequest.fromJson(request.toJson()))
     }
 
+    @Test
+    fun `root request stores capability and expiry for execution time authorization`() {
+        val request = TaskerRootRequest(
+            id = "request-2",
+            operationId = "operation-2",
+            command = "REMOVE",
+            moduleId = "alpha",
+            moduleName = "Alpha",
+            capability = TaskerCapability.REMOVAL.name,
+            createdAt = 1000L,
+            expiresAt = 2000L,
+        )
+
+        val restored = TaskerRootRequest.fromJson(request.toJson())
+
+        assertEquals(TaskerCapability.REMOVAL, TaskerAuthorizationPolicy.capabilityForRequest(restored))
+        assertEquals(false, restored.isExpired(1500L))
+        assertEquals(true, restored.isExpired(2500L))
+    }
+
+    @Test
+    fun `legacy root request capability falls back to command mapping`() {
+        val request = TaskerRootRequest(
+            operationId = "operation-3",
+            command = "EXECUTE_REVIEW",
+            moduleId = "alpha",
+            moduleName = "Alpha",
+        )
+
+        assertEquals(TaskerCapability.REVIEWED_INSTALL, TaskerAuthorizationPolicy.capabilityForRequest(request))
+    }
+
 }

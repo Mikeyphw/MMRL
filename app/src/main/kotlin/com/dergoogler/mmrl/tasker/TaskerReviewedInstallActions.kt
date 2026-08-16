@@ -199,6 +199,7 @@ class ExecuteReviewedInstallRunner : TaskerPluginRunnerAction<TaskerRequestInput
                         command = "EXECUTE_REVIEW",
                         moduleId = token.moduleId,
                         moduleName = token.moduleName,
+                        capability = TaskerCapability.REVIEWED_INSTALL.name,
                         reviewToken = token.token,
                     ),
                     decision,

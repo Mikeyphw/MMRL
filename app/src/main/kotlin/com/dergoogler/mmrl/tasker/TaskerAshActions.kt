@@ -407,6 +407,7 @@ class AshExecuteRecoveryPlanRunner : TaskerPluginRunnerAction<TaskerRequestInput
                             command = "ASH_EXECUTE_PLAN",
                             moduleId = record.prepared.plan.affectedFolders.singleOrNull().orEmpty(),
                             moduleName = "${record.prepared.plan.title} (${record.prepared.plan.affectedFolders.size})",
+                            capability = TaskerCapability.ASH_RECOVERY.name,
                             ashAutomationToken = token,
                             idempotencyKey = idempotencyKey,
                         ),

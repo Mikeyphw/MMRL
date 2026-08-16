@@ -18,6 +18,21 @@ class TaskerAutomationPolicyTest {
     }
 
     @Test
+    fun `rejects embedded credentials in download URLs`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            TaskerAutomationPolicy.requireSupportedDownloadUrl("https://user:token@example.org/module.zip")
+        }
+    }
+
+    @Test
+    fun `redacts query strings before writing history`() {
+        assertEquals(
+            "https://example.org/module.zip?redacted=1",
+            TaskerAutomationPolicy.redactUrlForHistory("https://example.org/module.zip?token=secret&x=1#frag"),
+        )
+    }
+
+    @Test
     fun `rejects non-network and hostless URLs`() {
         assertThrows(IllegalArgumentException::class.java) {
             TaskerAutomationPolicy.requireSupportedDownloadUrl("file:///sdcard/module.zip")

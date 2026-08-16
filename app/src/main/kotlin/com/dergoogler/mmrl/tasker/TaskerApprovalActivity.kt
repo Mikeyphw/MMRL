@@ -37,6 +37,13 @@ class TaskerApprovalActivity : ComponentActivity() {
         lifecycleScope.launch {
             val history = TaskerRuntime.repositories(this@TaskerApprovalActivity).operationHistoryRepository()
             if (approved) {
+                val approvedRequest = TaskerRootRequestStore.markApproved(this@TaskerApprovalActivity, request.id)
+                if (approvedRequest == null) {
+                    releaseAshReservation(request)
+                    history.fail(request.operationId, "Tasker approval expired before it was accepted")
+                    finish()
+                    return@launch
+                }
                 history.appendLog(request.operationId, "Approved by user")
                 val queued = history.transition(
                     id = request.operationId,
@@ -53,7 +60,7 @@ class TaskerApprovalActivity : ComponentActivity() {
                     return@launch
                 }
                 try {
-                    TaskerRootDispatcher.enqueue(this@TaskerApprovalActivity, request.id)
+                    TaskerRootDispatcher.enqueue(this@TaskerApprovalActivity, approvedRequest.id)
                 } catch (error: Throwable) {
                     request.reviewToken?.let { token ->
                         TaskerReviewTokenStore.releaseClaim(

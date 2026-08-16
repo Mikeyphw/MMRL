@@ -5,6 +5,76 @@ import com.squareup.moshi.JsonClass
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
+enum class LsposedCacheFreshness {
+    FRESH,
+    STALE,
+    EMPTY,
+}
+
+
+object LsposedRepositoryCachePolicy {
+    const val CACHE_TTL_MS: Long = 6L * 60L * 60L * 1000L
+
+    fun freshnessFor(fetchedAt: Long, now: Long = System.currentTimeMillis()): LsposedCacheFreshness = when {
+        fetchedAt <= 0L -> LsposedCacheFreshness.EMPTY
+        now - fetchedAt <= CACHE_TTL_MS -> LsposedCacheFreshness.FRESH
+        else -> LsposedCacheFreshness.STALE
+    }
+}
+
+data class LsposedRepositoryCacheState(
+    val modules: List<LsposedRepoModule>,
+    val fetchedAt: Long,
+    val sourceUrl: String,
+    val freshness: LsposedCacheFreshness,
+    val errorMessage: String? = null,
+) {
+    val stale: Boolean get() = freshness == LsposedCacheFreshness.STALE
+    val partial: Boolean get() = errorMessage != null
+}
+
+data class LsposedPreparedApkIdentity(
+    val packageName: String,
+    val versionName: String?,
+    val versionCode: Long,
+    val sha256: String,
+)
+
+object LsposedApkIdentityPolicy {
+    fun requireMatches(
+        expectedPackageName: String,
+        actualPackageName: String?,
+        expectedVersionCode: Long?,
+        actualVersionCode: Long,
+    ) {
+        require(!actualPackageName.isNullOrBlank()) { "Downloaded APK does not expose a package name" }
+        require(LsposedIdentity.normalize(expectedPackageName) == LsposedIdentity.normalize(actualPackageName)) {
+            "Downloaded APK package $actualPackageName does not match repository package $expectedPackageName"
+        }
+        expectedVersionCode?.let { expected ->
+            require(actualVersionCode == expected) {
+                "Downloaded APK version code $actualVersionCode does not match repository version code $expected"
+            }
+        }
+    }
+}
+
+data class LsposedProviderSlot(
+    val moduleId: String,
+    val folder: String,
+    val name: String,
+    val version: String,
+    val disabled: Boolean,
+    val actionAvailable: Boolean,
+    val managerApkPresent: Boolean,
+)
+
+object LsposedScopeTransactionPolicy {
+    const val ROOT_LOCK_SUFFIX = ".mmrl.lock"
+
+    fun integrityOk(value: String?): Boolean = value?.trim()?.equals("ok", ignoreCase = true) == true
+}
+
 @JsonClass(generateAdapter = true)
 data class LsposedRepoModule(
     val name: String,
@@ -169,6 +239,8 @@ data class LsposedProviderStatus(
     val managerApkPresent: Boolean = false,
     val managerPackageInstalled: Boolean = false,
     val managerOpenMode: LsposedManagerOpenMode = LsposedManagerOpenMode.UNAVAILABLE,
+    val activeSlot: LsposedProviderSlot? = null,
+    val stagedSlot: LsposedProviderSlot? = null,
 ) {
     val canOpen: Boolean
         get() = managerOpenMode == LsposedManagerOpenMode.INSTALLED_MANAGER ||

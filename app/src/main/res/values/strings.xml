@@ -1290,6 +1290,9 @@
     <string name="modules_tab_root_modules">Root modules</string>
     <string name="modules_tab_lsposed">LSPosed</string>
     <string name="lsposed_repository_title">LSPosed repository</string>
+    <string name="lsposed_repo_freshness">Repository freshness: %1$s</string>
+    <string name="lsposed_repo_stale_cache">Using stale cache</string>
+    <string name="lsposed_repo_partial_result">Partial repository result</string>
     <string name="lsposed_repository_description">Browse Xposed modules from modules.lsposed.org. These install as APKs, then LSPosed handles enablement and app scope.</string>
     <string name="lsposed_installed_title">Installed LSPosed modules</string>
     <string name="lsposed_installed_description">APK modules matched against the LSPosed repository and locally detected Xposed metadata.</string>
@@ -1377,6 +1380,23 @@
     <string name="github_source_strategy_nested_zip">Nested ZIP</string>
     <string name="github_source_strategy_extracted_module_layout">Extracted root</string>
     <string name="github_source_strategy_single_folder_module_layout">Folder root</string>
+
+    <string name="tasker_var_contract_version_label">Contract version</string>
+    <string name="tasker_var_contract_version_description">Stable MMRL Tasker output contract version</string>
+    <string name="tasker_var_contract_schema_label">Contract schema</string>
+    <string name="tasker_var_contract_schema_description">Stable schema identifier for this Tasker output</string>
+    <string name="tasker_var_freshness_label">Freshness</string>
+    <string name="tasker_var_freshness_description">Whether the result is fresh, stale, or partial</string>
+    <string name="tasker_var_partial_label">Partial result</string>
+    <string name="tasker_var_partial_description">Whether the result completed with partial data</string>
+    <string name="tasker_var_stale_label">Stale result</string>
+    <string name="tasker_var_stale_description">Whether cached data was used because a fresh source failed</string>
+    <string name="tasker_var_generated_at_label">Generated at</string>
+    <string name="tasker_var_generated_at_description">Unix time in milliseconds when MMRL generated the Tasker output</string>
+    <string name="tasker_var_delivery_status_label">Delivery status</string>
+    <string name="tasker_var_delivery_status_description">How the result was delivered to Tasker</string>
+    <string name="tasker_var_source_label">Source</string>
+    <string name="tasker_var_source_description">MMRL subsystem that produced the result</string>
 
     <string name="lsposed_provider_status_title">Provider status</string>
     <string name="lsposed_provider_status_description">Vector or LSPosed provider detected. Scope data is read from the local provider database when root grants access.</string>

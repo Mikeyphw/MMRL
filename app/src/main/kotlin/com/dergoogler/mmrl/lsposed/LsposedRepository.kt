@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.util.AtomicFile
 import androidx.core.content.FileProvider
 import androidx.core.content.pm.PackageInfoCompat
 import com.dergoogler.mmrl.app.moshi
@@ -17,8 +18,10 @@ import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+import org.json.JSONObject
 import java.io.File
 import java.net.URI
+import java.security.MessageDigest
 
 class LsposedRepository(private val context: Context) {
     private val client by lazy { NetworkUtils.createOkHttpClient() }
@@ -32,22 +35,60 @@ class LsposedRepository(private val context: Context) {
     private val scopeRepository by lazy { LsposedScopeRepository(context) }
     private val githubTokenStore by lazy { GitHubTokenStore(context) }
 
-    suspend fun loadModules(forceRefresh: Boolean = false): List<LsposedRepoModule> = withContext(Dispatchers.IO) {
+    suspend fun loadModules(forceRefresh: Boolean = false): List<LsposedRepoModule> =
+        loadModulesWithState(forceRefresh).modules
+
+    suspend fun loadModulesWithState(forceRefresh: Boolean = false): LsposedRepositoryCacheState = withContext(Dispatchers.IO) {
         val cache = File(cacheDir, "modules.json")
-        val body =
-            if (!forceRefresh && cache.isFile && cache.length() > 0L) {
-                cache.readText()
-            } else {
-                runCatching { requestText(LSPOSED_MODULES_URL, LSPOSED_MODULES_FALLBACK_URLS) }
-                    .onSuccess(cache::writeText)
-                    .getOrElse { failure ->
-                        cache.takeIf { it.isFile && it.length() > 0L }?.readText() ?: throw failure
-                    }
-            }
-        moduleListAdapter.fromJson(body)
+        val meta = File(cacheDir, "modules.meta.json")
+        val cachedBody = cache.takeIf { it.isFile && it.length() > 0L }?.readText()
+        val cachedFetchedAt = readCacheFetchedAt(meta)
+        val cachedFreshness = LsposedRepositoryCachePolicy.freshnessFor(cachedFetchedAt)
+        val canUseFreshCache = !forceRefresh && cachedBody != null && cachedFreshness == LsposedCacheFreshness.FRESH
+        val loaded = if (canUseFreshCache) {
+            CachedRepositoryBody(
+                body = cachedBody.orEmpty(),
+                fetchedAt = cachedFetchedAt,
+                sourceUrl = readCacheSourceUrl(meta),
+                freshness = LsposedCacheFreshness.FRESH,
+                errorMessage = null,
+            )
+        } else {
+            runCatching { requestTextWithSource(LSPOSED_MODULES_URL, LSPOSED_MODULES_FALLBACK_URLS) }
+                .map { remote ->
+                    writeAtomic(cache, remote.body)
+                    writeAtomic(
+                        meta,
+                        JSONObject()
+                            .put("fetched_at", remote.fetchedAt)
+                            .put("source_url", remote.sourceUrl)
+                            .toString(),
+                    )
+                    remote.copy(freshness = LsposedCacheFreshness.FRESH)
+                }
+                .getOrElse { failure ->
+                    cachedBody?.let { fallbackBody ->
+                        CachedRepositoryBody(
+                            body = fallbackBody,
+                            fetchedAt = cachedFetchedAt,
+                            sourceUrl = readCacheSourceUrl(meta),
+                            freshness = LsposedCacheFreshness.STALE,
+                            errorMessage = failure.message ?: "Unable to refresh LSPosed repository",
+                        )
+                    } ?: throw failure
+                }
+        }
+        val modules = moduleListAdapter.fromJson(loaded.body)
             .orEmpty()
             .filterNot { it.hide == true }
             .sortedBy { it.displayName.lowercase() }
+        LsposedRepositoryCacheState(
+            modules = modules,
+            fetchedAt = loaded.fetchedAt,
+            sourceUrl = loaded.sourceUrl,
+            freshness = loaded.freshness,
+            errorMessage = loaded.errorMessage,
+        )
     }
 
     suspend fun loadDetail(packageName: String): LsposedRepoModule = withContext(Dispatchers.IO) {
@@ -96,10 +137,12 @@ class LsposedRepository(private val context: Context) {
             }
         }
         require(out.length() > 0L) { "Downloaded APK is empty" }
+        val identity = verifyDownloadedApk(out, detailed)
         PreparedApk(
             module = detailed,
             asset = asset,
             uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", out),
+            identity = identity,
         )
     }
 
@@ -164,6 +207,8 @@ class LsposedRepository(private val context: Context) {
             managerApkPresent = selected?.managerApkPresent == true,
             managerPackageInstalled = managerInstalled,
             managerOpenMode = managerOpenMode,
+            activeSlot = active?.toSlot(),
+            stagedSlot = staged?.toSlot(),
         )
     }
 
@@ -285,6 +330,55 @@ class LsposedRepository(private val context: Context) {
         )
     }
 
+    private fun ProviderCandidate.toSlot(): LsposedProviderSlot = LsposedProviderSlot(
+        moduleId = moduleId,
+        folder = folder,
+        name = name,
+        version = version,
+        disabled = disabled,
+        actionAvailable = actionAvailable,
+        managerApkPresent = managerApkPresent,
+    )
+
+    @Suppress("DEPRECATION")
+    private fun verifyDownloadedApk(file: File, module: LsposedRepoModule): LsposedPreparedApkIdentity {
+        val info = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            context.packageManager.getPackageArchiveInfo(
+                file.absolutePath,
+                PackageManager.PackageInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
+            )
+        } else {
+            context.packageManager.getPackageArchiveInfo(file.absolutePath, PackageManager.GET_META_DATA)
+        } ?: error("Downloaded APK could not be parsed")
+        val versionCode = PackageInfoCompat.getLongVersionCode(info)
+        val expectedVersionCode = module.latestStableVersion?.versionCode
+        LsposedApkIdentityPolicy.requireMatches(
+            expectedPackageName = module.packageName,
+            actualPackageName = info.packageName,
+            expectedVersionCode = expectedVersionCode,
+            actualVersionCode = versionCode,
+        )
+        return LsposedPreparedApkIdentity(
+            packageName = info.packageName,
+            versionName = info.versionName,
+            versionCode = versionCode,
+            sha256 = sha256(file),
+        )
+    }
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                if (read > 0) digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+    }
+
     private fun readModuleProperties(file: File): Map<String, String> {
         if (!safeIsFile(file)) return emptyMap()
         return runCatching {
@@ -316,6 +410,63 @@ class LsposedRepository(private val context: Context) {
     private fun safeIsDirectory(file: File): Boolean = runCatching { file.isDirectory }.getOrDefault(false)
 
     private fun safeIsFile(file: File): Boolean = runCatching { file.isFile }.getOrDefault(false)
+
+    private data class CachedRepositoryBody(
+        val body: String,
+        val fetchedAt: Long,
+        val sourceUrl: String,
+        val freshness: LsposedCacheFreshness,
+        val errorMessage: String? = null,
+    )
+
+    private fun readCacheFetchedAt(meta: File): Long = runCatching {
+        JSONObject(meta.readText()).optLong("fetched_at", meta.lastModified().takeIf { it > 0L } ?: 0L)
+    }.getOrDefault(meta.lastModified().takeIf { it > 0L } ?: 0L)
+
+    private fun readCacheSourceUrl(meta: File): String = runCatching {
+        JSONObject(meta.readText()).optString("source_url", LSPOSED_MODULES_URL)
+    }.getOrDefault(LSPOSED_MODULES_URL)
+
+    private fun writeAtomic(file: File, value: String) {
+        val atomic = AtomicFile(file)
+        val stream = atomic.startWrite()
+        try {
+            stream.write(value.toByteArray(Charsets.UTF_8))
+            atomic.finishWrite(stream)
+        } catch (error: Throwable) {
+            atomic.failWrite(stream)
+            throw error
+        }
+    }
+
+    private fun requestTextWithSource(
+        url: String,
+        fallbackUrls: List<String> = emptyList(),
+    ): CachedRepositoryBody {
+        val candidates = (listOf(url) + fallbackUrls).distinct()
+        val failures = mutableListOf<String>()
+        for (candidate in candidates) {
+            val result = runCatching { executeJsonRequest(candidate) }
+            result.getOrNull()?.let { body ->
+                return CachedRepositoryBody(
+                    body = body,
+                    fetchedAt = System.currentTimeMillis(),
+                    sourceUrl = candidate,
+                    freshness = LsposedCacheFreshness.FRESH,
+                )
+            }
+            failures += "${candidate}: ${result.exceptionOrNull()?.message ?: "unknown failure"}"
+        }
+        error(
+            buildString {
+                append("Unable to load LSPosed repository")
+                if (failures.isNotEmpty()) {
+                    append(". Tried ")
+                    append(failures.joinToString("; "))
+                }
+            },
+        )
+    }
 
     private fun requestText(
         url: String,
@@ -411,6 +562,7 @@ class LsposedRepository(private val context: Context) {
         val module: LsposedRepoModule,
         val asset: LsposedReleaseAsset,
         val uri: Uri,
+        val identity: LsposedPreparedApkIdentity,
     )
 
     private data class ProviderCandidate(
