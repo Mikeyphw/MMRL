@@ -57,3 +57,6 @@ build-logs/
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml
+
+# Devtool generated artifact metadata
+.devtool/artifacts.d/*.json
