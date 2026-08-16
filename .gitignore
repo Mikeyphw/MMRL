@@ -64,3 +64,5 @@ build-logs/
 
 # Devtool generated metadata and build outputs
 build-logs/*.log
+
+.devtool/build-artifacts/*
