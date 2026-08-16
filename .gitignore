@@ -60,3 +60,7 @@ build-logs/
 
 # Devtool generated artifact metadata
 .devtool/artifacts.d/*.json
+
+
+# Devtool generated metadata and build outputs
+build-logs/*.log
