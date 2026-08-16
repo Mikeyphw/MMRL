@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "artifacts": [
     {
       "applied_at": "2026-07-17T14:35:05.504377Z",
@@ -13791,6 +13791,1123 @@
         }
       },
       "history_id": "55b52667a692412a900df83195548d10"
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-15T18:45:03.820746Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_o3_o4_installer_durable_operations_v2.zip",
+      "artifact_name": "mmrl_o3_o4_installer_durable_operations_v2.zip",
+      "type": "overlay",
+      "sha256": "fa4e8af9961e373b7dc721f8c2c287bfdccbd8cdbd61cc988456580476892a7e",
+      "content_identity": {
+        "sha256": "fa4e8af9961e373b7dc721f8c2c287bfdccbd8cdbd61cc988456580476892a7e",
+        "size": 216758
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Harden installer integrity and durable privileged operations",
+      "commit_hash": "a3d948238483c6819efbc02b1f9767438723141e",
+      "file_count": 100,
+      "change_counts": {
+        "add": 60,
+        "modify": 40
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl-o3-o4-installer-durable-operations-v2",
+        "description": "Corrected combined logical O3 + O4 remediation after promise re-audit: enforce inspect-before-approval and immutable reviewed execution; authoritative atomic/provenance-bound downloads; canonical dependency planning; backend reconciliation; leased bounded operation staging; process-scoped privileged execution with guarded history/idempotency/cancellation/reconciliation; and truthful rollback/retention semantics.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "source_archive": "MMRL-20260814-205745.tar.gz",
+          "source_archive_sha256": "9e545be9edeb3c20b6d032704d1af98fc8b0fea1671535ce91c9f2b9ae8f2052",
+          "applied_o2_overlay": "mmrl_o2_platform_binder_filesystem_jni_root_correctness_v2.zip",
+          "applied_o2_overlay_sha256": "2b84bbf0f5dc3e8f8d44516ac0c2324ed3b88956c784d5a67775a1c361f67c27",
+          "reported_applied_o2_commit": "e380ee1a",
+          "baseline_reconstruction": "Fresh uploaded snapshot plus exact applied O2 v2 payload; O2 postimage continuity reverified 91/91 files.",
+          "logical_remediation_overlays": [
+            "O3",
+            "O4"
+          ],
+          "campaign_numbering_note": "This artifact combines logical O3 and O4 for application convenience; the locked campaign remains O1 through O11.",
+          "revision": "v2-corrected-after-promise-reaudit",
+          "supersedes": "mmrl_o3_o4_installer_durable_operations_v1.zip",
+          "root_causes": [
+            "RC-009",
+            "RC-010",
+            "RC-011",
+            "RC-012",
+            "RC-013",
+            "RC-014",
+            "RC-015",
+            "RC-016"
+          ]
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/App.kt",
+              "action": "modify",
+              "sha256": "0ef3273b59a8c628cee9cde3dac1c2b77d35a6314be50277aa425153129bd823",
+              "size": 2323,
+              "source_sha256": "89a2c9dfeaf40bc37999cb55d2ba20c4c1d2c3df0baeefcfed447174dde570b5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshReXcueManager.kt",
+              "action": "modify",
+              "sha256": "a2fef7ca75bcb66be0d1a80b29733e59a9e1e3db693c76f672fadc56d41a5b93",
+              "size": 15388,
+              "source_sha256": "7cb49157cefce933120552f83178dc8e76ed226531a04adf69034a7587dc75cb"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+              "action": "modify",
+              "sha256": "2b81f8810e3ee9e281410c38ece98c138a64a5457cf58dc19e42c102355e0dd4",
+              "size": 52532,
+              "source_sha256": "bba2ce11d600b37469aa284ec7e3fe51b15fdce22fdc58f3570b90f16aaafed2"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshModuleInstaller.kt",
+              "action": "modify",
+              "sha256": "a45d2bcb100e89ea364a753ea103dbb45cc772743600a44da5f4ef6a918f2509",
+              "size": 5644,
+              "source_sha256": "b3d3cd2b648387c090f9eeea2732a441ebfaacfe0203de09c134231abf81b5cd"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshMutationOwnershipPolicy.kt",
+              "action": "add",
+              "sha256": "c02140a8df0881a5e59944618e5722ccdb1f1b9435c7e771383fc85a5bf46318",
+              "size": 1006
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshRepository.kt",
+              "action": "modify",
+              "sha256": "d4d11b8dc67670d5aeb51756b0c14913eac13a926009b03b81ed92c7852c6ed1",
+              "size": 27033,
+              "source_sha256": "8f08f3e99bb87be89a2f163d2cb81310191ec0245df885913a7e1794be717f1c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/AppDatabase.kt",
+              "action": "modify",
+              "sha256": "2a7eee2934f9f50a2d503ccfc5ed3c8f3a3ba0fd9d940ef1ce8de029465cb961",
+              "size": 8110,
+              "source_sha256": "c50caaeef951167f2842cf56c15f5f821bbd3637479dda0db2efbde72417b87b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/dao/OperationHistoryDao.kt",
+              "action": "modify",
+              "sha256": "39559e3f7125db9472c5be41408992c4d20fa994410542d82db72b4be320b3b7",
+              "size": 10661,
+              "source_sha256": "c55b454033c1a6a028df4c6e6d248d18a1bb7cd2e860826ea43e2a047e589c63"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/entity/history/OperationHistoryEntity.kt",
+              "action": "modify",
+              "sha256": "fc86198dfec6e95f80d25d30c1947f3cb4343b8fd22c05d6c85ffc745e19306e",
+              "size": 3581,
+              "source_sha256": "2781de9dbf5c1a8fdbb807d92a69c3eb514aab27f046b9fb21e8d924874e3e7f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubArtifactArchivePolicy.kt",
+              "action": "modify",
+              "sha256": "80d66b3068332b202812e3cc4f48f86fb8c7bec03b4f543beae6d411ff2c031b",
+              "size": 15408,
+              "source_sha256": "f53e22bc9dfa41a9cea63ec31d459464b865e7cfde1f97fbfa40cd4720a111d4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/ArchiveInspection.kt",
+              "action": "modify",
+              "sha256": "e5fb77dd10d5eef9897f1c5481baaad9b3830f59529fe74bf1b288c5bdbb4c47",
+              "size": 15743,
+              "source_sha256": "cc0f34ce7753ca05516b96b0ccbf0a4c6e13e00837c1b259c9a893fb7e85c4a4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/ArtifactProvenance.kt",
+              "action": "add",
+              "sha256": "21bb86a87e544513e5f926e17a9d14fc844f2e421c2d40a8360afd38ed3fe0c9",
+              "size": 984
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/AtomicFilePublication.kt",
+              "action": "add",
+              "sha256": "d10a15c0abe7f6e2d533e9ed947040145db784f0efab29c84e97552c16975bb0",
+              "size": 589
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/BatchInstallOutcomePolicy.kt",
+              "action": "add",
+              "sha256": "07441fe3d46ec95da97678ddbfb15e8981416faa798092098c7dfb8b3ce783c4",
+              "size": 1100
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/BulkDownloadCompletionPolicy.kt",
+              "action": "add",
+              "sha256": "cd78f4f6ad396268e7c338e5d7e3ec47273c6c93c5e8e4aa3985beeb7f55087a",
+              "size": 345
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/DependencyPlanPolicy.kt",
+              "action": "add",
+              "sha256": "3e96e698be9241ce779854d5e361f67bdfb56c520e767c9b99f30f7a4d8b06ab",
+              "size": 1394
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/InstallExecutionAuthorizationPolicy.kt",
+              "action": "add",
+              "sha256": "718188ec5741141094d5e11c030b8d5597861ed949017bf0e2726d75d9045e5b",
+              "size": 970
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/InstallReconciliationPolicy.kt",
+              "action": "add",
+              "sha256": "636df01d9870c700f6bae21b759505aeb468c94b9ee6f74b7ab2fd31511226a3",
+              "size": 512
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/OperationStagingStore.kt",
+              "action": "add",
+              "sha256": "1ba1d9b03e47c7c9b3007803fe0ef570104ba507aa0a207b601a1a1572982755",
+              "size": 6636
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/OperationStoragePolicy.kt",
+              "action": "add",
+              "sha256": "c1b21f368371626d9212666f6b3b0d886d780bac770ccf9d58b4379fc6837565",
+              "size": 1365
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/OperationStoreGate.kt",
+              "action": "add",
+              "sha256": "bb0eb2b3a916024b7d803ead7f12409816d1d4e43152f11f23d28222deef1625",
+              "size": 364
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/StagingOwnership.kt",
+              "action": "add",
+              "sha256": "f54c7043485554f79edd5454291621e9908f11c392375d7fbfb5ce1d2f24fccc",
+              "size": 360
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/installer/UpdateRollbackStore.kt",
+              "action": "modify",
+              "sha256": "8f9c5777690004d50de495409a35b3234c5c1370f17ff0d9926848aaf74e37e7",
+              "size": 7386,
+              "source_sha256": "1a1d250e88cf40e17558a06409ccd1640136914fdc04474b5f802490eb7459ea"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/ModuleMutationExecutor.kt",
+              "action": "add",
+              "sha256": "855881a249d1d729e3f6d55d5c1e3c8260f079261a8c0d01113aa9116ba8f988",
+              "size": 9223
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/ModuleMutationReconciliationPolicy.kt",
+              "action": "add",
+              "sha256": "4f348e392a0df4af0a5ae5207dc14f6149f8ca84b1b9df57df0bed986df269eb",
+              "size": 643
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/ModuleMutationRetryPolicy.kt",
+              "action": "add",
+              "sha256": "f1088b61eed5ad0257ded8f54105cd653d1407e02e841811e7f11455adb3ac6b",
+              "size": 614
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/OneShotOperationGate.kt",
+              "action": "add",
+              "sha256": "f96f23732a3a3b3d745384e63b4e72bb56f5d43c8ec7db0ac90d6fac1084ac70",
+              "size": 405
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationHistoryRetentionPolicy.kt",
+              "action": "add",
+              "sha256": "183a5dcb2675df8a4c0b2398246af61eae0f90342a16011d62ce1727975d2987",
+              "size": 1588
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationReconciliationPolicy.kt",
+              "action": "add",
+              "sha256": "e99883dc6b632929d1a64d17c6f6141a8f6002c5d369b5f4fea8f78e1966616b",
+              "size": 1961
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationRecoveryPolicy.kt",
+              "action": "add",
+              "sha256": "3856169bb83d3f0645608e9ea6111e0f7f2a8f452d9da4630df21c9a9df71adb",
+              "size": 1095
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationStateMachine.kt",
+              "action": "add",
+              "sha256": "bd0769cd87bf8165b481a94d5bd8fdfd722075b055ace02ca54082ae2f2cfa1e",
+              "size": 2090
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationStatusPresentationPolicy.kt",
+              "action": "add",
+              "sha256": "fb4927a70d0f2e0a4420566734e3b776accd57c2f7e2547a534df5ea4d9db89c",
+              "size": 1282
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/PrivilegedOperationCoordinator.kt",
+              "action": "add",
+              "sha256": "56e81fcccced6cfdb111f2cc82f4f0774386f0151daf5b45725f6a78700715d5",
+              "size": 8736
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/PrivilegedProcessExecutor.kt",
+              "action": "add",
+              "sha256": "07b23b6807e39e2326fae8e156ee7e02fb8fe969f7ab3209470c65cb0238e688",
+              "size": 3444
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/RollbackAvailabilityPolicy.kt",
+              "action": "add",
+              "sha256": "e7b73c45de849381ff49131eabf40af2b0f499d779bd549456b8fccf41ce10f0",
+              "size": 936
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/VerifiedMutationFinalizationPolicy.kt",
+              "action": "add",
+              "sha256": "5aaf9a6e3ce9deda741eea6ba3326985d3fc9bff1d196de34b0cdd03f4edd8e5",
+              "size": 695
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/operation/WorkerCancellationPolicy.kt",
+              "action": "add",
+              "sha256": "0027899a96b68a7c748bdc984ee40f051705401f568d13ff03996d78a6e0eb3a",
+              "size": 441
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/OperationHistoryRepository.kt",
+              "action": "modify",
+              "sha256": "6c2eb798b63d9611024e1e056aecc343d3f9c7a4771abe868d159eda9691f5eb",
+              "size": 17893,
+              "source_sha256": "acca66d62d1e0ddf0dadbc65919cd32f90df59f2ca1d2a21b9b89be95a7ae539"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/RepositoryEntryPoints.kt",
+              "action": "modify",
+              "sha256": "f11a213bf7bbd48b448ddaac35e4ebccc02649135957e562ea73e5fd718c10d0",
+              "size": 1015,
+              "source_sha256": "1e79e8ae437f1db302c1f0aa42672aed01179a95551602802c82b367fb06ea15"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadCompletionPolicy.kt",
+              "action": "add",
+              "sha256": "6e4501f9b161f3cead2de4b80d7a4f6d6ebc94dbb34fb6b4d3a6d9b9f4f0ec26",
+              "size": 560
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadPublicationPolicy.kt",
+              "action": "add",
+              "sha256": "151e4709c17a7f63f55aa6dab0aa38b1f40514c645e3934799a3e70366012e8a",
+              "size": 520
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadReceiptStore.kt",
+              "action": "add",
+              "sha256": "5d74117198d97111606bc66f47839a04e72e3c70532013faf24f60180d1e07d3",
+              "size": 3076
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadRetryPolicy.kt",
+              "action": "add",
+              "sha256": "c618030a14fe9312723672ab82b9bcf2e1bb75376dd13a6a17a1a7b44c78783e",
+              "size": 762
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadReusePolicy.kt",
+              "action": "add",
+              "sha256": "b4c0dd7b0ee9b0b0ae06d9159b9cbd932b559f56de0cba4079fc5c71ef71633f",
+              "size": 614
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadService.kt",
+              "action": "modify",
+              "sha256": "8b8509a63637cb61cfc5e0cf5d535f6262d4e32c90c2a483adea7e5bcafe0480",
+              "size": 33273,
+              "source_sha256": "b21f0eabcc7a5d17e9dd51aeb115a9c8e0708569f2898560587e37b540e4c3bb"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadTransferPolicy.kt",
+              "action": "add",
+              "sha256": "e3a1aa252218f8789945de5ab5fb70cf09fd235d324c718b8eb29d3ce280f69e",
+              "size": 909
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerApprovalActivity.kt",
+              "action": "modify",
+              "sha256": "b38ead30191ce26465f0eacbdf07812cda2a27947a692367a218da6bbce092c4",
+              "size": 5030,
+              "source_sha256": "fcf36cb2c4524b66560cafff5712c0a1a71a5110d5736afa7b7c3ffd652056f6"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAshActions.kt",
+              "action": "modify",
+              "sha256": "3ad8055db3d52bed3760e31c6f3c394c0f997eb97c0dca84129652e453cee25a",
+              "size": 28678,
+              "source_sha256": "7dfdb324dc81479f97449aa92165eb83007b25958f3f2abc0e925154e522ca83"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAutomationWorker.kt",
+              "action": "modify",
+              "sha256": "bb369d0b47ffb89a5bf59c4e2e5884be48336ff03ab5da046d3961ccb39a5d08",
+              "size": 27271,
+              "source_sha256": "adeddaa03d8980d0b6796dc62aa6154b13180371d72b03be14109aa0fac1eb33"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerReviewTokens.kt",
+              "action": "modify",
+              "sha256": "6f27dfcb1f9563e0f456f4e83424890455b6de7646e61667bb8465c8b559023a",
+              "size": 8465,
+              "source_sha256": "43cf80a8f4de59cd8138b7639e6f86bd3bda9490f9df96d6945ebc0d9f9cd881"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerReviewedInstallActions.kt",
+              "action": "modify",
+              "sha256": "d0bac948297540fdb076a2dffe6161d76bda8e86bc715db6c0ec7d0001e81db6",
+              "size": 18951,
+              "source_sha256": "1679afc8c80762b9dfb1dc6983249f2bf86ca4be0d84548e88e01b4be1d52a37"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerRootActions.kt",
+              "action": "modify",
+              "sha256": "e37cc876924466fb3b0b1223d775440aa87520bcb2d193fe51339012b5c3dc78",
+              "size": 9855,
+              "source_sha256": "d33ad1b1aceb6782cae0ab13398d4daa006b69e458eef89c2a4a213314812809"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerRuntime.kt",
+              "action": "modify",
+              "sha256": "f25fd5d53b1fbdfc5dcb025c5bbd0176a6e6ae51d71d0f4151946f9782ec4991",
+              "size": 7764,
+              "source_sha256": "9cf299ac1698e46bc55c4cd54939a82a2269045e4cba450de146aa87b508b341"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/terminal/PrivilegedLaunchSessions.kt",
+              "action": "modify",
+              "sha256": "3fd52c9364504c338e01922bcd728035ceabb4759654005e92e2257aad992cb4",
+              "size": 3826,
+              "source_sha256": "d014784548bcf194a9a5f396203237101a0500b57a4d825001f0a205e3a7bbdc"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/terminal/action/ActionActivity.kt",
+              "action": "modify",
+              "sha256": "3ebef1de095b01d4c741d177010d7752c0526965190a6c38d6212d8f525f9dfd",
+              "size": 1879,
+              "source_sha256": "82fd5ae73990c08d393ad855968d77341104f70d1c0b2d51010e5894ce50a057"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/terminal/install/InstallActivity.kt",
+              "action": "modify",
+              "sha256": "4c9a0da1a7c3ac26552a58574e0d3a3d563f13806df0e89450badfda3b96f05b",
+              "size": 5962,
+              "source_sha256": "1f97586cc7cae68a5b2f8072395af7857a362ea2d4c9c70f568ceddca0b3225b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/activity/ActivityScreen.kt",
+              "action": "modify",
+              "sha256": "de5550e8ce78c41a0f2c004418deb1ac8daabc6545e4be846f5443ab1dd962a4",
+              "size": 39349,
+              "source_sha256": "44a24b7088ee4eb0284f1d2e8cbeb372f4017e1a7a8379f8b7d708e3b20e1380"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/NewViewScreen.kt",
+              "action": "modify",
+              "sha256": "ec52ef1fbf6566c1efd7c578419ab211ac95b5bfd0ca7309004fec29fd19270b",
+              "size": 18878,
+              "source_sha256": "f8160ad6f9843093b80d37990fe2db1eb8b42a7ed88665645ae2119443b72bab"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/items/InstallReviewBottomSheet.kt",
+              "action": "modify",
+              "sha256": "722360d2be4a4776ee78ca9a27aa0a09efe8a159ea67309cd7bb78e352359074",
+              "size": 14124,
+              "source_sha256": "251823ae956337d59cbd2a445acb735adb300d0116dbdeb45281557f32561707"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+              "action": "modify",
+              "sha256": "f45ecc48ea1cb6dd1098ed7134763dce7981dd2d4dcea8728d18c8104dd9763f",
+              "size": 15902,
+              "source_sha256": "e0be437d60890e75e8f3aad4da3074b0b7f40be5137a229d9317b52d842dbc93"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+              "action": "modify",
+              "sha256": "4b1e6ebd55e524d249ea3b117ba06d2008e97d94d709d0ce9f0e97b0a04e4442",
+              "size": 36266,
+              "source_sha256": "e8bf7d7a756948276251323aeadee86873b5158fa0adfacd6c3d7a7b76b5883e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/updates/ModuleUpdatesScreen.kt",
+              "action": "modify",
+              "sha256": "ecacd7ae148ada2b5d8c0b1f215068e5b69ebc3bd5f8c2901602ddfc641a4380",
+              "size": 31306,
+              "source_sha256": "2b95ca3af85a1db3fd15b07db6a8991820d106d5e9f093a20946c3d3d1d32ce9"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ActionViewModel.kt",
+              "action": "modify",
+              "sha256": "d32a2bb7ab13794a0bb970d3138ae8b201596a223a1e167d1e17b804e9d472cb",
+              "size": 7777,
+              "source_sha256": "fd49a6a12d9d889cbc9ed944058f796eca3f1e6d873b11fce3c41b5bd905d9e0"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ActivityViewModel.kt",
+              "action": "modify",
+              "sha256": "c83f06557013b122de9cbe1748a0d7e5fdf4cae7198bf2fadb97d3bae2691525",
+              "size": 24845,
+              "source_sha256": "650ad03d5865087fdc0ceef2c35efc33bdc5b4afeec11c008a368de9332b671b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/BulkInstallViewModel.kt",
+              "action": "modify",
+              "sha256": "bd98dd9e18a693a1b6b9cceded5397888b7e2b4a7bd7afbb6f4647693d709862",
+              "size": 13573,
+              "source_sha256": "b09d4f9fcf1069e2e347774a69e96a25b2b4cb703a0dc0f19ef658498f8a470e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/InstallViewModel.kt",
+              "action": "modify",
+              "sha256": "f25a5a4c936346fb519cfb18529979b115bc6de8b490f229110166db77004f6c",
+              "size": 41887,
+              "source_sha256": "f5313fd9b30406234d5ad4baa8bd4215e7db4da5c209ea8f22671fe474b386a0"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModuleViewModel.kt",
+              "action": "modify",
+              "sha256": "ff13580c61bfeb6280ae0ab27342b72ffef191e55f367cf7e5c43175a665343e",
+              "size": 15791,
+              "source_sha256": "1bace9995570d86d686f906944e3d2080b6b64a8d5fb3558d0d844a0f8bdb2a0"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "c5f6ea0e38d2921845c6caf6c9c0448480d3c76b14f70730693c7f76904892fd",
+              "size": 48249,
+              "source_sha256": "a9b4ccbf06a4e9cf2988bbf02a6149cf53244106561731e88fc70d2e994811ca"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "2d26a9e512e1aa414b5d0345150cdb6f03ed47d4575a4ac486d95463e0347bdd",
+              "size": 109729,
+              "source_sha256": "55271b71ddb2346f6d1a83d0899c5c578ddf5092b6c6273c1ef47f3d2d546e18"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/data/AshMutationOwnershipPolicyTest.kt",
+              "action": "add",
+              "sha256": "d75595014840cb6197446711e91c1fadee1835b8484aba17dfbffed3e4c490c7",
+              "size": 1120
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/database/entity/history/OperationHistoryEntityTest.kt",
+              "action": "modify",
+              "sha256": "2c6d6b11a1c06ac762415836dfbf59ea1d3b2731a3fcbddf75841ef5477e08e8",
+              "size": 4909,
+              "source_sha256": "5c98545d8009ed9a87091daca4b89f7c550875005dda2099802f2c8cd8f22bd5"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/github/GitHubArtifactArchivePolicyTest.kt",
+              "action": "modify",
+              "sha256": "3cf5547a88a63e7b856613aa38aefd00bc783ce8a4dfa91e4558559999df387a",
+              "size": 2360,
+              "source_sha256": "939d203afe0a9565a5fedec4bb30c26ba203cba380bbb176ad92fcd9ed84f3fb"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/ArchiveInspectorO3BehaviorTest.kt",
+              "action": "add",
+              "sha256": "e08fbf169d2bfcc6e1a3f13341e788f08869f2af0cc2ecadf65f12125e7e6e32",
+              "size": 5523
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/ArtifactDigestTest.kt",
+              "action": "add",
+              "sha256": "e5bc6fa4511450f08143579dd23673a2ab6b5b2f3d8f17b1867f26b0f2e9bb5e",
+              "size": 816
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/AtomicFilePublicationTest.kt",
+              "action": "add",
+              "sha256": "e5a4020be6f78bcee5bae3d25868d25520d3bde26b61cc4e940252ccd73d201d",
+              "size": 1352
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/BatchInstallOutcomePolicyTest.kt",
+              "action": "add",
+              "sha256": "d50ba7e7bbf92c8dcb44569c130ca1ad70acf5be7f70253d7b0844b6195deee3",
+              "size": 1039
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/BulkDownloadCompletionPolicyTest.kt",
+              "action": "add",
+              "sha256": "f9ddb7a6ac133dd1beee1f864bcb55570321d223d70a51680c10d9efd9bc29c7",
+              "size": 658
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/DependencyPlanPolicyTest.kt",
+              "action": "add",
+              "sha256": "f6f11b1e9bc63c851325fff31b358f6f6c24a4f4968c9498cd1c663c1b15601d",
+              "size": 1978
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/InstallExecutionAuthorizationPolicyTest.kt",
+              "action": "add",
+              "sha256": "96f69a20c440206ba3f57765139e72f6fd688ba3525a490da0f99e2c53e5d522",
+              "size": 1394
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/InstallReconciliationPolicyTest.kt",
+              "action": "add",
+              "sha256": "127d59f7b03946247c814671b0df489ce8c66ad493bf699da79ff06ee105222b",
+              "size": 886
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/OperationStoragePolicyTest.kt",
+              "action": "add",
+              "sha256": "a05e3e18448adb2d00f54938f99e5999723592d9bfb2dee4b5110f6670aa0e0d",
+              "size": 1784
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/OperationStoreGateTest.kt",
+              "action": "add",
+              "sha256": "bc74b2e2c34b50e44796f14b92664141a27ed99bdf31ae912f669c64a3ba09f1",
+              "size": 906
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/installer/StagingOwnershipTest.kt",
+              "action": "add",
+              "sha256": "780a213b8962dd0a2a767bfad9894962057dad6786420a8c490b6f8bf4b044e2",
+              "size": 720
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/ModuleMutationReconciliationPolicyTest.kt",
+              "action": "add",
+              "sha256": "534a9797b649b1d75e103bd58b5b67217b7d3c9646772cdad41c2f93b28b1f77",
+              "size": 1231
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/ModuleMutationRetryPolicyTest.kt",
+              "action": "add",
+              "sha256": "d53fb6ec020164a7fc69400c7ff78979cfc335a8dc39f0aa9ff0ac52644a4524",
+              "size": 667
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/OneShotOperationGateTest.kt",
+              "action": "add",
+              "sha256": "0ed3ac465f4086eaca1984cbaaafcf3f37dd715caae486da0a89c76bdcc692b8",
+              "size": 437
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/OperationHistoryRetentionPolicyTest.kt",
+              "action": "add",
+              "sha256": "2bc40a29d53438ff9355f754147cfd067c3135661b76030e7beb308d286d7633",
+              "size": 2765
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/OperationReconciliationPolicyTest.kt",
+              "action": "add",
+              "sha256": "e32a8e1e7afbbf7a9b1b13a3b7fcd57b6b2fe77b856b3d822e6f075e65ac1a48",
+              "size": 2062
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/OperationRecoveryPolicyTest.kt",
+              "action": "add",
+              "sha256": "eca838aa1a616f60daf6d26bbb0f333c48afb3a9bd603236dd0b731e88783591",
+              "size": 2113
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/OperationStateMachineTest.kt",
+              "action": "add",
+              "sha256": "0028e893c8ffcb26b24afe4c352412c90213d0549adc7c9b0dd2172132193dbc",
+              "size": 2351
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/OperationStatusPresentationPolicyTest.kt",
+              "action": "add",
+              "sha256": "78e7a7c5451ff1dd021fc33dbea6513fbe9e50542ebb667c59b6816dbb51406f",
+              "size": 1089
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/RollbackAvailabilityPolicyTest.kt",
+              "action": "add",
+              "sha256": "5760c2aaaf35113ca3fb22cd2a2b9287a81871ce0f8bb6b2922c4d4419c048e5",
+              "size": 2140
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/VerifiedMutationFinalizationPolicyTest.kt",
+              "action": "add",
+              "sha256": "bdc4b6a3b71b1398146b5cb9dcc6e8d5691961f83ca7cbf4bca9653a0af85c24",
+              "size": 1088
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/operation/WorkerCancellationPolicyTest.kt",
+              "action": "add",
+              "sha256": "2790838117ae781d5c73d913cddaf784bb395d8ac271905a0afbd00e7e244169",
+              "size": 735
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/service/DownloadCompletionPolicyTest.kt",
+              "action": "add",
+              "sha256": "09223289d12c302c0b0d39f27764ff962e3905c506e4b7fcaa00749fdf182f4f",
+              "size": 945
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/service/DownloadPublicationPolicyTest.kt",
+              "action": "add",
+              "sha256": "06b20c80b40f4ceae451e983a1c235315ffa312ff6d26b96f3f7718ee515aba7",
+              "size": 693
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/service/DownloadRetryPolicyTest.kt",
+              "action": "add",
+              "sha256": "f18e7a9143ad9cc0c8a39f044b1349e4358a835600b98d3048865b2bc0742946",
+              "size": 1038
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/service/DownloadReusePolicyTest.kt",
+              "action": "add",
+              "sha256": "18bccde097bc6e4e0b88619ab913b80c884935fc939ba27aae670c3922ed7a32",
+              "size": 1098
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/service/DownloadTransferPolicyTest.kt",
+              "action": "add",
+              "sha256": "ac0592c14e092c322e75c230ec547748457d774d94e78540191f58c18adf90fe",
+              "size": 665
+            },
+            {
+              "path": "compat/src/main/kotlin/com/dergoogler/mmrl/compat/MediaStoreCompat.kt",
+              "action": "modify",
+              "sha256": "85f1e39f1faecbbe27d03eec87b5badb0a37078b71e563966a002559abfccfe6",
+              "size": 7863,
+              "source_sha256": "d1943d1647f4117a35131a647112e73b1b4999694d1ec153e88b655b6219593a"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "message": "Harden installer integrity and durable privileged operations",
+            "strategy": "single"
+          }
+        },
+        "validation": {
+          "allow_deferred": false,
+          "failure_action": "pause",
+          "minimum_phase": "finalize",
+          "mode": "required",
+          "required": true,
+          "tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:compileOfficialDebugSources",
+            ":app:assembleOfficialDebug"
+          ],
+          "notes": "Eventual targeted O3/O4 tasks for final campaign validation. Deliver/apply this artifact with --no-validate. No Gradle, Android build, native build, or campaign validation was executed during this re-audit. Supplemental checks performed: 115/115 semantic implementation checks, pure-Kotlin policy compile probe, Kotlin parser syntax probe, source-guard/postimage/ZIP integrity verification."
+        }
+      },
+      "operation_id": "04ba9962f2464b24a8ce3a6ac2a32acf",
+      "history_id": "e10ef09af1cb712a20c9bd147656a69b",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260815T184456Z-734034be6f6d",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-16T03:14:34.343755Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_o5_o6_data_repository_provenance_v2.zip",
+      "artifact_name": "mmrl_o5_o6_data_repository_provenance_v2.zip",
+      "type": "overlay",
+      "sha256": "824838231724811d582a86f5ae1fb713c95a987057406bbd8773a7f93b3410f3",
+      "content_identity": {
+        "sha256": "824838231724811d582a86f5ae1fb713c95a987057406bbd8773a7f93b3410f3",
+        "size": 75146
+      },
+      "status": "failed",
+      "validation_status": "not-run",
+      "commit_message": "Apply MMRL O5 O6 data and provenance remediation v2",
+      "commit_hash": "",
+      "file_count": 32,
+      "change_counts": {
+        "add": 6,
+        "modify": 26
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl-o5-o6-data-repository-provenance-v2",
+        "description": "Verified and repaired combined O5+O6 remediation for MMRL: Room/user-state migrations, transactional repository generations, DataStore/ConfigFile durability, canonical repository/version identity, bounded network ingestion and downloads, exact GitHub auth, immutable Actions artifact provenance, and UI-visible partial refresh failures.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "source_archive": "MMRL-20260815-215655.tar.gz",
+          "source_archive_sha256": "afaf321e86f53febb40b03c696461d64c28fe16a944cb8556203c9cf2cdd563b",
+          "chat_export": "chatgpt-export-json-project-android-devtool-apps(1).zip",
+          "chat_export_sha256": "a5543d1e414af718b9e6aac9b7fd9cb40530ca99a1da7de13a3bf84a4b9da071",
+          "referenced_handoff": "MMRL_remediation_handoff_O1_applied_O2_pending_20260814-1(1).zip",
+          "referenced_handoff_sha256": "a19a60ba72eb883894f5917adfab6deb591a3dbf0e75f451f6944b109c218a88",
+          "authoritative_state": "chat-export-json + current source tree; older handoff used only as referenced context",
+          "previous_overlay_state": "O3/O4 reported applied in chat export and present in current source tree; O5/O6 requested as one combined overlay",
+          "remediation_overlay": "O5+O6",
+          "revision": "v2-promise-audit-repair",
+          "supersedes": "mmrl-o5-o6-data-repository-provenance-v1",
+          "root_causes": [
+            "RC-017",
+            "RC-018",
+            "RC-019",
+            "RC-020",
+            "RC-021",
+            "RC-022",
+            "RC-023",
+            "RC-024",
+            "RC-049",
+            "RC-050",
+            "RC-051"
+          ]
+        },
+        "audit": {
+          "reason": "Follow-up promise verification found partial v1 coverage in HTTP error preservation, actual-byte download caps, shared OkHttp cache/client reuse, repository URL canonicalization, transactional online row writes, and refresh failure surfacing.",
+          "v2_repairs": [
+            "Centralized HTTP success checks through NetworkPolicy.requireSuccessful/httpException so non-2xx responses retain status, URL, and bounded sanitized snippets.",
+            "Bounded every repository/GitHub/LSPosed APK download by declared and actual bytes, including unknown Content-Length streams.",
+            "Reused a shared OkHttpClient/cache with explicit call/connect/read/write timeouts instead of recreating clients per request.",
+            "Wrapped online/version insert and delete paths in Room transactions where v1 had separate writes.",
+            "Canonicalized repository input host casing and duplicate path separators while continuing to reject credentials and unsupported schemes.",
+            "Surfaced partial refresh failures from refresh-all into the repositories failure dialog instead of silently ignoring failed repos."
+          ],
+          "deferred_generated_outputs": [
+            "Room schema JSON identity files are intentionally not hand-authored; Room/KSP must emit true schema JSON during the later validation build with exportSchema enabled."
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "message": "Apply MMRL O5 O6 data and provenance remediation v2",
+            "strategy": "single"
+          }
+        },
+        "validation": {
+          "required": false,
+          "allow_deferred": true,
+          "mode": "deferred-by-user-no-validate",
+          "minimum_phase": "final-overlay",
+          "failure_action": "pause",
+          "not_run_reason": "User campaign rule is validation only after the final overlay; this package was statically audited and inventory-verified only.",
+          "recommended_tasks_when_final_validation_is_allowed": [
+            ":app:testOfficialDebugUnitTest",
+            ":datastore:compileDebugKotlin",
+            ":app:compileOfficialDebugSources"
+          ]
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/di/AppModule.kt",
+              "action": "modify",
+              "sha256": "2cfe31f395a37d1148c3cf05460ce6eeaee7d7e2bb5d3d4b9dce1e2eda31662b",
+              "size": 783,
+              "source_sha256": "966d0e6c9dd11a82e924eeb512ede2927ecfb13ee2ddb99ed4a8f9cb1658183a"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/AppDatabase.kt",
+              "action": "modify",
+              "sha256": "0421da68a941f873591acc3528059e1f40cdf59c4700d7e5f19e15c58da2f47f",
+              "size": 27037,
+              "source_sha256": "2a7eee2934f9f50a2d503ccfc5ed3c8f3a3ba0fd9d940ef1ce8de029465cb961"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/entity/Version.kt",
+              "action": "modify",
+              "sha256": "0dfc5fc65d9b11343eceaa47762cbb6994dbfaac8da54250bdfe593f46716117",
+              "size": 1571,
+              "source_sha256": "3bdf6a1e8e0886267ba9fd3c2bf7ac0f81f9fc418a292f19ce4fab4dac2a812f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/entity/online/ModuleManagerEntity.kt",
+              "action": "modify",
+              "sha256": "765baafc41cd814d3d98760788b3fcfae97de53a4791f87af06e8b1010389e21",
+              "size": 1016,
+              "source_sha256": "389e793adbdf338d724c6a34e20989c3310786470404d95ffca4bfcdb96c639e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/entity/online/OnlineModuleEntity.kt",
+              "action": "modify",
+              "sha256": "dead5f4248b5b88fde9b125d7b0641179536a63d0bfbe388a3a3a14eac678d53",
+              "size": 4075,
+              "source_sha256": "5d172ccf3a6a12752bcd83a2a40ae2b9771e6a58a40d3bb142a0086cb4eb6f19"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedRepoDebugProbe.kt",
+              "action": "modify",
+              "sha256": "e743ad1d16939287eb80b8374c99b937c4e998b98221cde8ffb948574a85d1b1",
+              "size": 5477,
+              "source_sha256": "c6d8868e2e172407d319f638f0db85c4d2f6a869132a5eda85e71ba5ca55138e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubModuleResolver.kt",
+              "action": "modify",
+              "sha256": "107794d3201ec281a0b4e212270873f655ad4d2144dd260db2f0cdbc2fe9c443",
+              "size": 19341,
+              "source_sha256": "0c16812636cbe99ff68d5ebd780986a2a3ff5dcd5d67bc762b5dac44d0c2d641"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubTokenStore.kt",
+              "action": "modify",
+              "sha256": "434c397d2f3fa0bc2c80ce374efbb37bc5b9ea68cb85193356f591f5f66c6f71",
+              "size": 3053,
+              "source_sha256": "e962c81f3bbda13708a29c17ed6c7aa4d2290721fadc24e6057e2daf14f77cc2"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+              "action": "modify",
+              "sha256": "7ed7b9660a2ad9e2a55daaf5d0d1245d6d69d0eb66a8403a27fb53a649765a6b",
+              "size": 20951,
+              "source_sha256": "a575da8c5de5c3693a182501ddb21658a7d574970e64b4eeffd5bb583361fc44"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/json/UpdateJson.kt",
+              "action": "modify",
+              "sha256": "3c780561621233b2fd32798b6bc9e291da59ef5dc68a6a8c384f72d53ec9fe4c",
+              "size": 2047,
+              "source_sha256": "e5b616f7836e53e5dbaa2ef2b129cfb1fcab1ecf3e79410b95987e6e3de48a79"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/online/VersionItem.kt",
+              "action": "modify",
+              "sha256": "52401e15f421fe378849ed0b306523d978b39b5582a45387e14fc259f155b56e",
+              "size": 1208,
+              "source_sha256": "c9aafc7b220b385a7b86ee371640edbf752c482392f51ddfcbeeac89dd81677c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/network/NetworkPolicy.kt",
+              "action": "add",
+              "sha256": "f434dcbed2ebefc4ca6b82fd0f49336d901e7771a30936c253b447eafab30ab2",
+              "size": 4030
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/network/NetworkUtils.kt",
+              "action": "modify",
+              "sha256": "01cb5696a89edbe6bd3af80e0f672ed3917d9a02a4ac83ade894a3af0eaaf6f6",
+              "size": 5856,
+              "source_sha256": "7bee037cfe660a54741c02577dce411289e4d7096512172a484d7e640a3f4123"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/network/ResponseExt.kt",
+              "action": "modify",
+              "sha256": "a3655bd006c59f32bcc23bd000e4b28afd2644d2beaa79c6707ff5c5508af4ab",
+              "size": 1815,
+              "source_sha256": "acfdc24526d428eb3d2b7f4a2c39868f2917d6a07506cdfd29e5d76466e3806b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/LocalRepository.kt",
+              "action": "modify",
+              "sha256": "88543a4e68beb1328d0dee2a2326083659250259a1fc60fd4285f0d1cfbb8258",
+              "size": 13994,
+              "source_sha256": "16b2db05bd5237d6c0a9a0234f88608785f8466f016bffa04c47e708bb6452a7"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulesRepository.kt",
+              "action": "modify",
+              "sha256": "d7116fa13346d65277995c1eb79d9723e2cfc9d7f58f1ba83c3480b518b26830",
+              "size": 2552,
+              "source_sha256": "61ce6127560b6e9a01c8535bd4d4c5224ebf47da6ece7443038d9ebe66c8c88f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/RepositoryIngestionPolicy.kt",
+              "action": "add",
+              "sha256": "922d0e97042ee940b35bde08599f7062478429ff6e5f5171e6d95946381454d0",
+              "size": 1413
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/RepositorySourceLoader.kt",
+              "action": "modify",
+              "sha256": "e9f9b6d733ed74d941ba119e960e98178d94c7b414e579d5059b45387107f15b",
+              "size": 23307,
+              "source_sha256": "e37e6966c4f48031386e1c3b28fcc5e06f5bbb7d58e4120f864f912e943f2a40"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/RepositoryUrlInput.kt",
+              "action": "modify",
+              "sha256": "175b69aca9dc4cd82dd5fc922e190c5eb8e9d96214d9a8c0436a1edb3b756ac1",
+              "size": 1488,
+              "source_sha256": "4915e246734b96336532e5b8fc8a868e1ebd99e5469635aed3249aaed4cbda8d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadService.kt",
+              "action": "modify",
+              "sha256": "3ceef646bc950d33ecc9c7dd6078961c93375b2ef04f5f37f04fbba68ea51390",
+              "size": 33079,
+              "source_sha256": "8b8509a63637cb61cfc5e0cf5d535f6262d4e32c90c2a483adea7e5bcafe0480"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadTransferPolicy.kt",
+              "action": "modify",
+              "sha256": "8fdc6775e21fab81caa647ba9b88612eef964c2e9d1b02988681894a438beabc",
+              "size": 640,
+              "source_sha256": "e3a1aa252218f8789945de5ab5fb70cf09fd235d324c718b8eb29d3ce280f69e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+              "action": "modify",
+              "sha256": "73908318f4c62b29604439fb12368898e85cb174a66e20176fb885974a80e29b",
+              "size": 36892,
+              "source_sha256": "4b1e6ebd55e524d249ea3b117ba06d2008e97d94d709d0ce9f0e97b0a04e4442"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/other/OtherScreen.kt",
+              "action": "modify",
+              "sha256": "0dff442203ce43235b4f99f035b1c21a89d8bbf25afa5c9175099607610fa2ad",
+              "size": 4996,
+              "source_sha256": "836409e434fa850330d0dbdc63d0f1312f227236b86627de110965eb0cb4886a"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/RepositoriesViewModel.kt",
+              "action": "modify",
+              "sha256": "80aa1e8f08b3e8ee0f12d2e885382939b51e1b9911d4a3cba3c6234c69101762",
+              "size": 6773,
+              "source_sha256": "a17f0d6a96870faaff8aef580f09e0ab54c2bbcbe441607f0e43e576f7d77efb"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/database/PersistenceRoundTripPolicyTest.kt",
+              "action": "add",
+              "sha256": "6e3cc8d420e054ae651919d6e9df74acd187e7b6642a360486fda03c760cd659",
+              "size": 2795
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/github/GitHubProvenancePolicyTest.kt",
+              "action": "add",
+              "sha256": "d451e9cc4ae87194cb426830e137e9cc5d4e742330484f2812d95c35d9348810",
+              "size": 1097
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/network/NetworkPolicyTest.kt",
+              "action": "add",
+              "sha256": "bcbb7bc2466cc324dc58d799e3cf1d152681c69f812eda4853a17e4e756ea3cb",
+              "size": 2116
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/repository/RepositoryIngestionPolicyTest.kt",
+              "action": "add",
+              "sha256": "eb744cf38259f2f5752c6ee8a9a947d7f3fa9087ecf4e672c22f512e18ba2109",
+              "size": 1988
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesDataSource.kt",
+              "action": "modify",
+              "sha256": "a5cf79e878f21ecd5c43c88c67201cab3059fbe0bac447960dda0608ed23f076",
+              "size": 19329,
+              "source_sha256": "86011888aa8b6c0671ddb21e62548121e8f0426e8d3361b5b2736726957985bb"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/provider/DataStoreProvider.kt",
+              "action": "modify",
+              "sha256": "fa9cdb9ece20ed0500b2be9876188af0711e3b9c94c87bd35dd9952e554e9c48",
+              "size": 3366,
+              "source_sha256": "73c2d9c5885000c182a53bd74b0a5547df6694440a65f7b7861b782e787a493d"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/config/ConfigFile.kt",
+              "action": "modify",
+              "sha256": "3509071292cc9f500fa7b1f37d1243500f0e5ea37fe4dc8ee496ffacdf773612",
+              "size": 15599,
+              "source_sha256": "1ad13f06c912e48ce97e1885802695c1a5609b10619aee72cc323daed746ffa9"
+            },
+            {
+              "path": "ui/src/main/kotlin/com/dergoogler/mmrl/ui/component/listItem/dsl/component/TextEditDialogItem.kt",
+              "action": "modify",
+              "sha256": "db56d235758e20ca0b0936340384435a08ea550ee1afddca49727b9453b99c3d",
+              "size": 9194,
+              "source_sha256": "fc57f1155669d5ffcf72fa45d83db1f174b6882bc8953899b72e9e7d4fef0f97"
+            }
+          ]
+        },
+        "packaged_at": "2026-08-15T23:37:00-03:00"
+      },
+      "operation_id": "2c17f4c09d6342bcb9b621447715ce5d",
+      "history_id": "06af0992204157168d2b0c602de1770c",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "artifact-manifest",
+          "returncode": 1,
+          "skipped": false,
+          "failure_kind": "artifact_failure",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "validation_plan": {}
     }
   ]
 }
