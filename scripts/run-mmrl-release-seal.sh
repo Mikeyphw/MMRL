@@ -16,11 +16,11 @@ bash scripts/validate-ashrexcue-release.sh --static-only
 
 printf 'mmrl-release-seal: JVM, native, lint, and variant assembly via devtool validator\n'
 run_devtool_validate \
+  --gradle-arg '-Pmmrl.fullLint=true' \
   --task ':platform:testNativeContracts' \
   --task ':platform:testDebugUnitTest' \
   --task ':app:testOfficialDebugUnitTest' \
   --task ':app:lintOfficialDebug' \
-  --task '-Pmmrl.fullLint=true' \
   --task ':app:assembleOfficialDebug' \
   --task ':app:assembleOfficialRelease' \
   --task ':app:assembleOfficialPlaystore'
