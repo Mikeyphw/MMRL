@@ -20,12 +20,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "WEBUIX_PACKAGE_NAME", "\"com.dergoogler.mmrl.wx.debug\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "WEBUIX_PACKAGE_NAME", "\"com.dergoogler.mmrl.wx\"")
         }
     }
 

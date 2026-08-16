@@ -75,7 +75,7 @@ data class UserPreferences(
     @ProtoNumber(37) val webuiEngine: WebUIEngine = WebUIEngine.PREFER_MODULE,
     @ProtoNumber(38) val showTerminalLineNumbers: Boolean = true,
     @ProtoNumber(39) val devAlwaysShowUpdateAlert: Boolean = false,
-    @ProtoNumber(40) val webuixPackageName: String = "com.dergoogler.mmrl.wx${if (BuildConfig.DEBUG) ".debug" else ""}",
+    @ProtoNumber(40) val webuixPackageName: String = BuildConfig.WEBUIX_PACKAGE_NAME,
     @ProtoNumber(41) val enableBlur: Boolean = false,
     @ProtoNumber(42) val hideBottomBarLabels: Boolean = false,
     @ProtoNumber(43) val superUserMenu: SuperUserMenu = SuperUserMenu(),

@@ -30,9 +30,9 @@ offline = false
 
 [targets.mmrl_android.tasks]
 restore = ["help"]
-build = [":app:assembleOfficialDebug"]
+build = [":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":app:assembleOfficialPlaystore"]
 test = [":app:testOfficialDebugUnitTest"]
-lint = [":app:lintOfficialDebug"]
+lint = [":app:lintOfficialDebug", "-Pmmrl.fullLint=true"]
 clean = ["clean"]
 
 [targets.mmrl_android.artifacts]
@@ -44,3 +44,8 @@ resources = [":app:processOfficialDebugResources"]
 unit-test = [":app:testOfficialDebugUnitTest"]
 package = [":app:assembleOfficialDebug"]
 lint = [":app:lintOfficialDebug"]
+
+[validation.final]
+release-seal = [":platform:testDebugUnitTest", ":app:testOfficialDebugUnitTest", ":app:lintOfficialDebug", "-Pmmrl.fullLint=true", ":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":app:assembleOfficialPlaystore"]
+ash-static = ["scripts/validate-ashrexcue-release.sh", "--static-only"]
+native = [":platform:testDebugUnitTest", ":platform:testNativeContracts"]

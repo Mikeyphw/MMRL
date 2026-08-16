@@ -10,15 +10,15 @@ plugins {
 
 android {
     namespace = "com.dergoogler.mmrl.platform"
-    compileSdk = 36
-    ndkVersion = "29.0.14206865"
+    compileSdk = COMPILE_SDK
+    ndkVersion = NDK_VERSION
 
     publishing {
         singleVariant("release")
     }
 
     defaultConfig {
-        minSdk = 26
+        minSdk = MIN_SDK
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -116,4 +116,40 @@ fun generateRandomName(
     return (1..length)
         .map { chars[random.nextInt(chars.length)] }
         .joinToString("")
+}
+
+val testNativeContracts by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Build and run host-side native contract tests for the safe file-manager and KernelSU JNI bridges."
+    val buildDir = layout.buildDirectory.dir("native-contract-tests").get().asFile
+    val compiler = providers.environmentVariable("CXX").orElse("c++")
+    inputs.files(
+        fileTree("src/testNative") { include("**/*.cpp") },
+        fileTree("src/main/jni") { include("**/*.cpp", "**/*.hpp") },
+    )
+    outputs.dir(buildDir)
+    doFirst { buildDir.mkdirs() }
+    val script = """
+        set -euo pipefail
+        cxx='${compiler.get()}'
+        out='${buildDir.absolutePath}'
+        "${'$'}cxx" -std=c++17 -DMMRL_HOST_NATIVE_CONTRACT -Wall -Wextra -Werror \
+          -Isrc/main/jni/include \
+          src/testNative/file_manager_safe_contract_test.cpp \
+          src/main/jni/file-manager.cpp \
+          -o "${'$'}out/file_manager_safe_contract_test"
+        "${'$'}out/file_manager_safe_contract_test"
+
+        "${'$'}cxx" -std=c++17 -DMMRL_HOST_NATIVE_CONTRACT -Wall -Wextra -Werror \
+          -Isrc/main/jni/include \
+          src/testNative/kernelsu/ksu_compat_contract_test.cpp \
+          src/main/jni/kernelsu/ksu.cpp \
+          -o "${'$'}out/ksu_compat_contract_test"
+        "${'$'}out/ksu_compat_contract_test"
+    """.trimIndent()
+    commandLine("bash", "-lc", script)
+}
+
+tasks.matching { it.name == "check" }.configureEach {
+    dependsOn(testNativeContracts)
 }

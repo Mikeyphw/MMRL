@@ -1,6 +1,7 @@
 
 
 import com.android.build.api.variant.impl.VariantOutputImpl
+import org.gradle.api.GradleException
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.compile.JavaCompile
 
@@ -22,7 +23,8 @@ val fullLintReport = providers.gradleProperty("mmrl.fullLint")
     .map(String::toBoolean)
     .getOrElse(false)
 
-val appVersion = commitCount + 31320
+val appVersion = resolveVersionCode(31320)
+val releaseSigningProperties = project.releaseSigningProperties()
 
 android {
     compileSdk = COMPILE_SDK
@@ -32,6 +34,8 @@ android {
         applicationId = mmrlForkApplicationId
         versionName = "v$appVersion"
         versionCode = appVersion
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         androidResources.localeFilters += arrayOf(
             "en",
@@ -55,17 +59,15 @@ android {
         )
     }
 
-    val releaseSigning = if (project.hasReleaseKeyStore) {
+    val releaseSigning = releaseSigningProperties?.let { signing ->
         signingConfigs.create("release") {
-            storeFile = project.releaseKeyStore
-            storePassword = project.releaseKeyStorePassword
-            keyAlias = project.releaseKeyAlias
-            keyPassword = project.releaseKeyPassword
+            storeFile = signing.keyStore
+            storePassword = signing.keyStorePassword
+            keyAlias = signing.keyAlias
+            keyPassword = signing.keyPassword
             enableV2Signing = true
             enableV3Signing = false
         }
-    } else {
-        signingConfigs.getByName("debug")
     }
 
     flavorDimensions += "distribution"
@@ -99,7 +101,7 @@ android {
 
         create("playstore") {
             initWith(buildTypes.getByName("release"))
-            matchingFallbacks += listOf("debug", "release")
+            matchingFallbacks += listOf("release")
             buildConfigField("Boolean", "IS_GOOGLE_PLAY_BUILD", "true")
             versionNameSuffix = "-playstore"
         }
@@ -119,7 +121,9 @@ android {
         }
 
         all {
-            signingConfig = releaseSigning
+            if (name == "release" || name == "playstore") {
+                releaseSigning?.let { signingConfig = it }
+            }
 
             buildConfigField("String", "COMPILE_SDK", "\"$COMPILE_SDK\"")
             buildConfigField("String", "TARGET_SDK", "\"$TARGET_SDK\"")
@@ -138,11 +142,6 @@ android {
         resValues = true
     }
 
-    sourceSets.getByName("main") {
-        assets.directories.add(
-            layout.buildDirectory.dir("generated/assets/ash-module").get().asFile.path,
-        )
-    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
@@ -176,14 +175,17 @@ android {
     }
 
     lint {
-        // Devtool treats report-only lint errors as fatal diagnostics even when Gradle
-        // exits successfully. Keep the normal validation gate focused on the Android
-        // component contract introduced by this integration. The full legacy report is
-        // still available with: ./gradlew :app:lintOfficialDebug -Pmmrl.fullLint=true
+        // Normal developer/devtool lint remains narrow so intermediate overlays are not
+        // blocked by legacy report-only debt. The final release seal passes
+        // -Pmmrl.fullLint=true, which restores full lint and makes findings fatal.
         if (!fullLintReport) {
             checkOnly += "Instantiatable"
+            abortOnError = false
+        } else {
+            abortOnError = true
+            checkDependencies = true
+            warningsAsErrors = true
         }
-        abortOnError = false
     }
 
 }
@@ -194,13 +196,24 @@ val packageAshReXcueModule by tasks.registering(Zip::class) {
     from(layout.projectDirectory.dir("src/main/ash-module"))
 }
 
-tasks.configureEach {
-    val consumesGeneratedAshAssets =
-        (name.startsWith("merge") && name.endsWith("Assets")) ||
-            name.contains("Lint", ignoreCase = true)
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            packageAshReXcueModule,
+            Zip::getDestinationDirectory,
+        )
+    }
+}
 
-    if (consumesGeneratedAshAssets) {
-        dependsOn(packageAshReXcueModule)
+if (releaseSigningProperties == null) {
+    val missingReleaseSigningMessage =
+        "Release signing.properties with keyStore, keyStorePassword, keyAlias, and keyPassword is required; refusing to create unsigned or debug-signed release/playstore artifacts."
+    tasks.configureEach {
+        if (name.matches(Regex("^(assemble|bundle|package).*?(Release|Playstore).*"))) {
+            doFirst("requireReleaseSigningForOfficialArtifacts") {
+                throw GradleException(missingReleaseSigningMessage)
+            }
+        }
     }
 }
 
@@ -223,6 +236,11 @@ androidComponents {
 dependencies {
     implementation("com.joaomgcd:taskerpluginlibrary:0.4.10")
     testImplementation(libs.junit)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.swiperefreshlayout)
     compileOnly(projects.hiddenApi)
@@ -344,4 +362,26 @@ tasks.withType<JavaCompile>().configureEach {
             }
         }
     }
+}
+
+
+tasks.register("mmrlReleaseSeal") {
+    group = "verification"
+    description = "Run the O11 final release seal for all official variants and compile instrumentation contracts."
+    dependsOn(
+        ":platform:testDebugUnitTest",
+        ":platform:testNativeContracts",
+        "testOfficialDebugUnitTest",
+        "lintOfficialDebug",
+        "assembleOfficialDebug",
+        "assembleOfficialRelease",
+        "assembleOfficialPlaystore",
+        "compileOfficialDebugAndroidTestKotlin",
+    )
+}
+
+tasks.register("mmrlConnectedReleaseSeal") {
+    group = "verification"
+    description = "Run device/emulator-backed O11 instrumentation contracts."
+    dependsOn("connectedOfficialDebugAndroidTest")
 }

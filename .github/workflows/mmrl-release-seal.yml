@@ -1,0 +1,88 @@
+name: MMRL release seal
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mmrl-release-seal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-lint:
+    name: ${{ matrix.task-set }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        task-set: [debug, release, playstore, static]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle and validate wrapper
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+          cache-cleanup: on-success
+
+      - name: Source hygiene
+        run: python3 scripts/validate-mmrl-source-hygiene.py
+
+      - name: AshReXcue static release gate
+        if: matrix.task-set == 'static'
+        run: bash scripts/validate-ashrexcue-release.sh --static-only
+
+      - name: Platform JVM and native contract tests
+        if: matrix.task-set == 'static'
+        run: ./gradlew :platform:testDebugUnitTest :platform:testNativeContracts --build-cache --console=plain
+
+      - name: Official debug unit tests and full lint
+        if: matrix.task-set == 'debug'
+        run: ./gradlew :app:testOfficialDebugUnitTest :app:lintOfficialDebug -Pmmrl.fullLint=true --build-cache --console=plain
+
+      - name: Assemble official debug
+        if: matrix.task-set == 'debug'
+        run: ./gradlew :app:assembleOfficialDebug --build-cache --console=plain
+
+      - name: Assemble official release
+        if: matrix.task-set == 'release'
+        run: ./gradlew :app:assembleOfficialRelease --build-cache --console=plain
+
+      - name: Assemble official Play Store
+        if: matrix.task-set == 'playstore'
+        run: ./gradlew :app:assembleOfficialPlaystore --build-cache --console=plain
+
+  instrumentation-contracts:
+    name: Instrumentation contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle and validate wrapper
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
+      - name: Compile instrumentation tests
+        run: ./gradlew :app:compileOfficialDebugAndroidTestKotlin --build-cache --console=plain

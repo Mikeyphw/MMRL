@@ -7,7 +7,7 @@ Usage:
   pack_repo.sh [options] [subdir ...]
 
 Options:
-  -o, --output PATH   Write the tar.gz archive to PATH.
+  -o, --output PATH   Write the tar.zst archive to PATH.
   -h, --help          Show this help text.
 
 Behavior:
@@ -18,7 +18,7 @@ EOF
 }
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-default_output="/tmp/$(basename "$repo_root")-$(date +%Y%m%d-%H%M%S).tar.gz"
+default_output="/tmp/$(basename "$repo_root")-$(date +%Y%m%d-%H%M%S).tar.zst"
 output_path="$default_output"
 inputs=()
 

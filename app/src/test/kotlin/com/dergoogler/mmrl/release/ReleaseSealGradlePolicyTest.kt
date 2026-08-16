@@ -1,0 +1,80 @@
+package com.dergoogler.mmrl.release
+
+import java.io.File
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ReleaseSealGradlePolicyTest {
+    private val root = repositoryRoot()
+
+    @Test
+    fun `full lint mode is fatal and dependency-aware`() {
+        val app = source("app/build.gradle.kts")
+        assertTrue(app.contains("val fullLintReport = providers.gradleProperty(\"mmrl.fullLint\")"))
+        assertTrue(app.contains("if (!fullLintReport)"))
+        assertTrue(app.contains("checkOnly += \"Instantiatable\""))
+        assertTrue(app.contains("abortOnError = true"))
+        assertTrue(app.contains("warningsAsErrors = true"))
+        assertTrue(app.contains("checkDependencies = true"))
+    }
+
+    @Test
+    fun `final seal includes all official variants and instrumentation compilation`() {
+        val app = source("app/build.gradle.kts")
+        listOf(
+            "testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"",
+            "assembleOfficialDebug",
+            "assembleOfficialRelease",
+            "assembleOfficialPlaystore",
+            "connectedOfficialDebugAndroidTest",
+            "androidTestImplementation(libs.androidx.test.runner)",
+            "androidTestImplementation(libs.androidx.junit)",
+            "releaseSigningProperties = project.releaseSigningProperties()",
+            "refusing to create unsigned or debug-signed release/playstore artifacts",
+            "matchingFallbacks += listOf(\"release\")",
+            "variant.sources.assets?.addGeneratedSourceDirectory",
+        ).forEach { assertTrue("missing Gradle final-seal token $it", app.contains(it)) }
+    }
+
+    @Test
+    fun `devtool final validation metadata is complete and uses supported mode`() {
+        val devtool = source(".devtool.toml")
+        assertTrue(devtool.contains(":app:assembleOfficialDebug"))
+        assertTrue(devtool.contains(":app:assembleOfficialRelease"))
+        assertTrue(devtool.contains(":app:assembleOfficialPlaystore"))
+        assertTrue(devtool.contains("-Pmmrl.fullLint=true"))
+        assertTrue(devtool.contains(":platform:testDebugUnitTest"))
+        assertTrue(devtool.contains(":platform:testNativeContracts"))
+        assertFalse(devtool.contains("minimum_phase"))
+        assertFalse(devtool.contains("final-overlay"))
+    }
+
+    @Test
+    fun `platform native tests are first class Gradle verification inputs`() {
+        val platform = source("platform/build.gradle.kts")
+        assertTrue(platform.contains("ndkVersion = NDK_VERSION"))
+        assertTrue(platform.contains("testNativeContracts"))
+        assertTrue(platform.contains("src/testNative"))
+        assertTrue(platform.contains("check"))
+    }
+
+    @Test
+    fun `release build metadata is archive safe and variant aligned`() {
+        val ext = source("build-logic/src/main/kotlin/ProjectExt.kt")
+        assertTrue(ext.contains("mmrl.versionCode"))
+        assertTrue(ext.contains("mmrl.commitCount"))
+        assertTrue(ext.contains("execOrNull"))
+        assertTrue(ext.contains("ReleaseSigningProperties"))
+        val datastore = source("datastore/build.gradle.kts")
+        val preferences = source("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/model/UserPreferences.kt")
+        assertTrue(datastore.contains("WEBUIX_PACKAGE_NAME"))
+        assertTrue(preferences.contains("BuildConfig.WEBUIX_PACKAGE_NAME"))
+    }
+
+    private fun source(path: String): String = root.resolve(path).readText()
+
+    private fun repositoryRoot(): File = generateSequence(File(System.getProperty("user.dir") ?: ".").absoluteFile) { file ->
+        file.parentFile
+    }.first { file -> file.resolve("settings.gradle.kts").isFile && file.resolve("app/build.gradle.kts").isFile }
+}

@@ -1,4 +1,6 @@
+#ifndef MMRL_HOST_NATIVE_CONTRACT
 #include <jni.h>
+#endif
 #include <cerrno>
 #include <cstring>
 #include <dirent.h>
@@ -451,15 +453,16 @@ std::vector<std::string> safe_list_at(const char* root, const char* relative, bo
     return result;
 }
 
+}  // namespace mmrl::safe_file
+
+#ifndef MMRL_HOST_NATIVE_CONTRACT
+using namespace mmrl::safe_file;
+
 bool get_utf(JNIEnv* env, jstring value, const char** out) {
     if (value == nullptr || out == nullptr) return false;
     *out = env->GetStringUTFChars(value, nullptr);
     return *out != nullptr;
 }
-
-}  // namespace mmrl::safe_file
-
-using namespace mmrl::safe_file;
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_dergoogler_mmrl_platform_file_FileManager_nativeSetOwnerAt(
@@ -744,3 +747,4 @@ cleanup_copy_source_root:
     env->ReleaseStringUTFChars(source_root, source_root_raw);
     return JNI_FALSE;
 }
+#endif  // !MMRL_HOST_NATIVE_CONTRACT

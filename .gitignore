@@ -39,3 +39,21 @@ app/playstore/*
 .devtool/reports/
 .devtool/test-history.json
 .devtool/tmp/
+
+# Generated release/devtool outputs
+.devtool/build-artifacts/
+.devtool/artifacts.json
+.devtool/artifacts.d/
+*.apk
+*.aab
+*.aar
+*.ap_
+*.idsig
+*.hprof
+*.log
+build-logs/
+
+# Keep CI workflows source-controlled.
+!.github/
+!.github/workflows/
+!.github/workflows/*.yml
