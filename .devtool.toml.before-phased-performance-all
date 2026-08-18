@@ -1,0 +1,51 @@
+[project]
+kind = "android"
+default_target = "mmrl_android"
+
+[execution]
+environment = "auto"
+chroot_name = "androidos"
+device_serial = ""
+
+[targets.mmrl_android]
+type = "android"
+root = "."
+execution_environment = "auto"
+chroot_name = "androidos"
+
+[targets.mmrl_android.android]
+variant = "officialDebug"
+aapt2_provider = "auto"
+instrumentation = "never"
+prefer_native_termux = false
+
+[targets.mmrl_android.gradle]
+version = "9.5.0"
+max_workers = 4
+structured_events = false
+no_daemon = false
+fail_fast=true
+daemon_idle_timeout_ms = 900000
+offline = false
+
+[targets.mmrl_android.tasks]
+restore = ["help"]
+build = [":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":app:assembleOfficialPlaystore"]
+test = [":app:testOfficialDebugUnitTest"]
+lint = [":app:lintOfficialDebug", "-Pmmrl.fullLint=true"]
+clean = ["clean"]
+
+[targets.mmrl_android.artifacts]
+required = true
+
+[validation.phases]
+compile = [":app:compileOfficialDebugSources"]
+resources = [":app:processOfficialDebugResources"]
+unit-test = [":app:testOfficialDebugUnitTest"]
+package = [":app:assembleOfficialDebug"]
+lint = [":app:lintOfficialDebug"]
+
+[validation.final]
+release-seal = [":platform:testDebugUnitTest", ":app:testOfficialDebugUnitTest", ":app:lintOfficialDebug", "-Pmmrl.fullLint=true", ":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":app:assembleOfficialPlaystore"]
+ash-static = ["scripts/validate-ashrexcue-release.sh", "--static-only"]
+native = [":platform:testDebugUnitTest", ":platform:testNativeContracts"]

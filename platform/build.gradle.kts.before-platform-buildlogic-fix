@@ -1,7 +1,7 @@
 import java.security.SecureRandom
 
 plugins {
-    alias(libs.plugins.self.library)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.ksp)
@@ -118,7 +118,7 @@ fun generateRandomName(
         .joinToString("")
 }
 
-val testNativeContracts = tasks.register<Exec>("testNativeContracts") {
+val testNativeContracts by tasks.registering(Exec::class) {
     group = "verification"
     description = "Build and run host-side native contract tests for the safe file-manager and KernelSU JNI bridges."
     val buildDir = layout.buildDirectory.dir("native-contract-tests").get().asFile

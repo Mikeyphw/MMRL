@@ -14,9 +14,6 @@ execution_environment = "native-termux"
 chroot_name = "androidos"
 
 [targets.mmrl_android.android]
-system_deps = "auto"
-native_provider = "ndk"
-cmake_version = "3.22.1"
 variant = "officialDebug"
 aapt2_provider = "termux"
 instrumentation = "never"
