@@ -12,8 +12,38 @@ class ReleaseSealSourceHygieneTest {
     @Test
     fun `gradle wrapper is checksum pinned to the declared distribution`() {
         val props = source("gradle/wrapper/gradle-wrapper.properties")
-        assertTrue(props.contains("distributionUrl=https\\://services.gradle.org/distributions/gradle-9.5.0-bin.zip"))
-        assertTrue(props.contains("distributionSha256Sum=553c78f50dafcd54d65b9a444649057857469edf836431389695608536d6b746"))
+        assertTrue(props.contains("distributionUrl=https\\://services.gradle.org/distributions/gradle-9.7.1-bin.zip"))
+        assertTrue(props.contains("distributionSha256Sum=acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a"))
+    }
+
+    @Test
+    fun `normalized stable toolchain lane is sealed`() {
+        val catalog = source("gradle/libs.versions.toml")
+        listOf(
+            "androidGradlePlugin = \"9.3.1\"",
+            "kotlin = \"2.4.10\"",
+            "kotlinReflect = \"2.4.10\"",
+            "ksp = \"2.3.11\"",
+        ).forEach { assertTrue("missing normalized version $it", catalog.contains(it)) }
+
+        val projectExt = source("build-logic/src/main/kotlin/ProjectExt.kt")
+        assertTrue(projectExt.contains("const val COMPILE_SDK = 36"))
+        assertTrue(projectExt.contains("const val TARGET_SDK = 36"))
+        assertTrue(projectExt.contains("const val BUILD_TOOLS_VERSION = \"36.0.0\""))
+
+        val hiddenApi = source("hidden-api/build.gradle.kts")
+        assertTrue(hiddenApi.contains("JavaVersion.VERSION_21"))
+        assertFalse(hiddenApi.contains("JavaVersion.VERSION_11"))
+        assertFalse(hiddenApi.contains("JavaVersion.VERSION_17"))
+
+        val devtool = source(".devtool.toml")
+        assertTrue(devtool.contains("version = \"9.7.1\""))
+        assertTrue(devtool.contains("\"verifyStableToolchainBaseline\""))
+
+        val rootBuild = source("build.gradle.kts")
+        assertTrue(rootBuild.contains("tasks.register(\"verifyStableToolchainBaseline\")"))
+        assertTrue(rootBuild.contains("gradle.gradleVersion == \"9.7.1\""))
+        assertTrue(rootBuild.contains("JavaVersion.current() == JavaVersion.VERSION_21"))
     }
 
     @Test

@@ -51,7 +51,8 @@ class ModuleUpdateWorker(
             )
             val database = AppDatabase.build(applicationContext)
             val preferences = entryPoint.userPreferencesRepository().data.first()
-            val localModules = entryPoint.modulesRepository().getLocalAll()
+            entryPoint.modulesRepository().getLocalAll()
+            val localModules = entryPoint.localRepository().getLocalAll()
             val online = mutableListOf<OnlineModuleEntity>()
             var failures = 0
             database.repoDao().getAll().filter { it.enable }.forEach { repo ->

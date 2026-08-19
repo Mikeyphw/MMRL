@@ -163,7 +163,7 @@ internal object TaskerReviewTokenStore {
             }
         }
         archiveDirectory(context).listFiles { file -> file.isDirectory }.orEmpty()
-            .filter { it.lastModified() < now - TaskerReviewToken.TTL_MS - 60L * 60L * 1000L }
+            .filter { it.lastModified() < now - TaskerReviewToken.VALIDITY_MS - 60L * 60L * 1000L }
             .forEach(File::deleteRecursively)
         // Orphaned claims are safe to discard when their token metadata no longer exists.
         tokenDirectory(context).listFiles { source -> source.extension == "claim" }.orEmpty().forEach { claim ->

@@ -31,7 +31,7 @@ object Logcat {
             val result =
                 process.inputStream.use { stream ->
                     stream
-                        .reader()
+                        .bufferedReader()
                         .lineSequence()
                         .filterNot { it.startsWith("------") }
                         .map { it.take(MAX_LOG_LINE_CHARS) }
@@ -48,7 +48,7 @@ object Logcat {
     fun readLogs(): List<LogText> =
         if (logFile.exists()) {
             val logs = mutableListOf<LogText>()
-            readPersistedLogText().lineSequence().takeLast(MAX_PERSISTED_LOG_LINES).forEach { text ->
+            readPersistedLogText().lineSequence().toList().takeLast(MAX_PERSISTED_LOG_LINES).forEach { text ->
                 runCatching {
                     LogText.parse(text)
                 }.onSuccess {
@@ -76,6 +76,7 @@ object Logcat {
     private fun trimPersistedLogIfNeeded() {
         if (!logFile.exists() || logFile.length() <= MAX_PERSISTED_LOG_BYTES) return
         val trimmed = readPersistedLogText().lineSequence()
+            .toList()
             .takeLast(MAX_PERSISTED_LOG_LINES)
             .joinToString(separator = "\n", postfix = "\n")
         logFile.writeText(trimmed.takeLast(MAX_PERSISTED_LOG_BYTES.toInt()))

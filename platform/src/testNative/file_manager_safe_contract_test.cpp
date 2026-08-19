@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cerrno>
 #include <cstring>
+#include <cstdlib>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
@@ -14,9 +15,25 @@ namespace fs = std::filesystem;
 using namespace mmrl::safe_file;
 
 static std::string temp_dir(const char* prefix) {
-    std::string pattern = std::string("/tmp/") + prefix + "XXXXXX";
+    const char* tmpdir = std::getenv("TMPDIR");
+
+    fs::path temp_root;
+    if (tmpdir != nullptr && *tmpdir != '\0') {
+        temp_root = fs::path(tmpdir);
+    } else {
+        temp_root = fs::current_path() / "build" / "tmp" / "native-contracts";
+    }
+
+    std::error_code ec;
+    fs::create_directories(temp_root, ec);
+    assert(!ec);
+
+    std::string pattern =
+        (temp_root / (std::string(prefix) + "XXXXXX")).string();
+
     std::vector<char> buffer(pattern.begin(), pattern.end());
     buffer.push_back('\0');
+
     char* out = mkdtemp(buffer.data());
     assert(out != nullptr);
     return out;

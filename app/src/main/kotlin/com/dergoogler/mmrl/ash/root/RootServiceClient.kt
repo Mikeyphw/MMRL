@@ -271,7 +271,7 @@ class RootServiceClient @Inject constructor(
 
                             if (initial) {
                                 initialDelivered.set(true)
-                                continuation.resume(service) { _, _, _ ->
+                                continuation.resume(service) { _ ->
                                     cancelled.set(true)
                                     candidate.cancel {
                                         invalidateConnection(

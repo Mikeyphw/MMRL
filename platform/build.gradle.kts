@@ -122,17 +122,33 @@ val testNativeContracts = tasks.register<Exec>("testNativeContracts") {
     group = "verification"
     description = "Build and run host-side native contract tests for the safe file-manager and KernelSU JNI bridges."
     val buildDir = layout.buildDirectory.dir("native-contract-tests").get().asFile
-    val compiler = providers.environmentVariable("CXX").orElse("c++")
+    val hostCompiler = providers.environmentVariable("MMRL_HOST_CXX").orElse(
+        providers.environmentVariable("PREFIX").map { "$it/bin/c++" },
+    ).orElse("c++")
     inputs.files(
         fileTree("src/testNative") { include("**/*.cpp") },
         fileTree("src/main/jni") { include("**/*.cpp", "**/*.hpp") },
     )
+    inputs.property("hostCompiler", hostCompiler)
     outputs.dir(buildDir)
     doFirst { buildDir.mkdirs() }
     val script = """
         set -euo pipefail
-        cxx='${compiler.get()}'
+        cxx='${hostCompiler.get()}'
         out='${buildDir.absolutePath}'
+        resolved_cxx="$(command -v "${'$'}cxx" || true)"
+        if [[ -z "${'$'}resolved_cxx" ]]; then
+          echo "MMRL host native contract compiler not found: ${'$'}cxx" >&2
+          exit 127
+        fi
+        case "${'$'}resolved_cxx" in
+          *android-ndk*|*/ndk/*|*/toolchains/llvm/prebuilt/*|*aarch64-linux-android*|*armv7a-linux-androideabi*|*x86_64-linux-android*|*i686-linux-android*)
+            echo "MMRL host native contracts require a host C++ compiler, not Android NDK CXX: ${'$'}resolved_cxx" >&2
+            echo "Set MMRL_HOST_CXX to a host compiler such as /data/data/com.termux/files/usr/bin/c++ if needed." >&2
+            exit 2
+            ;;
+        esac
+        cxx="${'$'}resolved_cxx"
         "${'$'}cxx" -std=c++17 -DMMRL_HOST_NATIVE_CONTRACT -Wall -Wextra -Werror \
           -Isrc/main/jni/include \
           src/testNative/file_manager_safe_contract_test.cpp \

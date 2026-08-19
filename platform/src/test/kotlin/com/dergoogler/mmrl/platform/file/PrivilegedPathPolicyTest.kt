@@ -34,9 +34,9 @@ class PrivilegedPathPolicyTest {
     fun `recursive delete removes symlink but never its target`() {
         val root = Files.createTempDirectory("mmrl-delete-root")
         val outside = Files.createTempDirectory("mmrl-delete-outside")
-        val outsideFile = Files.writeString(outside.resolve("keep"), "safe")
+        val outsideFile = Files.write(outside.resolve("keep"), "safe".toByteArray())
         val tree = Files.createDirectories(root.resolve("tree/child"))
-        Files.writeString(tree.resolve("inside"), "delete")
+        Files.write(tree.resolve("inside"), "delete".toByteArray())
         Files.createSymbolicLink(root.resolve("tree/link"), outside)
 
         assertTrue(PrivilegedPathPolicy.deleteTreeNoFollow(root.resolve("tree")))

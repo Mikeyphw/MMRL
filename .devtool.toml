@@ -23,7 +23,7 @@ instrumentation = "never"
 prefer_native_termux = true
 
 [targets.mmrl_android.gradle]
-version = "9.7.0"
+version = "9.7.1"
 provider = "auto"
 max_workers = 2
 structured_events = false
@@ -44,9 +44,7 @@ args = [
 [targets.mmrl_android.tasks]
 restore = ["help"]
 build = [
-  ":app:assembleOfficialDebug",
-  ":app:assembleOfficialRelease",
-  ":app:assembleOfficialPlaystore",
+  ":app:assembleOfficialDebug"
 ]
 test = [
   ":platform:testDebugUnitTest",
@@ -61,6 +59,7 @@ required = true
 
 [validation.phases]
 preflight = [
+  "verifyStableToolchainBaseline",
   "help",
 ]
 compile = [

@@ -1,3 +1,8 @@
 {
-  "failed": []
+  "failed": [
+    "com.dergoogler.mmrl.ash.root.AshRuntimeRepairContractTest.ash executor reports and repairs bundled jq runtime before live commands",
+    "com.dergoogler.mmrl.debug.DebugWorkbenchServiceLifecycleContractTest.debug repository refresh is one shot and service job is not duplicated",
+    "com.dergoogler.mmrl.lsposed.LsposedScopeDiscoveryContractTest.repository tab can degrade while local provider state still loads",
+    "com.dergoogler.mmrl.pathHandler.WebUiContentPolicyTest.markdown sanitizer blocks scriptable html"
+  ]
 }

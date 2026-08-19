@@ -74,7 +74,7 @@ class HomeViewModel
         suspend fun analytics(context: Context): ModuleAnalytics? =
             PlatformManager.get(null) {
                 with(moduleManager) {
-                    val local = localRepository.getLocalAll()
+                    val local = localRepository.getLocalAll().map { it.toModule() }
                     return@get ModuleAnalytics(
                         context = context,
                         local = local,

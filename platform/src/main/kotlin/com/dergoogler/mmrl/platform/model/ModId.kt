@@ -62,11 +62,7 @@ data class ModId(
         other: String?,
         ignoreCase: Boolean = false,
     ): Boolean {
-        if (!ignoreCase) {
-            return id == other
-        }
-
-        return (id as java.lang.String).equalsIgnoreCase(other)
+        return id.equals(other, ignoreCase = ignoreCase)
     }
 
     override fun hashCode(): Int = id.hashCode()

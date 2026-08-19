@@ -50,8 +50,8 @@ open class APatchModuleManager : BaseModuleManager() {
             }
         } else {
             runCatching {
-                requireMutation(ensureMarkerAbsent(dir.resolve("remove")), "Failed to remove module remove marker")
-                requireMutation(ensureMarkerAbsent(dir.resolve("disable")), "Failed to remove module disable marker")
+                requireMutation(ensureMarkerAbsent(id.removeFile), "Failed to remove module remove marker")
+                requireMutation(ensureMarkerAbsent(id.disableFile), "Failed to remove module disable marker")
             }.onSuccess {
                 terminal.onSuccess(id)
             }.onFailure {

@@ -182,7 +182,7 @@ class BulkInstallViewModel
         private suspend fun resolveInstallPlan(requested: List<BulkModule>): List<BulkModule> {
             val rootVersion = PlatformManager.get(-1) { moduleManager.versionCode }
             require(rootVersion >= 0) { "Root manager is unavailable for dependency preflight" }
-            val installed = localRepository.getLocalAll().map { ModuleIdentity.canonical(it.id.id) }.toSet()
+            val installed = localRepository.getLocalAll().map { ModuleIdentity.canonical(it.id) }.toSet()
             val requestedById = requested.associateBy { ModuleIdentity.canonical(it.id) }
             require(requestedById.size == requested.size) { "Duplicate module identity in install batch" }
             val selected = linkedMapOf<String, BulkModule>()

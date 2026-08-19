@@ -154,7 +154,7 @@ internal object FileUtils {
         if (Build.VERSION.SDK_INT >= 28) {
             val off = inOffset?.let { Int64Ref(it.value) }
             val result = Os.sendfile(outFd, inFd, off, byteCount)
-            if (off != null) inOffset?.value = off.value
+            if (off != null) inOffset.value = off.value
             return result
         }
 
@@ -183,7 +183,7 @@ internal object FileUtils {
                 }
             val result = sendfile!!.invoke(os, outFd, inFd, platformOffset, byteCount) as Long
             if (platformOffset != null) {
-                inOffset?.value = mutableLongClass.getField("value").getLong(platformOffset)
+                inOffset.value = mutableLongClass.getField("value").getLong(platformOffset)
             }
             return result
         } catch (e: InvocationTargetException) {

@@ -90,7 +90,9 @@ object PrivilegedPathPolicy {
         require(path.isNotBlank()) { "Path must not be blank" }
         val candidate = Paths.get(path)
         require(candidate.isAbsolute) { "Privileged path must be absolute: $path" }
-        require(candidate.none { it.toString() == ".." }) { "Parent traversal is not allowed: $path" }
+        if (candidate.any { it.toString() == ".." }) {
+            throw SecurityException("Parent traversal is not allowed: $path")
+        }
 
         val normalized = candidate.normalize()
         require(!isPseudoFdPath(normalized)) { "Descriptor pseudo-paths are not privileged file paths: $path" }
