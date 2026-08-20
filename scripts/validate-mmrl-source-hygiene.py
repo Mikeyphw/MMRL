@@ -155,9 +155,14 @@ def check_gradle_release_gates() -> None:
         fail("root clean must remove subproject build outputs")
 
     devtool = text(".devtool.toml")
-    for needle in (":app:assembleOfficialPlaystore", "-Pmmrl.fullLint=true", ":platform:testDebugUnitTest", ":platform:testNativeContracts"):
+    for needle in (":app:assembleOfficialPlaystore", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_host_provider = "auto"'):
         if needle not in devtool:
             fail(f"Devtool final validation metadata is missing {needle}")
+    if "-Pmmrl.fullLint=true" in devtool:
+        fail("Devtool Gradle args must not enable full lint globally; strict lint belongs to the explicit release-seal path")
+    release_seal = text("scripts/run-mmrl-release-seal.sh")
+    if "ORG_GRADLE_PROJECT_mmrl.fullLint=true" not in release_seal:
+        fail("release-seal lint must explicitly enable mmrl.fullLint")
     platform = text("platform/build.gradle.kts")
     if 'ndkVersion = NDK_VERSION' not in platform:
         fail("platform NDK version must use the shared NDK_VERSION constant")
@@ -169,6 +174,15 @@ def check_gradle_release_gates() -> None:
         fail("platform host native contracts must use the dedicated MMRL_HOST_CXX override")
     if 'Android NDK CXX' not in platform:
         fail("platform host native contracts must reject accidental Android NDK compilers")
+
+def check_api_qualified_theme_resources() -> None:
+    base_theme = text("app/src/main/res/values/themes.xml")
+    api27_theme = text("app/src/main/res/values-v27/themes.xml")
+    if "android:windowLightNavigationBar" in base_theme:
+        fail("API-27 windowLightNavigationBar must not be present in the minSdk-26 values theme")
+    if "android:windowLightNavigationBar" not in api27_theme:
+        fail("values-v27 theme must define windowLightNavigationBar")
+
 
 def check_source_hygiene() -> None:
     gitignore = text(".gitignore")
@@ -240,6 +254,7 @@ def check_final_seal_files() -> None:
 check_wrapper()
 check_stable_toolchain_baseline()
 check_gradle_release_gates()
+check_api_qualified_theme_resources()
 check_source_hygiene()
 check_room_schemas()
 check_final_seal_files()

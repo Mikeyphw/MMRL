@@ -43,11 +43,22 @@ class ReleaseSealGradlePolicyTest {
         assertTrue(devtool.contains(":app:assembleOfficialDebug"))
         assertTrue(devtool.contains(":app:assembleOfficialRelease"))
         assertTrue(devtool.contains(":app:assembleOfficialPlaystore"))
-        assertTrue(devtool.contains("-Pmmrl.fullLint=true"))
+        assertFalse(devtool.contains("-Pmmrl.fullLint=true"))
+        assertTrue(devtool.contains("ndk_host_provider = \"auto\""))
+        val releaseSeal = source("scripts/run-mmrl-release-seal.sh")
+        assertTrue(releaseSeal.contains("ORG_GRADLE_PROJECT_mmrl.fullLint=true"))
         assertTrue(devtool.contains(":platform:testDebugUnitTest"))
         assertTrue(devtool.contains(":platform:testNativeContracts"))
         assertFalse(devtool.contains("minimum_phase"))
         assertFalse(devtool.contains("final-overlay"))
+    }
+
+    @Test
+    fun `api 27 navigation bar theme attribute is version qualified`() {
+        val baseTheme = source("app/src/main/res/values/themes.xml")
+        val api27Theme = source("app/src/main/res/values-v27/themes.xml")
+        assertFalse(baseTheme.contains("android:windowLightNavigationBar"))
+        assertTrue(api27Theme.contains("android:windowLightNavigationBar"))
     }
 
     @Test

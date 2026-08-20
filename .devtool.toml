@@ -16,6 +16,7 @@ chroot_name = "androidos"
 [targets.mmrl_android.android]
 system_deps = "auto"
 native_provider = "ndk"
+ndk_host_provider = "auto"
 cmake_version = "3.22.1"
 variant = "officialDebug"
 aapt2_provider = "termux"
@@ -38,7 +39,6 @@ args = [
   "-Dorg.gradle.vfs.watch=false",
   "-Pkotlin.incremental=true",
   "-Pkotlin.compiler.execution.strategy=in-process",
-  "-Pmmrl.fullLint=true",
 ]
 
 [targets.mmrl_android.tasks]
