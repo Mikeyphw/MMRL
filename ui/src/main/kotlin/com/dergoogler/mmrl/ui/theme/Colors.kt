@@ -36,15 +36,10 @@ sealed class Colors(
     class Dynamic(
         context: Context,
     ) : Colors(
-            id = id,
+            id = DYNAMIC_ID,
             lightColorScheme = dynamicLightColorScheme(context),
             darkColorScheme = dynamicDarkColorScheme(context),
-        ) {
-        companion object {
-            @Suppress("ConstPropertyName")
-            const val id = -1
-        }
-    }
+        )
 
     data object Pourville : Colors(
         id = 0,
@@ -95,6 +90,8 @@ sealed class Colors(
     )
 
     companion object {
+        const val DYNAMIC_ID = -1
+
         private val mColors
             get() =
                 listOf(
@@ -112,7 +109,7 @@ sealed class Colors(
 
         @JvmStatic
         fun Context.getThemeColor(id: Int): Colors =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && id == Dynamic.id) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && id == DYNAMIC_ID) {
                 Dynamic(this)
             } else {
                 mColors.firstOrNull { it.id == id } ?: MMRLBase

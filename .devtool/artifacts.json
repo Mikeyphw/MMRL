@@ -14908,6 +14908,439 @@
         }
       ],
       "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-20T15:27:06.336829Z",
+      "artifact": "/storage/emulated/0/Download/mmrl-lint-scope-ndk-theme-fix-v3.zip",
+      "artifact_name": "mmrl-lint-scope-ndk-theme-fix-v3.zip",
+      "type": "overlay",
+      "sha256": "603d269767299c8a38cfbf7144e4a4754bb983b5c111741262ac251cc5570c48",
+      "content_identity": {
+        "sha256": "603d269767299c8a38cfbf7144e4a4754bb983b5c111741262ac251cc5570c48",
+        "size": 9116
+      },
+      "status": "failed",
+      "validation_status": "failed",
+      "commit_message": "Fix MMRL lint scope and Termux NDK warnings",
+      "commit_hash": "",
+      "file_count": 5,
+      "change_counts": {
+        "add": 1,
+        "modify": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL lint scope, NDK host, and API-27 theme fix v3",
+        "description": "Stops normal Devtool APK builds from accidentally enabling the final full/fatal lint gate, selects the QEMU NDK host provider explicitly on Termux ARM64, and moves the API-27 navigation-bar theme attribute into values-v27 while preserving strict full lint for the explicit release seal.",
+        "repository": {
+          "name": "MMRL"
+        },
+        "workspace": {
+          "name": "mmrl_android",
+          "root": "."
+        },
+        "target": "mmrl_android",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": ".devtool.toml",
+              "action": "modify",
+              "source_sha256": "283489fcc660d1379eab2e728b7e2c6f1983abf7d217be3913eb357c6d8a7395",
+              "sha256": "224398e9466a89ea34cd4a075d4de2d712b289f073a5f2b370ea20d1c8e29697",
+              "size": 3707
+            },
+            {
+              "path": "app/src/main/res/values/themes.xml",
+              "action": "modify",
+              "source_sha256": "b2ca56900b583e0605c210f79e9690cfcc78f17d760256457b42f1496d21b002",
+              "sha256": "85df0f2771ccc38edc1a617b6dc6b5b59184ebe5e0cc4266b3d27bcde044b53c",
+              "size": 821
+            },
+            {
+              "path": "app/src/main/res/values-v27/themes.xml",
+              "action": "add",
+              "sha256": "4039efb141ec3b1277848d8936d745e8a899f7810aa4df9bd26e00b5d4681f71",
+              "size": 480
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+              "action": "modify",
+              "source_sha256": "2a605d3c691da175d1038cc5d549810bb984ae4b94e5f281af0377e103bb4765",
+              "sha256": "367586972f10bcbd7f410b088bc7f3bb3f3f83390a9e050caac0aa3a366bd331",
+              "size": 4374
+            },
+            {
+              "path": "scripts/validate-mmrl-source-hygiene.py",
+              "action": "modify",
+              "source_sha256": "e3e8b90b92c4d88505608cdefe506a635bbeba145588909d050f6a48bae995db",
+              "sha256": "2948efdd895e714386f848382c92132aba1b790c954207b6688c3dc9dbdcaa52",
+              "size": 11762
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "requires_clean_worktree": false,
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Fix MMRL lint scope and Termux NDK warnings"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": false
+        },
+        "notes": [
+          "Normal Devtool validation no longer injects -Pmmrl.fullLint=true globally.",
+          "Strict warnings-as-errors and dependency-aware full lint remain enabled by scripts/run-mmrl-release-seal.sh and the GitHub release-seal workflow.",
+          "The API-27 android:windowLightNavigationBar attribute is version-qualified for the minSdk-26 app.",
+          "The Termux Android target now explicitly requests ndk_host_provider=qemu as recommended by Devtool diagnostics.",
+          "ReleaseSealGradlePolicyTest and validate-mmrl-source-hygiene.py guard all three fixes."
+        ],
+        "files": [
+          ".devtool.toml",
+          "app/src/main/res/values/themes.xml",
+          "app/src/main/res/values-v27/themes.xml",
+          "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+          "scripts/validate-mmrl-source-hygiene.py"
+        ]
+      },
+      "operation_id": "77fcd2a612ff4d4e9e230a7b6a1e80c1",
+      "history_id": "5406599675a1c9ef8f64b3d578ae2cbf",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "android-validation-build",
+          "returncode": 2,
+          "skipped": false,
+          "failure_kind": "compile_failure",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": "mmrl_android"
+        }
+      ],
+      "transaction": {
+        "id": "20260820T152649Z-2e12aeac772a",
+        "status": "backup-ready"
+      },
+      "validation_plan": {
+        "validation_plan_runner": "android",
+        "validation_plan_source": "runner-default",
+        "validation_tasks_declared": false,
+        "validation_tasks_explicit_empty": false,
+        "validation_declared_tasks": [],
+        "validation_planned_steps": [
+          "android-validation-build",
+          "android-validation-test",
+          "android-validation-lint"
+        ],
+        "validation_contract_required": false,
+        "validation_step_outcomes": [
+          {
+            "name": "android-validation-build",
+            "outcome": "failed",
+            "returncode": 2,
+            "skipped": false,
+            "warnings": 0,
+            "failure_kind": "compile_failure",
+            "step_index": 1,
+            "step_total": 3
+          }
+        ]
+      }
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-20T15:46:28.848668Z",
+      "artifact": "/storage/emulated/0/Download/mmrl-lint-scope-ndk-auto-provider-fix-v4.zip",
+      "artifact_name": "mmrl-lint-scope-ndk-auto-provider-fix-v4.zip",
+      "type": "overlay",
+      "sha256": "df2c6fbec730dee0ac1306b8af76c69e008954d1298ecd2f9ac51309ff1eb969",
+      "content_identity": {
+        "sha256": "df2c6fbec730dee0ac1306b8af76c69e008954d1298ecd2f9ac51309ff1eb969",
+        "size": 8160
+      },
+      "status": "failed",
+      "validation_status": "ok",
+      "commit_message": "Use auto NDK host provider for MMRL",
+      "commit_hash": "",
+      "file_count": 3,
+      "change_counts": {
+        "modify": 3
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL lint scope and native NDK auto-provider correction v4",
+        "description": "Corrects v3 by returning MMRL to ndk_host_provider=auto. Keeps the lint-scope and API-27 theme fixes, but no longer forces QEMU on a Termux ARM64 NDK that already builds all MMRL ABIs successfully.",
+        "repository": {
+          "name": "MMRL"
+        },
+        "workspace": {
+          "name": "mmrl_android",
+          "root": "."
+        },
+        "target": "mmrl_android",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": ".devtool.toml",
+              "action": "modify",
+              "source_sha256": "224398e9466a89ea34cd4a075d4de2d712b289f073a5f2b370ea20d1c8e29697",
+              "sha256": "add62f2d928c4723c1d8498b3027f4a3352ef9d919ae4a8ded9a90662abad80a",
+              "size": 3707
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+              "action": "modify",
+              "source_sha256": "367586972f10bcbd7f410b088bc7f3bb3f3f83390a9e050caac0aa3a366bd331",
+              "sha256": "9d44c5793137cac6a0395a9aa2d595696123c00a0406e3d0abb6dae2c1db2980",
+              "size": 4374
+            },
+            {
+              "path": "scripts/validate-mmrl-source-hygiene.py",
+              "action": "modify",
+              "source_sha256": "2948efdd895e714386f848382c92132aba1b790c954207b6688c3dc9dbdcaa52",
+              "sha256": "b78d21646ac2e73aab0287278db4f0282c9f1de971e003e1c45e5ad5d79b0f6b",
+              "size": 11762
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "requires_clean_worktree": false,
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Use auto NDK host provider for MMRL"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": false
+        },
+        "notes": [
+          "This overlay is intentionally based on the v3-applied state because v3 disabled rollback_on_failure; the failed post-apply Android validation therefore retained its files.",
+          "ndk_host_provider is auto, not qemu.",
+          "The normal Devtool target still does not inject -Pmmrl.fullLint=true; strict full lint remains confined to the release seal.",
+          "The API-27 windowLightNavigationBar resource qualification introduced by v3 is retained.",
+          "Release policy tests and source-hygiene validation now guard auto provider selection."
+        ],
+        "files": [
+          ".devtool.toml",
+          "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+          "scripts/validate-mmrl-source-hygiene.py"
+        ]
+      },
+      "operation_id": "b0f0aaf15ba549cf95704a6f207e79c5",
+      "history_id": "8effddf49b83f980a7d1db5e826d46c1",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "artifact-manifest",
+          "returncode": 1,
+          "skipped": false,
+          "failure_kind": "artifact_failure",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-20T17:01:03.622712Z",
+      "artifact": "/storage/emulated/0/Download/mmrl-lint-scope-ndk-auto-provider-fix-v4-1.zip",
+      "artifact_name": "mmrl-lint-scope-ndk-auto-provider-fix-v4-1.zip",
+      "type": "overlay",
+      "sha256": "885a011a2eb012da2eedefe2cc8258d5956a73f9627d3fc9b6397e57e65ce03d",
+      "content_identity": {
+        "sha256": "885a011a2eb012da2eedefe2cc8258d5956a73f9627d3fc9b6397e57e65ce03d",
+        "size": 8770
+      },
+      "status": "failed",
+      "validation_status": "failed",
+      "commit_message": "Fix MMRL lint scope and NDK auto host selection",
+      "commit_hash": "",
+      "file_count": 5,
+      "change_counts": {
+        "add": 1,
+        "modify": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL lint scope, NDK host auto provider fix v4",
+        "description": "Rebuild from the rolled-back MMRL snapshot. Keeps lint/theme fixes and restores Devtool NDK host selection to auto instead of forcing QEMU.",
+        "repository": {
+          "name": "MMRL"
+        },
+        "workspace": {
+          "name": "mmrl_android",
+          "root": "."
+        },
+        "target": "mmrl_android",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": ".devtool.toml",
+              "action": "modify",
+              "sha256": "add62f2d928c4723c1d8498b3027f4a3352ef9d919ae4a8ded9a90662abad80a",
+              "size": 3707,
+              "source_sha256": "283489fcc660d1379eab2e728b7e2c6f1983abf7d217be3913eb357c6d8a7395"
+            },
+            {
+              "path": "app/src/main/res/values/themes.xml",
+              "action": "modify",
+              "sha256": "85df0f2771ccc38edc1a617b6dc6b5b59184ebe5e0cc4266b3d27bcde044b53c",
+              "size": 821,
+              "source_sha256": "b2ca56900b583e0605c210f79e9690cfcc78f17d760256457b42f1496d21b002"
+            },
+            {
+              "path": "app/src/main/res/values-v27/themes.xml",
+              "action": "add",
+              "sha256": "4039efb141ec3b1277848d8936d745e8a899f7810aa4df9bd26e00b5d4681f71",
+              "size": 480
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+              "action": "modify",
+              "sha256": "367586972f10bcbd7f410b088bc7f3bb3f3f83390a9e050caac0aa3a366bd331",
+              "size": 4374,
+              "source_sha256": "2a605d3c691da175d1038cc5d549810bb984ae4b94e5f281af0377e103bb4765"
+            },
+            {
+              "path": "scripts/validate-mmrl-source-hygiene.py",
+              "action": "modify",
+              "sha256": "2948efdd895e714386f848382c92132aba1b790c954207b6688c3dc9dbdcaa52",
+              "size": 11762,
+              "source_sha256": "e3e8b90b92c4d88505608cdefe506a635bbeba145588909d050f6a48bae995db"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "requires_clean_worktree": false,
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Fix MMRL lint scope and NDK auto host selection"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": false
+        },
+        "files": [
+          ".devtool.toml",
+          "app/src/main/res/values/themes.xml",
+          "app/src/main/res/values-v27/themes.xml",
+          "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+          "scripts/validate-mmrl-source-hygiene.py"
+        ]
+      },
+      "operation_id": "28cfeb7557114c2092b6b86b4968950d",
+      "history_id": "4e67dffdc7af4b91531d3a691f103a31",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "android-validation-build",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": "mmrl_android"
+        },
+        {
+          "name": "android-validation-test",
+          "returncode": 2,
+          "skipped": false,
+          "failure_kind": "test_failure",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": "mmrl_android"
+        }
+      ],
+      "transaction": {
+        "id": "20260820T165445Z-22e5f1c1c34e",
+        "status": "backup-ready"
+      },
+      "validation_plan": {
+        "validation_plan_runner": "android",
+        "validation_plan_source": "runner-default",
+        "validation_tasks_declared": false,
+        "validation_tasks_explicit_empty": false,
+        "validation_declared_tasks": [],
+        "validation_planned_steps": [
+          "android-validation-build",
+          "android-validation-test",
+          "android-validation-lint"
+        ],
+        "validation_contract_required": false,
+        "validation_step_outcomes": [
+          {
+            "name": "android-validation-build",
+            "outcome": "passed",
+            "returncode": 0,
+            "skipped": false,
+            "warnings": 0,
+            "failure_kind": "",
+            "step_index": 1,
+            "step_total": 3
+          },
+          {
+            "name": "android-validation-test",
+            "outcome": "failed",
+            "returncode": 2,
+            "skipped": false,
+            "warnings": 0,
+            "failure_kind": "test_failure",
+            "step_index": 2,
+            "step_total": 3
+          }
+        ]
+      }
     }
   ]
 }

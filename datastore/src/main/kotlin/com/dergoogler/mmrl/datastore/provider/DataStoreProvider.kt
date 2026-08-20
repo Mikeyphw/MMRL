@@ -46,7 +46,7 @@ private object ThemePreferenceIdMigration : DataMigration<UserPreferences> {
     override suspend fun migrate(currentData: UserPreferences): UserPreferences =
         currentData.copy(
             themePaletteId = ThemeRegistry.migrateLegacyId(currentData.themeColor),
-            themeColorSource = if (currentData.themeColor == Colors.Dynamic.id) {
+            themeColorSource = if (currentData.themeColor == Colors.DYNAMIC_ID) {
                 ThemeColorSource.DYNAMIC_FULL
             } else {
                 ThemeColorSource.BUILT_IN

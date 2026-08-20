@@ -18,7 +18,8 @@ class AshRuntimeRepairContractTest {
     fun `ash executor reports and repairs bundled jq runtime before live commands`() {
         val source = source("app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshCtlExecutor.kt")
 
-        assertTrue(source.contains("repairBundledJqIfNeeded"))
+        assertTrue(source.contains("inspectBundledJq"))
+        assertTrue(source.contains("extractBundledJq"))
         assertTrue(source.contains("AshBundledModuleProvider.ASH_MODULE_ZIP_ASSET"))
         assertTrue(source.contains("jqRepaired"))
         assertTrue(source.contains("JQ_RELATIVE_PATH = \"jq/jq\""))

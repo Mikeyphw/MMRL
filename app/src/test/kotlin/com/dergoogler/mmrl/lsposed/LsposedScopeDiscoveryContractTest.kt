@@ -37,7 +37,8 @@ class LsposedScopeDiscoveryContractTest {
         assertTrue(repository.contains("""header("Accept", "application/json")"""))
         assertTrue(viewModel.contains("val providerStatus = repository.providerStatus()"))
         assertTrue(viewModel.contains("val scopeState = repository.scopeState()"))
-        assertTrue(viewModel.contains("modulesResult.getOrDefault(emptyList())"))
+        assertTrue(viewModel.contains("val moduleState = modulesResult.getOrNull()"))
+        assertTrue(viewModel.contains("val modules = moduleState?.modules.orEmpty()"))
     }
 
     @Test

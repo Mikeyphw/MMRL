@@ -30,7 +30,7 @@ object WebUiContentPolicy {
         .replace(Regex("(?is)<object\\b[^>]*>.*?</object>"), "")
         .replace(Regex("(?is)<embed\\b[^>]*>.*?</embed>"), "")
         .replace(Regex("(?i)on[a-z]+\\s*="), "data-mmrl-blocked=")
-        .replace(Regex("(?i)javascript:"), "blocked-javascript:")
+        .replace(Regex("(?i)javascript:"), "blocked-scheme:")
 
     fun shouldOverrideNavigation(url: String): Boolean = runCatching {
         val uri = URI(url)
