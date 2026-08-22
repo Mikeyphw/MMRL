@@ -30,7 +30,7 @@ data class UnifiedModuleProblemReport(
 
     val summary: String
         get() = when {
-            problems.isEmpty() -> "Repository, provider, update, scope, and rescue signals look quiet."
+            problems.isEmpty() -> "Repository, provider, update, and scope signals look quiet."
             else -> "$total signal${if (total == 1) "" else "s"} · $errors error${if (errors == 1) "" else "s"} · $warnings warning${if (warnings == 1) "" else "s"} · $notices note${if (notices == 1) "" else "s"}."
         }
 }
@@ -79,7 +79,6 @@ enum class UnifiedModuleProblemKind(val label: String) {
     ALIAS_MATCH_ONLY("Alias match only"),
     MODULE_DISABLED("Disabled module"),
     FAILED_UPDATE("Failed update"),
-    RESCUE_REVIEW("Rescue review"),
     BADGE_WARNING("Badge warning"),
 }
 
@@ -92,7 +91,6 @@ enum class UnifiedProblemActionKind(val label: String) {
     REFRESH_PROVIDER("Refresh provider"),
     OPEN_MANAGER("Open manager"),
     REVIEW_SCOPE("Review scope"),
-    REVIEW_RESCUE("Review rescue"),
     CHECK_REPOSITORY("Check repository"),
 }
 
@@ -164,12 +162,6 @@ object UnifiedModuleProblemCenter {
         }
         if (item.sourceTypes.any { it == UnifiedModuleSourceType.LSPOSED_INSTALLED || it == UnifiedModuleSourceType.LSPOSED_REPOSITORY } && item.state.scope == UnifiedScopeState.None) {
             add(item.scopeDbProblem())
-        }
-        when (val rescue = item.state.rescue) {
-            is UnifiedRescueState.AshReXcue -> if (rescue.quarantined || rescue.changedSinceStable) {
-                add(item.rescueReviewProblem(rescue))
-            }
-            UnifiedRescueState.None -> Unit
         }
         item.badges
             .filter { it.severity >= UnifiedBadgeSeverity.WARNING }
@@ -261,19 +253,6 @@ object UnifiedModuleProblemCenter {
         actions = listOf(runProbeAction(), reviewScopeAction(), copyEvidenceAction(), suggestedFix("Refresh the provider and run the LSPosed scope probe before editing scope.")),
     )
 
-    private fun UnifiedModuleItem.rescueReviewProblem(rescue: UnifiedRescueState.AshReXcue): UnifiedModuleProblem = problem(
-        kind = UnifiedModuleProblemKind.RESCUE_REVIEW,
-        severity = if (rescue.quarantined) UnifiedBadgeSeverity.ERROR else UnifiedBadgeSeverity.WARNING,
-        title = "AshReXcue rescue review needed",
-        summary = rescue.summary.ifBlank { "AshReXcue reported changed or quarantined rescue evidence." },
-        evidence = listOf(
-            UnifiedProblemEvidence("Folder", rescue.folder),
-            UnifiedProblemEvidence("Trust", rescue.trust),
-            UnifiedProblemEvidence("Risk", rescue.riskBand.name),
-        ),
-        actions = listOf(reviewRescueAction(), copyEvidenceAction(), suggestedFix("Review rescue evidence before installing, updating, or re-enabling the module.")),
-    )
-
     private fun UnifiedModuleItem.badgeProblem(badge: UnifiedModuleBadge): UnifiedModuleProblem = problem(
         kind = badge.problemKind(),
         severity = badge.severity,
@@ -321,7 +300,6 @@ object UnifiedModuleProblemCenter {
         UnifiedBadgeKind.INSTALL_STATE -> UnifiedModuleProblemKind.MODULE_DISABLED
         UnifiedBadgeKind.UPDATE -> UnifiedModuleProblemKind.FAILED_UPDATE
         UnifiedBadgeKind.SCOPE -> UnifiedModuleProblemKind.SCOPE_DB_UNAVAILABLE
-        UnifiedBadgeKind.RESCUE -> UnifiedModuleProblemKind.RESCUE_REVIEW
         UnifiedBadgeKind.PROBLEM -> UnifiedModuleProblemKind.BADGE_WARNING
     }
 
@@ -338,7 +316,6 @@ object UnifiedModuleProblemCenter {
         UnifiedModuleProblemKind.MANAGER_UNAVAILABLE -> listOf(openManagerAction(), runProbeAction(), copyEvidenceAction())
         UnifiedModuleProblemKind.PROVIDER_BRIDGE_AVAILABLE -> listOf(refreshProviderAction(), runProbeAction(), copyEvidenceAction())
         UnifiedModuleProblemKind.SCOPE_DB_UNAVAILABLE -> listOf(reviewScopeAction(), runProbeAction(), copyEvidenceAction())
-        UnifiedModuleProblemKind.RESCUE_REVIEW -> listOf(reviewRescueAction(), copyEvidenceAction())
         UnifiedModuleProblemKind.INSTALLED_NOT_IN_REPOSITORY,
         UnifiedModuleProblemKind.ALIAS_MATCH_ONLY,
         UnifiedModuleProblemKind.MODULE_DISABLED,
@@ -359,7 +336,6 @@ object UnifiedModuleProblemCenter {
     private fun refreshProviderAction() = UnifiedProblemAction(UnifiedProblemActionKind.REFRESH_PROVIDER)
     private fun openManagerAction() = UnifiedProblemAction(UnifiedProblemActionKind.OPEN_MANAGER)
     private fun reviewScopeAction() = UnifiedProblemAction(UnifiedProblemActionKind.REVIEW_SCOPE)
-    private fun reviewRescueAction() = UnifiedProblemAction(UnifiedProblemActionKind.REVIEW_RESCUE)
     private fun checkRepositoryAction() = UnifiedProblemAction(UnifiedProblemActionKind.CHECK_REPOSITORY)
     private fun suggestedFix(detail: String) = UnifiedProblemAction(UnifiedProblemActionKind.SUGGEST_FIX, detail = detail)
 }

@@ -43,7 +43,6 @@ open class KsuNextModuleManager : KernelSUModuleManager(Platform.KsuNext) {
 
     override fun getActionEnvironment(): List<String> =
         listOf(
-            "export ASH_STANDALONE=1",
             "export KSU=true",
             "export KSU_NEXT=true",
             "export KSU_VER=$version",

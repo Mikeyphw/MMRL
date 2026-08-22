@@ -60,6 +60,7 @@ required = true
 [validation.phases]
 preflight = [
   "verifyStableToolchainBaseline",
+  "verifyAshReXcuePurgedFromMmrl",
   "help",
 ]
 compile = [
@@ -85,6 +86,7 @@ lint = [
 
 [validation.final]
 release-seal = [
+  "verifyAshReXcuePurgedFromMmrl",
   ":platform:testDebugUnitTest",
   ":platform:testNativeContracts",
   ":app:testOfficialDebugUnitTest",
@@ -93,7 +95,6 @@ release-seal = [
   ":app:assembleOfficialRelease",
   ":app:assembleOfficialPlaystore",
 ]
-ash-static = ["scripts/validate-ashrexcue-release.sh", "--static-only"]
 native = [":platform:testDebugUnitTest", ":platform:testNativeContracts"]
 
 [validation]

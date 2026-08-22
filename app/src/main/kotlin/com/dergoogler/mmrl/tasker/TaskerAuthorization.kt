@@ -37,7 +37,6 @@ enum class TaskerCapability {
     MODULE_ACTION,
     REMOVAL,
     REVIEWED_INSTALL,
-    ASH_RECOVERY,
 }
 
 enum class TaskerAuthorizationDecision { EXECUTE, REQUIRE_APPROVAL, DENY }
@@ -97,7 +96,6 @@ internal object TaskerAuthorizationPolicy {
             TaskerCapability.MODULE_ACTION -> preferences.taskerAllowModuleActions
             TaskerCapability.REMOVAL -> preferences.taskerAllowRemovals
             TaskerCapability.REVIEWED_INSTALL -> preferences.taskerAllowReviewedInstalls
-            TaskerCapability.ASH_RECOVERY -> preferences.taskerAllowAshRecovery
         }
         if (!capabilityAllowed) return TaskerAuthorizationDecision.DENY
         return when (preferences.taskerApprovalPolicy) {
@@ -139,7 +137,6 @@ internal object TaskerAuthorizationPolicy {
         "REMOVE", "RESTORE" -> TaskerCapability.REMOVAL
         "RUN_ACTION" -> TaskerCapability.MODULE_ACTION
         "EXECUTE_REVIEW" -> TaskerCapability.REVIEWED_INSTALL
-        "ASH_EXECUTE_PLAN" -> TaskerCapability.ASH_RECOVERY
         else -> TaskerCapability.MODULE_ACTION
     }
 
@@ -170,7 +167,6 @@ data class TaskerRootRequest(
     val capability: String = "",
     val reviewToken: String? = null,
     val targetOperationId: String? = null,
-    val ashAutomationToken: String? = null,
     val idempotencyKey: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val approvedAt: Long? = null,
@@ -192,7 +188,6 @@ data class TaskerRootRequest(
         put("capability", capability)
         reviewToken?.let { put("review_token", it) }
         targetOperationId?.let { put("target_operation_id", it) }
-        ashAutomationToken?.let { put("ash_automation_token", it) }
         idempotencyKey?.let { put("idempotency_key", it) }
         put("created_at", createdAt)
         approvedAt?.let { put("approved_at", it) }
@@ -222,7 +217,6 @@ data class TaskerRootRequest(
                 capability = optionalString("capability").orEmpty(),
                 reviewToken = optionalString("review_token"),
                 targetOperationId = optionalString("target_operation_id"),
-                ashAutomationToken = optionalString("ash_automation_token"),
                 idempotencyKey = optionalString("idempotency_key"),
                 createdAt = root["created_at"]?.jsonPrimitive?.longOrNull ?: 0L,
                 approvedAt = root["approved_at"]?.jsonPrimitive?.longOrNull,

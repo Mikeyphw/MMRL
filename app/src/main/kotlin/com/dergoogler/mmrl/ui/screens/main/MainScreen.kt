@@ -78,7 +78,6 @@ import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.AshScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModuleUpdatesScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
@@ -89,7 +88,6 @@ private val compactDestinations =
     listOf(
         MainDestination.Repository,
         MainDestination.Modules,
-        MainDestination.Ash,
         MainDestination.Activity,
     )
 
@@ -107,10 +105,8 @@ private val expandedDestinations =
 fun MainScreen(
     openActivityOnLaunch: Boolean = false,
     openUpdatesOnLaunch: Boolean = false,
-    openRecoveryOnLaunch: Boolean = false,
     onActivityOpened: () -> Unit = {},
     onUpdatesOpened: () -> Unit = {},
-    onRecoveryOpened: () -> Unit = {},
 ) {
     val userPrefs = LocalUserPreferences.current
     val navigator = LocalDestinationsNavigator.current
@@ -143,14 +139,6 @@ fun MainScreen(
         }
     }
 
-    LaunchedEffect(openRecoveryOnLaunch) {
-        if (openRecoveryOnLaunch) {
-            navigator.navigate(AshScreenDestination) {
-                launchSingleTop = true
-            }
-            onRecoveryOpened()
-        }
-    }
 
     LaunchedEffect(Unit) {
         initPlatform(context, userPrefs.workingMode.toPlatform())
@@ -517,21 +505,6 @@ private fun BaseNavIcon(
         return
     }
 
-    if (screen == MainDestination.Ash && pendingReboots > 0) {
-        BadgedBox(
-            badge = {
-                Badge {
-                    Text(text = pendingReboots.coerceAtMost(99).toString())
-                }
-            },
-        ) {
-            Icon(
-                painter = painterResource(id = if (selected) screen.iconFilled else screen.icon),
-                contentDescription = stringResource(screen.label),
-            )
-        }
-        return
-    }
 
     if (screen == MainDestination.Modules && updates > 0) {
         BadgedBox(

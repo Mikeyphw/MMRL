@@ -213,7 +213,7 @@ object UnifiedModuleBrowserPresentation {
         UnifiedModuleView.REPOSITORY -> "Repository rows appear here after repo sources finish loading."
         UnifiedModuleView.UPDATES -> "Modules with update, locked, ignored, or pending-update evidence appear here."
         UnifiedModuleView.SCOPES -> "LSPosed rows with package scope evidence appear here."
-        UnifiedModuleView.PROBLEMS -> "Warnings and errors from repo, GitHub, provider, scope, and rescue evidence appear here."
+        UnifiedModuleView.PROBLEMS -> "Warnings and errors from repo, GitHub, provider, and scope evidence appear here."
         UnifiedModuleView.GITHUB_SOURCES -> "Saved GitHub module sources appear here after local sources are read."
     }
 
@@ -230,7 +230,6 @@ object UnifiedModuleBrowserPresentation {
             UnifiedBadgeKind.PROBLEM -> 0
             UnifiedBadgeKind.UPDATE -> 1
             UnifiedBadgeKind.PROVIDER_COMPATIBILITY -> 2
-            UnifiedBadgeKind.RESCUE -> 3
             UnifiedBadgeKind.SCOPE -> 4
             UnifiedBadgeKind.ARTIFACT_STRATEGY -> 5
             UnifiedBadgeKind.SOURCE_MODE -> 6

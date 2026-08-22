@@ -85,7 +85,6 @@ open class MagiskModuleManager : BaseModuleManager() {
 
     override fun getActionEnvironment(): List<String> =
         listOf(
-            "export ASH_STANDALONE=1",
             "export MAGISK=true",
             "export MAGISK_VER=$version",
             "export MAGISKTMP=$(magisk --path)",

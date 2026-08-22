@@ -80,7 +80,6 @@ class UnifiedModuleBrowserActionPlannerTest {
         installState: UnifiedInstallState = UnifiedInstallState.AVAILABLE,
         providerCompatibility: UnifiedProviderCompatibility = UnifiedProviderCompatibility.NOT_APPLICABLE,
         scope: UnifiedScopeState = UnifiedScopeState.None,
-        rescue: UnifiedRescueState = UnifiedRescueState.None,
         badges: List<UnifiedModuleBadge> = emptyList(),
     ): UnifiedModuleItem = UnifiedModuleItem(
         canonicalId = id,
@@ -103,7 +102,6 @@ class UnifiedModuleBrowserActionPlannerTest {
             installState = installState,
             providerCompatibility = providerCompatibility,
             scope = scope,
-            rescue = rescue,
         ),
         match = UnifiedModuleMatch(
             reason = UnifiedMatchReason.EXACT_ID,

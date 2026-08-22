@@ -3,7 +3,6 @@ package com.dergoogler.mmrl.release
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.work.WorkManager
-import com.dergoogler.mmrl.ash.automation.AshHealthCheckWorker
 import com.dergoogler.mmrl.service.ModuleUpdateWorker
 import com.dergoogler.mmrl.service.RepositoryRefreshWorker
 import org.junit.Assert.assertNotNull
@@ -19,7 +18,6 @@ class FinalWorkManagerAndLifecycleInstrumentedTest {
         assertEqualsString("mmrl-repository-refresh-now", RepositoryRefreshWorker.ONE_SHOT_WORK)
         assertEqualsString("mmrl-module-update-periodic", ModuleUpdateWorker.PERIODIC_WORK)
         assertEqualsString("mmrl-module-update-now", ModuleUpdateWorker.ONE_SHOT_WORK)
-        assertTrue(AshHealthCheckWorker::class.java.name.contains("AshHealthCheckWorker"))
     }
 
     @Test

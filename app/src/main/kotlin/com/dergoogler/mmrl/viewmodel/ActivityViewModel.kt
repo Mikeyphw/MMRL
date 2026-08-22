@@ -5,8 +5,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
-import com.dergoogler.mmrl.ash.AshReXcueManager
-import com.dergoogler.mmrl.ash.model.ActivityItem
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationHistoryEntity
 import com.dergoogler.mmrl.database.entity.history.OperationKind
@@ -33,6 +31,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
@@ -47,7 +46,6 @@ class ActivityViewModel
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
         private val historyRepository: OperationHistoryRepository,
-        private val ashManager: AshReXcueManager,
         private val moduleMutationExecutor: ModuleMutationExecutor,
         private val operationCoordinator: PrivilegedOperationCoordinator,
     ) : MMRLViewModel(
@@ -77,11 +75,8 @@ class ActivityViewModel
             )
 
         val activityAttentionCount =
-            combine(allHistory, ashManager.state) { entries, ashState ->
-                val ashEntries = ashState.snapshot?.activity.orEmpty().map { it.toHistoryEntry() }
-                (entries + ashEntries)
-                    .distinctBy(OperationHistoryEntity::id)
-                    .count { entry -> entry.isFailed || entry.isPendingReboot || entry.isRunning }
+            allHistory.map { entries ->
+                entries.count { entry -> entry.isFailed || entry.isPendingReboot || entry.isRunning }
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
@@ -89,21 +84,12 @@ class ActivityViewModel
             )
 
         init {
-            viewModelScope.launch {
-                historyRepository.recoverStaleOperations()
-                ashManager.refreshIfStale()
-            }
-        }
-
-        override fun onCleared() {
-            ashManager.releaseRootSession()
-            super.onCleared()
+            viewModelScope.launch { historyRepository.recoverStaleOperations() }
         }
 
         val visibleHistory =
-            combine(allHistory, ashManager.state, filterFlow) { entries, ashState, filter ->
-                val ashEntries = ashState.snapshot?.activity.orEmpty().map { it.toHistoryEntry() }
-                (entries + ashEntries)
+            combine(allHistory, filterFlow) { entries, filter ->
+                entries
                     .distinctBy(OperationHistoryEntity::id)
                     .map(::withTruthfulRollbackAvailability)
                     .sortedByDescending(OperationHistoryEntity::startedAt)
@@ -114,7 +100,6 @@ class ActivityViewModel
                             ActivityFilter.DOWNLOADS -> entry.kind == OperationKind.DOWNLOAD.name
                             ActivityFilter.FAILED -> entry.isFailed
                             ActivityFilter.PENDING_REBOOT -> entry.isPendingReboot
-                            ActivityFilter.ASHREXCUE -> entry.origin == ASH_ORIGIN
                         }
                     }
             }.stateIn(
@@ -128,9 +113,7 @@ class ActivityViewModel
         }
 
         suspend fun loadDetails(entry: OperationHistoryEntity): OperationHistoryEntity =
-            withTruthfulRollbackAvailability(
-                if (entry.origin == ASH_ORIGIN) entry else historyRepository.getById(entry.id) ?: entry,
-            )
+            withTruthfulRollbackAvailability(historyRepository.getById(entry.id) ?: entry)
 
         fun clearHistory() {
             viewModelScope.launch {
@@ -140,10 +123,6 @@ class ActivityViewModel
         }
 
         fun delete(entry: OperationHistoryEntity) {
-            if (entry.origin == ASH_ORIGIN) {
-                emitMessage("AshReXcue events are managed by the protection module")
-                return
-            }
             if (!entry.canDelete) {
                 emitMessage(if (entry.isPendingReboot) "Pending-reboot activity must be preserved" else "Active or unresolved activity cannot be deleted")
                 return
@@ -485,44 +464,8 @@ enum class ActivityFilter {
     DOWNLOADS,
     FAILED,
     PENDING_REBOOT,
-    ASHREXCUE,
 }
 
-
-private const val ASH_ORIGIN = "ashrexcue"
-
-private fun ActivityItem.toHistoryEntry(): OperationHistoryEntity {
-    val operationKind =
-        when (type.lowercase()) {
-            "restoration", "restore", "trial", "recovery-plan" -> OperationKind.ASH_RESTORATION
-            "settings", "setting", "trust" -> OperationKind.ASH_SETTINGS
-            "diagnostics" -> OperationKind.ASH_DIAGNOSTICS
-            else -> OperationKind.ASH_RESCUE
-        }
-    val operationStatus =
-        when (status.lowercase()) {
-            "failed", "error" -> com.dergoogler.mmrl.database.entity.history.OperationStatus.FAILED
-            "outcome_unknown", "unknown" -> com.dergoogler.mmrl.database.entity.history.OperationStatus.OUTCOME_UNKNOWN
-            "running", "active" -> com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING
-            "cancelled", "canceled" -> com.dergoogler.mmrl.database.entity.history.OperationStatus.CANCELLED
-            else -> com.dergoogler.mmrl.database.entity.history.OperationStatus.SUCCEEDED
-        }
-    val timestampMs = if (timestamp in 1..9_999_999_999L) timestamp * 1_000L else timestamp
-    return OperationHistoryEntity(
-        id = "ash:$type:$id:$timestamp",
-        kind = operationKind.name,
-        status = operationStatus.name,
-        title = title.ifBlank { "AshReXcue event" },
-        summary = subtitle.ifBlank { details.ifBlank { type } },
-        startedAt = timestampMs,
-        completedAt = timestampMs.takeIf { operationStatus != com.dergoogler.mmrl.database.entity.history.OperationStatus.RUNNING },
-        requiresReboot = status.equals("queued", ignoreCase = true),
-        technicalLog = details,
-        errorMessage = details.takeIf { operationStatus == com.dergoogler.mmrl.database.entity.history.OperationStatus.FAILED },
-        phase = type,
-        origin = ASH_ORIGIN,
-    )
-}
 
 private fun String?.toOperationActionOrNull(): OperationAction? =
     this?.let { value -> runCatching { OperationAction.valueOf(value) }.getOrNull() }

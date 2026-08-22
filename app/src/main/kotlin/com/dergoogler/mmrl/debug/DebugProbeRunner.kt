@@ -17,7 +17,6 @@ class DebugProbeRunner(
             lsposed.managerProbe(),
             lsposed.providerProbe(),
             LsposedRepoDebugProbe(context).endpointMatrixProbe(),
-            AshReXcueDebugProbe(activeModuleRoot, stagedModuleRoot).run(),
         )
     }
 }

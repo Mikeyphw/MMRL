@@ -4,11 +4,6 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.dergoogler.mmrl.BuildConfig
-import com.dergoogler.mmrl.ash.automation.ASH_EXTERNAL_CONTROL_API_VERSION
-import com.dergoogler.mmrl.ash.automation.ASH_EXTERNAL_CONTROL_SCHEMA
-import com.dergoogler.mmrl.ash.automation.AshAutomationEntryPoint
-import com.dergoogler.mmrl.ash.automation.AshExternalControlStore
-import com.dergoogler.mmrl.ash.automation.toJson
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
@@ -43,19 +38,16 @@ class TaskerAutomationWorker(
         return try {
             val preferences = repos.userPreferencesRepository().data.first()
             TaskerAuthorizationPolicy.requireExecutionAllowed(applicationContext, preferences, request)
-            if (request.command != "ASH_EXECUTE_PLAN") {
-                if (!PlatformManager.isAlive) {
-                    initPlatform(applicationContext, preferences.workingMode.toPlatform())
-                }
-                check(PlatformManager.isAlive) { "Root backend is unavailable" }
+            if (!PlatformManager.isAlive) {
+                initPlatform(applicationContext, preferences.workingMode.toPlatform())
             }
+            check(PlatformManager.isAlive) { "Root backend is unavailable" }
             history.appendLog(request.operationId, "Tasker automation worker started after execution-time policy check")
             when (request.command) {
                 "ENABLE", "DISABLE", "REMOVE" -> executeModuleState(request)
                 "RUN_ACTION" -> executeModuleAction(request)
                 "RESTORE" -> restorePreviousVersion(request)
                 "EXECUTE_REVIEW" -> executeReviewedInstall(request)
-                "ASH_EXECUTE_PLAN" -> executeAshRecoveryPlan(request)
                 else -> error("Unsupported Tasker command: ${request.command}")
             }
             TaskerRootRequestStore.remove(applicationContext, request.id)
@@ -86,79 +78,8 @@ class TaskerAutomationWorker(
             if (request.command == "EXECUTE_REVIEW") {
                 request.reviewToken?.let { TaskerReviewTokenStore.remove(applicationContext, it) }
             }
-            if (request.command == "ASH_EXECUTE_PLAN") {
-                completeAshFailureReceipt(request, error)
-            }
             TaskerRootRequestStore.remove(applicationContext, request.id)
             Result.failure()
-        }
-    }
-
-    private suspend fun executeAshRecoveryPlan(request: TaskerRootRequest) = withContext(Dispatchers.IO) {
-        val token = request.ashAutomationToken ?: error("AshReXcue automation token is required")
-        val idempotencyKey = request.idempotencyKey ?: error("AshReXcue idempotency key is required")
-        val store = AshExternalControlStore(applicationContext)
-        val record = store.claim(token, idempotencyKey, request.operationId)
-        val history = TaskerRuntime.repositories(applicationContext).operationHistoryRepository()
-        history.phase(request.operationId, OperationPhase.VERIFY, "Revalidating guarded AshReXcue recovery plan")
-        val entryPoint = EntryPointAccessors.fromApplication(
-            applicationContext,
-            AshAutomationEntryPoint::class.java,
-        )
-        val result = entryPoint.manager().executeRecoveryPlanTracked(
-            plan = record.prepared.plan,
-            existingHistoryId = request.operationId,
-            externalIdempotencyKey = idempotencyKey,
-        )
-        val terminal = history.getById(request.operationId)
-        val receiptStatus = when (terminal?.status) {
-            OperationStatus.SUCCEEDED.name -> "SUCCEEDED"
-            OperationStatus.OUTCOME_UNKNOWN.name -> "OUTCOME_UNKNOWN"
-            OperationStatus.CANCELLED.name -> "CANCELLED"
-            else -> "FAILED"
-        }
-        val data = JSONObject()
-            .put("apiVersion", ASH_EXTERNAL_CONTROL_API_VERSION)
-            .put("schema", ASH_EXTERNAL_CONTROL_SCHEMA)
-            .put("operationId", request.operationId)
-            .put("plan", record.prepared.plan.toJson())
-            .put("message", result.message)
-            .put("path", result.path.orEmpty())
-            .put("status", receiptStatus)
-        store.complete(
-            tokenValue = token,
-            operationId = request.operationId,
-            status = receiptStatus,
-            message = result.message,
-            resultJson = data.toString(),
-        )
-        if (receiptStatus == "FAILED") error(result.message)
-    }
-
-    private suspend fun completeAshFailureReceipt(request: TaskerRootRequest, error: Throwable) {
-        val token = request.ashAutomationToken ?: return
-        val operationId = request.operationId
-        val current = TaskerRuntime.repositories(applicationContext).operationHistoryRepository().getById(operationId)
-        val receiptStatus = when (current?.status) {
-            OperationStatus.OUTCOME_UNKNOWN.name -> "OUTCOME_UNKNOWN"
-            OperationStatus.CANCELLED.name -> "CANCELLED"
-            OperationStatus.SUCCEEDED.name -> "SUCCEEDED"
-            else -> "FAILED"
-        }
-        runCatching {
-            AshExternalControlStore(applicationContext).complete(
-                tokenValue = token,
-                operationId = operationId,
-                status = receiptStatus,
-                message = error.message ?: "AshReXcue recovery plan failed",
-                resultJson = JSONObject()
-                    .put("apiVersion", ASH_EXTERNAL_CONTROL_API_VERSION)
-                    .put("schema", ASH_EXTERNAL_CONTROL_SCHEMA)
-                    .put("operationId", operationId)
-                    .put("status", receiptStatus)
-                    .put("error", error.message ?: "AshReXcue recovery plan failed")
-                    .toString(),
-            )
         }
     }
 
@@ -211,7 +132,6 @@ class TaskerAutomationWorker(
             ModId.parseOrNull(request.moduleId)?.requireOperational()
                 ?: error("Invalid module ID")
         val environment = mapOf(
-            "ASH_STANDALONE" to "1",
             "MMRL" to "true",
             "MMRL_VER" to BuildConfig.VERSION_NAME,
             "MMRL_VER_CODE" to BuildConfig.VERSION_CODE.toString(),
@@ -365,8 +285,7 @@ class TaskerAutomationWorker(
             val result = repos.privilegedProcessExecutor().execute(
                 command = command,
                 environment = mapOf(
-                    "ASH_STANDALONE" to "1",
-                    "MMRL" to "true",
+                            "MMRL" to "true",
                     "MMRL_VER" to BuildConfig.VERSION_NAME,
                     "MMRL_VER_CODE" to BuildConfig.VERSION_CODE.toString(),
                 ),

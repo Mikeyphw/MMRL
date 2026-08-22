@@ -127,7 +127,6 @@ open class APatchModuleManager : BaseModuleManager() {
 
     override fun getActionEnvironment(): List<String> =
         listOf(
-            "export ASH_STANDALONE=1",
             "export APATCH=true",
             "export APATCH_VER=$version",
             "export APATCH_VER_CODE=$versionCode",

@@ -7,10 +7,6 @@ internal fun taskerRequestInput(
     filename: String? = null,
     forceRefresh: Boolean = false,
     reviewToken: String? = null,
-    ashFilter: String? = null,
-    ashPreset: String? = null,
-    ashFolders: String? = null,
-    ashAutomationToken: String? = null,
     idempotencyKey: String? = null,
     dryRun: Boolean = false,
     recommendationId: String? = null,
@@ -23,10 +19,6 @@ internal fun taskerRequestInput(
     this.filename = filename
     this.forceRefresh = forceRefresh
     this.reviewToken = reviewToken
-    this.ashFilter = ashFilter
-    this.ashPreset = ashPreset
-    this.ashFolders = ashFolders
-    this.ashAutomationToken = ashAutomationToken
     this.idempotencyKey = idempotencyKey
     this.dryRun = dryRun
     this.recommendationId = recommendationId

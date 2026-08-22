@@ -13,7 +13,6 @@ enum class DebugProbeGroup(val displayName: String) {
     CORE("Core"),
     LSPOSED("LSPosed / Vector"),
     REPOSITORY("Repository"),
-    ASH_REXCUE("AshReXcue"),
     SECURITY("Security"),
 }
 

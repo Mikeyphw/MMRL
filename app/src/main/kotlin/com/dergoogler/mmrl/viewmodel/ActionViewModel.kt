@@ -117,8 +117,7 @@ constructor(
 
             val environment =
                 mapOf(
-                    "ASH_STANDALONE" to "1",
-                    "MMRL" to "true",
+                            "MMRL" to "true",
                     "MMRL_VER" to BuildConfig.VERSION_NAME,
                     "MMRL_VER_CODE" to BuildConfig.VERSION_CODE.toString(),
                     "BOOTMODE" to "true",

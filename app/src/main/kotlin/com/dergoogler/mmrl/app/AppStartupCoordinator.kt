@@ -1,8 +1,6 @@
 package com.dergoogler.mmrl.app
 
 import android.content.Context
-import com.dergoogler.mmrl.ash.automation.AshAutomationScheduler
-import com.dergoogler.mmrl.ash.data.AshMutationJournal
 import com.dergoogler.mmrl.datastore.model.UserPreferences
 import com.dergoogler.mmrl.network.NetworkUtils
 import com.dergoogler.mmrl.repository.OperationHistoryRepository
@@ -20,12 +18,6 @@ object AppStartupCoordinator {
         operationHistoryRepository.enforceRetention()
         operationHistoryRepository.recoverAfterProcessRestart()
         operationHistoryRepository.recoverStaleOperations()
-        AshMutationJournal(context).interrupted().forEach { entry ->
-            operationHistoryRepository.outcomeUnknown(
-                id = entry.operationId,
-                summary = "AshReXcue mutation was interrupted in ${entry.stage.name}; reconcile backend state before retrying",
-            )
-        }
         if (preferences.providerServiceEnabled) {
             runCatching { ProviderService.start(context, preferences.workingMode) }
         } else {
@@ -41,10 +33,5 @@ object AppStartupCoordinator {
         } else {
             runCatching { ModuleService.stop(context) }
         }
-        AshAutomationScheduler.synchronize(
-            context = context,
-            enabled = preferences.ashHealthChecksEnabled,
-            intervalHours = preferences.ashHealthCheckIntervalHours,
-        )
     }
 }

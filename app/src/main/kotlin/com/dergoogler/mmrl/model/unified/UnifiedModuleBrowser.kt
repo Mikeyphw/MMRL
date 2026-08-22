@@ -1,9 +1,5 @@
 package com.dergoogler.mmrl.model.unified
 
-import com.dergoogler.mmrl.ash.model.AshManagerState
-import com.dergoogler.mmrl.ash.model.AshModuleProtection
-import com.dergoogler.mmrl.ash.model.AshModuleRiskBand
-import com.dergoogler.mmrl.ash.model.moduleProtections
 import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.github.GitHubArtifactStrategy
 import com.dergoogler.mmrl.github.GitHubSourceMode
@@ -20,7 +16,7 @@ import com.dergoogler.mmrl.platform.content.ModuleCompatibility
 import java.util.Locale
 
 /**
- * Phase 10 canonical model for the future Modules/Repos/LSPosed/Rescue browser.
+ * Canonical model for the Modules/Repos/LSPosed browser.
  *
  * This layer deliberately contains no Compose UI. It turns the different module-ish
  * sources in the app into stable rows with badges, match explanations, and search
@@ -33,7 +29,6 @@ data class UnifiedModuleInputs(
     val savedSources: List<LocalModuleSource> = emptyList(),
     val lsposedRepositoryModules: List<LsposedRepoModule> = emptyList(),
     val lsposedInstalledModules: List<LsposedInstalledModule> = emptyList(),
-    val ashState: AshManagerState = AshManagerState(),
     val rootCompatibility: ModuleCompatibility = ModuleCompatibility(
         hasMagicMount = false,
         canRestoreModules = false,
@@ -87,7 +82,6 @@ data class UnifiedModuleState(
     val availableVersionCode: Long? = null,
     val providerCompatibility: UnifiedProviderCompatibility = UnifiedProviderCompatibility.NOT_APPLICABLE,
     val scope: UnifiedScopeState = UnifiedScopeState.None,
-    val rescue: UnifiedRescueState = UnifiedRescueState.None,
 )
 
 enum class UnifiedInstallState(val installed: Boolean, val label: String) {
@@ -110,7 +104,6 @@ enum class UnifiedModuleSourceType(val label: String) {
     LSPOSED_REPOSITORY("LSPosed repository"),
     LSPOSED_INSTALLED("Installed LSPosed APK"),
     LOCAL_FILE("Local module"),
-    RESCUE("AshReXcue rescue"),
 }
 
 enum class UnifiedModuleSourceMode(val label: String) {
@@ -120,7 +113,6 @@ enum class UnifiedModuleSourceMode(val label: String) {
     NIGHTLY("Nightly"),
     MANUAL("Manual"),
     LOCAL("Local"),
-    RESCUE("Rescue"),
     MIXED("Mixed"),
     UNKNOWN("Unknown"),
 }
@@ -143,17 +135,6 @@ sealed interface UnifiedScopeState {
     ) : UnifiedScopeState
 }
 
-sealed interface UnifiedRescueState {
-    data object None : UnifiedRescueState
-    data class AshReXcue(
-        val folder: String,
-        val trust: String,
-        val quarantined: Boolean,
-        val changedSinceStable: Boolean,
-        val riskBand: AshModuleRiskBand,
-        val summary: String,
-    ) : UnifiedRescueState
-}
 
 enum class UnifiedBadgeKind {
     PROVIDER_COMPATIBILITY,
@@ -162,7 +143,6 @@ enum class UnifiedBadgeKind {
     INSTALL_STATE,
     UPDATE,
     SCOPE,
-    RESCUE,
     PROBLEM,
 }
 
@@ -233,15 +213,6 @@ data class UnifiedAliasGroup(
 
 object UnifiedModuleAliasRegistry {
     private val explicitGroups = listOf(
-        UnifiedAliasGroup(
-            canonicalId = "ashrexcue",
-            aliases = setOf(
-                "ashlooper",
-                "ashrexcue",
-                "ashrexcuebootloopprotector",
-                "ashrexcue-bootloop-protector",
-            ),
-        ),
         UnifiedAliasGroup(
             canonicalId = "lsposed",
             aliases = setOf(
@@ -334,7 +305,6 @@ object UnifiedModuleBrowserModel {
         inputs.rootModules.forEach(builder::addRootModule)
         inputs.lsposedRepositoryModules.forEach(builder::addLsposedRepositoryModule)
         inputs.lsposedInstalledModules.forEach(builder::addLsposedInstalledModule)
-        builder.addAshRescueState(inputs.ashState)
         return builder.build()
     }
 
@@ -385,7 +355,6 @@ private class UnifiedModuleCollectionBuilder(
     private val inputs: UnifiedModuleInputs,
 ) {
     private val entries = linkedMapOf<String, MutableUnifiedModule>()
-    private val ashProtections = inputs.ashState.moduleProtections()
 
     fun addRootModule(module: LocalModule) {
         val canonicalId = UnifiedModuleAliasRegistry.canonicalFor(module.id.id)
@@ -413,7 +382,6 @@ private class UnifiedModuleCollectionBuilder(
                 compatible = true,
             )
         }
-        ashProtections[canonicalId]?.let { entry.applyProtection(it) }
         maybeApplyUpdate(entry, canonicalId, module.versionDisplay, module.versionCode.toLong())
         addRootProviderBadge(entry)
     }
@@ -588,25 +556,6 @@ private class UnifiedModuleCollectionBuilder(
         entry.match = bestMatch(entry.match, UnifiedModuleMatch(UnifiedMatchReason.PACKAGE_NAME, 96, "Installed LSPosed package matched by package name.", setOf(module.packageName)))
     }
 
-    fun addAshRescueState(ashState: AshManagerState) {
-        ashState.snapshot?.modules.orEmpty().forEach { module ->
-            val identity = sequenceOf(module.id, module.folder, module.name).firstOrNull { it.isNotBlank() }.orEmpty()
-            val canonicalId = UnifiedModuleAliasRegistry.canonicalFor(identity)
-            val entry = entry(canonicalId, identity.ifBlank { module.folder })
-            entry.title = chooseTitle(entry.title, module.name, module.id.ifBlank { module.folder })
-            entry.subtitle = chooseSubtitle(entry.subtitle, module.version)
-            entry.sourceTypes += UnifiedModuleSourceType.RESCUE
-            entry.sourceMode = mergeMode(entry.sourceMode, UnifiedModuleSourceMode.RESCUE)
-            entry.enabled = entry.enabled ?: module.enabled
-            entry.searchTokens += listOf(module.id, module.folder, module.name, module.trust, module.baseTrust)
-            ashProtections[canonicalId]?.let { entry.applyProtection(it) }
-            if (entry.installState == UnifiedInstallState.AVAILABLE || entry.installState == UnifiedInstallState.UNKNOWN) {
-                entry.installState = if (module.enabled) UnifiedInstallState.INSTALLED else UnifiedInstallState.DISABLED
-            }
-            entry.match = bestMatch(entry.match, UnifiedModuleMatch(UnifiedMatchReason.FOLDER_NAME, 72, "AshReXcue snapshot supplied folder/id recovery evidence.", setOf(module.folder, module.id)))
-        }
-    }
-
     fun build(): List<UnifiedModuleItem> = entries.values.map { entry -> entry.toItem() }
         .sortedWith(
             compareByDescending<UnifiedModuleItem> { it.hasProblems }
@@ -685,35 +634,6 @@ private class UnifiedModuleCollectionBuilder(
         inputs.lsposedProviderStatus.managerApkPresent -> UnifiedProviderCompatibility.LIMITED
         else -> UnifiedProviderCompatibility.UNAVAILABLE
     }
-
-    private fun MutableUnifiedModule.applyProtection(protection: AshModuleProtection) {
-        rescue = UnifiedRescueState.AshReXcue(
-            folder = protection.folder,
-            trust = protection.trust,
-            quarantined = protection.quarantined,
-            changedSinceStable = protection.changedSinceStable,
-            riskBand = protection.riskBand,
-            summary = protection.intelligenceSummary,
-        )
-        sourceTypes += UnifiedModuleSourceType.RESCUE
-        searchTokens += listOf(protection.folder, protection.moduleId, protection.trust, protection.riskBand.name)
-        val severity = when {
-            protection.quarantined -> UnifiedBadgeSeverity.ERROR
-            protection.needsReview -> UnifiedBadgeSeverity.WARNING
-            else -> UnifiedBadgeSeverity.INFO
-        }
-        badges += UnifiedModuleBadge(
-            kind = UnifiedBadgeKind.RESCUE,
-            label = when {
-                protection.quarantined -> "Quarantined"
-                protection.needsReview -> "Needs rescue review"
-                else -> "AshReXcue indexed"
-            },
-            detail = protection.intelligenceSummary.ifBlank { "Trust=${protection.trust}; risk=${protection.riskBand.name}" },
-            severity = severity,
-        )
-        if (protection.quarantined) installState = UnifiedInstallState.PROBLEM
-    }
 }
 
 private data class MutableUnifiedModule(
@@ -739,7 +659,6 @@ private data class MutableUnifiedModule(
     var availableVersionCode: Long? = null,
     var providerCompatibility: UnifiedProviderCompatibility = UnifiedProviderCompatibility.NOT_APPLICABLE,
     var scope: UnifiedScopeState = UnifiedScopeState.None,
-    var rescue: UnifiedRescueState = UnifiedRescueState.None,
     var match: UnifiedModuleMatch = UnifiedModuleMatch(UnifiedMatchReason.UNMATCHED, 0, "No source has matched this module yet."),
     val badges: MutableList<UnifiedModuleBadge> = mutableListOf(),
     val searchTokens: MutableSet<String> = linkedSetOf(),
@@ -781,7 +700,6 @@ private data class MutableUnifiedModule(
             availableVersionCode = availableVersionCode,
             providerCompatibility = providerCompatibility,
             scope = scope,
-            rescue = rescue,
         )
         val effectiveTitle = title.ifBlank { displayId.ifBlank { canonicalId } }
         val effectiveSubtitle = subtitle.ifBlank { effectiveState.installState.label }
@@ -901,8 +819,6 @@ private fun mergeMode(
 ): UnifiedModuleSourceMode = when {
     current == UnifiedModuleSourceMode.UNKNOWN -> next
     current == next -> current
-    current == UnifiedModuleSourceMode.INSTALLED && next == UnifiedModuleSourceMode.RESCUE -> current
-    current == UnifiedModuleSourceMode.RESCUE && next == UnifiedModuleSourceMode.INSTALLED -> next
     else -> UnifiedModuleSourceMode.MIXED
 }
 

@@ -8,7 +8,6 @@ open class SukiSUModuleManager : KernelSUModuleManager(Platform.SukiSU) {
 
     override fun getActionEnvironment(): List<String> =
         listOf(
-            "export ASH_STANDALONE=1",
             "export KSU=true",
             "export KSU_SUKISU=true",
             "export KSU_VER=$version",

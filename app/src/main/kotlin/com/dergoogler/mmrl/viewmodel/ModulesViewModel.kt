@@ -20,11 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.R
-import com.dergoogler.mmrl.ash.AshReXcueManager
-import com.dergoogler.mmrl.ash.model.AshModuleFilter
-import com.dergoogler.mmrl.ash.model.AshModuleProtection
-import com.dergoogler.mmrl.ash.model.matches
-import com.dergoogler.mmrl.ash.model.moduleProtections
 import com.dergoogler.mmrl.database.entity.history.OperationAction
 import com.dergoogler.mmrl.database.entity.history.OperationKind
 import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
@@ -123,7 +118,6 @@ class ModulesViewModel
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
         operationHistoryRepository: OperationHistoryRepository,
-        private val ashManager: AshReXcueManager,
         private val moduleMutationExecutor: ModuleMutationExecutor,
         private val operationStagingStore: OperationStagingStore,
         application: Application,
@@ -136,11 +130,8 @@ class ModulesViewModel
         private val historyRepository = operationHistoryRepository
         private val modulePolicyStore = ModulePolicyStore(application.applicationContext)
 
-        val ashState = ashManager.state
-        private val ashFilterFlow = MutableStateFlow(AshModuleFilter.All)
-        val ashFilter = ashFilterFlow.asStateFlow()
-        private val ashMessagesFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
-        val ashMessages = ashMessagesFlow.asSharedFlow()
+        private val moduleMessagesFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
+        val moduleMessages = moduleMessagesFlow.asSharedFlow()
 
         private val unifiedBrowserActionResultFlow = MutableStateFlow<UnifiedModuleBrowserActionResult?>(null)
         val unifiedBrowserActionResult = unifiedBrowserActionResultFlow.asStateFlow()
@@ -215,7 +206,6 @@ class ModulesViewModel
             providerObserver()
             dataObserver()
             keyObserver()
-            viewModelScope.launch { ashManager.refreshIfStale() }
             localRepository.getAllBlacklistEntriesAsFlow()
                 .onEach { entries ->
                     entries.forEach { entry -> blacklistCache[entry.id] = entry }
@@ -348,8 +338,7 @@ class ModulesViewModel
                 allUpdateCandidates,
                 localRepository.getUpdatableTagsAsFlow(),
                 lockedUpdates,
-                ashManager.state,
-            ) { rootInputs, updateCandidates, updatableTags, lockedUpdateMap, ashState ->
+            ) { rootInputs, updateCandidates, updatableTags, lockedUpdateMap ->
                 val updates = updateCandidates.associate { candidate ->
                     val canonicalId = ModuleIdentity.canonical(candidate.local.id.id)
                     canonicalId to UnifiedModuleUpdate(
@@ -366,7 +355,6 @@ class ModulesViewModel
                         rootModules = rootInputs.localModules,
                         repositoryModules = rootInputs.onlineModules,
                         savedSources = rootInputs.savedSources,
-                        ashState = ashState,
                         rootCompatibility = moduleCompatibility,
                         updateCandidates = updates,
                         updateAllowed = updatableTags.associate { ModuleIdentity.canonical(it.id) to it.updatable },
@@ -515,13 +503,7 @@ class ModulesViewModel
         }
 
         private fun keyObserver() {
-            combine(
-                keyFlow,
-                cacheFlow,
-                ashFilterFlow,
-                ashManager.state,
-            ) { key, source, ashFilter, ashState ->
-                val protections = ashState.moduleProtections()
+            combine(keyFlow, cacheFlow) { key, source ->
                 val newKey =
                     when {
                         key.startsWith("id:", ignoreCase = true) -> key.removePrefix("id:")
@@ -532,8 +514,6 @@ class ModulesViewModel
 
                 localFlow.value =
                     source.filter { module ->
-                        val protection = protections[ModuleIdentity.canonical(module.id.id)]
-                        if (!protection.matches(ashFilter)) return@filter false
                         if (key.isNotBlank() || newKey.isNotBlank()) {
                             when {
                                 key.startsWith("id:", ignoreCase = true) ->
@@ -653,7 +633,7 @@ class ModulesViewModel
             }
             unifiedBrowserActionResultFlow.value = result
             if (!result.safe || action.destructive) {
-                ashMessagesFlow.tryEmit(result.userMessage)
+                moduleMessagesFlow.tryEmit(result.userMessage)
                 return
             }
             viewModelScope.launch {
@@ -664,7 +644,7 @@ class ModulesViewModel
                     )
                 }
                 executeUnifiedBrowserAction(action)
-                ashMessagesFlow.emit(result.userMessage.ifBlank { result.message })
+                moduleMessagesFlow.emit(result.userMessage.ifBlank { result.message })
             }
         }
 
@@ -672,12 +652,9 @@ class ModulesViewModel
             when (action.kind) {
                 UnifiedModuleBrowserActionKind.REFRESH_PROVIDER -> {
                     modulesRepository.getLocalAll()
-                    runCatching { ashManager.refresh() }
-                        .onFailure { Timber.w(it, "Unable to refresh AshReXcue from unified browser action") }
                 }
                 UnifiedModuleBrowserActionKind.REFRESH_REPOSITORY -> modulesRepository.getLocalAll()
-                UnifiedModuleBrowserActionKind.RUN_DEBUG_PROBE -> runCatching { ashManager.refresh() }
-                    .onFailure { Timber.w(it, "Unable to refresh diagnostics from unified browser action") }
+                UnifiedModuleBrowserActionKind.RUN_DEBUG_PROBE -> modulesRepository.getLocalAll()
                 UnifiedModuleBrowserActionKind.OPEN_MODULE -> {
                     action.moduleId?.takeIf(String::isNotBlank)?.let { moduleId ->
                         setUnifiedBrowserView(UnifiedModuleView.INSTALLED)
@@ -689,7 +666,6 @@ class ModulesViewModel
                 UnifiedModuleBrowserActionKind.OPEN_GITHUB_SOURCE_RULES,
                 UnifiedModuleBrowserActionKind.OPEN_MANAGER,
                 UnifiedModuleBrowserActionKind.REVIEW_SCOPE,
-                UnifiedModuleBrowserActionKind.REVIEW_RESCUE,
                 UnifiedModuleBrowserActionKind.SUGGEST_FIX,
                 -> Unit
             }
@@ -717,63 +693,12 @@ class ModulesViewModel
             }
         }
 
-        fun setAshFilter(value: AshModuleFilter) {
-            ashFilterFlow.value = value
-        }
-
-        fun refreshAshProtection() {
-            viewModelScope.launch {
-                runCatching { ashManager.refresh() }
-                    .onFailure { ashMessagesFlow.emit(it.message ?: "Unable to refresh AshReXcue") }
-            }
-        }
-
-        override fun onCleared() {
-            ashManager.releaseRootSession()
-            super.onCleared()
-        }
-
-        fun ashProtection(module: LocalModule): AshModuleProtection? =
-            ashManager.state.value.moduleProtections()[ModuleIdentity.normalize(module.id.id)]
-
-        fun setAshTrust(module: LocalModule, trust: String) {
-            val protection = ashProtection(module)
-            if (protection == null) {
-                ashMessagesFlow.tryEmit("AshReXcue has not indexed this module yet")
-                return
-            }
-            viewModelScope.launch {
-                runCatching { ashManager.setTrust(protection.folder, trust) }
-                    .onSuccess { result ->
-                        ashMessagesFlow.emit(result.message)
-                        ashManager.refresh()
-                    }
-                    .onFailure { ashMessagesFlow.emit(it.message ?: "Unable to change AshReXcue trust") }
-            }
-        }
-
-        fun testRestore(module: LocalModule) {
-            val protection = ashProtection(module)
-            if (protection?.quarantined != true) {
-                ashMessagesFlow.tryEmit("This module is not quarantined")
-                return
-            }
-            viewModelScope.launch {
-                runCatching { ashManager.restoreOne(protection.folder) }
-                    .onSuccess { result ->
-                        ashMessagesFlow.emit(result.message)
-                        ashManager.refresh()
-                    }
-                    .onFailure { ashMessagesFlow.emit(it.message ?: "Unable to start restoration trial") }
-            }
-        }
-
         fun followLatest(module: LocalModule) {
             viewModelScope.launch {
                 modulePolicyStore.setPolicy(ModuleVersionPolicy.follow(module.id.id))
                 localRepository.insertUpdatableTag(module.id.id, true)
                 userPreferencesRepository.clearNotifiedModuleUpdate(module.id.id)
-                ashMessagesFlow.emit(context.getString(R.string.module_policy_following_latest, module.name))
+                moduleMessagesFlow.emit(context.getString(R.string.module_policy_following_latest, module.name))
             }
         }
 
@@ -781,7 +706,7 @@ class ModulesViewModel
             viewModelScope.launch {
                 modulePolicyStore.setPolicy(ModuleVersionPolicy.ignore(module.id.id))
                 setUpdateIgnored(module.id.id, true)
-                ashMessagesFlow.emit(context.getString(R.string.module_policy_updates_ignored, module.name))
+                moduleMessagesFlow.emit(context.getString(R.string.module_policy_updates_ignored, module.name))
             }
         }
 
@@ -795,7 +720,7 @@ class ModulesViewModel
                     ),
                 )
                 localRepository.insertUpdatableTag(module.id.id, true)
-                ashMessagesFlow.emit(context.getString(R.string.module_policy_locked_current, module.name, module.versionDisplay))
+                moduleMessagesFlow.emit(context.getString(R.string.module_policy_locked_current, module.name, module.versionDisplay))
             }
         }
 
@@ -809,7 +734,7 @@ class ModulesViewModel
                     ),
                 )
                 localRepository.insertUpdatableTag(module.id.id, true)
-                ashMessagesFlow.emit(context.getString(R.string.module_policy_capped_current, module.name, module.versionDisplay))
+                moduleMessagesFlow.emit(context.getString(R.string.module_policy_capped_current, module.name, module.versionDisplay))
             }
         }
 
@@ -817,37 +742,34 @@ class ModulesViewModel
             viewModelScope.launch {
                 val modules = screenState.value.items
                 if (modules.isEmpty()) {
-                    ashMessagesFlow.emit(context.getString(R.string.module_snapshot_empty))
+                    moduleMessagesFlow.emit(context.getString(R.string.module_snapshot_empty))
                     return@launch
                 }
-                val ashTrustStates = ashState.value.moduleProtections().mapValues { it.value.trust }
                 val snapshot = modulePolicyStore.saveSnapshot(
                     label = label ?: context.getString(R.string.module_snapshot_default_label),
                     modules = modules,
                     platform = platform,
                     policies = versionPolicies.value,
-                    ashTrustStates = ashTrustStates,
                 )
-                ashMessagesFlow.emit(context.getString(R.string.module_snapshot_saved, snapshot.modules.size))
+                moduleMessagesFlow.emit(context.getString(R.string.module_snapshot_saved, snapshot.modules.size))
             }
         }
 
         fun deleteSnapshot(snapshot: ModuleSnapshot) {
             viewModelScope.launch {
                 modulePolicyStore.deleteSnapshot(snapshot.id)
-                ashMessagesFlow.emit(context.getString(R.string.module_snapshot_deleted, snapshot.label))
+                moduleMessagesFlow.emit(context.getString(R.string.module_snapshot_deleted, snapshot.label))
             }
         }
 
         fun snapshotPlan(snapshot: ModuleSnapshot): List<com.dergoogler.mmrl.model.local.ModuleSnapshotPlanItem> =
             ModuleSnapshotPlanner.compare(
                 snapshot = snapshot,
-                current = screenState.value.items.map { it.toSnapshotItem(versionPolicies.value, ashState.value.moduleProtections().mapValues { entry -> entry.value.trust }) },
+                current = screenState.value.items.map { it.toSnapshotItem(versionPolicies.value) },
             )
 
         private fun LocalModule.toSnapshotItem(
             policies: Map<String, ModuleVersionPolicy>,
-            ashTrustStates: Map<String, String>,
         ) = ModuleSnapshotItem(
             id = ModuleIdentity.canonical(id.id),
             name = name,
@@ -860,7 +782,6 @@ class ModulesViewModel
             size = size,
             lastUpdated = lastUpdated,
             policy = policies[ModuleIdentity.canonical(id.id)],
-            ashTrustState = ashTrustStates[ModuleIdentity.canonical(id.id)],
         )
 
         fun createModuleOps(
@@ -1043,7 +964,7 @@ class ModulesViewModel
                 )
                 modulesRepository.getRepo(repo)
                 versionItemCache.remove(module.id)
-                ashMessagesFlow.tryEmit(
+                moduleMessagesFlow.tryEmit(
                     "${module.name} source switched to ${spec.mode.sourceLabel()} (${spec.ruleSummary()})",
                 )
             }

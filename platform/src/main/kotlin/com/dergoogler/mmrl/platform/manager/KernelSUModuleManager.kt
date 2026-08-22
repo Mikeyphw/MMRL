@@ -160,7 +160,6 @@ open class KernelSUModuleManager(protected val rootPlatform: Platform = Platform
 
     override fun getActionEnvironment(): List<String> =
         listOf(
-            "export ASH_STANDALONE=1",
             "export KSU=true",
             "export KSU_VER=$version",
             "export KSU_VER_CODE=$versionCode",

@@ -68,7 +68,7 @@ fun DeveloperScreen() {
                 onClick = { navigator.navigate(DebugWorkbenchScreenDestination) },
             ) {
                 Title("Debug Workbench")
-                Description("Read-only diagnostics for LSPosed, Vector Manager, Xposed repo access, GitHub token storage, and AshReXcue detection.")
+                Description("Read-only diagnostics for LSPosed, Vector Manager, Xposed repo access, GitHub token storage.")
             }
         }
 

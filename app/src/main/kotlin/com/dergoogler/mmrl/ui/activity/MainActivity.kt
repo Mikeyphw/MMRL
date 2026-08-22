@@ -31,7 +31,6 @@ class MainActivity : MMRLComponentActivity() {
     private var isLoading by mutableStateOf(true)
     private var openActivityOnLaunch by mutableStateOf(false)
     private var openUpdatesOnLaunch by mutableStateOf(false)
-    private var openRecoveryOnLaunch by mutableStateOf(false)
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override val requirePermissions = listOf(Manifest.permission.POST_NOTIFICATIONS)
@@ -86,10 +85,8 @@ class MainActivity : MMRLComponentActivity() {
                     MainScreen(
                         openActivityOnLaunch = openActivityOnLaunch,
                         openUpdatesOnLaunch = openUpdatesOnLaunch,
-                        openRecoveryOnLaunch = openRecoveryOnLaunch,
                         onActivityOpened = { openActivityOnLaunch = false },
                         onUpdatesOpened = { openUpdatesOnLaunch = false },
-                        onRecoveryOpened = { openRecoveryOnLaunch = false },
                     )
                 }
             }
@@ -106,7 +103,6 @@ class MainActivity : MMRLComponentActivity() {
     private fun applyLaunchRequest(request: MainLaunchIntentPolicy.LaunchRequest) {
         if (request.openActivity) openActivityOnLaunch = true
         if (request.openUpdates) openUpdatesOnLaunch = true
-        if (request.openRecovery) openRecoveryOnLaunch = true
         request.repositoryUrl?.let { url ->
             lifecycleScope.launch { localRepository.insertRepo(url.toRepo()) }
         }
@@ -127,6 +123,5 @@ class MainActivity : MMRLComponentActivity() {
     companion object {
         const val EXTRA_OPEN_ACTIVITY = "com.mikeyphw.mmrl.extra.OPEN_ACTIVITY"
         const val EXTRA_OPEN_UPDATES = "com.mikeyphw.mmrl.extra.OPEN_UPDATES"
-        const val EXTRA_OPEN_RECOVERY = "com.mikeyphw.mmrl.extra.OPEN_RECOVERY"
     }
 }

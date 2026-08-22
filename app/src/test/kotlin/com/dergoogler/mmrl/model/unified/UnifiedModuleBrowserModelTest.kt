@@ -1,9 +1,5 @@
 package com.dergoogler.mmrl.model.unified
 
-import com.dergoogler.mmrl.ash.model.AshManagerState
-import com.dergoogler.mmrl.ash.model.AshSnapshot
-import com.dergoogler.mmrl.ash.model.AshSnapshotSource
-import com.dergoogler.mmrl.ash.model.ModuleItem
 import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.github.GitHubArtifactStrategy
 import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
@@ -69,41 +65,6 @@ class UnifiedModuleBrowserModelTest {
         assertTrue(item.badges.any { it.kind == UnifiedBadgeKind.UPDATE && it.label == "Update available" })
         assertTrue(item.badges.any { it.kind == UnifiedBadgeKind.ARTIFACT_STRATEGY && it.label == "Direct module ZIP" })
         assertTrue(item.searchTokens.any { it.contains("example/demo") })
-    }
-
-    @Test
-    fun `alias registry explains AshReXcue rescue matches`() {
-        val items = UnifiedModuleBrowserModel.build(
-            UnifiedModuleInputs(
-                rootModules = listOf(rootModule(id = "AshLooper", name = "AshReXcue Bootloop Protector")),
-                ashState = AshManagerState(
-                    rootAvailable = true,
-                    source = AshSnapshotSource.Live,
-                    snapshot = AshSnapshot(
-                        modules = listOf(
-                            ModuleItem(
-                                folder = "AshLooper",
-                                id = "AshLooper",
-                                name = "AshReXcue Bootloop Protector",
-                                version = "2.0",
-                                versionCode = "200",
-                                enabled = false,
-                                quarantined = true,
-                                trust = "suspect",
-                                changedSinceStable = true,
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        )
-
-        val item = items.single { it.canonicalId == "ashrexcue" }
-        assertTrue(item.aliases.contains("ashlooper"))
-        assertTrue(item.sourceTypes.contains(UnifiedModuleSourceType.RESCUE))
-        assertEquals(UnifiedInstallState.PROBLEM, item.state.installState)
-        assertTrue(item.badges.any { it.kind == UnifiedBadgeKind.RESCUE && it.label == "Quarantined" })
-        assertTrue(item.hasProblems)
     }
 
     @Test

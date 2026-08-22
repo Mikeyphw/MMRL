@@ -19,12 +19,6 @@ enum class DebugIssueFlow(
         description = "Runs repository endpoint and token probes, then explains primary, backup, and GitHub-backed fallback status.",
         probeIds = setOf("lsposed-repo-endpoints", "github-token-store"),
     ),
-    ASH_REXCUE_NOT_DETECTED(
-        title = "AshReXcue not detected",
-        buttonTitle = "Diagnose AshReXcue not detected",
-        description = "Runs the AshReXcue identity probe and explains folder, id, alias, and staged-module matches.",
-        probeIds = setOf("ashrexcue-module-identity"),
-    ),
     GITHUB_TOKEN_PROBLEMS(
         title = "GitHub token problems",
         buttonTitle = "Diagnose GitHub token problems",
@@ -66,7 +60,6 @@ object DebugGuidedDiagnostics {
         val steps = when (flow) {
             DebugIssueFlow.MANAGER_NOT_RECOGNIZED -> managerSteps(resultById)
             DebugIssueFlow.XPOSED_REPO_403 -> repoSteps(resultById)
-            DebugIssueFlow.ASH_REXCUE_NOT_DETECTED -> ashSteps(resultById)
             DebugIssueFlow.GITHUB_TOKEN_PROBLEMS -> tokenSteps(resultById)
         }
         val status = steps.maxByOrNull { it.status.severity }?.status ?: DebugProbeStatus.UNKNOWN
@@ -109,16 +102,6 @@ object DebugGuidedDiagnostics {
             missingSummary = "GitHub token probe was not available in this run.",
             missingRemedy = "Open Settings > Other > GitHub API token and save the token again if GitHub-backed fallbacks are rate-limited.",
             defaultRemedy = "If GitHub-backed endpoints are 403 or rate-limited, refresh the encrypted app-wide token and rerun this flow.",
-        ),
-    )
-
-    private fun ashSteps(resultById: Map<String, DebugProbeResult>): List<DebugGuideStep> = listOf(
-        resultById.step(
-            id = "ashrexcue-module-identity",
-            title = "AshReXcue module identity",
-            missingSummary = "AshReXcue identity probe was not available in this run.",
-            missingRemedy = "Run the AshReXcue guided flow with root/module paths available.",
-            defaultRemedy = "If the module works but is not recognized, share the folder, module.prop id/name, and canonical alias rows.",
         ),
     )
 

@@ -1,8 +1,5 @@
 package com.dergoogler.mmrl.tasker
 
-import com.dergoogler.mmrl.ash.automation.ASH_EXTERNAL_CONTROL_API_VERSION
-import com.dergoogler.mmrl.ash.automation.ASH_EXTERNAL_CONTROL_SCHEMA
-import com.dergoogler.mmrl.ash.automation.AshExternalControlStore
 import org.json.JSONObject
 import com.dergoogler.mmrl.database.entity.history.OperationPhase
 import com.dergoogler.mmrl.database.entity.history.OperationStatus
@@ -39,7 +36,6 @@ class TaskerApprovalActivity : ComponentActivity() {
             if (approved) {
                 val approvedRequest = TaskerRootRequestStore.markApproved(this@TaskerApprovalActivity, request.id)
                 if (approvedRequest == null) {
-                    releaseAshReservation(request)
                     history.fail(request.operationId, "Tasker approval expired before it was accepted")
                     finish()
                     return@launch
@@ -53,7 +49,6 @@ class TaskerApprovalActivity : ComponentActivity() {
                     phase = OperationPhase.STAGE,
                 )
                 if (!queued) {
-                    releaseAshReservation(request)
                     TaskerRootRequestStore.remove(this@TaskerApprovalActivity, request.id)
                     history.appendLog(request.operationId, "Approval ignored because the operation is no longer waiting")
                     finish()
@@ -69,7 +64,6 @@ class TaskerApprovalActivity : ComponentActivity() {
                             request.operationId,
                         )
                     }
-                    releaseAshReservation(request)
                     TaskerRootRequestStore.remove(this@TaskerApprovalActivity, request.id)
                     history.fail(
                         request.operationId,
@@ -85,33 +79,10 @@ class TaskerApprovalActivity : ComponentActivity() {
                         request.operationId,
                     )
                 }
-                completeDeniedAshRequest(request)
                 TaskerRootRequestStore.remove(this@TaskerApprovalActivity, request.id)
                 history.fail(request.operationId, "Tasker action denied by user")
             }
             finish()
-        }
-    }
-    private fun releaseAshReservation(request: TaskerRootRequest) {
-        val token = request.ashAutomationToken ?: return
-        AshExternalControlStore(this).releaseReservation(token, request.operationId)
-    }
-
-    private fun completeDeniedAshRequest(request: TaskerRootRequest) {
-        val token = request.ashAutomationToken ?: return
-        runCatching {
-            AshExternalControlStore(this).complete(
-                tokenValue = token,
-                operationId = request.operationId,
-                status = "DENIED",
-                message = "Tasker action denied by user",
-                resultJson = JSONObject()
-                    .put("apiVersion", ASH_EXTERNAL_CONTROL_API_VERSION)
-                    .put("schema", ASH_EXTERNAL_CONTROL_SCHEMA)
-                    .put("operationId", request.operationId)
-                    .put("status", "DENIED")
-                    .toString(),
-            )
         }
     }
 

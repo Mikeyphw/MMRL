@@ -53,7 +53,6 @@ class ModulePolicyStore(context: Context) {
         modules: List<LocalModule>,
         platform: Platform,
         policies: Map<String, ModuleVersionPolicy> = policiesFlow.value,
-        ashTrustStates: Map<String, String> = emptyMap(),
     ): ModuleSnapshot = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val snapshot = ModuleSnapshot(
@@ -78,7 +77,6 @@ class ModulePolicyStore(context: Context) {
                     size = module.size,
                     lastUpdated = module.lastUpdated,
                     policy = policies[normalizedId],
-                    ashTrustState = ashTrustStates[normalizedId],
                 )
             }.sortedBy { it.name.lowercase() },
         )

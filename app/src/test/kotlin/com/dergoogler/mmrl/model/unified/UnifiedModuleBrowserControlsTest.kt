@@ -38,7 +38,7 @@ class UnifiedModuleBrowserControlsTest {
             ),
             item(
                 id = "broken",
-                sourceTypes = setOf(UnifiedModuleSourceType.RESCUE),
+                sourceTypes = setOf(UnifiedModuleSourceType.LOCAL_FILE),
                 installState = UnifiedInstallState.PROBLEM,
                 badges = listOf(
                     UnifiedModuleBadge(

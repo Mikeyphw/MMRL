@@ -2,7 +2,6 @@
 
 import com.android.build.api.variant.impl.VariantOutputImpl
 import org.gradle.api.GradleException
-import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.compile.JavaCompile
 
 plugins {
@@ -190,20 +189,6 @@ android {
 
 }
 
-val packageAshReXcueModule by tasks.registering(Zip::class) {
-    archiveFileName.set("AshReXcue_Bootloop_Protector.zip")
-    destinationDirectory.set(layout.buildDirectory.dir("generated/assets/ash-module"))
-    from(layout.projectDirectory.dir("src/main/ash-module"))
-}
-
-androidComponents {
-    onVariants(selector().all()) { variant ->
-        variant.sources.assets?.addGeneratedSourceDirectory(
-            packageAshReXcueModule,
-            Zip::getDestinationDirectory,
-        )
-    }
-}
 
 if (releaseSigningProperties == null) {
     val missingReleaseSigningMessage =

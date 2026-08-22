@@ -22,7 +22,6 @@ enum class UnifiedModuleBrowserActionKind(
     OPEN_GITHUB_SOURCE_RULES("Edit GitHub source"),
     OPEN_MANAGER("Open manager"),
     REVIEW_SCOPE("Review scope"),
-    REVIEW_RESCUE("Review rescue"),
     RUN_DEBUG_PROBE("Run safe probe"),
     SUGGEST_FIX("Suggested fix"),
 }
@@ -39,7 +38,6 @@ enum class UnifiedModuleBrowserActionDestination(val label: String) {
     INSTALLED_VIEW("Installed modules"),
     GITHUB_SOURCE_RULES("GitHub source rules"),
     LSPOSED_MANAGER("LSPosed manager"),
-    RESCUE_CONTROLS("Rescue controls"),
     DEBUG_WORKBENCH("Debug Workbench"),
     REPOSITORY_REFRESH("Repository refresh"),
 }
@@ -131,7 +129,7 @@ object UnifiedModuleBrowserActionPlanner {
                 item.action(
                     kind = UnifiedModuleBrowserActionKind.REFRESH_PROVIDER,
                     label = "Refresh provider",
-                    detail = "Refresh local module, provider, LSPosed, and rescue signals.",
+                    detail = "Refresh local module, provider, and LSPosed signals.",
                 ),
             )
         }
@@ -150,15 +148,6 @@ object UnifiedModuleBrowserActionPlanner {
                     kind = UnifiedModuleBrowserActionKind.REVIEW_SCOPE,
                     label = "Review scope",
                     detail = item.scopeSummary(),
-                ),
-            )
-        }
-        if (item.state.rescue is UnifiedRescueState.AshReXcue) {
-            add(
-                item.action(
-                    kind = UnifiedModuleBrowserActionKind.REVIEW_RESCUE,
-                    label = "Review rescue",
-                    detail = item.rescueSummary(),
                 ),
             )
         }
@@ -192,7 +181,7 @@ object UnifiedModuleBrowserActionPlanner {
         )
         UnifiedModuleBrowserActionKind.REFRESH_PROVIDER -> UnifiedModuleBrowserActionResult(
             handled = true,
-            message = "Refreshing provider, module, LSPosed, and rescue signals.",
+            message = "Refreshing provider, module, and LSPosed signals.",
             actionKind = action.kind,
             destination = UnifiedModuleBrowserActionDestination.DEBUG_WORKBENCH,
             followUp = "Reopen Problems after refresh if a badge still looks stale.",
@@ -246,14 +235,6 @@ object UnifiedModuleBrowserActionPlanner {
             followUp = action.detail.ifBlank { "Open LSPosed modules to review scoped packages before changing anything." },
             tone = UnifiedModuleBrowserActionTone.INFO,
         )
-        UnifiedModuleBrowserActionKind.REVIEW_RESCUE -> UnifiedModuleBrowserActionResult(
-            handled = false,
-            message = "Rescue review is ready for ${action.subjectLabel()}.",
-            actionKind = action.kind,
-            destination = UnifiedModuleBrowserActionDestination.RESCUE_CONTROLS,
-            followUp = action.detail.ifBlank { "Use installed-module rescue controls to review AshReXcue state before restore or trust changes." },
-            tone = UnifiedModuleBrowserActionTone.WARNING,
-        )
         UnifiedModuleBrowserActionKind.SUGGEST_FIX -> UnifiedModuleBrowserActionResult(
             handled = false,
             message = "Suggested fix for ${action.subjectLabel()}.",
@@ -289,7 +270,6 @@ object UnifiedModuleBrowserActionPlanner {
         UnifiedProblemActionKind.REFRESH_PROVIDER -> UnifiedModuleBrowserActionKind.REFRESH_PROVIDER
         UnifiedProblemActionKind.OPEN_MANAGER -> UnifiedModuleBrowserActionKind.OPEN_MANAGER
         UnifiedProblemActionKind.REVIEW_SCOPE -> UnifiedModuleBrowserActionKind.REVIEW_SCOPE
-        UnifiedProblemActionKind.REVIEW_RESCUE -> UnifiedModuleBrowserActionKind.REVIEW_RESCUE
         UnifiedProblemActionKind.CHECK_REPOSITORY -> UnifiedModuleBrowserActionKind.REFRESH_REPOSITORY
     }
 
@@ -353,11 +333,6 @@ object UnifiedModuleBrowserActionPlanner {
     private fun UnifiedModuleItem.scopeSummary(): String = when (val scope = state.scope) {
         is UnifiedScopeState.Lsposed -> "Scope has ${scope.scopedPackageCount} package${if (scope.scopedPackageCount == 1) "" else "s"}; ${if (scope.enabled) "enabled" else "disabled"}${if (scope.autoInclude) "; auto include" else ""}."
         UnifiedScopeState.None -> "No LSPosed scope evidence is attached to this row."
-    }
-
-    private fun UnifiedModuleItem.rescueSummary(): String = when (val rescue = state.rescue) {
-        is UnifiedRescueState.AshReXcue -> "AshReXcue folder ${rescue.folder}; trust=${rescue.trust}; risk=${rescue.riskBand.name.lowercase(Locale.ROOT)}."
-        UnifiedRescueState.None -> "No rescue evidence is attached to this row."
     }
 
     private fun String.looksLikeUrl(): Boolean = startsWith("http://") || startsWith("https://") || startsWith("github:")

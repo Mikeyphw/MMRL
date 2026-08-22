@@ -90,8 +90,6 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         val query by viewModel.query.collectAsStateWithLifecycle()
         val state by viewModel.screenState.collectAsStateWithLifecycle()
         val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-        val ashState by viewModel.ashState.collectAsStateWithLifecycle()
-        val ashFilter by viewModel.ashFilter.collectAsStateWithLifecycle()
         val unifiedControls by viewModel.unifiedBrowserControls.collectAsStateWithLifecycle()
         val unifiedModules by viewModel.unifiedModules.collectAsStateWithLifecycle()
         val filteredUnifiedModules by viewModel.filteredUnifiedModules.collectAsStateWithLifecycle()
@@ -101,7 +99,7 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         var selectedTab by remember { mutableStateOf(ModulesTab.RootModules) }
 
         LaunchedEffect(viewModel) {
-            viewModel.ashMessages.collectLatest(snackbar::showSnackbar)
+            viewModel.moduleMessages.collectLatest(snackbar::showSnackbar)
         }
 
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -226,9 +224,6 @@ fun ModulesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
                             viewModel = viewModel,
                             onDownload = download,
                             isProviderAlive = viewModel.isProviderAlive,
-                            ashState = ashState,
-                            ashFilter = ashFilter,
-                            onAshFilterSelected = viewModel::setAshFilter,
                             unifiedControls = unifiedControls,
                             unifiedModules = unifiedModules,
                             filteredUnifiedModules = filteredUnifiedModules,

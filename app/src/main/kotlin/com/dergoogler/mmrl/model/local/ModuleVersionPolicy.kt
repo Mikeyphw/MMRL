@@ -118,7 +118,6 @@ data class ModuleSnapshotItem(
     val size: Long,
     val lastUpdated: Long,
     val policy: ModuleVersionPolicy? = null,
-    val ashTrustState: String? = null,
 )
 
 enum class ModuleSnapshotPlanStatus {

@@ -350,7 +350,6 @@ private fun ActivityFilters(
                         } else {
                             stringResource(R.string.activity_filter_reboot)
                         }
-                    ActivityFilter.ASHREXCUE -> stringResource(R.string.activity_filter_ashrexcue)
                 }
             FilterChip(
                 selected = selected == filter,

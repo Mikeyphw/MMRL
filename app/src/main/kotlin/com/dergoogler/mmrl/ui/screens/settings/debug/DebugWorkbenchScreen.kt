@@ -82,7 +82,7 @@ fun DebugWorkbenchScreen() {
                 onClick = { runProbeSession() },
             ) {
                 Title(if (running) "Running probes…" else "Run read-only probes")
-                Description("Checks package visibility, Vector/LSPosed providers, Xposed repo fallbacks, GitHub token status, and AshReXcue identity. Saves a small redacted local history for comparisons.")
+                Description("Checks package visibility, Vector/LSPosed providers, Xposed repo fallbacks, GitHub token status. Saves a small redacted local history for comparisons.")
             }
 
             ButtonItem(
@@ -206,7 +206,7 @@ fun DebugWorkbenchScreen() {
             Section(divider = false) {
                 Item {
                     Title("No probe results yet")
-                    Description("Run the probes or use a guided diagnostic flow to diagnose manager recognition, provider scan, repo 403 behavior, GitHub token problems, and AshReXcue detection.")
+                    Description("Run the probes or use a guided diagnostic flow to diagnose manager recognition, provider scan, repo 403 behavior, GitHub token problems.")
                 }
             }
         } else {

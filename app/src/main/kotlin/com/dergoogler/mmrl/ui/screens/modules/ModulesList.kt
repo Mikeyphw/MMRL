@@ -66,11 +66,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
-import com.dergoogler.mmrl.ash.model.AshManagerState
-import com.dergoogler.mmrl.ash.model.AshModuleFilter
-import com.dergoogler.mmrl.ash.model.AshModuleProtection
-import com.dergoogler.mmrl.ash.model.AshModuleRiskBand
-import com.dergoogler.mmrl.ash.model.moduleProtections
 import com.dergoogler.mmrl.database.entity.local.LocalModuleSource
 import com.dergoogler.mmrl.ext.isPackageInstalled
 import com.dergoogler.mmrl.github.GitHubArtifactStrategy
@@ -127,9 +122,6 @@ fun ScaffoldScope.ModulesList(
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
-    ashState: AshManagerState,
-    ashFilter: AshModuleFilter,
-    onAshFilterSelected: (AshModuleFilter) -> Unit,
     unifiedControls: UnifiedModuleBrowserControlsState,
     unifiedModules: List<UnifiedModuleItem>,
     filteredUnifiedModules: List<UnifiedModuleItem>,
@@ -142,8 +134,6 @@ fun ScaffoldScope.ModulesList(
     val layoutDirection = LocalLayoutDirection.current
     val updateMap = remember(updates) { updates.associateBy { ModuleIdentity.normalize(it.local.id.id) } }
     val localSourceMap = remember(localSources) { localSources.associateBy { ModuleIdentity.normalize(it.id) } }
-    val ashProtectionMap = remember(ashState) { ashState.moduleProtections() }
-    val ashWritable = !ashState.readOnly && ashState.lifecycle.compatible
     var snapshotDialogOpen by remember { mutableStateOf(false) }
     var selectedSnapshot by remember { mutableStateOf<ModuleSnapshot?>(null) }
 
@@ -240,15 +230,6 @@ fun ScaffoldScope.ModulesList(
             }
 
             if (unifiedControls.view == UnifiedModuleView.INSTALLED) {
-                if (ashState.snapshot != null) {
-                    item(key = "ash_filters") {
-                        AshProtectionFilters(
-                            selected = ashFilter,
-                            protections = ashProtectionMap.values,
-                            onSelected = onAshFilterSelected,
-                        )
-                    }
-                }
 
                 if (visibleGroups.isEmpty()) {
                     item(key = "installed_unified_empty") {
@@ -275,8 +256,6 @@ fun ScaffoldScope.ModulesList(
                         viewModel = viewModel,
                         isProviderAlive = isProviderAlive,
                         onDownload = onDownload,
-                        ashProtectionMap = ashProtectionMap,
-                        ashWritable = ashWritable,
                         onOpenSnapshots = { snapshotDialogOpen = true },
                     )
                 }
@@ -359,8 +338,6 @@ private fun LazyListScope.moduleRows(
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
-    ashProtectionMap: Map<String, AshModuleProtection>,
-    ashWritable: Boolean,
     onOpenSnapshots: () -> Unit,
 ) {
     items(
@@ -378,8 +355,6 @@ private fun LazyListScope.moduleRows(
                 viewModel = viewModel,
                 isProviderAlive = isProviderAlive,
                 onDownload = onDownload,
-                ashProtection = ashProtectionMap[normalizedId],
-                ashWritable = ashWritable,
                 onOpenSnapshots = onOpenSnapshots,
             )
         }
@@ -460,48 +435,6 @@ private fun DeviceStatusHeader(
 }
 
 @Composable
-private fun AshProtectionFilters(
-    selected: AshModuleFilter,
-    protections: Collection<AshModuleProtection>,
-    onSelected: (AshModuleFilter) -> Unit,
-) {
-    val counts =
-        mapOf(
-            AshModuleFilter.NeedsReview to protections.count(AshModuleProtection::needsReview),
-            AshModuleFilter.Changed to protections.count(AshModuleProtection::changedSinceStable),
-            AshModuleFilter.Protected to protections.count { it.trust == "protected" },
-            AshModuleFilter.Trusted to protections.count { it.trust == "trusted" },
-            AshModuleFilter.Normal to protections.count { it.trust == "normal" && !it.quarantined && !it.needsReview },
-            AshModuleFilter.Suspect to protections.count { it.trust == "suspect" },
-            AshModuleFilter.Quarantined to protections.count { it.quarantined },
-        )
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-        Text(
-            text = stringResource(R.string.ash_protection_filter_title),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.semantics { heading() },
-        )
-        Row(
-            modifier = Modifier.padding(top = 7.dp).horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-        ) {
-            AshModuleFilter.entries.forEach { filter ->
-                val count = if (filter == AshModuleFilter.All) protections.size else counts[filter] ?: 0
-                FilterChip(
-                    selected = selected == filter,
-                    onClick = { onSelected(filter) },
-                    modifier = Modifier.semantics {
-                        role = Role.Tab
-                        this.selected = selected == filter
-                    },
-                    label = { Text(stringResource(R.string.label_with_count, filter.displayLabel(), count)) },
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun ModuleGroupHeader(
@@ -539,8 +472,6 @@ private fun InstalledModuleCard(
     viewModel: ModulesViewModel,
     isProviderAlive: Boolean,
     onDownload: (InstalledModule, VersionItem, Boolean) -> Unit,
-    ashProtection: AshModuleProtection?,
-    ashWritable: Boolean,
     onOpenSnapshots: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -605,7 +536,6 @@ private fun InstalledModuleCard(
             policy = policy,
             update = update,
             lockedUpdate = lockedUpdate,
-            ashProtection = ashProtection,
             onDismiss = { detailsOpen = false },
         )
     }
@@ -710,8 +640,6 @@ private fun InstalledModuleCard(
                             actionEnabled = actionEnabled,
                             updateItem = updateItem,
                             source = source,
-                            ashProtection = ashProtection,
-                            ashWritable = ashWritable,
                             removeEnabled = removeEnabled,
                             viewModel = viewModel,
                             opsChange = ops.change,
@@ -789,12 +717,6 @@ private fun InstalledModuleCard(
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    ashProtection?.let { protection ->
-                        StatusPill(
-                            text = protection.displayLabel(),
-                            color = protection.statusColor(),
-                        )
-                    }
                     when (module.state) {
                         State.UPDATE -> StatusPill(
                             text = stringResource(R.string.modules_needs_attention),
@@ -839,8 +761,6 @@ private fun ModuleActionsMenu(
     actionEnabled: Boolean,
     updateItem: VersionItem?,
     source: LocalModuleSource?,
-    ashProtection: AshModuleProtection?,
-    ashWritable: Boolean,
     removeEnabled: Boolean,
     viewModel: ModulesViewModel,
     opsChange: () -> Unit,
@@ -951,41 +871,6 @@ private fun ModuleActionsMenu(
                     openUpdateSheet()
                 },
             )
-        }
-        ashProtection?.let { protection ->
-            if (protection.quarantined) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.ash_test_restore_next_boot)) },
-                    leadingIcon = { Icon(painterResource(R.drawable.reload), null) },
-                    enabled = ashWritable,
-                    onClick = {
-                        onDismiss()
-                        viewModel.testRestore(module)
-                    },
-                )
-            }
-            listOf(
-                "protected" to R.string.ash_protect_with_ashrexcue,
-                "trusted" to R.string.ash_mark_trusted,
-                "normal" to R.string.ash_mark_normal,
-                "suspect" to R.string.ash_mark_suspect,
-            ).forEach { (trust, label) ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(label)) },
-                    leadingIcon = {
-                        Icon(
-                            painterResource(if (trust == "suspect") R.drawable.alert_triangle else R.drawable.shield_bolt),
-                            null,
-                        )
-                    },
-                    enabled = ashWritable && protection.trust != trust &&
-                        !(ModuleIdentity.isAshReXcue(module.id.id) && trust != "protected"),
-                    onClick = {
-                        onDismiss()
-                        viewModel.setAshTrust(module, trust)
-                    },
-                )
-            }
         }
         DropdownMenuItem(
             text = {
@@ -1192,7 +1077,6 @@ private fun ModuleMetadataDialog(
     policy: ModuleVersionPolicy?,
     update: ModuleUpdateInfo?,
     lockedUpdate: ModuleUpdateInfo?,
-    ashProtection: AshModuleProtection?,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -1215,7 +1099,6 @@ private fun ModuleMetadataDialog(
                 policy?.let { MetadataRow(stringResource(R.string.module_policy), it.statusLabel(lockedUpdate?.version?.versionDisplay)) }
                 update?.let { MetadataRow(stringResource(R.string.module_update), it.version.versionDisplay) }
                 lockedUpdate?.let { MetadataRow(stringResource(R.string.module_update_locked_title), it.version.versionDisplay) }
-                ashProtection?.let { MetadataRow(stringResource(R.string.ashrexcue), it.displayLabel()) }
             }
         },
     )
@@ -1488,48 +1371,12 @@ private fun Platform.displayLabel(): String = when (this) {
 }
 
 @Composable
-private fun AshModuleFilter.displayLabel(): String = when (this) {
-    AshModuleFilter.All -> stringResource(R.string.ash_filter_all)
-    AshModuleFilter.NeedsReview -> stringResource(R.string.ash_filter_needs_review)
-    AshModuleFilter.Changed -> stringResource(R.string.ash_filter_changed)
-    AshModuleFilter.Protected -> stringResource(R.string.ash_filter_protected)
-    AshModuleFilter.Trusted -> stringResource(R.string.ash_filter_trusted)
-    AshModuleFilter.Normal -> stringResource(R.string.ash_filter_normal)
-    AshModuleFilter.Suspect -> stringResource(R.string.ash_filter_suspect)
-    AshModuleFilter.Quarantined -> stringResource(R.string.recovery_quarantined)
-}
 
 @Composable
-private fun AshModuleProtection.displayLabel(): String = when {
-    quarantined -> stringResource(R.string.recovery_quarantined)
-    riskBand >= AshModuleRiskBand.High -> stringResource(R.string.ash_protection_risk_score, riskBand.displayLabel(), riskScore)
-    changedSinceStable -> stringResource(R.string.ash_changed_since_stable)
-    trust == "protected" -> stringResource(R.string.ash_filter_protected)
-    trust == "trusted" -> stringResource(R.string.ash_filter_trusted)
-    trust == "suspect" -> stringResource(R.string.ash_filter_suspect)
-    trust == "normal" -> stringResource(R.string.ash_filter_normal)
-    else -> trust.replaceFirstChar(Char::uppercaseChar)
-}
 
 @Composable
-private fun AshModuleRiskBand.displayLabel(): String = when (this) {
-    AshModuleRiskBand.Unknown -> stringResource(R.string.ash_risk_band_unknown)
-    AshModuleRiskBand.Low -> stringResource(R.string.ash_risk_band_low)
-    AshModuleRiskBand.Elevated -> stringResource(R.string.ash_risk_band_elevated)
-    AshModuleRiskBand.High -> stringResource(R.string.ash_risk_band_high)
-    AshModuleRiskBand.Critical -> stringResource(R.string.ash_risk_band_critical)
-}
 
 @Composable
-private fun AshModuleProtection.statusColor(): Color = when {
-    quarantined -> MaterialTheme.colorScheme.error
-    riskBand >= AshModuleRiskBand.High -> MaterialTheme.colorScheme.error
-    changedSinceStable -> MaterialTheme.colorScheme.tertiary
-    trust == "suspect" -> MaterialTheme.colorScheme.error
-    trust == "protected" -> MaterialTheme.colorScheme.primary
-    trust == "trusted" -> MaterialTheme.colorScheme.tertiary
-    else -> MaterialTheme.colorScheme.onSurfaceVariant
-}
 
 @Composable
 private fun ModuleSnapshotPlanStatus.displayLabel(): String = when (this) {

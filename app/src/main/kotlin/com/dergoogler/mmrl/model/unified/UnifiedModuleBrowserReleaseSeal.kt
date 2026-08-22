@@ -91,7 +91,7 @@ object UnifiedModuleBrowserReleaseSeal {
         UnifiedModuleBrowserReleaseCheck(
             label = "Source lanes",
             passed = report.sourceTypes.containsAll(UnifiedModuleSourceType.entries),
-            detail = "Installed, repo, GitHub, LSPosed, local, and rescue lanes are represented.",
+            detail = "Installed, repo, GitHub, LSPosed, and local lanes are represented.",
         ),
         UnifiedModuleBrowserReleaseCheck(
             label = "Views",

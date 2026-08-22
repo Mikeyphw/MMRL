@@ -10,7 +10,6 @@ object MainLaunchIntentPolicy {
     data class LaunchRequest(
         val openActivity: Boolean = false,
         val openUpdates: Boolean = false,
-        val openRecovery: Boolean = false,
         val repositoryUrl: String? = null,
     )
 
@@ -19,12 +18,10 @@ object MainLaunchIntentPolicy {
         val request = LaunchRequest(
             openActivity = intent.getBooleanExtra(MainActivity.EXTRA_OPEN_ACTIVITY, false),
             openUpdates = intent.getBooleanExtra(MainActivity.EXTRA_OPEN_UPDATES, false),
-            openRecovery = intent.getBooleanExtra(MainActivity.EXTRA_OPEN_RECOVERY, false),
             repositoryUrl = validatedRepositoryUrl(intent.data),
         )
         intent.removeExtra(MainActivity.EXTRA_OPEN_ACTIVITY)
         intent.removeExtra(MainActivity.EXTRA_OPEN_UPDATES)
-        intent.removeExtra(MainActivity.EXTRA_OPEN_RECOVERY)
         intent.data = null
         return request
     }
