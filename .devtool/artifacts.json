@@ -14911,6 +14911,1514 @@
     },
     {
       "schema_version": 3,
+      "applied_at": "2026-08-16T03:16:38.299235Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_o5_o6_data_repository_provenance_v3.zip",
+      "artifact_name": "mmrl_o5_o6_data_repository_provenance_v3.zip",
+      "type": "overlay",
+      "sha256": "4665377706f3526ce1cba87d9ef7839335dda663415436d66ebdff549dadee4f",
+      "content_identity": {
+        "sha256": "4665377706f3526ce1cba87d9ef7839335dda663415436d66ebdff549dadee4f",
+        "size": 75139
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Apply MMRL O5 O6 data and provenance remediation v3",
+      "commit_hash": "e8384ff1932500d01a3f4d507ea5c2d1edc66b6c",
+      "file_count": 32,
+      "change_counts": {
+        "add": 6,
+        "modify": 26
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl-o5-o6-data-repository-provenance-v3",
+        "description": "Verified and repaired combined O5+O6 remediation for MMRL: Room/user-state migrations, transactional repository generations, DataStore/ConfigFile durability, canonical repository/version identity, bounded network ingestion and downloads, exact GitHub auth, immutable Actions artifact provenance, and UI-visible partial refresh failures. Metadata-only v3 repair: validation mode now uses Devtool-supported disabled mode and unsupported minimum_phase was removed.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "source_archive": "MMRL-20260815-215655.tar.gz",
+          "source_archive_sha256": "afaf321e86f53febb40b03c696461d64c28fe16a944cb8556203c9cf2cdd563b",
+          "chat_export": "chatgpt-export-json-project-android-devtool-apps(1).zip",
+          "chat_export_sha256": "a5543d1e414af718b9e6aac9b7fd9cb40530ca99a1da7de13a3bf84a4b9da071",
+          "referenced_handoff": "MMRL_remediation_handoff_O1_applied_O2_pending_20260814-1(1).zip",
+          "referenced_handoff_sha256": "a19a60ba72eb883894f5917adfab6deb591a3dbf0e75f451f6944b109c218a88",
+          "authoritative_state": "chat-export-json + current source tree; older handoff used only as referenced context",
+          "previous_overlay_state": "O3/O4 reported applied in chat export and present in current source tree; O5/O6 requested as one combined overlay",
+          "remediation_overlay": "O5+O6",
+          "revision": "v3-devtool-validation-metadata-repair",
+          "supersedes": "mmrl-o5-o6-data-repository-provenance-v2",
+          "root_causes": [
+            "RC-017",
+            "RC-018",
+            "RC-019",
+            "RC-020",
+            "RC-021",
+            "RC-022",
+            "RC-023",
+            "RC-024",
+            "RC-049",
+            "RC-050",
+            "RC-051"
+          ]
+        },
+        "audit": {
+          "reason": "Follow-up promise verification found partial v1 coverage in HTTP error preservation, actual-byte download caps, shared OkHttp cache/client reuse, repository URL canonicalization, transactional online row writes, and refresh failure surfacing.",
+          "v2_repairs": [
+            "Centralized HTTP success checks through NetworkPolicy.requireSuccessful/httpException so non-2xx responses retain status, URL, and bounded sanitized snippets.",
+            "Bounded every repository/GitHub/LSPosed APK download by declared and actual bytes, including unknown Content-Length streams.",
+            "Reused a shared OkHttpClient/cache with explicit call/connect/read/write timeouts instead of recreating clients per request.",
+            "Wrapped online/version insert and delete paths in Room transactions where v1 had separate writes.",
+            "Canonicalized repository input host casing and duplicate path separators while continuing to reject credentials and unsupported schemes.",
+            "Surfaced partial refresh failures from refresh-all into the repositories failure dialog instead of silently ignoring failed repos."
+          ],
+          "deferred_generated_outputs": [
+            "Room schema JSON identity files are intentionally not hand-authored; Room/KSP must emit true schema JSON during the later validation build with exportSchema enabled."
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "message": "Apply MMRL O5 O6 data and provenance remediation v3",
+            "strategy": "single"
+          }
+        },
+        "validation": {
+          "mode": "disabled",
+          "required": false,
+          "tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":datastore:compileDebugKotlin",
+            ":app:compileOfficialDebugSources"
+          ],
+          "not_run_reason": "User campaign rule is validation only after the final overlay; this package was statically audited and inventory-verified only."
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/di/AppModule.kt",
+              "action": "modify",
+              "sha256": "2cfe31f395a37d1148c3cf05460ce6eeaee7d7e2bb5d3d4b9dce1e2eda31662b",
+              "size": 783,
+              "source_sha256": "966d0e6c9dd11a82e924eeb512ede2927ecfb13ee2ddb99ed4a8f9cb1658183a"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/AppDatabase.kt",
+              "action": "modify",
+              "sha256": "0421da68a941f873591acc3528059e1f40cdf59c4700d7e5f19e15c58da2f47f",
+              "size": 27037,
+              "source_sha256": "2a7eee2934f9f50a2d503ccfc5ed3c8f3a3ba0fd9d940ef1ce8de029465cb961"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/entity/Version.kt",
+              "action": "modify",
+              "sha256": "0dfc5fc65d9b11343eceaa47762cbb6994dbfaac8da54250bdfe593f46716117",
+              "size": 1571,
+              "source_sha256": "3bdf6a1e8e0886267ba9fd3c2bf7ac0f81f9fc418a292f19ce4fab4dac2a812f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/entity/online/ModuleManagerEntity.kt",
+              "action": "modify",
+              "sha256": "765baafc41cd814d3d98760788b3fcfae97de53a4791f87af06e8b1010389e21",
+              "size": 1016,
+              "source_sha256": "389e793adbdf338d724c6a34e20989c3310786470404d95ffca4bfcdb96c639e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/database/entity/online/OnlineModuleEntity.kt",
+              "action": "modify",
+              "sha256": "dead5f4248b5b88fde9b125d7b0641179536a63d0bfbe388a3a3a14eac678d53",
+              "size": 4075,
+              "source_sha256": "5d172ccf3a6a12752bcd83a2a40ae2b9771e6a58a40d3bb142a0086cb4eb6f19"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedRepoDebugProbe.kt",
+              "action": "modify",
+              "sha256": "e743ad1d16939287eb80b8374c99b937c4e998b98221cde8ffb948574a85d1b1",
+              "size": 5477,
+              "source_sha256": "c6d8868e2e172407d319f638f0db85c4d2f6a869132a5eda85e71ba5ca55138e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubModuleResolver.kt",
+              "action": "modify",
+              "sha256": "107794d3201ec281a0b4e212270873f655ad4d2144dd260db2f0cdbc2fe9c443",
+              "size": 19341,
+              "source_sha256": "0c16812636cbe99ff68d5ebd780986a2a3ff5dcd5d67bc762b5dac44d0c2d641"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubTokenStore.kt",
+              "action": "modify",
+              "sha256": "434c397d2f3fa0bc2c80ce374efbb37bc5b9ea68cb85193356f591f5f66c6f71",
+              "size": 3053,
+              "source_sha256": "e962c81f3bbda13708a29c17ed6c7aa4d2290721fadc24e6057e2daf14f77cc2"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+              "action": "modify",
+              "sha256": "7ed7b9660a2ad9e2a55daaf5d0d1245d6d69d0eb66a8403a27fb53a649765a6b",
+              "size": 20951,
+              "source_sha256": "a575da8c5de5c3693a182501ddb21658a7d574970e64b4eeffd5bb583361fc44"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/json/UpdateJson.kt",
+              "action": "modify",
+              "sha256": "3c780561621233b2fd32798b6bc9e291da59ef5dc68a6a8c384f72d53ec9fe4c",
+              "size": 2047,
+              "source_sha256": "e5b616f7836e53e5dbaa2ef2b129cfb1fcab1ecf3e79410b95987e6e3de48a79"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/online/VersionItem.kt",
+              "action": "modify",
+              "sha256": "52401e15f421fe378849ed0b306523d978b39b5582a45387e14fc259f155b56e",
+              "size": 1208,
+              "source_sha256": "c9aafc7b220b385a7b86ee371640edbf752c482392f51ddfcbeeac89dd81677c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/network/NetworkPolicy.kt",
+              "action": "add",
+              "sha256": "f434dcbed2ebefc4ca6b82fd0f49336d901e7771a30936c253b447eafab30ab2",
+              "size": 4030
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/network/NetworkUtils.kt",
+              "action": "modify",
+              "sha256": "01cb5696a89edbe6bd3af80e0f672ed3917d9a02a4ac83ade894a3af0eaaf6f6",
+              "size": 5856,
+              "source_sha256": "7bee037cfe660a54741c02577dce411289e4d7096512172a484d7e640a3f4123"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/network/ResponseExt.kt",
+              "action": "modify",
+              "sha256": "a3655bd006c59f32bcc23bd000e4b28afd2644d2beaa79c6707ff5c5508af4ab",
+              "size": 1815,
+              "source_sha256": "acfdc24526d428eb3d2b7f4a2c39868f2917d6a07506cdfd29e5d76466e3806b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/LocalRepository.kt",
+              "action": "modify",
+              "sha256": "88543a4e68beb1328d0dee2a2326083659250259a1fc60fd4285f0d1cfbb8258",
+              "size": 13994,
+              "source_sha256": "16b2db05bd5237d6c0a9a0234f88608785f8466f016bffa04c47e708bb6452a7"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulesRepository.kt",
+              "action": "modify",
+              "sha256": "d7116fa13346d65277995c1eb79d9723e2cfc9d7f58f1ba83c3480b518b26830",
+              "size": 2552,
+              "source_sha256": "61ce6127560b6e9a01c8535bd4d4c5224ebf47da6ece7443038d9ebe66c8c88f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/RepositoryIngestionPolicy.kt",
+              "action": "add",
+              "sha256": "922d0e97042ee940b35bde08599f7062478429ff6e5f5171e6d95946381454d0",
+              "size": 1413
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/RepositorySourceLoader.kt",
+              "action": "modify",
+              "sha256": "e9f9b6d733ed74d941ba119e960e98178d94c7b414e579d5059b45387107f15b",
+              "size": 23307,
+              "source_sha256": "e37e6966c4f48031386e1c3b28fcc5e06f5bbb7d58e4120f864f912e943f2a40"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/RepositoryUrlInput.kt",
+              "action": "modify",
+              "sha256": "175b69aca9dc4cd82dd5fc922e190c5eb8e9d96214d9a8c0436a1edb3b756ac1",
+              "size": 1488,
+              "source_sha256": "4915e246734b96336532e5b8fc8a868e1ebd99e5469635aed3249aaed4cbda8d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadService.kt",
+              "action": "modify",
+              "sha256": "3ceef646bc950d33ecc9c7dd6078961c93375b2ef04f5f37f04fbba68ea51390",
+              "size": 33079,
+              "source_sha256": "8b8509a63637cb61cfc5e0cf5d535f6262d4e32c90c2a483adea7e5bcafe0480"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/DownloadTransferPolicy.kt",
+              "action": "modify",
+              "sha256": "8fdc6775e21fab81caa647ba9b88612eef964c2e9d1b02988681894a438beabc",
+              "size": 640,
+              "source_sha256": "e3a1aa252218f8789945de5ab5fb70cf09fd235d324c718b8eb29d3ce280f69e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/repositories/RepositoriesScreen.kt",
+              "action": "modify",
+              "sha256": "73908318f4c62b29604439fb12368898e85cb174a66e20176fb885974a80e29b",
+              "size": 36892,
+              "source_sha256": "4b1e6ebd55e524d249ea3b117ba06d2008e97d94d709d0ce9f0e97b0a04e4442"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/other/OtherScreen.kt",
+              "action": "modify",
+              "sha256": "0dff442203ce43235b4f99f035b1c21a89d8bbf25afa5c9175099607610fa2ad",
+              "size": 4996,
+              "source_sha256": "836409e434fa850330d0dbdc63d0f1312f227236b86627de110965eb0cb4886a"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/RepositoriesViewModel.kt",
+              "action": "modify",
+              "sha256": "80aa1e8f08b3e8ee0f12d2e885382939b51e1b9911d4a3cba3c6234c69101762",
+              "size": 6773,
+              "source_sha256": "a17f0d6a96870faaff8aef580f09e0ab54c2bbcbe441607f0e43e576f7d77efb"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/database/PersistenceRoundTripPolicyTest.kt",
+              "action": "add",
+              "sha256": "6e3cc8d420e054ae651919d6e9df74acd187e7b6642a360486fda03c760cd659",
+              "size": 2795
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/github/GitHubProvenancePolicyTest.kt",
+              "action": "add",
+              "sha256": "d451e9cc4ae87194cb426830e137e9cc5d4e742330484f2812d95c35d9348810",
+              "size": 1097
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/network/NetworkPolicyTest.kt",
+              "action": "add",
+              "sha256": "bcbb7bc2466cc324dc58d799e3cf1d152681c69f812eda4853a17e4e756ea3cb",
+              "size": 2116
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/repository/RepositoryIngestionPolicyTest.kt",
+              "action": "add",
+              "sha256": "eb744cf38259f2f5752c6ee8a9a947d7f3fa9087ecf4e672c22f512e18ba2109",
+              "size": 1988
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesDataSource.kt",
+              "action": "modify",
+              "sha256": "a5cf79e878f21ecd5c43c88c67201cab3059fbe0bac447960dda0608ed23f076",
+              "size": 19329,
+              "source_sha256": "86011888aa8b6c0671ddb21e62548121e8f0426e8d3361b5b2736726957985bb"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/provider/DataStoreProvider.kt",
+              "action": "modify",
+              "sha256": "fa9cdb9ece20ed0500b2be9876188af0711e3b9c94c87bd35dd9952e554e9c48",
+              "size": 3366,
+              "source_sha256": "73c2d9c5885000c182a53bd74b0a5547df6694440a65f7b7861b782e787a493d"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/config/ConfigFile.kt",
+              "action": "modify",
+              "sha256": "3509071292cc9f500fa7b1f37d1243500f0e5ea37fe4dc8ee496ffacdf773612",
+              "size": 15599,
+              "source_sha256": "1ad13f06c912e48ce97e1885802695c1a5609b10619aee72cc323daed746ffa9"
+            },
+            {
+              "path": "ui/src/main/kotlin/com/dergoogler/mmrl/ui/component/listItem/dsl/component/TextEditDialogItem.kt",
+              "action": "modify",
+              "sha256": "db56d235758e20ca0b0936340384435a08ea550ee1afddca49727b9453b99c3d",
+              "size": 9194,
+              "source_sha256": "fc57f1155669d5ffcf72fa45d83db1f174b6882bc8953899b72e9e7d4fef0f97"
+            }
+          ]
+        },
+        "packaged_at": "2026-08-16T03:18:00Z"
+      },
+      "operation_id": "63f72bc6eddd4d6c8720f4ae36653bf6",
+      "history_id": "295998348d12a9fe09d9245f61f6cd14",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260816T031634Z-d2fef86267ee",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-16T04:57:32.589719Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_o7_o8_tasker_lsposed_contract_v2.zip",
+      "artifact_name": "mmrl_o7_o8_tasker_lsposed_contract_v2.zip",
+      "type": "overlay",
+      "sha256": "ceffeda31d8336c2d424c0778235c13893a321ae4d04bbcc55b5b7dc6ecf9daa",
+      "content_identity": {
+        "sha256": "ceffeda31d8336c2d424c0778235c13893a321ae4d04bbcc55b5b7dc6ecf9daa",
+        "size": 99506
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Apply MMRL O7 O8 Tasker and LSPosed remediation",
+      "commit_hash": "c9b777b14fb339ab4a338edda800fa280a18fd20",
+      "file_count": 24,
+      "change_counts": {
+        "add": 3,
+        "modify": 21
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl-o7-o8-tasker-lsposed-contract-v2",
+        "description": "Corrected combined O7+O8 remediation for MMRL. Fixes v1 promise gaps in Tasker event delivery, URL redaction, public output naming, export-operation identity, LSPosed cache TTL/revalidation, multi-user scope targets, and latest-only provider UI effects while retaining the O7/O8 hardening payload.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "source_archive": "MMRL-20260815-215655.tar.gz",
+          "source_archive_sha256": "afaf321e86f53febb40b03c696461d64c28fe16a944cb8556203c9cf2cdd563b",
+          "chat_export": "chatgpt-export-json-project-android-devtool-apps(1).zip",
+          "chat_export_sha256": "a5543d1e414af718b9e6aac9b7fd9cb40530ca99a1da7de13a3bf84a4b9da071",
+          "referenced_handoff": "MMRL_remediation_handoff_O1_applied_O2_pending_20260814-1(1).zip",
+          "referenced_handoff_sha256": "a19a60ba72eb883894f5917adfab6deb591a3dbf0e75f451f6944b109c218a88",
+          "authoritative_state": "chat-export-json + current source tree; older handoff used only as referenced context",
+          "previous_overlay_state": "O5/O6 v3 reported applied successfully by user at git commit e8384ff1; local packaging baseline is source snapshot with O5/O6 v3 payload applied",
+          "remediation_overlay": "O7+O8",
+          "revision": "v2",
+          "supersedes": "mmrl_o7_o8_tasker_lsposed_contract_v1.zip",
+          "root_causes": [
+            "RC-025",
+            "RC-026",
+            "RC-027",
+            "RC-028",
+            "RC-029",
+            "RC-030",
+            "RC-052",
+            "RC-053"
+          ]
+        },
+        "implementation": {
+          "v1_retained": [
+            "AtomicFile-backed Tasker root approval queue with expiry metadata.",
+            "Execution-time capability reauthorization for Tasker workers.",
+            "Unique WorkManager enqueue names/tags with retry backoff.",
+            "LSPosed APK package/version/SHA-256 identity checks.",
+            "LSPosed provider active/staged slot model.",
+            "WAL/SHM-aware LSPosed scope copy and restore under a root-side lock."
+          ],
+          "v2_fixes": [
+            "Tasker event publisher honors the global integration toggle at delivery time and stores failed publishes in a bounded AtomicFile retry queue.",
+            "Tasker direct HTTP/HTTPS URLs reject embedded credentials and redact query strings/fragments before history or Tasker output storage.",
+            "Tasker output variable annotations now consistently use the documented mmrl_ prefix.",
+            "List/status/update actions expose freshness, partial, stale, and refresh error metadata instead of silently ignoring refresh failures.",
+            "Technical log export returns a distinct EXPORT_LOG operation identity and records the source operation separately.",
+            "URI grant failure during log export is treated as export failure.",
+            "LSPosed repository cache uses TTL/revalidation and stale fallback provenance instead of treating all cache hits as fresh.",
+            "LSPosed scope target discovery merges current-user packages with root-discovered per-user package targets.",
+            "LSPosed UI refresh uses latest-only generations and acknowledged pending events so install/open/provider effects are not lost on recomposition."
+          ],
+          "deferred": [
+            "Ash crash-journaling, recovery evidence replay, and deeper Ash transaction journaling remain intentionally deferred to O9 per the chat plan."
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "message": "Apply MMRL O7 O8 Tasker and LSPosed remediation",
+            "strategy": "single"
+          }
+        },
+        "validation": {
+          "mode": "disabled",
+          "required": false,
+          "tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:compileOfficialDebugSources"
+          ],
+          "not_run_reason": "User campaign rule is validation only after the final overlay; Gradle validation was not run for this intermediate overlay."
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "TASKER_SUPPORT.md",
+              "action": "modify",
+              "sha256": "4a0953f085fef479dcbf38a3ecd10b4b9519be5c509fd66c75b8a7eece6b0ac8",
+              "size": 7739,
+              "source_sha256": "3bba9a94760bf69408a91e78fa1efa3afdc2b59a35356b1736bbd4daf993a076"
+            },
+            {
+              "path": "app/src/main/java/com/dergoogler/mmrl/tasker/TaskerResultOutput.java",
+              "action": "modify",
+              "sha256": "320f9746223b730a709275f3418fd9274543806f1315bf0f2a3df798cea93a9d",
+              "size": 24561,
+              "source_sha256": "686fcdf3b651ed0096cc06a49066c267597875bd9bb6d4e09b03ad8ecf30f897"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt",
+              "action": "modify",
+              "sha256": "4324ea180c0ad09bc56e78f602870ba94f630f48d11d2d2607c210ea41ddfcfc",
+              "size": 26892,
+              "source_sha256": "e3416a8e31d3c865c39817bb58102f0e4517eba465f5a903582fccdceb1c31af"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+              "action": "modify",
+              "sha256": "1a4a689c84659a48c507be022b0f56addd832d135a6af5a4ce7beb6fda14de4a",
+              "size": 27274,
+              "source_sha256": "7ed7b9660a2ad9e2a55daaf5d0d1245d6d69d0eb66a8403a27fb53a649765a6b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeRepository.kt",
+              "action": "modify",
+              "sha256": "b06be0137d01fef7d5569451c3eba2fb37e8046470650f58867a1c3de467bfb0",
+              "size": 12173,
+              "source_sha256": "268c5ddb00df7a4c87c1d73737eb3914a8271c8d1c604a33d4b2c228cc6a9805"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerActions.kt",
+              "action": "modify",
+              "sha256": "764bf009d158130bb9a3db5144e5518c68a4514b1660330ce194f5eabc45d401",
+              "size": 20162,
+              "source_sha256": "25c23f953b918297c58dde58a85d2d96a35afba104e6d2b58455dad6217c9c06"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerApprovalActivity.kt",
+              "action": "modify",
+              "sha256": "dd09de39c21eb3b4cbf191d648b11b46ab8c8df268452084960732a5dcf1adf2",
+              "size": 5436,
+              "source_sha256": "b38ead30191ce26465f0eacbdf07812cda2a27947a692367a218da6bbce092c4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAshActions.kt",
+              "action": "modify",
+              "sha256": "d6f2f55a1252fbf6062df2115b200decf970eb56c7ae3e41e890f6f878ca88f1",
+              "size": 28755,
+              "source_sha256": "3ad8055db3d52bed3760e31c6f3c394c0f997eb97c0dca84129652e453cee25a"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAuthorization.kt",
+              "action": "modify",
+              "sha256": "278aae029d7e302c4a44baf4d238646d6ad73dd9f577993e4813e51ee0df8813",
+              "size": 16957,
+              "source_sha256": "ffadb6aabdcefe4621e8f25060ec48f590cae1fc1d68a27f65dd3d9bd4aae751"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAutomationPolicy.kt",
+              "action": "modify",
+              "sha256": "81f95529d9e9351a9561b98693889470839d59a41d23f7265e38cf287d1671a0",
+              "size": 2281,
+              "source_sha256": "992090a464810e40635f8b81514d460ea45a8e439eda80a1685539e03e99d321"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAutomationWorker.kt",
+              "action": "modify",
+              "sha256": "a66c17d34a3cd60c9b5b887d2010bb193144cc230bbd50b1a48f9876abeb3f6c",
+              "size": 27409,
+              "source_sha256": "bb369d0b47ffb89a5bf59c4e2e5884be48336ff03ab5da046d3961ccb39a5d08"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerContractFactories.kt",
+              "action": "modify",
+              "sha256": "de5266a5880cf4db9364f0d2d9bde4a5c22680e8be97407dc97896e87c0fa569",
+              "size": 6025,
+              "source_sha256": "f8fe34b4a103d24fc3aab1d2a408ce9819d2ca222f6150075d2f7b622dc8b37c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerEvents.kt",
+              "action": "modify",
+              "sha256": "baf598ad09b61634f1ba1ad3ca648d88510307ccb2a98e1bbe6206429452bb9e",
+              "size": 15127,
+              "source_sha256": "3ec36803b95ede345210080a3608927f47da8afd45755ee8d193008db84345f5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerPublicContract.kt",
+              "action": "add",
+              "sha256": "913d98040ed210c6914adf5e6591521aad93c75efc95373de4a14dcaf1e9b3c5",
+              "size": 420
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerReviewedInstallActions.kt",
+              "action": "modify",
+              "sha256": "061ab19cb2f1dcb1f5bf5a611dc60b65824c2ec9849db12a6f99492b710dd32e",
+              "size": 19028,
+              "source_sha256": "d0bac948297540fdb076a2dffe6161d76bda8e86bc715db6c0ec7d0001e81db6"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerRootActions.kt",
+              "action": "modify",
+              "sha256": "ec3fc9c6154e6aaf6bcaa2c6847da4e97ba8bffc66173f77487c706a75bbdae7",
+              "size": 9923,
+              "source_sha256": "e37cc876924466fb3b0b1223d775440aa87520bcb2d193fe51339012b5c3dc78"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerRuntime.kt",
+              "action": "modify",
+              "sha256": "358c75c4d67406e73d7cad5d7a9b0c75696155845ae4ae2d0883b7eb0100be9e",
+              "size": 8340,
+              "source_sha256": "f25fd5d53b1fbdfc5dcb025c5bbd0176a6e6ae51d71d0f4151946f9782ec4991"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt",
+              "action": "modify",
+              "sha256": "38d29d010cbaf1e65890805ff80d8a745e21c15f384e8516db607119d54280c1",
+              "size": 49130,
+              "source_sha256": "5972c9198c60d1b3195721cae43322f5328abe22b19f4f50a6ed9a7f341bab0f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt",
+              "action": "modify",
+              "sha256": "7abbb5544cbd929a27973962d84d77b0daf2dc34ce63c2f902d426f374523417",
+              "size": 13476,
+              "source_sha256": "b435a398e33eb37c512e79263e16fb3c47835b9b51c40289489758d0ea78fab8"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "e981512912c108898efa84da0808af666e789417eab1fa1f7e6e71670f0606c7",
+              "size": 111409,
+              "source_sha256": "2d26a9e512e1aa414b5d0345150cdb6f03ed47d4575a4ac486d95463e0347bdd"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepositoryProvenanceContractTest.kt",
+              "action": "add",
+              "sha256": "86ab7cfef8f3aaaa535a99b5d796d3d96bb8ad7d4ca3d7e3e08cb02043db787f",
+              "size": 2260
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/tasker/TaskerAuthorizationPolicyTest.kt",
+              "action": "modify",
+              "sha256": "f7c48319c4ac4ddb4cf549d11085b78652c5bcad2bec0a90424b992add8ab457",
+              "size": 6297,
+              "source_sha256": "31404a44310a98694c4c1256352bcd19001b702df3979c275ee1b3a765f38bec"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/tasker/TaskerAutomationPolicyTest.kt",
+              "action": "modify",
+              "sha256": "2e57e67bab6411afd3f40a0732717f9efa45cedb5e0024199cf8afca51a22524",
+              "size": 2691,
+              "source_sha256": "b163b386e757f6b12cfe2839551a5593a014ba3b33e866280c7243fa2c8116cb"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/tasker/TaskerPublicContractTest.kt",
+              "action": "add",
+              "sha256": "810ca6cd7299afc6ecade7f283cb9e8ded35db582e6b6905aa9f81da58309526",
+              "size": 1138
+            }
+          ]
+        },
+        "notes": [
+          "Manifest uses Devtool-supported validation.mode=disabled and omits unsupported validation phase keys.",
+          "Built on the accepted O5/O6 v3 state, not on the older handoff ZIP as a newer state."
+        ]
+      },
+      "operation_id": "d33c8bb04aad44b099031dd6d1593c2c",
+      "history_id": "48755adedca7de7d74d56032893e9879",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260816T045729Z-e0f300003566",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-16T13:29:11.716586Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_o9_o10_ash_appwide_resilience_v2.zip",
+      "artifact_name": "mmrl_o9_o10_ash_appwide_resilience_v2.zip",
+      "type": "overlay",
+      "sha256": "6ea59216a9ae1bf357957b3a002f39d2247c276fd20fcd081bda3485f0b35220",
+      "content_identity": {
+        "sha256": "6ea59216a9ae1bf357957b3a002f39d2247c276fd20fcd081bda3485f0b35220",
+        "size": 87697
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Apply MMRL O9 O10 Ash and appwide resilience remediation v2",
+      "commit_hash": "b6706e1135793ac5a8d6b3f1e7d57d651ca35af9",
+      "file_count": 37,
+      "change_counts": {
+        "add": 12,
+        "modify": 25
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl-o9-o10-ash-appwide-resilience-v2",
+        "description": "Combined O9+O10 remediation for MMRL, repaired after promise re-audit. v2 keeps the full Ash crash/recovery and app-wide lifecycle/WebUI/service hardening from v1, and fixes the missing implementation gaps: Ash read-only status must not mutate jq, bounded root-output Kotlin syntax is valid, interrupted Ash journals are reconciled at startup, boot receivers finish goAsync, repository/module cadence is backed by unique WorkManager jobs, guidance feedback is bound to live incident identity, and WebUI navigation is trusted-host scoped.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "source_archive": "MMRL-20260815-215655.tar.gz",
+          "source_archive_sha256": "afaf321e86f53febb40b03c696461d64c28fe16a944cb8556203c9cf2cdd563b",
+          "chat_export": "chatgpt-export-json-project-android-devtool-apps(1).zip",
+          "chat_export_sha256": "a5543d1e414af718b9e6aac9b7fd9cb40530ca99a1da7de13a3bf84a4b9da071",
+          "referenced_handoff": "MMRL_remediation_handoff_O1_applied_O2_pending_20260814-1(1).zip",
+          "referenced_handoff_sha256": "a19a60ba72eb883894f5917adfab6deb591a3dbf0e75f451f6944b109c218a88",
+          "authoritative_state": "chat-export-json + current source tree; older handoff used only as referenced context",
+          "previous_overlay_state": "O5/O6 v3 applied successfully by user at git commit e8384ff1; O7/O8 v2 applied successfully by user at git commit c9b777b1. O9/O10 v1 was re-audited before application and replaced by this v2 payload.",
+          "remediation_overlay": "O9+O10",
+          "revision": "v2",
+          "root_causes": [
+            "RC-031",
+            "RC-032",
+            "RC-033",
+            "RC-034",
+            "RC-035",
+            "RC-036",
+            "RC-037",
+            "RC-038",
+            "RC-039",
+            "RC-040",
+            "RC-041",
+            "RC-044",
+            "RC-045",
+            "RC-046",
+            "RC-054",
+            "RC-055",
+            "RC-056",
+            "RC-057",
+            "RC-058",
+            "RC-059",
+            "RC-060",
+            "RC-061",
+            "RC-062",
+            "RC-063"
+          ]
+        },
+        "implementation": {
+          "completed": [
+            "Ash snapshot store separates last-successful from health-qualified last-good snapshots and only overwrites last-good after healthy live reads.",
+            "Ash refresh falls back from semantically failed last-successful cache to verified last-good state.",
+            "Ash root mutations are journaled with PREPARING, ACTIVE, COMMITTING, COMMITTED, and OUTCOME_UNKNOWN stages, and startup marks interrupted stages as outcome-unknown for reconciliation.",
+            "Ash read-only status/module-state commands inspect bundled jq without chmod/extraction repair side effects; mutating commands may repair only when needed.",
+            "Ash incident feedback and recovery evidence bind live recommendation scope, recovery revision, module folder/id, fingerprint, version, incident id, and identity binding; stale/unbound feedback is ignored for scoring.",
+            "Ash external automation writes use AtomicFile under a cross-process file lock; scheduled workers have unique names, tags, and exponential backoff.",
+            "Ash root command output is bounded before parsing, with the repaired Kotlin newline/string handling that v1 missed.",
+            "Application startup installs a single crash handler, initializes network DoH before background services, restores/reconciles operation history, reconciles Ash mutation journals, and syncs scheduler/provider/repository/module service state from persisted preferences.",
+            "Boot receivers use goAsync and finish pending results after async restore work is scheduled/completed.",
+            "Provider service exposes STARTING/READY/FAILED/STOPPED readiness and only reports active after platform initialization succeeds.",
+            "Repository and module periodic services are moved behind unique WorkManager periodic/one-shot workers with constraints/backoff; legacy foreground service entry points now run one bounded pass and stop.",
+            "Manifest attack surface is reduced: crash/screenshot/logcat entry points are non-exported, HTTPS app link verification is enabled, and provider foreground service subtype is declared.",
+            "MainActivity one-shot intent extras are consumed once and deep-link repository imports accept only verified app containers with sanitized HTTPS repository query parameters.",
+            "WebUI README loading is HTTPS-only, trusted-host only, credential/fragment rejecting, redirect-disabled, timeout-bounded, byte-bounded, and scriptable markdown is sanitized; runtime navigation is restricted to mmrl-mikeyphw or trusted HTTPS hosts.",
+            "ViewModels no longer use runBlocking for preference/repository reads in the touched lifecycle paths; preference values are observed asynchronously.",
+            "Notification channel init no longer deletes unlisted user/dynamic channels.",
+            "Logcat capture and persisted logs are bounded; debug history is redacted, size-bounded, retention-bounded, and AtomicFile-backed."
+          ],
+          "deferred": [
+            "Final Gradle/test validation remains deferred to the final overlay per user campaign rule.",
+            "Release/build/distribution validation gates remain in later overlays."
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "message": "Apply MMRL O9 O10 Ash and appwide resilience remediation v2",
+            "strategy": "single"
+          }
+        },
+        "validation": {
+          "mode": "disabled",
+          "required": false,
+          "tasks": [
+            ":app:testOfficialDebugUnitTest",
+            ":app:compileOfficialDebugSources"
+          ],
+          "not_run_reason": "User campaign rule is validation only after the final overlay; Gradle validation was not run for this intermediate overlay."
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/AndroidManifest.xml",
+              "action": "modify",
+              "sha256": "d2d880e4ab9b3fba9bb87c305b25e5cc608c8f162154bfd2fcb19d1b3c893087",
+              "size": 16698,
+              "source_sha256": "1b26eeea8b9014692d3d55df10497c5ffe60d28f24fb91bad3bd6c1d118d115f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/App.kt",
+              "action": "modify",
+              "sha256": "da313f23c08b647b7a87bc3dd0a408472772de7eec09d99def921a8dd620335a",
+              "size": 2030,
+              "source_sha256": "0ef3273b59a8c628cee9cde3dac1c2b77d35a6314be50277aa425153129bd823"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/app/AppCrashHandler.kt",
+              "action": "add",
+              "sha256": "6d373edb6f5987e55437101b88c5235d5a0cbe419385f4000f20305efa93f312",
+              "size": 1824,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/app/AppStartupCoordinator.kt",
+              "action": "add",
+              "sha256": "291413ddabc48263c3e34065591f4346b2356aba84efc4872a55b325573a4504",
+              "size": 2154,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/app/utils/NotificationUtils.kt",
+              "action": "modify",
+              "sha256": "673391f03c2ae51a88d0b537e251fbf0f306002b1c7edda7f732837e0f3823dc",
+              "size": 2438,
+              "source_sha256": "cddc2a8f1edfea2364439b3b0a9c392692792c350a5491343e20bd68c5c602bf"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshReXcueManager.kt",
+              "action": "modify",
+              "sha256": "51fffa493f74ab42ade1ef2f46a71386ac16903523fd1d88b1557b94955684b5",
+              "size": 18020,
+              "source_sha256": "a2fef7ca75bcb66be0d1a80b29733e59a9e1e3db693c76f672fadc56d41a5b93"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshAutomationScheduler.kt",
+              "action": "modify",
+              "sha256": "48ad813c0504869492e5d4fb817a27cc4df8f1d29d79c515c632e646350b39b5",
+              "size": 2483,
+              "source_sha256": "6b616430e1a4c944b93b3cabb3f93c9066361ce0e79c4f44622fb8b1ec447ea9"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlStore.kt",
+              "action": "modify",
+              "sha256": "48ee9e534bb6451bcf9f62f4d552b442a40c2660b9757b14cb3d8e25a76493a5",
+              "size": 15153,
+              "source_sha256": "bbd668b17181b25fd39ee09a79b6e2d471fdbb61ffd0cae0192e2ba170394dd4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshMutationJournal.kt",
+              "action": "add",
+              "sha256": "cbd2fa1a35a0a5bf2d1869fc437f340c880eb9380a460e280240c4a68beddab5",
+              "size": 3184,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshRepository.kt",
+              "action": "modify",
+              "sha256": "dce72ed19dd680bf600707b30a649060feb444fa500ecbdb713e6a48f1d00c45",
+              "size": 29734,
+              "source_sha256": "d4d11b8dc67670d5aeb51756b0c14913eac13a926009b03b81ed92c7852c6ed1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshSnapshotStore.kt",
+              "action": "modify",
+              "sha256": "cc95db05a9546c6c639a8e639f5ff92b187ab56acb6cbd5ab82eab6d663f804d",
+              "size": 6569,
+              "source_sha256": "c3e8270741834bbaf495fe62f14609ee54e9a5177173f234478c1b26f969f5bc"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/AshIncidentIdentityPolicy.kt",
+              "action": "add",
+              "sha256": "0e071a32975e0e852f9463253109c5d3392aadd2ea96ced123b5d73c340d0d64",
+              "size": 3457,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/GuidanceModels.kt",
+              "action": "modify",
+              "sha256": "aff268c50b58973f4322194472694cc11dc44a17330498451c67ade6c28835a7",
+              "size": 14270,
+              "source_sha256": "9efb8157d1481be798da31c7287f86e31fb3e52a06565699e6ffd25b50a5b945"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshCtlExecutor.kt",
+              "action": "modify",
+              "sha256": "50cd2207898312f878c6ed52e01ceff8e29a732a7c73cb81b7982d7736b75529",
+              "size": 15879,
+              "source_sha256": "f3f54ee1d2c9f297425a84f31db912c7bbf2753be5e4362f820a3954b805d91d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugHistoryStore.kt",
+              "action": "modify",
+              "sha256": "643e4e147c9fb6b27e6167b1778010880163c44599eeb295705c7456e29314a9",
+              "size": 12470,
+              "source_sha256": "d7e2631657c703225bebb4073f4dadf1f2791078dc909678dc30807ffb5f13bc"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/pathHandler/InternalPathHandler.kt",
+              "action": "modify",
+              "sha256": "d01fb3242642ab87e6a1e774beccff46b5aa05c4f67373e1db798f4467ba6744",
+              "size": 3591,
+              "source_sha256": "76a2a1cb475c70610aee59db557126d858ad6dcc0c3b26fe51d588cb3933e280"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/pathHandler/WebUiContentPolicy.kt",
+              "action": "add",
+              "sha256": "9440955573b634048e3c1df9ea61149291e3c2b1b3f11b2f92638c2cebad4e61",
+              "size": 2612,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/ModuleService.kt",
+              "action": "modify",
+              "sha256": "795af41786769a597b30680735903bbbe8ab1c3e4e92e33a3459ac24bb2fc56e",
+              "size": 8388,
+              "source_sha256": "89084cb17492ca5350e79593194c386647bd47692733d9416490f8e53f878311"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/ModuleUpdateWorker.kt",
+              "action": "add",
+              "sha256": "6366a213b951178340e7b0f314a738830dc57692778b150c9ab3f6bb43e78ca7",
+              "size": 7475,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/ProviderService.kt",
+              "action": "modify",
+              "sha256": "dd9dda34a70341bfe8b25ce15d97a347fd02dc2fabed3a290b8670fdaf150495",
+              "size": 4059,
+              "source_sha256": "baac0ffb513f68b9f71d057065592fd649307e1bb5a3006995c89a6ab5c041df"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/RepositoryRefreshWorker.kt",
+              "action": "add",
+              "sha256": "7bdc76a803c6f7dbaafd489fea14a77c791758c15dcc99b77339cf589f6b5f52",
+              "size": 3971,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/RepositoryService.kt",
+              "action": "modify",
+              "sha256": "f7d3a5b27534ef5f8bd03fd278b3b8c394665a968f921a8e35d6d2133ad24bd5",
+              "size": 4739,
+              "source_sha256": "232c68be39b17dd49903d7cb3c79d235d90e13757057a66597618bff2ec63b67"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/service/ServiceCadencePolicy.kt",
+              "action": "add",
+              "sha256": "d083345dc90b068597962e9f2b386200bd84e9f255037816687c838ffc9d54ac",
+              "size": 206,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/MMRLComponentActivity.kt",
+              "action": "modify",
+              "sha256": "6d68f5b555db9a5fd5963071486230082c85951ea7de4ac8f15f1c7ef8dbed9a",
+              "size": 8754,
+              "source_sha256": "b744abf2ce81df8f21318ab1571d9eb1e9e65605214555414a80f1bbe9b67ad4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/MainActivity.kt",
+              "action": "modify",
+              "sha256": "c3a20303b7f42b4ca2b813a0a042918b11af4a443d3a3e83e4adc686d0459417",
+              "size": 5129,
+              "source_sha256": "15bdc0a9a1c2766cdc56ff94ca9ddda5f92a7d8ae6de081f40851ea6bce0b482"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/MainLaunchIntentPolicy.kt",
+              "action": "add",
+              "sha256": "59a15305f7b7caffc68c2d733505bb58a63727900fd7127d09f798535937725c",
+              "size": 2464,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/blacklist/BlacklistScreen.kt",
+              "action": "modify",
+              "sha256": "3271b117db2cc6d44804f25181899d497788c596fe199c5d3c94aa71734b07a6",
+              "size": 2111,
+              "source_sha256": "9adb00592a2af0a65ffad631263584ddfb5b3d726edbebe1cc02f265e2c3d4bf"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/utils/log/Logcat.kt",
+              "action": "modify",
+              "sha256": "ec0529bae609db2e60c4fe73fe9410abebe3eba8ca32622ff8d24c6f75474c09",
+              "size": 4744,
+              "source_sha256": "58a678573d6128a7ecd8b0f8aa95ba87db2c577805551bc32dd2e38bfc416e01"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/HomeViewModel.kt",
+              "action": "modify",
+              "sha256": "d09675c23fbccd058d8fb7eafea9fb25327d305cf5b30fd571b88b704e1e3f40",
+              "size": 2887,
+              "source_sha256": "c20b6c3bfff375e8de0fa36a2fc6c4e7a3003d1e477d1fb6d9fa3041b246cccd"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/InstallViewModel.kt",
+              "action": "modify",
+              "sha256": "b42520a708a7027e561c8598cad029f59f4b2ad19dfbcfb2810e58d98adc341d",
+              "size": 41992,
+              "source_sha256": "f25a5a4c936346fb519cfb18529979b115bc6de8b490f229110166db77004f6c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "4de24cf4be8685874007928c7b36f82ec7245547d684278bb2b1041db2b5aa12",
+              "size": 48814,
+              "source_sha256": "c5f6ea0e38d2921845c6caf6c9c0448480d3c76b14f70730693c7f76904892fd"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/SettingsViewModel.kt",
+              "action": "modify",
+              "sha256": "2efaf73aac3b07e79ebc46fa9aaa377e6388052053a0c91dbfb2d5f871510f87",
+              "size": 14565,
+              "source_sha256": "fe090360e944aa36229b172cb572eb36cdf053458fb51ac530f2d9a1a469aef5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/TerminalViewModel.kt",
+              "action": "modify",
+              "sha256": "1c1ceb39cba7b60d6ebd4b15f2e51da16c316ba76b393855a7d89d43b3f2c5a4",
+              "size": 5791,
+              "source_sha256": "64eced67152b2da156981d719e4509c7b1af272c74e5d6164dfea720b29a1c4c"
+            },
+            {
+              "path": "app/src/main/kotlin/dev/dergoogler/mmrl/compat/worker/MMRLBroadcastReceiver.kt",
+              "action": "modify",
+              "sha256": "7eea6792ada35ac0d61f6bab23014db91742aa5fcda3aff94316ba226f462402",
+              "size": 3413,
+              "source_sha256": "fb72627b361ac6b6ea8807816ad562a3a440f82b4c28fb933c97c71ce56f796f"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/AshIncidentIdentityPolicyTest.kt",
+              "action": "add",
+              "sha256": "718087ff248b56ba1777f9e0585cd8ae24c7e296ea0690476b941519bbaadac0",
+              "size": 2010,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/pathHandler/WebUiContentPolicyTest.kt",
+              "action": "add",
+              "sha256": "134b904990a762846043fac72474daf31929f521ca3b8d3f775487a30db626b1",
+              "size": 1140,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/service/ServiceCadencePolicyTest.kt",
+              "action": "add",
+              "sha256": "7e13afbb942f1c0ec2f68023f4ed13967ee62a95ba0f2ebdfd27caa2140729d5",
+              "size": 391,
+              "source_sha256": null
+            }
+          ]
+        },
+        "notes": [
+          "v1 was re-audited and found incomplete; this v2 overlay supersedes it and should be applied instead of v1.",
+          "Manifest uses Devtool-supported validation.mode=disabled and contains no unsupported validation phase fields.",
+          "Static promise checks included XML parse, bounded-output syntax scan, read-only Ash status scan, WorkManager worker scan, WebUI navigation policy scan, and ZIP inventory verification."
+        ]
+      },
+      "operation_id": "196823b376b044cb8ab93315fa4225de",
+      "history_id": "a90d91487ca20f568e4574c17478d31c",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260816T132907Z-65e90556e8ab",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-16T14:21:32.968594Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_o11_final_release_seal_v2.zip",
+      "artifact_name": "mmrl_o11_final_release_seal_v2.zip",
+      "type": "overlay",
+      "sha256": "59b7a6a1ae99009c39d046e92a23082dc486417aa5ea35c3f5dc512f1701bbc2",
+      "content_identity": {
+        "sha256": "59b7a6a1ae99009c39d046e92a23082dc486417aa5ea35c3f5dc512f1701bbc2",
+        "size": 39661
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Apply MMRL O11 final release seal",
+      "commit_hash": "7034bca0c6289654944c4eb25564242d8320d903",
+      "file_count": 25,
+      "change_counts": {
+        "add": 11,
+        "modify": 14
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl-o11-final-release-seal-v2",
+        "description": "Corrected final O11 remediation overlay for MMRL. Completes the build/test/release seal and fixes v1 misses in release signing, git-less versioning, DataStore variant metadata, generated Ash asset wiring, subproject clean hygiene, platform unit-test coverage, and Room migration instrumentation scaffolding. No O12 is created because the locked campaign has exactly eleven overlays.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "baseline": {
+          "source_archive": "MMRL-20260815-215655.tar.gz",
+          "source_archive_sha256": "afaf321e86f53febb40b03c696461d64c28fe16a944cb8556203c9cf2cdd563b",
+          "chat_export": "chatgpt-export-json-project-android-devtool-apps(1).zip",
+          "chat_export_sha256": "a5543d1e414af718b9e6aac9b7fd9cb40530ca99a1da7de13a3bf84a4b9da071",
+          "referenced_handoff": "MMRL_remediation_handoff_O1_applied_O2_pending_20260814-1(1).zip",
+          "referenced_handoff_sha256": "a19a60ba72eb883894f5917adfab6deb591a3dbf0e75f451f6944b109c218a88",
+          "authoritative_state": "chat-export-json + current source tree; older handoff used only as referenced context",
+          "previous_overlay_state": "O5/O6 v3, O7/O8 v2, and O9/O10 v2 reported applied successfully by user. Local packaging baseline is the post-O9/O10 v2 source tree.",
+          "remediation_overlay": "O11",
+          "revision": "v2",
+          "supersedes": "mmrl_o11_final_release_seal_v1.zip",
+          "root_causes": [
+            "RC-042",
+            "RC-043",
+            "RC-064",
+            "RC-065",
+            "RC-066",
+            "RC-067",
+            "BH64"
+          ]
+        },
+        "implementation": {
+          "completed": [
+            "Added final release seal script and CI workflow for source hygiene, Ash static validation, platform JVM/native tests, officialDebug unit tests, full fatal lint, official debug/release/playstore assembly, and instrumentation compilation.",
+            "Pinned Gradle wrapper distributionSha256Sum for gradle-9.5.0-bin.zip and added wrapper validation in GitHub Actions.",
+            "Made release/playstore signing fail closed instead of silently falling back to debug signing; incomplete signing.properties fails configuration, absent signing fails release/playstore artifact tasks.",
+            "Made archive/git-less version metadata deterministic with explicit mmrl.versionCode, mmrl.commitCount, and mmrl.commitId override properties plus safe archive fallback.",
+            "Aligned DataStore WebUIX package default through variant BuildConfig fields instead of runtime DEBUG guessing.",
+            "Replaced guessed merge*/lint generated-Ash asset hooks with Android Components generated asset source wiring.",
+            "Extended root clean to remove subproject build directories and retained generated artifact ignore/source snapshot hygiene.",
+            "Added Android instrumentation contracts for manifest ingress, lifecycle/WorkManager, FileProvider/content URI, and Room migration/destructive-fallback policy.",
+            "Added/retained host native contract Gradle task and platform JVM task in final release gates.",
+            "Fixed build-release-apk.sh all-mode to include Play Store and pack_repo.sh naming to .tar.zst to match zstd compression."
+          ],
+          "fixed_after_v1_audit": [
+            "v1 still allowed releaseSigning to use debug signing when signing.properties was absent.",
+            "v1 still derived versionCode/commitId directly from git, which breaks clean source archives without .git.",
+            "v1 did not align DataStore WebUIX package defaults with build variants.",
+            "v1 wired generated Ash assets through sourceSets plus guessed task names instead of Android Components generated sources.",
+            "v1 omitted platform JVM tests and Room migration instrumentation from the final seal.",
+            "v1 had an inconsistent source-hygiene/unit-test expectation about contiguous Room schema JSONs while the current repository has historical schema gaps and Room/KSP remains the source of truth for future generated schemas."
+          ],
+          "not_created": [
+            "O12: the chat handoff explicitly says the campaign has exactly O1 through O11 and says not to invent O12."
+          ],
+          "validation_not_run": [
+            "Full Gradle/Android validation was not run inside this container because the wrapper attempted to download Gradle and the environment has no internet. Static source hygiene, shell/Python syntax, XML parsing, ZIP inventory, and host native contracts were checked locally."
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "message": "Apply MMRL O11 final release seal",
+            "strategy": "single"
+          }
+        },
+        "validation": {
+          "mode": "normal",
+          "required": false,
+          "tasks": [
+            ":platform:testDebugUnitTest",
+            ":platform:testNativeContracts",
+            ":app:testOfficialDebugUnitTest",
+            ":app:lintOfficialDebug",
+            "-Pmmrl.fullLint=true",
+            ":app:assembleOfficialDebug",
+            ":app:assembleOfficialRelease",
+            ":app:assembleOfficialPlaystore",
+            ":app:compileOfficialDebugAndroidTestKotlin"
+          ],
+          "not_run_reason": "Apply first, then run scripts/run-mmrl-release-seal.sh or the embedded Devtool/Gradle tasks in the applied repository."
+        },
+        "notes": [
+          "Manifest uses Devtool-supported validation.mode=normal and contains no unsupported validation phase keys.",
+          "No O12 payload is included or claimed.",
+          "The overlay inventory excludes local build outputs, Devtool state, and Python bytecode."
+        ],
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": ".devtool.toml",
+              "action": "modify",
+              "sha256": "cd6f6a7a88d3527fa7049d06866ec2869c306e3e7e4a7f01940425b2b90fdecb",
+              "size": 1512,
+              "source_sha256": "9889aea9ad0dedaa5ab1c92d8796f3bb11dc39d29f157b45a5b55830aa2a8fee"
+            },
+            {
+              "path": ".gitignore",
+              "action": "modify",
+              "sha256": "64329ff072d31ddac63af12a2bbbdaf14483d6a56388725a3ba002bbb2258ab0",
+              "size": 719,
+              "source_sha256": "30f6aea664c191d5718f1c2e82fad783d558fdb6b0d0e177cbf41d5b50796728"
+            },
+            {
+              "path": "build.gradle.kts",
+              "action": "modify",
+              "sha256": "45ed2c8aee84a366609f115090721089acbc421aad7d1ca38b5b99f146c5c5d8",
+              "size": 539,
+              "source_sha256": "9923e1af8c37626def7e6a0449f77e168c9d43cf2085de9c818e6b6a3e78796e"
+            },
+            {
+              "path": "app/build.gradle.kts",
+              "action": "modify",
+              "sha256": "2c8e088ea8901be51d1e2259e77518a468ffbbea1ed689ea9911bdccf9515043",
+              "size": 13329,
+              "source_sha256": "a0abce87bda7308adc1ffc6bc70bfa85311882e0a71bc8d7518655d9b06efd8b"
+            },
+            {
+              "path": "datastore/build.gradle.kts",
+              "action": "modify",
+              "sha256": "32184543997ccc7934485ab98da06f35bf9c130e2220528fbc7a13db49a3d3c1",
+              "size": 1572,
+              "source_sha256": "6e6786286317910f63776f1d7d6aed69fa013d0f10aed58f7faec9fb56fb81e9"
+            },
+            {
+              "path": "build-logic/src/main/kotlin/ProjectExt.kt",
+              "action": "modify",
+              "sha256": "68b2463daa3f304c316ccf2e4003ef8cce0d5172b3d63fc8ecd6cb702b5cbeea",
+              "size": 4406,
+              "source_sha256": "7c982d17e46e7ad8b91fd17aabe045b78bbadf82ea121ce2452d4b429da25b48"
+            },
+            {
+              "path": ".github/workflows/mmrl-release-seal.yml",
+              "action": "add",
+              "sha256": "8368f4d7bf89335099c2e9a9044a1e5152934389f45e4044572ba701f0f9ba48",
+              "size": 2593,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/androidTest/kotlin/com/dergoogler/mmrl/release/FinalFileProviderContentUriInstrumentedTest.kt",
+              "action": "add",
+              "sha256": "a8f6d255811610c90124754844a4eaf8d7b50f0e27833e2f41ee6840d7afb650",
+              "size": 1009,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/androidTest/kotlin/com/dergoogler/mmrl/release/FinalManifestIntegrationInstrumentedTest.kt",
+              "action": "add",
+              "sha256": "7ecfa8a2f7da06745f6974ad549ab5c67ea7bef7dc1f96b9c1d9eb26ad1f6d70",
+              "size": 2804,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/androidTest/kotlin/com/dergoogler/mmrl/release/FinalRoomMigrationInstrumentedTest.kt",
+              "action": "add",
+              "sha256": "8d1232f7ef15dd5b8953b0bfa2850c6eb5c146b87001350324a74ea3fa133db7",
+              "size": 957,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/androidTest/kotlin/com/dergoogler/mmrl/release/FinalWorkManagerAndLifecycleInstrumentedTest.kt",
+              "action": "add",
+              "sha256": "bb00985c985ca29245d14dd9acc6604d4d2edf9559519998cd2034419e23b8c3",
+              "size": 1509,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/Bh64FinalSealContractTest.kt",
+              "action": "add",
+              "sha256": "4d26e4e50d7110df20622456f2459957f45893418c2e924e4ff34001ac2b2d63",
+              "size": 2770,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+              "action": "add",
+              "sha256": "2a605d3c691da175d1038cc5d549810bb984ae4b94e5f281af0377e103bb4765",
+              "size": 3768,
+              "source_sha256": null
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealSourceHygieneTest.kt",
+              "action": "add",
+              "sha256": "672366d0e45222bf1f3b15989207b7ba80c4ea25da2d65b4ec00c4578beb014c",
+              "size": 3533,
+              "source_sha256": null
+            },
+            {
+              "path": "build-release-apk.sh",
+              "action": "modify",
+              "sha256": "c184d90160839b3689c171addbb732bf7da64aff59a55f0ef313e852d63ae249",
+              "size": 1271,
+              "source_sha256": "c6745cf361d973a067f0c529688d3fda5c702906b73b68179b42c650daf36239"
+            },
+            {
+              "path": "datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/model/UserPreferences.kt",
+              "action": "modify",
+              "sha256": "a4653440543722bca4cf7494525fcdcb79f44d2cc33fb7761979b2775ad0f780",
+              "size": 8328,
+              "source_sha256": "fabda00f4c0d501d5c4504df5e76547317dcfe738e3f0dd65302b2dae4b690f3"
+            },
+            {
+              "path": "docs/MMRL_FINAL_RELEASE_SEAL.md",
+              "action": "add",
+              "sha256": "6608ed37b85e6056d36cfdee80f687df3bf965442a738c607022a78734074a94",
+              "size": 1415,
+              "source_sha256": null
+            },
+            {
+              "path": "gradle/libs.versions.toml",
+              "action": "modify",
+              "sha256": "a567c2504ecb0237e0182d211b3c303d947608047797c42bd62c5ac3a0ac623f",
+              "size": 12921,
+              "source_sha256": "2ff7a936f9346ef01ce175418f750fbe8fe9378243db105ec972621c503c7934"
+            },
+            {
+              "path": "gradle/wrapper/gradle-wrapper.properties",
+              "action": "modify",
+              "sha256": "3bc3bc964860ef6c2d470908487db9247d73336c6993970c709319acae4ef950",
+              "size": 319,
+              "source_sha256": "fdd2c02f08434679d8262bd67f744f3ca34912273ec4cba831595e6854122b0f"
+            },
+            {
+              "path": "pack_repo.sh",
+              "action": "modify",
+              "sha256": "f05938bdfddce2e62f5cf8756b5e897622e36663bd5ab4358ed9f557ce5f8617",
+              "size": 2434,
+              "source_sha256": "666db4ec710e93d58afd815c148db1ff136436e9671fe7c59ea2d4318dbbc3e1"
+            },
+            {
+              "path": "platform/build.gradle.kts",
+              "action": "modify",
+              "sha256": "797bde5ba7219af084410402cf93d2a4a84e5876e56662a7de6adf7e3ce98b8b",
+              "size": 4975,
+              "source_sha256": "a61bc5b308b7c74549562d30a38b7a3657cc8841bd7adb1bb8f01576e42e48ae"
+            },
+            {
+              "path": "platform/src/main/jni/file-manager.cpp",
+              "action": "modify",
+              "sha256": "b51d509556d139a04fdd0172426d5480fc4d67bad80c294bc6c33756af122bdb",
+              "size": 26062,
+              "source_sha256": "11505a7fe3a654eab03e95f07b9539def5ba80c5173d5d75351a7196f30b38e2"
+            },
+            {
+              "path": "platform/src/main/jni/include/logging.hpp",
+              "action": "modify",
+              "sha256": "cbc56abf56bda9de5a09b0d29dae61f905bb2845c14e598383852249df8a6933",
+              "size": 767,
+              "source_sha256": "30ffa733a4cc4ecd54448a3de138efe0826d29ce188fc9edfd4c517b3784d3e9"
+            },
+            {
+              "path": "scripts/run-mmrl-release-seal.sh",
+              "action": "add",
+              "sha256": "ae2e757c95f01acb8f541732517634be1bed6b2799ad9c8b704d64e0bfd1b602",
+              "size": 1138,
+              "source_sha256": null
+            },
+            {
+              "path": "scripts/validate-mmrl-source-hygiene.py",
+              "action": "add",
+              "sha256": "63d3bc5c8fa195295124afd6108f60308e699e1088755bb7a599aa578877a3e8",
+              "size": 7671,
+              "source_sha256": null
+            }
+          ]
+        }
+      },
+      "operation_id": "24dbcc39361543ff870132118d18daee",
+      "history_id": "e32760b519f61d7869c26991f3f18464",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260816T142128Z-1490ee66a451",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
       "applied_at": "2026-08-20T15:27:06.336829Z",
       "artifact": "/storage/emulated/0/Download/mmrl-lint-scope-ndk-theme-fix-v3.zip",
       "artifact_name": "mmrl-lint-scope-ndk-theme-fix-v3.zip",
@@ -15341,6 +16849,993 @@
           }
         ]
       }
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-22T05:25:39.740398Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_ashrexcue_split_ov01_standalone_app_boundary_v1.zip",
+      "artifact_name": "mmrl_ashrexcue_split_ov01_standalone_app_boundary_v1.zip",
+      "type": "overlay",
+      "sha256": "24b32860a13df48a215019c21203c761172f9938499bdba9ca159bf4f35c4cf2",
+      "content_identity": {
+        "sha256": "24b32860a13df48a215019c21203c761172f9938499bdba9ca159bf4f35c4cf2",
+        "size": 6204
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 8,
+      "change_counts": {
+        "add": 6,
+        "modify": 2
+      },
+      "manifest": {},
+      "operation_id": "a9f82e1128c4426499b034203a04a5f9",
+      "history_id": "08853000e081e36d6cd27c580a728b6c",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260822T052538Z-d891dbfbf8b5",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-22T14:27:36.714467Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_split_ov09_purge_embedded_ashrexcue_v1.zip",
+      "artifact_name": "mmrl_split_ov09_purge_embedded_ashrexcue_v1.zip",
+      "type": "overlay",
+      "sha256": "43226b81cd36493c985e01db04cab3fdaaf570b2ca856c5298b737eefacf4be8",
+      "content_identity": {
+        "sha256": "43226b81cd36493c985e01db04cab3fdaaf570b2ca856c5298b737eefacf4be8",
+        "size": 148219
+      },
+      "status": "rolled-back",
+      "validation_status": "not-run",
+      "commit_message": "Purge embedded AshReXcue from MMRL",
+      "commit_hash": "",
+      "file_count": 53,
+      "change_counts": {
+        "delete": 92,
+        "modify": 53
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl-ov09-purge-embedded-ashrexcue-v1",
+        "description": "Remove the embedded AshReXcue implementation, recovery module, temporary standalone extraction module, navigation/runtime/Tasker integration and Ash-specific tests from MMRL while preserving MMRL-owned module snapshots.",
+        "target": "mmrl_android",
+        "repository": {
+          "name": "MMRL"
+        },
+        "workspace": {
+          "root": "."
+        },
+        "baseline": {
+          "previous_overlay": "mmrl_ashrexcue_split_ov01_standalone_app_boundary_v1.zip",
+          "revision": "ov09-v1"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": ".devtool.toml",
+              "action": "modify",
+              "sha256": "bb0cbc01124f947d23139a93d7fee1ac94e1ad555e1953c24ac4438a9be875ad",
+              "size": 3705,
+              "source_sha256": "add62f2d928c4723c1d8498b3027f4a3352ef9d919ae4a8ded9a90662abad80a"
+            },
+            {
+              "path": "app/build.gradle.kts",
+              "action": "modify",
+              "sha256": "596e230933974f2102c6279090df27b5e6851f59f2b2391f1c32375f31240b06",
+              "size": 12792,
+              "source_sha256": "2c8e088ea8901be51d1e2259e77518a468ffbbea1ed689ea9911bdccf9515043"
+            },
+            {
+              "path": "app/schemas/com.dergoogler.mmrl.ash.database.AppDatabase/1.json",
+              "action": "delete",
+              "source_sha256": "2f95671a6529566ed6bf6ac55683f51945d70697325f8a77c27c053d9597a5a2"
+            },
+            {
+              "path": "app/src/androidTest/kotlin/com/dergoogler/mmrl/release/FinalWorkManagerAndLifecycleInstrumentedTest.kt",
+              "action": "modify",
+              "sha256": "9219cb9755b775a91738b8d398217fdac65af70de945e928a6d836f6150d106f",
+              "size": 1355,
+              "source_sha256": "bb00985c985ca29245d14dd9acc6604d4d2edf9559519998cd2034419e23b8c3"
+            },
+            {
+              "path": "app/src/main/AndroidManifest.xml",
+              "action": "modify",
+              "sha256": "47da29fadec41bb96157e9f0ec10c7b0d0db097f2288cd2aec77392536edb9da",
+              "size": 13858,
+              "source_sha256": "d2d880e4ab9b3fba9bb87c305b25e5cc608c8f162154bfd2fcb19d1b3c893087"
+            },
+            {
+              "path": "app/src/main/aidl/com/dergoogler/mmrl/ash/root/IAshReXcueService.aidl",
+              "action": "delete",
+              "source_sha256": "4a62e6f7172a80424cd52acf29826c7da10d2d6e33fb943df68456d9fc3c4362"
+            },
+            {
+              "path": "app/src/main/ash-module/META-INF/com/google/android/update-binary",
+              "action": "delete",
+              "source_sha256": "57014cec73c602ee4af91df4379337330b50565216a5a32fc9b48e39d1b210a9"
+            },
+            {
+              "path": "app/src/main/ash-module/META-INF/com/google/android/updater-script",
+              "action": "delete",
+              "source_sha256": "d2b8203193a083e43ad076fde01b9c7821e0aa521e1f8077b8628fb1cdb70c60"
+            },
+            {
+              "path": "app/src/main/ash-module/action.sh",
+              "action": "delete",
+              "source_sha256": "dab91e0553867fc0074ae4c7d538e59ee413cefc65494ec00180a7e97464afbf"
+            },
+            {
+              "path": "app/src/main/ash-module/ashrexcuectl",
+              "action": "delete",
+              "source_sha256": "43d8c0b5993d03e4127dfc1c0d03baaf2cc08195e922cf002bbe645b14c82c79"
+            },
+            {
+              "path": "app/src/main/ash-module/banner",
+              "action": "delete",
+              "source_sha256": "06f27036ed7b065b2bac4119a3be9fdb8e209f3a7332dbb24f4f0096ae20a775"
+            },
+            {
+              "path": "app/src/main/ash-module/customize.sh",
+              "action": "delete",
+              "source_sha256": "42f6115fa426c9300977e54e7fe28fc3c1bbed6f01648047bc9be8ef280151f6"
+            },
+            {
+              "path": "app/src/main/ash-module/external-control.sh",
+              "action": "delete",
+              "source_sha256": "2408206d342706838b8cd03a114af69073aa314cb8576c266fe2cd3e04a9f234"
+            },
+            {
+              "path": "app/src/main/ash-module/jq/jq",
+              "action": "delete",
+              "source_sha256": "6bc62f25981328edd3cfcfe6fe51b073f2d7e7710d7ef7fcdac28d4e384fc3d4"
+            },
+            {
+              "path": "app/src/main/ash-module/manual_fail_file.sh",
+              "action": "delete",
+              "source_sha256": "d7a96f62bfc44e10fd437a6919e7e28dc80d9dd8f7dfcb0ff27fb1985e6139be"
+            },
+            {
+              "path": "app/src/main/ash-module/module.prop",
+              "action": "delete",
+              "source_sha256": "0eca3d7d8989aa40fa87a62f18aff5b22258ff1bdc350944ebb129be4ae1381e"
+            },
+            {
+              "path": "app/src/main/ash-module/post-fs-data.sh",
+              "action": "delete",
+              "source_sha256": "8bffa2e7d93ecf665638b1283f790c4e3a238efb7d1ec308ece1734092a02a9d"
+            },
+            {
+              "path": "app/src/main/ash-module/service.sh",
+              "action": "delete",
+              "source_sha256": "d5ba16ac955ea53b256416ca95567ae6d232f319435dfedccd5119171ce19425"
+            },
+            {
+              "path": "app/src/main/ash-module/settings.prop",
+              "action": "delete",
+              "source_sha256": "cf454778df36bc9776f64fa78e7ac8adefcdf808eba70e8b7cafd43c78ac8b4a"
+            },
+            {
+              "path": "app/src/main/ash-module/uninstall.sh",
+              "action": "delete",
+              "source_sha256": "e5a51d303726584550e6eb4f6a087813aa67bd905e9541ea7ad87c87b76d8f9e"
+            },
+            {
+              "path": "app/src/main/ash-module/utils.sh",
+              "action": "delete",
+              "source_sha256": "4b8b41dea9f2f27ebfaee04cfa119e5466a932fb7fa4ef2d8cff6004ef2b0ef5"
+            },
+            {
+              "path": "app/src/main/java/com/dergoogler/mmrl/tasker/TaskerRequestInput.java",
+              "action": "modify",
+              "sha256": "ec45639608499d331947655b9cf6ded91d40593cfe372d398a142e50e04359d2",
+              "size": 3472,
+              "source_sha256": "a3e92f5bf28051bcfa613deb1658d07d8c89c9876b9389b20865f78d3e0c1aaf"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/app/AppStartupCoordinator.kt",
+              "action": "modify",
+              "sha256": "2f16b91f1923925ac8a34599fd592acda681b489a513525b70cdf974195a75dc",
+              "size": 1506,
+              "source_sha256": "291413ddabc48263c3e34065591f4346b2356aba84efc4872a55b325573a4504"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/app/utils/NotificationUtils.kt",
+              "action": "modify",
+              "sha256": "02a68f2845dae709576127ea2a93a44a0e828a3c46924ca3dd0085451a198411",
+              "size": 1874,
+              "source_sha256": "673391f03c2ae51a88d0b537e251fbf0f306002b1c7edda7f732837e0f3823dc"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshReXcueManager.kt",
+              "action": "delete",
+              "source_sha256": "51fffa493f74ab42ade1ef2f46a71386ac16903523fd1d88b1557b94955684b5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+              "action": "delete",
+              "source_sha256": "2b81f8810e3ee9e281410c38ece98c138a64a5457cf58dc19e42c102355e0dd4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshViewModel.kt",
+              "action": "delete",
+              "source_sha256": "5b40d274ce8d363be10268da4646e449e407a7c8f3b446dcc4b153269f17c2a9"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/GuidedRecoveryContent.kt",
+              "action": "delete",
+              "source_sha256": "6b4b0001ab23fb2b2aa552320b529497ca0dfdda384454f55f0152205090c94e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/RecoveryUiComponents.kt",
+              "action": "delete",
+              "source_sha256": "6627f1205e4f0e6fdc5541491baa993fc511fbbd9e1e7264d1d9397907f576c1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshAutomationNotifier.kt",
+              "action": "delete",
+              "source_sha256": "981528e7c4718f9f8eb3f6a41226b1a78b023d09576d6540a5ae5d4b86d48320"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshAutomationPolicy.kt",
+              "action": "delete",
+              "source_sha256": "00c57a3f7b04ffec4ade01ef6f0b251f4a53665391d3f0e798e3d7e48b606730"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshAutomationReceiver.kt",
+              "action": "delete",
+              "source_sha256": "22933ff4d00cecd76aac1b1fd146b744c919eb266a03847a6f8e57116a1c591c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshAutomationScheduler.kt",
+              "action": "delete",
+              "source_sha256": "48ad813c0504869492e5d4fb817a27cc4df8f1d29d79c515c632e646350b39b5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshAutomationStateStore.kt",
+              "action": "delete",
+              "source_sha256": "d0cbb66176d176c51c0dce43b57e5e7fd300073b62dcc862268edc3da8304563"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlModels.kt",
+              "action": "delete",
+              "source_sha256": "76828c3ac7dc11b57dec9721b9361b07c689cbad68b18a1bc77e8cd6eafb8d61"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlStore.kt",
+              "action": "delete",
+              "source_sha256": "48ee9e534bb6451bcf9f62f4d552b442a40c2660b9757b14cb3d8e25a76493a5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/automation/AshHealthCheckWorker.kt",
+              "action": "delete",
+              "source_sha256": "48f1f2c4dd34f4790b5175976de0c3d042bc817b6763ede9ffd3d28a71d8f2fc"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshBundledModuleProvider.kt",
+              "action": "delete",
+              "source_sha256": "59b4071af9c47dff52e9764b2434d01814216ab88f931f2203f1b4f00fe95929"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshModuleInstaller.kt",
+              "action": "delete",
+              "source_sha256": "a45d2bcb100e89ea364a753ea103dbb45cc772743600a44da5f4ef6a918f2509"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshMutationJournal.kt",
+              "action": "delete",
+              "source_sha256": "cbd2fa1a35a0a5bf2d1869fc437f340c880eb9380a460e280240c4a68beddab5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshMutationOwnershipPolicy.kt",
+              "action": "delete",
+              "source_sha256": "c02140a8df0881a5e59944618e5722ccdb1f1b9435c7e771383fc85a5bf46318"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshRepository.kt",
+              "action": "delete",
+              "source_sha256": "dce72ed19dd680bf600707b30a649060feb444fa500ecbdb713e6a48f1d00c45"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshSnapshotStore.kt",
+              "action": "delete",
+              "source_sha256": "cc95db05a9546c6c639a8e639f5ff92b187ab56acb6cbd5ab82eab6d663f804d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/database/ActivityDao.kt",
+              "action": "delete",
+              "source_sha256": "e048a2522012244d5c556ed8ae1275ba7207b585bba2960632552f3d80464e75"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/database/ActivityEntity.kt",
+              "action": "delete",
+              "source_sha256": "425c9824a63d6f88a401e35a1b120e773856ec47113f2d1073df5ff256204b92"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/database/AppDatabase.kt",
+              "action": "delete",
+              "source_sha256": "1390f92882f6f2f07e56d124843db4604324beab81c8bca4fbe95a8adf06447d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/di/AppModule.kt",
+              "action": "delete",
+              "source_sha256": "2cfe31f395a37d1148c3cf05460ce6eeaee7d7e2bb5d3d4b9dce1e2eda31662b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/AshIncidentIdentityPolicy.kt",
+              "action": "delete",
+              "source_sha256": "0e071a32975e0e852f9463253109c5d3392aadd2ea96ced123b5d73c340d0d64"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/AshReleaseGateModels.kt",
+              "action": "delete",
+              "source_sha256": "30947d01481db7765224634d8836d79b022030588c99202b138cd182da4c8e38"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/AshReliabilityModels.kt",
+              "action": "delete",
+              "source_sha256": "3e8187b9491d4f13d7e70012e8199a948e18f45db5a42229f93cf5521130b4cd"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/GuidanceModels.kt",
+              "action": "delete",
+              "source_sha256": "aff268c50b58973f4322194472694cc11dc44a17330498451c67ade6c28835a7"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/IntegrationModels.kt",
+              "action": "delete",
+              "source_sha256": "dd6c40955ed237d8717a8f88245a5adfaa8a1c03885fa9487380cb0e8eac5577"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/Models.kt",
+              "action": "delete",
+              "source_sha256": "3219b9f0c994da5435398ba30a165c7c89c19cc8295ee7b978a57807ca70a7ae"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/ModuleIntelligenceModels.kt",
+              "action": "delete",
+              "source_sha256": "ba2f13993b0549cea349604f2da701e488cc21a64f1ede81b58df0235ada7b5f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/RecoveryModels.kt",
+              "action": "delete",
+              "source_sha256": "d63dc489c32f8c6f233e58fd20314c157b479d3c824e1781a15f1d1794b2752f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/RecoveryPlanModels.kt",
+              "action": "delete",
+              "source_sha256": "5dab23d1d91ea07283a724fe907079790e7f6e36328b04d6ac6fd173b5438470"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshCtlExecutor.kt",
+              "action": "delete",
+              "source_sha256": "50cd2207898312f878c6ed52e01ceff8e29a732a7c73cb81b7982d7736b75529"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshJsonOutput.kt",
+              "action": "delete",
+              "source_sha256": "1c54564f06394d050d49e8cbea102d65501174fb84fb714c28aaa5d3557755f8"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshModuleLocator.kt",
+              "action": "delete",
+              "source_sha256": "e01598cd158d0050b62239f66843f21e24113b1d1ec305b5dcb674bb549f2b11"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshRootService.kt",
+              "action": "delete",
+              "source_sha256": "06932c0f23c2f92310b1cfa3253e91bc20199355a060703cbfdc5c916cf95b81"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootBinderCandidateGate.kt",
+              "action": "delete",
+              "source_sha256": "823876a9e9e3b056b97224636fd125f0fdc4b789d191eee4111688c62bfe8deb"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootBindingLifecyclePolicy.kt",
+              "action": "delete",
+              "source_sha256": "b7c2a2af72c2baac29960da2674d881df6f39936156de26101b591beac5296b5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootCallPolicy.kt",
+              "action": "delete",
+              "source_sha256": "564f111fe012fc900f9d875219ad29d254c7a84be421d258a48c303ba3920086"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootServiceClient.kt",
+              "action": "delete",
+              "source_sha256": "d25078fb23518981ad05d4c1c1d1951ae86e2c7d65aac9b19b83bdef64e91800"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/ui/App.kt",
+              "action": "delete",
+              "source_sha256": "da60d316639ab5d3e7a634127f99f1d1afbc0f1b45957e553203ecc90ab06018"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/ui/Theme.kt",
+              "action": "delete",
+              "source_sha256": "764471d5cb2d2ddfa985c531db84a495edcdc7857abffd5b1b9dfcb7156d62f2"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/AshReXcueDebugProbe.kt",
+              "action": "delete",
+              "source_sha256": "00bf3506460fc6a8e9b133625c5c1c87b132a615712bc58e95f840d118a4521c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugGuidedDiagnostics.kt",
+              "action": "modify",
+              "sha256": "3fd88aa766d92649dbc9323c5863df874e16b48bb0f2d29881da1a26b23d2384",
+              "size": 10051,
+              "source_sha256": "c1518c0f5e54e70a3894539bedde0e2df72b293170e0ef1c692544ae023eba43"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugModels.kt",
+              "action": "modify",
+              "sha256": "0f680da3afdcf4026e506060f8c49a5d5969ea209ee01bca4d053657813945a8",
+              "size": 2204,
+              "source_sha256": "379bdda6255c558576736319bf18e18b7a5efbb6a1be5700b1f22e238cc2f410"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugProbeRunner.kt",
+              "action": "modify",
+              "sha256": "8d44f4173cae5509e27caa44b4a6948d70e95bf7ff6254e5c4fefd819d9cc80e",
+              "size": 757,
+              "source_sha256": "998f9638511a43651e140968221177d65907d43cddb48fb50048a3e65082ef34"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/ModuleIdentity.kt",
+              "action": "modify",
+              "sha256": "60e556a07d729a1a82ff9f728d03e3a66e5921ef9adcab406e082a5384019b1d",
+              "size": 451,
+              "source_sha256": "5ae940eaccc565c065577e1f5aa309f7d1a54206aa91d221aba4ce33d6e549ac"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt",
+              "action": "modify",
+              "sha256": "bddfd9cf1ee31de8f35788ffde889382e7e2db5a2320a4a7d6ba7d17461734b6",
+              "size": 7621,
+              "source_sha256": "a3dff32cf6bc9675d05b0dc14e039ec904a2d788405bca8e398dab06de4ab6f4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowser.kt",
+              "action": "modify",
+              "sha256": "673d266e66f70557e8771336548b6e32fedb9249cee7e9a6c2b8be66ea99a4a1",
+              "size": 38175,
+              "source_sha256": "53df44ce604995b9cf5a93e184e4953c7ccea398609538dfc3d42b98e9189129"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActions.kt",
+              "action": "modify",
+              "sha256": "5873abbdfc99f5b4fdd1ebe43608fdca9ea4c1550d819fac051c02bbdf1b8925",
+              "size": 16317,
+              "source_sha256": "29567599522f965846588659c2573d6293b86b34e7b63641cdbdaa0e6b1563db"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserPresentation.kt",
+              "action": "modify",
+              "sha256": "0ff750d9f8deefd635c261ce3bee7ec634d1d95894c2cc5fe659ec3e97a602a6",
+              "size": 9549,
+              "source_sha256": "340f19b07364eb1e5c2c89021d1e36012cd6576c47891cb1d9940f1437dcdb1e"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserReleaseSeal.kt",
+              "action": "modify",
+              "sha256": "f2f1e5aafafff352de532142f26026c0781b17faa33200d1a6352786e12f8f1b",
+              "size": 6646,
+              "source_sha256": "1270384c395abb532c6405a0e20a6b56953800dd5f6350c8bf42cec629ae99cc"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleProblems.kt",
+              "action": "modify",
+              "sha256": "9c279bc81101bdff16ba379e3f9a955eb0e520422d9ed5f32a82df60721d01ae",
+              "size": 16967,
+              "source_sha256": "ee5cd3c7f26236cb8eaad3f3cd83fc9b10654361852c074134961f07e086f1cb"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulePolicyStore.kt",
+              "action": "modify",
+              "sha256": "f669ef015893106da8db432fd037f657c63f79aa291061a226f95b55f6517919",
+              "size": 6473,
+              "source_sha256": "18227e2e5556861aa30b9ca724b8492817fe0c7bdf6fdd714843deef85396701"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerApprovalActivity.kt",
+              "action": "modify",
+              "sha256": "6a5da1122ccc985b33b0468344724dc504ab729758c3ce265e77fe98073f7501",
+              "size": 4075,
+              "source_sha256": "dd09de39c21eb3b4cbf191d648b11b46ab8c8df268452084960732a5dcf1adf2"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAshActions.kt",
+              "action": "delete",
+              "source_sha256": "d6f2f55a1252fbf6062df2115b200decf970eb56c7ae3e41e890f6f878ca88f1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAuthorization.kt",
+              "action": "modify",
+              "sha256": "baab2c3d24d82f181b6a40ee1f2b0c7ab103230897941ae1670a61cd3e541ef6",
+              "size": 16610,
+              "source_sha256": "278aae029d7e302c4a44baf4d238646d6ad73dd9f577993e4813e51ee0df8813"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAutomationWorker.kt",
+              "action": "modify",
+              "sha256": "01907428c9db255fa3ad1a00ed5072324a90c1e41f164fa2e29ad5c46b702bbe",
+              "size": 23338,
+              "source_sha256": "a66c17d34a3cd60c9b5b887d2010bb193144cc230bbd50b1a48f9876abeb3f6c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerConfigActivities.kt",
+              "action": "modify",
+              "sha256": "a0bc68733a443a9fd8ecd64d72f27f5e919db9e4d8e5d9e94a01a9d5b0f79ebd",
+              "size": 25022,
+              "source_sha256": "eda6877a63e32a86fb50b7eee3dd3a4e9e31fe86017ca50f9d24f2c0125e0959"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerContractFactories.kt",
+              "action": "modify",
+              "sha256": "7d609eaba98bb28afbc681d9982d2c2f9a0e77cd129c166dfadf83f7973297fb",
+              "size": 5747,
+              "source_sha256": "de5266a5880cf4db9364f0d2d9bde4a5c22680e8be97407dc97896e87c0fa569"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/MainActivity.kt",
+              "action": "modify",
+              "sha256": "5eb2a4f9158f09b67b429fbf46d0ae3a6a1b004f40fd26d9ef7fec672545468a",
+              "size": 4779,
+              "source_sha256": "c3a20303b7f42b4ca2b813a0a042918b11af4a443d3a3e83e4adc686d0459417"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/activity/MainLaunchIntentPolicy.kt",
+              "action": "modify",
+              "sha256": "7d9e787010a460882242dc59b8089f51d49e3271ec4d5e45bf4e4f2174bfb6b6",
+              "size": 2268,
+              "source_sha256": "59a15305f7b7caffc68c2d733505bb58a63727900fd7127d09f798535937725c"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/navigation/MainDestination.kt",
+              "action": "modify",
+              "sha256": "c2b9a68c5b8c5d1b9320992c3b28c746236b77840e1796d75e3c448fa32ff7a9",
+              "size": 3019,
+              "source_sha256": "3369a791e4ad92a341cd61fbe545d432658bb059272c77109f36a798ec2ad0b8"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/activity/ActivityScreen.kt",
+              "action": "modify",
+              "sha256": "44e714a909e7842f221a01dd5a76e567532ef290cf8130fcad731255efd74975",
+              "size": 39250,
+              "source_sha256": "de5550e8ce78c41a0f2c004418deb1ac8daabc6545e4be846f5443ab1dd962a4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/home/HomeScreen.kt",
+              "action": "modify",
+              "sha256": "20b5ad1d5be611490aacac26384e4b9ee2df34ca4ff8f4ae233631a833f03722",
+              "size": 24076,
+              "source_sha256": "321a24cc17375fadebe0bf9ba6d7c9b12c8dac413710590a5545adf5ca647463"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/home/items/AshProtectionCard.kt",
+              "action": "delete",
+              "source_sha256": "a6adda00908c94b9e3d1701053460a830419cf9b3dbd64d1e0fe2f0eda6071a8"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/main/MainScreen.kt",
+              "action": "modify",
+              "sha256": "145d9734eb746204da779b05854aa7988ba77d900dd07007ca403fc416ad68ba",
+              "size": 19770,
+              "source_sha256": "563beb7bb23f2bde90ff14158c571bebc3bd5c1623a98cf13635934c6f2b3790"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/NewViewScreen.kt",
+              "action": "modify",
+              "sha256": "83161914157f83b0bd38c60523855967cecc3c50289485c0242e4d10e0d14149",
+              "size": 18472,
+              "source_sha256": "ec52ef1fbf6566c1efd7c578419ab211ac95b5bfd0ca7309004fec29fd19270b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshModuleIntelligenceCard.kt",
+              "action": "delete",
+              "source_sha256": "e01e85b7975586a36318c8c3d5892c693a180df0d5771040ac9137d42f2beafc"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshReXcueIntegration.kt",
+              "action": "delete",
+              "source_sha256": "cdb4c54df4393900ca0ce1dba3e5dd1758cfa97016d96282b0a01dc3fa8f50db"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "2fec14f9ca4e445e95f9e8744629827d118dab50c833cf802fa892f639af80b0",
+              "size": 59625,
+              "source_sha256": "9744bc442034e5fe0742aecd197b628be820d525fd3d8118a9c8c9d02c33f5c5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesScreen.kt",
+              "action": "modify",
+              "sha256": "91e8eef2ce8dacf978490a547f4729554a83ecd12f9a70eb5111b047a7d3b4fd",
+              "size": 15582,
+              "source_sha256": "f45ecc48ea1cb6dd1098ed7134763dce7981dd2d4dcea8728d18c8104dd9763f"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/SettingsScreen.kt",
+              "action": "modify",
+              "sha256": "663b35335279e05c1c61ce073907171b4552b7b69f6f323e5bf5c93fdcb930e8",
+              "size": 11214,
+              "source_sha256": "f43742d805a0f925d875d4562a1937e80b70c005f59d9cf9cc1ae944a1f83984"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/bootProtection/BootProtectionScreen.kt",
+              "action": "delete",
+              "source_sha256": "3abb35964c9eabd0960772004284e7d43d9d3b5f0e9ee2e85910bc7494aabfa3"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt",
+              "action": "modify",
+              "sha256": "91254353ff9316ab747af3b5b5bdd7b4ae099369e4dc57dc1ebfcb1b6666a66a",
+              "size": 11329,
+              "source_sha256": "8ed04c6e51b043f8b6ed6cbbbb9305729795b4b9ced279cf1c808011c3442ea1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/developer/DeveloperScreen.kt",
+              "action": "modify",
+              "sha256": "f67ea83db485c520c9218f0a887f341f27c862c980e4ac4a7c591a27c5973835",
+              "size": 3438,
+              "source_sha256": "2b4dea11022921a1bb346a3626daec1ab64e519965f73b61182776ef230a78f6"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/tasker/TaskerScreen.kt",
+              "action": "modify",
+              "sha256": "84c4d24514acce82582f6f484fb3e5aeaff9dcbdc0461ec919ad43ea2dd854a5",
+              "size": 5752,
+              "source_sha256": "b6c6443d98f455bfe6e0d56c645613c4358ae2ed72ed6935fa7eb39f72f4d0b0"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ActionViewModel.kt",
+              "action": "modify",
+              "sha256": "90252f2d1493f5caf1a6cdd44d77645ed4ad9dbe053486c096b47c7619b532eb",
+              "size": 7740,
+              "source_sha256": "d32a2bb7ab13794a0bb970d3138ae8b201596a223a1e167d1e17b804e9d472cb"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ActivityViewModel.kt",
+              "action": "modify",
+              "sha256": "bd6c636c14ca7d8d82d9fba95fcd2942681c2e69a8b2aa0c925b97663a918f9e",
+              "size": 21967,
+              "source_sha256": "c83f06557013b122de9cbe1748a0d7e5fdf4cae7198bf2fadb97d3bae2691525"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/HomeViewModel.kt",
+              "action": "modify",
+              "sha256": "f21df71386ee7167e84c6af78bdf479d54b39193d88ccc545e8dde88007b1346",
+              "size": 2378,
+              "source_sha256": "5dccd3f4d9f17bc053ddd2d8fe1eda88e47d64da7b2049c1cf6577d88f76ac18"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/InstallViewModel.kt",
+              "action": "modify",
+              "sha256": "2639ed3043ba8f01f30bccfaed471023d73db62a8b54641117cec9a8d8094e49",
+              "size": 41955,
+              "source_sha256": "b42520a708a7027e561c8598cad029f59f4b2ad19dfbcfb2810e58d98adc341d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ModulesViewModel.kt",
+              "action": "modify",
+              "sha256": "588f0e28eabb24b7243130e31e0e4c34f7ec0bea30e976d8933afd903d1e2e9c",
+              "size": 45152,
+              "source_sha256": "4de24cf4be8685874007928c7b36f82ec7245547d684278bb2b1041db2b5aa12"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/SettingsViewModel.kt",
+              "action": "modify",
+              "sha256": "213f3b86dd15f68072f44871967f3add9958e2ee0fc6688ba9d965b86ad70821",
+              "size": 12538,
+              "source_sha256": "98499bdfc316e75098980dced023c76ca4f57d26cc9b6536b3001c6b46a740ec"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/AshCachedInstallationPolicyTest.kt",
+              "action": "delete",
+              "source_sha256": "e0e8b20b36fcd138ff1d178e4b804ae4674ec467eae05fb1d9bab956db2845ab"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/AshIncidentIdentityPolicyTest.kt",
+              "action": "delete",
+              "source_sha256": "718087ff248b56ba1777f9e0585cd8ae24c7e296ea0690476b941519bbaadac0"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/AshOperationStateTest.kt",
+              "action": "delete",
+              "source_sha256": "a5499a8f6c622225e3c21d36507c3b8e8669fa4912b579a2c069d890bc457cdd"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/automation/AshAutomationPolicyTest.kt",
+              "action": "delete",
+              "source_sha256": "e81e20d76de0ecc1cff72a57345faeaec9f7d953cdbb5416dfee5633e67c6cbf"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/automation/AshExternalControlPolicyTest.kt",
+              "action": "delete",
+              "source_sha256": "5ea268b8fc1595c99695319feaa883b10a510e7277da0f84ae72dbcf8f84aa0d"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/data/AshMutationOwnershipPolicyTest.kt",
+              "action": "delete",
+              "source_sha256": "d75595014840cb6197446711e91c1fadee1835b8484aba17dfbffed3e4c490c7"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshGuidanceEngineTest.kt",
+              "action": "delete",
+              "source_sha256": "51854d7a8bdeea6977ffee53d9cec4cc4fce88e1d70a3587ae013ea0166a4e30"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshIntegrationModelsTest.kt",
+              "action": "delete",
+              "source_sha256": "9a130ad153a98f1fb9acbf777376daaea8e7689b618162177ca1f72191d1d500"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshModuleIntelligenceEngineTest.kt",
+              "action": "delete",
+              "source_sha256": "d2f57cb89889db6a2c0fdc5b9392adfe2c014fcc71245c6c4945b6ca4221e115"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshModuleLifecycleResolverTest.kt",
+              "action": "delete",
+              "source_sha256": "44031c88cb9c64db869f5b3900e3c7bf6ad079f78e08a948a9c5f261b99e5f3a"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshRecoveryModelsTest.kt",
+              "action": "delete",
+              "source_sha256": "252686a541ebbe4c627ce1bfeac62140cfea912a4069f5b316f143900f3f9fa2"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshRecoveryPlanEngineTest.kt",
+              "action": "delete",
+              "source_sha256": "e34959f9edb1870c2019b043a01dd8a0f9ebc81078b8f8c956d4e55aa0e43ac2"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshReleaseGateEngineTest.kt",
+              "action": "delete",
+              "source_sha256": "aa13e64fdcf7e1658b411e9257a8f60e63570ba50c5e21b03350078f75be2334"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/model/AshStateHealthEngineTest.kt",
+              "action": "delete",
+              "source_sha256": "bc0ba8c8f04e96679b1b0e9d0fa4e447a130743856f9d346c49c6b4be4e5abc5"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/AshJsonOutputTest.kt",
+              "action": "delete",
+              "source_sha256": "0f49022a2edf6af5d5a4499c1e055bd829eaa0ea04260189892a1069b9f059e6"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/AshModuleLocatorTest.kt",
+              "action": "delete",
+              "source_sha256": "dc28fbf1ccd876017b10808be76128ddef52a261bfff6274e61665f70e533d1c"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/AshRuntimeRepairContractTest.kt",
+              "action": "delete",
+              "source_sha256": "a319a86df257825011008d8f5fd3beb8c28d50501835b9937704961693fbaa67"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/RootBinderCandidateGateTest.kt",
+              "action": "delete",
+              "source_sha256": "6878417faf3d5cc921288a7649085e2c603e9abfb871daab027da5a991088bb3"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/RootBindingLifecyclePolicyTest.kt",
+              "action": "delete",
+              "source_sha256": "2703d5c9589eff3756928a789bad9d18b4395ab8e6f6cd7fe883cbda7c4b62e2"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/ash/root/RootCallPolicyTest.kt",
+              "action": "delete",
+              "source_sha256": "d4d193aac64102d1331275c176118fcd84764c274fc4be3a5c94ed7357dcf3a4"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserActionPlannerTest.kt",
+              "action": "modify",
+              "sha256": "7d78b78c7e6bcb851f0c24404562452aadf16642ba403c05e16bff5e654ccf33",
+              "size": 4745,
+              "source_sha256": "e676dde3b63b2c71df5b31d4c0c84d14fae0a49560ee9dcb832cadc94d35e740"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserControlsTest.kt",
+              "action": "modify",
+              "sha256": "704ee7a76dd702e931db388105dac8fb675f86e243cfe0f52a4b7cdc93353f6b",
+              "size": 10074,
+              "source_sha256": "f6139dd089b859b6240f17d00086a1ca964b5f348f8dd13d98e3f169a7792db8"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserModelTest.kt",
+              "action": "modify",
+              "sha256": "736beb53e9ba7acb3c72ae0678c91064a228efb6d6316465ae8c7f5031fb408f",
+              "size": 8391,
+              "source_sha256": "278f66d36d7ddb5459e0372bfcf3891c352c675e42c662ce897e94545f9c1981"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserRegressionSealTest.kt",
+              "action": "modify",
+              "sha256": "6126086ba2b38892e2804f4b45fa49f0ae83cd8a24d3c4998afcaf1bf22e8037",
+              "size": 8039,
+              "source_sha256": "7a6d4db38d3c7620c45db6460110c6e39604311f7134eb514350b7d42c3d2be8"
+            },
+            {
+              "path": "ashrexcue/build.gradle.kts",
+              "action": "delete",
+              "source_sha256": "119c86a7dba57cebec46e1fb2a7ee7a1cbe280c05501c2428aa9a65baeb27774"
+            },
+            {
+              "path": "ashrexcue/proguard-rules.pro",
+              "action": "delete",
+              "source_sha256": "f1cc21bf9268c06d9c59d8741ba3de2ee170b31d93323277a12ea30e5936995f"
+            },
+            {
+              "path": "ashrexcue/src/main/AndroidManifest.xml",
+              "action": "delete",
+              "source_sha256": "e3410c217fab4960e6cb98f6f18e345a788181153ff88b9f560ba4d93d89db63"
+            },
+            {
+              "path": "ashrexcue/src/main/kotlin/com/mikeyphw/ashrexcue/MainActivity.kt",
+              "action": "delete",
+              "source_sha256": "38cee86b18cd6e3faccd0c9f095c46394ba2e3a1627ababa6dbf24246ec071f1"
+            },
+            {
+              "path": "ashrexcue/src/main/res/values/strings.xml",
+              "action": "delete",
+              "source_sha256": "45bef5bce1477c8f1e18c92c3dab74f95e078266e6e3e13d117cf84cf8af93f4"
+            },
+            {
+              "path": "build.gradle.kts",
+              "action": "modify",
+              "sha256": "7e96aa0089545c5654cf4a0c10a9a0b2b1ac9f9ebf5c4f1da531135d18ebcda8",
+              "size": 6870,
+              "source_sha256": "aa5757b985e8960b4d45ebd387f032b2cce4fe009ff97e4577d15c96f6e898e1"
+            },
+            {
+              "path": "docs/ASHREXCUE_STANDALONE_SPLIT.md",
+              "action": "delete",
+              "source_sha256": "095f6bc6ff8fe52513cb8670eaa349b96ee91ecbd55a1c47eadcf2cde99e7448"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/APatchModuleManager.kt",
+              "action": "modify",
+              "sha256": "07df1606b5fe5c1b254b9dabf809347e6181fb4df4345ef15a1aaf1760e5f66a",
+              "size": 5102,
+              "source_sha256": "e26e8f899404d9240ff99799d26cf03b2b1fd9d0fb6b1b5b4f05cb4afb552a13"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/KernelSUModuleManager.kt",
+              "action": "modify",
+              "sha256": "1ee739a9ad56cd719bf5c7a7f389be990791fc881f86beea06da5648020dfbf1",
+              "size": 6068,
+              "source_sha256": "ee572edd5696dc569192021e4d18f7751df88a657e48f50482d0375d3c8169e9"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/KsuNextModuleManager.kt",
+              "action": "modify",
+              "sha256": "a96ee0c8240524acb518128005856b56a6458f99467292fd634b0b0a899e735c",
+              "size": 1938,
+              "source_sha256": "2214d54121414d07a57e4df734eda669eec57ebfa74237e14e017a37e875c672"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/MagiskModuleManager.kt",
+              "action": "modify",
+              "sha256": "92fe381feb6f4ada4257a3802f183958f4eae3844c5441672f8d7b3e722a6fa6",
+              "size": 3611,
+              "source_sha256": "8a0cbb6f4132c95eadb2ce668f9fde65170e78e6c7cedcba84b3303fb73a4b35"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/SukiSUModuleManager.kt",
+              "action": "modify",
+              "sha256": "ca103c57237ccf9f249ab5cd581fdd750316d30eca6062ddec4b502dc41fd4a2",
+              "size": 461,
+              "source_sha256": "8348f305aa5a2688fd2111b08fee5238243d3f245cd74591fde87a4590556574"
+            },
+            {
+              "path": "scripts/validate-ashrexcue-release.sh",
+              "action": "delete",
+              "source_sha256": "34cc263702e0cca362fc3940411e900e953b2b17d233c66313e9499a5951ab63"
+            },
+            {
+              "path": "settings.gradle.kts",
+              "action": "modify",
+              "sha256": "c25196e7ddd6f0da5a178cc9d9b839baeb5396db0b35a58f760f947d5a0532d9",
+              "size": 647,
+              "source_sha256": "9672365ee98a0df05bf06c2f8947308034d4b3e6df3660320a2e9250b229025c"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Purge embedded AshReXcue from MMRL"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "865758abb162488bb9bb2ac91e2879a2",
+      "history_id": "3a3b95ec9f8bd2e2b59e7db8632e3b8d",
+      "rollback_status": "rolled-back",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 128,
+          "skipped": false,
+          "failure_kind": "unknown_failure",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-rollback",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "rollback",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260822T142723Z-c089c550903a",
+        "status": "rolled-back"
+      },
+      "validation_plan": {}
     }
   ]
 }
