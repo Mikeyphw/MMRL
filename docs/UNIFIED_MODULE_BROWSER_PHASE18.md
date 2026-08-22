@@ -15,7 +15,7 @@ Phase 18 is the release-polish pass for the unified module browser arc. It does 
 
 - Phases 10 through 18 are indexed in order.
 - Required docs include every phase note plus the final release note.
-- Installed root, repository, saved GitHub source, LSPosed repository, installed LSPosed APK, local module, and AshReXcue rescue lanes are represented.
+- Installed root, repository, saved GitHub source, LSPosed repository, installed LSPosed APK, and local module lanes are represented.
 - Installed, Repo, Updates, Scopes, Problems, and GitHub Sources views are represented.
 - Safe action kinds remain non-destructive.
 - Validation remains centered on `:app:testOfficialDebugUnitTest` and `:app:lintOfficialDebug`.

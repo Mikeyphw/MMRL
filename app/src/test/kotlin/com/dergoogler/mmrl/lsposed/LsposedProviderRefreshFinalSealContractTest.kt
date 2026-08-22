@@ -14,7 +14,6 @@ class LsposedProviderRefreshFinalSealContractTest {
         val viewModel = source("app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/LsposedViewModel.kt")
         val screens = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/LsposedScreens.kt")
         val settings = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/other/OtherScreen.kt")
-        val moduleIdentity = source("app/src/main/kotlin/com/dergoogler/mmrl/model/ModuleIdentity.kt")
         val preferences = source("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/model/UserPreferences.kt")
 
         assertTrue(models.contains("enum class LsposedManagerOpenMode"))
@@ -61,10 +60,6 @@ class LsposedProviderRefreshFinalSealContractTest {
         assertTrue(settings.contains("githubTokenEditorRevision++"))
         assertFalse(preferences.contains("githubApiToken"))
 
-        assertTrue(moduleIdentity.contains("ashlooper"))
-        assertTrue(moduleIdentity.contains("ashrexcue"))
-        assertTrue(moduleIdentity.contains("ashrexcuebootloopprotector"))
-        assertTrue(moduleIdentity.contains("ASH_REXCUE_CANONICAL_ID"))
     }
 
     @Test
@@ -73,24 +68,22 @@ class LsposedProviderRefreshFinalSealContractTest {
         val scopeEditor = source("docs/LSPOSED_SCOPE_EDITOR.md")
         val refreshBridge = source("docs/LSPOSED_PROVIDER_REFRESH_BRIDGE.md")
         val roadmapSeal = source("docs/LSPOSED_SCOPE_PROVIDER_FINAL_SEAL.md")
-        val tokenAshHotfix = source("docs/REPOSITORY_TOKEN_ASHREXCUE_HOTFIX.md")
+        val tokenHotfix = source("docs/REPOSITORY_TOKEN_HOTFIX.md")
 
         assertTrue(finalSeal.contains("scope discovery"))
         assertTrue(finalSeal.contains("provider refresh bridge"))
         assertTrue(finalSeal.contains("GitHub API token"))
-        assertTrue(finalSeal.contains("AshReXcue historical aliases"))
         assertTrue(scopeEditor.contains("Refresh provider"))
         assertFalse(scopeEditor.contains("reopen LSPosed or reboot"))
         assertTrue(refreshBridge.contains("installed manager"))
         assertTrue(refreshBridge.contains("active provider action bridge"))
         assertTrue(refreshBridge.contains("reboot fallback"))
-        assertTrue(tokenAshHotfix.contains("one token can reduce GitHub 403/rate-limit failures across the app"))
-        assertTrue(tokenAshHotfix.contains("AshReXcue installed-state matching canonicalizes"))
+        assertTrue(tokenHotfix.contains("one token can reduce GitHub 403/rate-limit failures across the app"))
         assertTrue(roadmapSeal.contains("Scope discovery"))
         assertTrue(roadmapSeal.contains("Guarded scope editor"))
         assertTrue(roadmapSeal.contains("LSPosed manager seal"))
         assertTrue(roadmapSeal.contains("Provider refresh bridge"))
-        assertTrue(roadmapSeal.contains("Repository/token/AshReXcue hotfix"))
+        assertTrue(roadmapSeal.contains("Repository/token hotfix"))
         assertTrue(roadmapSeal.contains("Final integration/regression seal"))
     }
 

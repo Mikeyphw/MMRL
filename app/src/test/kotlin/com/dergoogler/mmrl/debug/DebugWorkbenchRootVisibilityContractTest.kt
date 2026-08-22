@@ -8,44 +8,31 @@ class DebugWorkbenchRootVisibilityContractTest {
     private val root = repositoryRoot()
 
     @Test
-    fun `provider and ash probes expose root visibility evidence`() {
-        val lsposedProbe = source("app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedDebugProbe.kt")
-        val ashProbe = source("app/src/main/kotlin/com/dergoogler/mmrl/debug/AshReXcueDebugProbe.kt")
+    fun `provider probe exposes root visibility evidence`() {
+        val probe = source("app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedDebugProbe.kt")
 
-        listOf(lsposedProbe, ashProbe).forEach { probe ->
-            assertTrue(probe.contains("SuFile"))
-            assertTrue(probe.contains("rootSnapshot"))
-            assertTrue(probe.contains("childrenPreview"))
-            assertTrue(probe.contains("list error"))
-            assertTrue(probe.contains("module.prop"))
-            assertTrue(probe.contains("path=$" + "path, exists=$" + "exists, directory=$" + "directory, readable=$" + "readable, children=$" + "childCount"))
-        }
-
-        assertTrue(lsposedProbe.contains("framework/lspd.dex"))
-        assertTrue(lsposedProbe.contains("visible manager-like package scan"))
-        assertTrue(ashProbe.contains("ashrexcue_bootloop_protector"))
-        assertTrue(ashProbe.contains("module.prop=$" + "modulePropReadable"))
+        assertTrue(probe.contains("SuFile"))
+        assertTrue(probe.contains("rootSnapshot"))
+        assertTrue(probe.contains("childrenPreview"))
+        assertTrue(probe.contains("list error"))
+        assertTrue(probe.contains("module.prop"))
+        assertTrue(probe.contains("framework/lspd.dex"))
+        assertTrue(probe.contains("visible manager-like package scan"))
     }
 
     @Test
-    fun `runtime provider and ash detection use root aware file reads`() {
+    fun `runtime provider detection uses root aware file reads`() {
         val repository = source("app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt")
-        val ashLocator = source("app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshModuleLocator.kt")
 
-        listOf(repository, ashLocator).forEach { source ->
-            assertTrue(source.contains("import com.dergoogler.mmrl.platform.file.SuFile"))
-            assertTrue(source.contains("import com.dergoogler.mmrl.platform.file.useLines"))
-            assertTrue(source.contains("SuFile(root.absolutePath)"))
-            assertTrue(source.contains("rootFile.list()?.toList().orEmpty()"))
-            assertTrue(source.contains("suChild("))
-            assertTrue(source.contains("safeIsDirectory"))
-            assertTrue(source.contains("safeIsFile"))
-        }
-
+        assertTrue(repository.contains("import com.dergoogler.mmrl.platform.file.SuFile"))
+        assertTrue(repository.contains("import com.dergoogler.mmrl.platform.file.useLines"))
+        assertTrue(repository.contains("SuFile(root.absolutePath)"))
+        assertTrue(repository.contains("rootFile.list()?.toList().orEmpty()"))
+        assertTrue(repository.contains("suChild("))
+        assertTrue(repository.contains("safeIsDirectory"))
+        assertTrue(repository.contains("safeIsFile"))
         assertTrue(repository.contains("providerCandidateFromDirectory"))
         assertTrue(repository.contains("framework/lspd.dex"))
-        assertTrue(ashLocator.contains("AshReXcue_BootLoop_Protector"))
-        assertTrue(ashLocator.contains("ashrexcue_bootloop_protector"))
     }
 
     @Test
@@ -77,7 +64,6 @@ class DebugWorkbenchRootVisibilityContractTest {
         assertTrue(repository.contains("https://cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/modules.json"))
         assertTrue(repoProbe.contains("jsDelivr main-index fallback"))
         assertTrue(repoProbe.contains("backup.modules.lsposed.org is preferred after primary 403"))
-        assertTrue(repoProbe.contains("https://cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/modules.json"))
     }
 
     @Test

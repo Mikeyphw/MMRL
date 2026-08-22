@@ -38,21 +38,17 @@ class DebugWorkbenchContractTest {
     }
 
     @Test
-    fun `repo ash and token probes are read only and redacted`() {
+    fun `repo and token probes are read only and redacted`() {
         val runner = source("app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugProbeRunner.kt")
         val repo = source("app/src/main/kotlin/com/dergoogler/mmrl/debug/LsposedRepoDebugProbe.kt")
-        val ash = source("app/src/main/kotlin/com/dergoogler/mmrl/debug/AshReXcueDebugProbe.kt")
         val models = source("app/src/main/kotlin/com/dergoogler/mmrl/debug/DebugModels.kt")
 
         assertTrue(runner.contains("GitHubTokenDebugProbe(context).run()"))
         assertTrue(runner.contains("LsposedRepoDebugProbe(context).endpointMatrixProbe()"))
-        assertTrue(runner.contains("AshReXcueDebugProbe(activeModuleRoot, stagedModuleRoot).run()"))
         assertTrue(repo.contains("modules.lsposed.org/modules.json"))
         assertTrue(repo.contains("backup.modules.lsposed.org/modules.json"))
         assertTrue(repo.contains("jsDelivr main-index fallback"))
         assertTrue(repo.contains("cdn.jsdelivr.net/gh/Xposed-Modules-Repo/modules@gh-pages/modules.json"))
-        assertTrue(ash.contains("ModuleIdentity::isAshReXcue"))
-        assertTrue(ash.contains("ashrexcuebootloopprotector"))
         assertTrue(models.contains("<github-token-redacted>"))
         assertFalse(models.contains("println("))
 

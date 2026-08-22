@@ -25,7 +25,7 @@ No install, remove, enable, disable, or scope-write execution is added here. Pha
 
 ## Why this is useful
 
-The unified browser now combines data from many lanes: root-installed modules, repository entries, saved GitHub sources, LSPosed repository/installed APK evidence, local module ZIPs, and AshReXcue rescue state. The regression seal gives future phases a small cockpit gauge: if someone adds a new source, badge, action, or density behavior, tests can catch accidental gaps before the UI quietly loses a lane.
+The unified browser now combines data from many lanes: root-installed modules, repository entries, saved GitHub sources, LSPosed repository/installed APK evidence, and local module ZIPs. The regression seal gives future phases a small cockpit gauge: if someone adds a new source, badge, action, or density behavior, tests can catch accidental gaps before the UI quietly loses a lane.
 
 ## Recommended validation
 

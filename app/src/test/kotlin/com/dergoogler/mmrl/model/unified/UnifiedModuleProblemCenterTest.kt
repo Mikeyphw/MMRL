@@ -30,21 +30,21 @@ class UnifiedModuleProblemCenterTest {
         val report = UnifiedModuleProblemCenter.build(
             listOf(
                 item(
-                    id = "ashrexcue",
+                    id = "example-module",
                     match = UnifiedModuleMatch(
                         reason = UnifiedMatchReason.ALIAS_ID,
                         confidence = 86,
-                        explanation = "Matched through AshLooper alias.",
-                        matchedValues = setOf("AshLooper", "ashrexcue"),
+                        explanation = "Matched through a legacy module alias.",
+                        matchedValues = setOf("legacy_module", "example-module"),
                     ),
-                    aliases = setOf("ashlooper", "ashrexcue"),
+                    aliases = setOf("legacy_module", "example-module"),
                 ),
             ),
         )
 
         val problem = report.problems.single { it.kind == UnifiedModuleProblemKind.ALIAS_MATCH_ONLY }
         assertEquals(UnifiedBadgeSeverity.INFO, problem.severity)
-        assertTrue(problem.evidence.any { it.value.contains("AshLooper") })
+        assertTrue(problem.evidence.any { it.value.contains("legacy_module") })
         assertTrue(report.healthy)
     }
 

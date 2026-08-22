@@ -15,7 +15,7 @@ The update checker still detects newer versions, but locked versions are shown a
 
 ## Snapshots
 
-Snapshots are metadata-only by default. They store module identity, version, versionCode, enabled state, description, author, Ash trust state, and local version policy. They do not blindly restore files.
+Snapshots are metadata-only by default. They store module identity, version, versionCode, enabled state, description, author, and local version policy. They do not blindly restore files.
 
 The snapshot dialog builds a review-first plan with:
 
@@ -34,5 +34,5 @@ The module list now favors scanning and inspection:
 - A summary card exposes root provider, enabled/installed counts, update count, locked count, and snapshot count.
 - Descriptions are always visible on module cards.
 - Version, author, and module ID are always shown in a compact metadata line.
-- Update, policy, WebUI, Action, AshReXcue, and runtime state badges are displayed as a horizontal strip to avoid smashed rows.
+- Update, policy, WebUI, Action, and runtime state badges are displayed as a horizontal strip to avoid smashed rows.
 - Detailed metadata is available from the card or overflow menu.

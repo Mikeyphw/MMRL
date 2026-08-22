@@ -41,9 +41,9 @@ jobs:
       - name: Source hygiene
         run: python3 scripts/validate-mmrl-source-hygiene.py
 
-      - name: AshReXcue static release gate
+      - name: Standalone product cleanup gate
         if: matrix.task-set == 'static'
-        run: bash scripts/validate-ashrexcue-release.sh --static-only
+        run: ./gradlew verifyMmrlStandaloneProductCleanup --console=plain
 
       - name: Platform JVM and native contract tests
         if: matrix.task-set == 'static'

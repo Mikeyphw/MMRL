@@ -8,10 +8,6 @@ internal fun taskerRequestInput(
     forceRefresh: Boolean = false,
     reviewToken: String? = null,
     idempotencyKey: String? = null,
-    dryRun: Boolean = false,
-    recommendationId: String? = null,
-    moduleFolder: String? = null,
-    guidanceOutcome: String? = null,
 ): TaskerRequestInput = TaskerRequestInput().apply {
     this.moduleId = moduleId
     this.operationId = operationId
@@ -20,10 +16,6 @@ internal fun taskerRequestInput(
     this.forceRefresh = forceRefresh
     this.reviewToken = reviewToken
     this.idempotencyKey = idempotencyKey
-    this.dryRun = dryRun
-    this.recommendationId = recommendationId
-    this.moduleFolder = moduleFolder
-    this.guidanceOutcome = guidanceOutcome
 }
 
 internal fun taskerEmptyInput(
@@ -67,15 +59,6 @@ internal fun taskerResultOutput(
     moduleNames: Array<String> = emptyArray(),
     versions: Array<String> = emptyArray(),
     states: Array<String> = emptyArray(),
-    protocolVersion: Int = 0,
-    schema: String = "",
-    automationToken: String = "",
-    automationExpiresAt: Long = 0L,
-    planId: String = "",
-    recoveryRevision: String = "",
-    risk: String = "",
-    dryRun: Boolean = false,
-    replayed: Boolean = false,
     contractVersion: Int = TaskerPublicContract.VERSION,
     contractSchema: String = TaskerPublicContract.SCHEMA,
     freshness: String = TaskerFreshness.FRESH.name,
@@ -119,15 +102,6 @@ internal fun taskerResultOutput(
     this.moduleNames = moduleNames
     this.versions = versions
     this.states = states
-    this.protocolVersion = protocolVersion
-    this.schema = schema
-    this.automationToken = automationToken
-    this.automationExpiresAt = automationExpiresAt
-    this.planId = planId
-    this.recoveryRevision = recoveryRevision
-    this.risk = risk
-    this.dryRun = dryRun
-    this.replayed = replayed
     this.contractVersion = contractVersion
     this.contractSchema = contractSchema
     this.freshness = freshness

@@ -219,26 +219,13 @@ See `TASKER_SUPPORT.md` for the action, event, and variable contract.
 - Semantic status colors and stable WebUI CSS variables.
 - Fork application ID `com.mikeyphw.mmrl` with distinct launcher/APK naming and fork-specific intent actions.
 
-## UI/UX Phase 2 — task-oriented recovery workflow
-
-- Replaced Recovery Center's internal Overview/Guidance/Quarantine/Sessions/Diagnostics categories with Check status, Restore modules, Find culprit, Review trial, History, and Advanced tasks.
-- Moved technical compatibility, release-gate, state-repair, export, and audit controls behind Advanced.
-- Quarantine now opens conservative, balanced, rapid, and one-module guarded plan previews directly instead of redirecting to Guidance.
-- Added keyed operation state so refresh, install preparation, recovery plans, trial decisions, trust changes, settings, repair, export, and guidance feedback report progress independently.
-- Made recovery confirmation and preview dialogs bounded, scrollable, and IME-safe.
-- Replaced inert AshReXcue `AssistChip` status decorations with noninteractive `StatusPill` surfaces.
-- Made module intelligence compact by default with expandable evidence and update-safety details.
-- Added focused unit tests for independent operation targets and refresh isolation.
-- Reworked `TaskerRootRequest` persistence to round-trip Ash automation tokens and idempotency keys through Kotlin serialization JSON instead of mockable Android `org.json` during host unit tests.
-
 ## UI/UX Phases 3 and 4 — accessibility, localization, and adaptive polish
 
-- Moved the main Recovery Center, Guided Recovery, AshReXcue module-detail cards, and Installed Ash protection filter copy into Android resources.
 - Added shared flat UI primitives for section cards, clickable rows, status pills, metadata rows, and scrollable dialog content.
-- Added selected/tab semantics to Recovery, Activity, and Installed Ash filter chips; headings to section/day/detail titles; noninteractive status semantics to status pills; and minimum 48dp row targets for compact Activity rows.
+- Added selected/tab and heading semantics to module, activity, and settings surfaces plus minimum 48dp row targets for compact Activity rows.
 - Added a reduced-motion composition local based on Android animator-duration scale and applied it to app navigation transitions and toolbar alpha animation.
-- Added expanded-width list/detail layouts for Recovery session history and Activity operation details while preserving dialogs/sheets on compact layouts.
-- Consolidated Recovery, Activity, Ash module intelligence, and Ash integration cards onto the shared flat/status components and semantic status colors where status meaning is known.
+- Added expanded-width list/detail layouts for Activity operation details while preserving dialogs/sheets on compact layouts.
+- Consolidated remaining module-management and Activity surfaces onto shared flat/status components and semantic status colors where status meaning is known.
 
 Screenshot regression testing and Fastlane screenshot replacement are still pending because this project does not currently include a screenshot-test framework, `app/src/androidTest`, or Roborazzi/Paparazzi dependencies. Adding that harness should be handled as a separate build/dependency change.
 
@@ -256,10 +243,7 @@ Screenshot regression testing and Fastlane screenshot replacement are still pend
 ## Runtime stability and Activity badge pass
 
 - Moshi code generation remains on KSP and is stripped from Hilt Java annotation-processor paths at execution time to avoid the recurring KAPT deprecation warning.
-- AshReXcue live calls now attempt bundled `jq/jq` repair from the packaged AshReXcue module asset before reporting runtime failure.
-- AshReXcue installed detection accepts legacy/renamed bundled module folder aliases so damaged installs are reported as installed-but-broken instead of missing.
-- Activity is now badged for attention-worthy work: failed, running, and pending-reboot activity across local operations and AshReXcue events.
-- The Recovery tab keeps a pending reboot badge, preserving safety visibility alongside the broader Activity attention badge.
+- Activity is badged for attention-worthy local work such as failed, running, and pending-reboot module operations.
 
 ## LSPosed provider detection and Vector support
 

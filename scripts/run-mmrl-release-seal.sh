@@ -16,8 +16,8 @@ run_devtool_full_lint_validate() {
 printf 'mmrl-release-seal: source hygiene\n'
 python3 scripts/validate-mmrl-source-hygiene.py
 
-printf 'mmrl-release-seal: AshReXcue static gate\n'
-bash scripts/validate-ashrexcue-release.sh --static-only
+printf 'mmrl-release-seal: standalone product cleanup gate\n'
+run_devtool_validate --task 'verifyMmrlStandaloneProductCleanup'
 
 printf 'mmrl-release-seal: JVM, native, and variant assembly via devtool validator\n'
 run_devtool_validate \

@@ -154,3 +154,63 @@ tasks.register("verifyAshReXcuePurgedFromMmrl") {
         }
     }
 }
+
+/** Split OV10: remove dead embedded-recovery product residue after the runtime purge. */
+tasks.register("verifyMmrlStandaloneProductCleanup") {
+    group = "verification"
+    description = "Verifies that MMRL contains no dead embedded-recovery UI, Tasker, history, resource, or release-seal residue."
+    dependsOn("verifyAshReXcuePurgedFromMmrl")
+
+    doLast {
+        val history = file("app/src/main/kotlin/com/dergoogler/mmrl/database/entity/history/OperationHistoryEntity.kt").readText()
+        listOf("ASH_RESCUE", "ASH_RESTORATION", "ASH_SETTINGS", "ASH_DIAGNOSTICS").forEach { token ->
+            check(token !in history) { "Legacy embedded-recovery operation kind returned: $token" }
+        }
+
+        val taskerOutput = file("app/src/main/java/com/dergoogler/mmrl/tasker/TaskerResultOutput.java").readText()
+        check("mmrl_ash_" !in taskerOutput) { "Legacy embedded-recovery Tasker outputs returned" }
+        val taskerInput = file("app/src/main/java/com/dergoogler/mmrl/tasker/TaskerRequestInput.java").readText()
+        listOf("recommendation_id", "module_folder", "guidance_outcome", "dry_run").forEach { token ->
+            check(token !in taskerInput) { "Legacy embedded-recovery Tasker input returned: $token" }
+        }
+
+        val strings = file("app/src/main/res/values/strings.xml").readText()
+        listOf("page_ashrexcue", "activity_source_ashrexcue", "settings_boot_protection", "tasker_action_ash_", "tasker_var_ash_", "recovery_center_title").forEach { token ->
+            check(token !in strings) { "Dead embedded-recovery resource returned: $token" }
+        }
+
+        val preferences = file("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/model/UserPreferences.kt").readText()
+        (66..71).forEach { retiredField ->
+            check("@ProtoNumber($retiredField)" !in preferences) {
+                "Retired embedded-recovery protobuf field number was reused: $retiredField"
+            }
+        }
+        check("retired with the standalone recovery-app split" in preferences) {
+            "Retired protobuf field numbers 66..71 must remain documented and reserved"
+        }
+        val preferenceSurface = listOf(
+            file("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesDataSource.kt"),
+            file("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesRepository.kt"),
+        ).joinToString("\n") { it.readText() }
+        check("setAshHealth" !in preferenceSurface && "setTaskerAllowAshRecovery" !in preferenceSurface) {
+            "Dead embedded-recovery preference setters returned"
+        }
+
+        val recoveryDocs = file("docs").listFiles().orEmpty().filter { it.name.startsWith("ASHREXCUE") }
+        check(recoveryDocs.isEmpty()) { "Embedded recovery documentation returned: ${recoveryDocs.joinToString { it.name }}" }
+
+        val releaseSeal = file("scripts/run-mmrl-release-seal.sh").readText()
+        check("validate-ashrexcue-release.sh" !in releaseSeal) { "MMRL release seal still calls the removed recovery validator" }
+        check("verifyMmrlStandaloneProductCleanup" in releaseSeal) { "MMRL release seal must run the standalone product cleanup gate" }
+        val workflow = file(".github/workflows/mmrl-release-seal.yml").readText()
+        check("validate-ashrexcue-release.sh" !in workflow && "verifyMmrlStandaloneProductCleanup" in workflow) {
+            "Release workflow must use the standalone product cleanup gate"
+        }
+
+        val snapshotModel = file("app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt").readText()
+        check("data class ModuleSnapshot(" in snapshotModel && "object ModuleSnapshotPlanner" in snapshotModel) {
+            "MMRL-owned ModuleSnapshot feature must remain present after product cleanup"
+        }
+    }
+}
+

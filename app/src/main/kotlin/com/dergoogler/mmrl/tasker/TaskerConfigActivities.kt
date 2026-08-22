@@ -27,10 +27,6 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
     protected open val showForceRefresh = false
     protected open val showReviewToken = false
     protected open val showIdempotencyKey = false
-    protected open val showDryRun = false
-    protected open val showRecommendationId = false
-    protected open val showModuleFolder = false
-    protected open val showGuidanceOutcome = false
     protected abstract val screenTitle: String
     protected abstract val screenDescription: String
     protected abstract fun helperOnCreate()
@@ -43,10 +39,6 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
     private lateinit var forceRefresh: CheckBox
     private lateinit var reviewToken: EditText
     private lateinit var idempotencyKey: EditText
-    private lateinit var dryRun: CheckBox
-    private lateinit var recommendationId: EditText
-    private lateinit var moduleFolder: EditText
-    private lateinit var guidanceOutcome: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,14 +62,6 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
         filename = field(content, getString(R.string.tasker_field_filename), showFilename)
         reviewToken = field(content, getString(R.string.tasker_field_review_token), showReviewToken)
         idempotencyKey = field(content, getString(R.string.tasker_field_idempotency_key), showIdempotencyKey)
-        recommendationId = field(content, getString(R.string.tasker_field_recommendation_id), showRecommendationId)
-        moduleFolder = field(content, getString(R.string.tasker_field_module_folder), showModuleFolder)
-        guidanceOutcome = field(content, getString(R.string.tasker_field_guidance_outcome), showGuidanceOutcome)
-        dryRun = CheckBox(this).apply {
-            text = getString(R.string.tasker_field_dry_run)
-            visibility = if (showDryRun) android.view.View.VISIBLE else android.view.View.GONE
-        }
-        content.addView(dryRun, matchWrap())
         forceRefresh = CheckBox(this).apply {
             text = getString(R.string.tasker_force_refresh_repositories)
             visibility = if (showForceRefresh) android.view.View.VISIBLE else android.view.View.GONE
@@ -101,10 +85,6 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
             this@TaskerRequestConfigActivity.forceRefresh.isChecked = forceRefresh
             this@TaskerRequestConfigActivity.reviewToken.setText(reviewToken.orEmpty())
             this@TaskerRequestConfigActivity.idempotencyKey.setText(idempotencyKey.orEmpty())
-            this@TaskerRequestConfigActivity.dryRun.isChecked = dryRun
-            this@TaskerRequestConfigActivity.recommendationId.setText(recommendationId.orEmpty())
-            this@TaskerRequestConfigActivity.moduleFolder.setText(moduleFolder.orEmpty())
-            this@TaskerRequestConfigActivity.guidanceOutcome.setText(guidanceOutcome.orEmpty())
         }
     }
 
@@ -170,24 +150,6 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
         action()
     }
 
-    protected fun finishRequiringGuidanceOutcome(action: () -> Unit) {
-        if (recommendationId.text?.toString()?.trim().isNullOrEmpty()) {
-            recommendationId.error = getString(R.string.tasker_error_recommendation_id_required)
-            recommendationId.requestFocus()
-            return
-        }
-        if (guidanceOutcome.text?.toString()?.trim().isNullOrEmpty()) {
-            guidanceOutcome.error = getString(R.string.tasker_error_guidance_outcome_required)
-            guidanceOutcome.requestFocus()
-            return
-        }
-        if (idempotencyKey.text?.toString()?.trim().isNullOrEmpty()) {
-            idempotencyKey.error = getString(R.string.tasker_error_idempotency_key_required)
-            idempotencyKey.requestFocus()
-            return
-        }
-        action()
-    }
 
     override val inputForTasker: TaskerInput<TaskerRequestInput>
         get() = TaskerInput(
@@ -199,10 +161,6 @@ abstract class TaskerRequestConfigActivity : Activity(), TaskerPluginConfig<Task
                 forceRefresh = forceRefresh.isChecked,
                 reviewToken = reviewToken.text?.toString()?.trim(),
                 idempotencyKey = idempotencyKey.text?.toString()?.trim(),
-                dryRun = dryRun.isChecked,
-                recommendationId = recommendationId.text?.toString()?.trim(),
-                moduleFolder = moduleFolder.text?.toString()?.trim(),
-                guidanceOutcome = guidanceOutcome.text?.toString()?.trim(),
             ),
         )
 

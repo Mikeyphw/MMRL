@@ -60,7 +60,7 @@ required = true
 [validation.phases]
 preflight = [
   "verifyStableToolchainBaseline",
-  "verifyAshReXcuePurgedFromMmrl",
+  "verifyMmrlStandaloneProductCleanup",
   "help",
 ]
 compile = [
@@ -86,7 +86,7 @@ lint = [
 
 [validation.final]
 release-seal = [
-  "verifyAshReXcuePurgedFromMmrl",
+  "verifyMmrlStandaloneProductCleanup",
   ":platform:testDebugUnitTest",
   ":platform:testNativeContracts",
   ":app:testOfficialDebugUnitTest",

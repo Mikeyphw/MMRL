@@ -22,7 +22,6 @@ class DebugWorkbenchFinalSealContractTest {
         assertTrue(seal.contains("Phase 7 final seal"))
         assertTrue(seal.contains("Manager not recognized") || seal.contains("manager not recognized"))
         assertTrue(seal.contains("Xposed repo 403"))
-        assertTrue(seal.contains("AshReXcue not detected"))
         assertTrue(seal.contains("GitHub token problems"))
     }
 

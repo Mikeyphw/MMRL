@@ -46,7 +46,7 @@ class DebugHistoryContractTest {
         val current = listOf(
             DebugProbeResult("manager", "Manager", DebugProbeGroup.LSPOSED, DebugProbeStatus.WARN, "visible but not launchable"),
             DebugProbeResult("repo", "Repo", DebugProbeGroup.REPOSITORY, DebugProbeStatus.PASS, "backup mirror ok"),
-            DebugProbeResult("ash", "Ash", DebugProbeGroup.ASH_REXCUE, DebugProbeStatus.FAIL, "missing"),
+            DebugProbeResult("token", "Token", DebugProbeGroup.SECURITY, DebugProbeStatus.FAIL, "missing"),
         )
 
         val comparison = DebugHistoryStore.compare(current, previous)!!
@@ -56,7 +56,7 @@ class DebugHistoryContractTest {
         assertEquals(1, comparison.fixedSinceLast.size)
         assertEquals("repo", comparison.fixedSinceLast.single().id)
         assertEquals(1, comparison.newlyFailing.size)
-        assertEquals("ash", comparison.newlyFailing.single().id)
+        assertEquals("token", comparison.newlyFailing.single().id)
         assertTrue(DebugHistoryFormatter.comparisonText(comparison).contains("regressed"))
     }
 

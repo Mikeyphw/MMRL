@@ -1,6 +1,6 @@
 # LSPosed final integration seal
 
-This document locks the LSPosed APK module support stack after the repository, installed, governance, safety, adaptive-polish, Vector provider, scope discovery, guarded scope editor, manager seal, provider refresh bridge, and repository-token/AshReXcue hotfix overlays.
+This document locks the LSPosed APK module support stack after the repository, installed, governance, safety, adaptive-polish, Vector provider, scope discovery, guarded scope editor, manager seal, provider refresh bridge, and repository-token hotfix overlays.
 
 ## Sealed navigation contract
 
@@ -38,8 +38,7 @@ This document locks the LSPosed APK module support stack after the repository, i
 ## Sealed installed-module identity contract
 
 - Repository author/name metadata does not decide whether a local module is installed.
-- AshReXcue historical aliases such as `ashlooper`, `ashrexcue`, and `ashrexcuebootloopprotector` canonicalize to one installed identity.
-- The bundled AshReXcue module remains recognized even when repository IDs and live root module folder names drift.
+- Ordinary module IDs use normalized exact identity unless a provider-specific model owns an explicit alias.
 
 ## Sealed governance contract
 
@@ -58,4 +57,4 @@ This document locks the LSPosed APK module support stack after the repository, i
 
 `LsposedFinalIntegrationSealTest` asserts that the two tab surfaces, review-first APK boundary, Open LSPosed guidance, governance/snapshot models, and the warning cleanup remain present.
 
-`LsposedProviderRefreshFinalSealContractTest` seals the completed provider/scope/refresh/repository-token/AshReXcue roadmap so the Vector provider bridge, guarded DB writes, manager-open modes, refresh bridge, repository fallback, app-wide GitHub token, AshReXcue identity aliases, and documentation cannot drift independently.
+`LsposedProviderRefreshFinalSealContractTest` seals the completed provider/scope/refresh/repository-token roadmap so the Vector provider bridge, guarded DB writes, manager-open modes, refresh bridge, repository fallback, app-wide GitHub token and documentation cannot drift independently.

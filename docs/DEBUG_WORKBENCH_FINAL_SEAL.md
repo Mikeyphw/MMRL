@@ -4,11 +4,11 @@ This document seals the MMRL Debug Workbench roadmap after the guided diagnostic
 
 ## Completed phases
 
-1. **Phase 1/2 probe pack**: introduced the Debug Workbench screen, shared probe/result models, redaction, LSPosed/Vector manager visibility probes, provider module scan, Xposed repository endpoint matrix, GitHub token status, AshReXcue identity scan, and copied redacted report.
+1. **Phase 1/2 probe pack**: introduced the Debug Workbench screen, shared probe/result models, redaction, LSPosed/Vector manager visibility probes, provider module scan, Xposed repository endpoint matrix, GitHub token status, and copied redacted report.
 2. **Phase 3 guarded actions**: added narrow remediation actions for opening the resolved manager, running the provider action bridge selected by `LsposedRepository.providerRefreshPlan()`, and starting/stopping the existing repository refresh service.
 3. **Phase 4 support bundle**: added sanitized ZIP export/share through `FileProvider` with `debug-report.txt`, `debug-report.json`, and `README.txt`, and removed the deprecated Compose clipboard API.
 4. **Phase 5 history and comparisons**: added local bounded history, current-vs-previous comparisons, fixed/regressed/newly failing/improved highlights, clear-history action, and support-bundle history files.
-5. **Phase 6 guided diagnostics flows**: added focused flows for manager not recognized, Xposed repo 403, AshReXcue not detected, and GitHub token problems, plus `debug-guide.txt`, `debug-guide.json`, and active issue-flow metadata in the support bundle.
+5. **Phase 6 guided diagnostics flows**: added focused flows for manager not recognized, Xposed repo 403, and GitHub token problems, plus `debug-guide.txt`, `debug-guide.json`, and active issue-flow metadata in the support bundle.
 6. **Phase 7 final seal**: locks the support, redaction, non-mutation, and no-warning contracts without changing runtime behavior.
 
 ## Sealed behavior
@@ -19,7 +19,6 @@ The Debug Workbench may diagnose and explain these support issues:
 - Vector provider module files are present but the manager launch path is unclear.
 - The Xposed repository primary endpoint returns HTTP 403 and fallback endpoints must be checked.
 - A GitHub token is missing, undecryptable, or not helping GitHub-backed fallbacks.
-- AshReXcue is installed but identity canonicalization or active/staged module scans disagree.
 
 The Debug Workbench may expose only these guarded actions:
 

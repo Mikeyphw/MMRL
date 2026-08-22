@@ -77,7 +77,7 @@ class ReleaseSealSourceHygieneTest {
     }
 
     @Test
-    fun `root clean and generated ash assets are variant wired`() {
+    fun `root clean and generated assets are variant wired`() {
         val rootBuild = source("build.gradle.kts")
         val appBuild = source("app/build.gradle.kts")
         assertTrue(rootBuild.contains("delete(subprojects.map { it.layout.buildDirectory })"))

@@ -528,17 +528,9 @@ class UserPreferencesDataSource
         suspend fun setTaskerAllowModuleActions(value: Boolean) = update { copy(taskerAllowModuleActions = value) }
         suspend fun setTaskerAllowRemovals(value: Boolean) = update { copy(taskerAllowRemovals = value) }
         suspend fun setTaskerAllowReviewedInstalls(value: Boolean) = update { copy(taskerAllowReviewedInstalls = value) }
-        suspend fun setTaskerAllowAshRecovery(value: Boolean) = update { copy(taskerAllowAshRecovery = value) }
         suspend fun setTaskerApprovalPolicy(value: com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy) = update { copy(taskerApprovalPolicy = value) }
         suspend fun setTaskerAllowedModules(value: Set<String>) = update { copy(taskerAllowedModules = value) }
 
-        suspend fun setAshHealthChecksEnabled(value: Boolean) = update { copy(ashHealthChecksEnabled = value) }
-        suspend fun setAshHealthCheckIntervalHours(value: Long) = update {
-            copy(ashHealthCheckIntervalHours = value.coerceIn(1L, 24L))
-        }
-        suspend fun setAshIncidentNotifications(value: Boolean) = update { copy(ashIncidentNotifications = value) }
-        suspend fun setAshRebootReminders(value: Boolean) = update { copy(ashRebootReminders = value) }
-        suspend fun setAshRestorationReminders(value: Boolean) = update { copy(ashRestorationReminders = value) }
 
         private suspend fun update(block: com.dergoogler.mmrl.datastore.model.UserPreferences.() -> com.dergoogler.mmrl.datastore.model.UserPreferences) =
             withContext(Dispatchers.IO) { userPreferences.updateData { it.block() } }

@@ -2,7 +2,7 @@
 
 ## Ship summary
 
-The unified module browser arc combines root-installed modules, repository rows, saved GitHub module sources, LSPosed installed/repository evidence, local/manual module evidence, and AshReXcue rescue state into one canonical browser model.
+The unified module browser arc combines root-installed modules, repository rows, saved GitHub module sources, LSPosed installed/repository evidence, and local/manual module evidence into one canonical browser model.
 
 The release is intentionally safe-first. No install, remove, enable, disable, or LSPosed scope-write execution is added by the unified browser. Mutating operations still need explicit confirmed flows before they can become executable.
 
@@ -27,7 +27,6 @@ The release is intentionally safe-first. No install, remove, enable, disable, or
 - LSPosed repository modules.
 - Installed LSPosed APK modules.
 - Local/manual module evidence.
-- AshReXcue rescue evidence.
 
 ## Supported views
 
@@ -43,9 +42,9 @@ The release is intentionally safe-first. No install, remove, enable, disable, or
 - Open/narrow to an installed module row.
 - Copy source URL.
 - Copy unified evidence.
-- Refresh provider/repository/rescue evidence.
+- Refresh provider/repository/module evidence.
 - Run safe diagnostics refresh.
-- Guide users to GitHub source rules, LSPosed manager/scope review, rescue review, and Debug Workbench surfaces.
+- Guide users to GitHub source rules, LSPosed manager/scope review, module review, and Debug Workbench surfaces.
 
 ## Release validation
 

@@ -26,7 +26,7 @@ Phase 13 adds the problem and health layer for the unified module browser. It do
   - alias match only
   - disabled module
   - failed or pending update
-  - rescue review
+  - module review
 - Added action vocabulary for each problem:
   - open module
   - run probe
@@ -55,7 +55,6 @@ Phase 13 derives problems from the unified rows that already exist:
 - update-pending modules become update-watch cards
 - unavailable or limited providers become manager/provider cards
 - LSPosed rows without scope evidence become scope DB cards
-- AshReXcue quarantined or changed rescue evidence becomes rescue review cards
 
 The `UnifiedProblemSignal` type is intentionally present even before every runtime producer is wired. Later repo refreshes, Debug Workbench probes, support bundle exports, GitHub artifact resolver failures, and LSPosed scope probes can feed the same problem vocabulary without changing the UI contract.
 

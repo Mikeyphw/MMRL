@@ -131,7 +131,7 @@ def check_gradle_release_gates() -> None:
     if "signingConfigs.getByName(\"debug\")" in app:
         fail("release/playstore signing must not silently fall back to debug signing")
     if "startsWith(\"merge\") && name.endsWith(\"Assets\")" in app:
-        fail("generated Ash assets must be wired through variant sources, not guessed task names")
+        fail("generated variant assets must be wired through variant sources, not guessed task names")
 
     project_ext = text("build-logic/src/main/kotlin/ProjectExt.kt")
     for needle in (

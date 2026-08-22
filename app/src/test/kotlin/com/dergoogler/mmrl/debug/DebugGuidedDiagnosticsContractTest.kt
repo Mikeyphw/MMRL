@@ -17,11 +17,9 @@ class DebugGuidedDiagnosticsContractTest {
         assertTrue(guided.contains("enum class DebugIssueFlow"))
         assertTrue(guided.contains("MANAGER_NOT_RECOGNIZED"))
         assertTrue(guided.contains("XPOSED_REPO_403"))
-        assertTrue(guided.contains("ASH_REXCUE_NOT_DETECTED"))
         assertTrue(guided.contains("GITHUB_TOKEN_PROBLEMS"))
         assertTrue(guided.contains("lsposed-manager-packages"))
         assertTrue(guided.contains("lsposed-repo-endpoints"))
-        assertTrue(guided.contains("ashrexcue-module-identity"))
         assertTrue(guided.contains("github-token-store"))
         assertFalse(guided.contains("Runtime.getRuntime().exec"))
         assertFalse(guided.contains("newSuperUserPty("))
@@ -31,7 +29,6 @@ class DebugGuidedDiagnosticsContractTest {
         assertTrue(screen.contains("DebugIssueFlow.entries"))
         assertTrue(guided.contains("buttonTitle = \"Diagnose manager not recognized\""))
         assertTrue(guided.contains("buttonTitle = \"Diagnose Xposed repo 403\""))
-        assertTrue(guided.contains("buttonTitle = \"Diagnose AshReXcue not detected\""))
         assertTrue(guided.contains("buttonTitle = \"Diagnose GitHub token problems\""))
         assertTrue(screen.contains("Title(flow.buttonTitle)"))
         assertTrue(screen.contains("DebugGuidedDiagnostics.evaluate(it, next)"))
@@ -55,13 +52,6 @@ class DebugGuidedDiagnosticsContractTest {
                 group = DebugProbeGroup.SECURITY,
                 status = DebugProbeStatus.SKIPPED,
                 summary = "No app-wide GitHub token is saved.",
-            ),
-            DebugProbeResult(
-                id = "ashrexcue-module-identity",
-                title = "Ash",
-                group = DebugProbeGroup.ASH_REXCUE,
-                status = DebugProbeStatus.PASS,
-                summary = "Active AshReXcue-compatible module found.",
             ),
         )
 
@@ -95,7 +85,6 @@ class DebugGuidedDiagnosticsContractTest {
         assertTrue(doc.contains("Phase 6 guided diagnostics flows"))
         assertTrue(doc.contains("Manager not recognized"))
         assertTrue(doc.contains("Xposed repo 403"))
-        assertTrue(doc.contains("AshReXcue not detected"))
         assertTrue(doc.contains("GitHub token problems"))
         assertTrue(doc.contains("debug-guide.txt"))
         assertTrue(doc.contains("debug-guide.json"))

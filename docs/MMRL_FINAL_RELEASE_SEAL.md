@@ -7,7 +7,7 @@ O11 is the final remediation overlay. There is no O12 in this campaign.
 The release seal must run from a clean checkout and execute:
 
 - `python3 scripts/validate-mmrl-source-hygiene.py`
-- `bash scripts/validate-ashrexcue-release.sh --static-only`
+- `devtool -r . validate --task verifyMmrlStandaloneProductCleanup`
 - `./gradlew :platform:testDebugUnitTest`
 - `./gradlew :platform:testNativeContracts`
 - `./gradlew :app:testOfficialDebugUnitTest`

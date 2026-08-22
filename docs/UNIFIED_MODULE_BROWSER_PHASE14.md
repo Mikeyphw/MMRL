@@ -16,7 +16,7 @@ Phase 14 turns the Phase 13 descriptive action chips into a safe action layer. T
   - copy problem evidence
   - copy unified row evidence
   - copy source URL
-  - refresh provider/module/rescue signals
+  - refresh provider/module signals
   - refresh local repository evidence
   - run a safe diagnostics refresh
   - jump back to Installed view and search for a module id
@@ -24,7 +24,7 @@ Phase 14 turns the Phase 13 descriptive action chips into a safe action layer. T
   - edit saved GitHub source rules
   - open manager
   - review LSPosed scope
-  - review AshReXcue rescue state
+  - review module state
   - suggested fix
 
 ## Safety contract
@@ -40,7 +40,7 @@ The current executable actions are deliberately tiny switches, not chainsaws:
 
 ## UI behavior
 
-In the Problems view, action chips now call the ViewModel. On other unified views, canonical cards can expose actions such as `Copy source URL`, `Edit source rules`, `Refresh provider`, `Review scope`, or `Review rescue` depending on row evidence.
+In the Problems view, action chips now call the ViewModel. On other unified views, canonical cards can expose actions such as `Copy source URL`, `Edit source rules`, `Refresh provider`, `Review scope`, or `Review module` depending on row evidence.
 
 Installed modules still keep the mature existing installed-module cards and menus. Phase 14 only makes the unified model's action vocabulary visible and testable.
 

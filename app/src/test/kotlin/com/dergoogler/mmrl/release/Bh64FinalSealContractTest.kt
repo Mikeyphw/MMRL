@@ -20,7 +20,7 @@ class Bh64FinalSealContractTest {
             ":app:assembleOfficialPlaystore",
             ":platform:testDebugUnitTest",
             ":platform:testNativeContracts",
-            "validate-ashrexcue-release.sh --static-only",
+            "verifyMmrlStandaloneProductCleanup",
         ).forEach { assertTrue("missing final gate $it", doc.contains(it)) }
     }
 
@@ -48,7 +48,7 @@ class Bh64FinalSealContractTest {
             ".tar.zst",
             "releaseSigningProperties = project.releaseSigningProperties()",
             "DataStore WebUIX package default must be variant-owned through BuildConfig",
-            "generated Ash assets must be wired through variant sources",
+            "generated variant assets must be wired through variant sources",
             "release-hygiene: PASS",
         ).forEach { assertTrue("missing source hygiene check $it", script.contains(it)) }
     }

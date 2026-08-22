@@ -11,7 +11,6 @@ Phase 1/2 introduces:
 - LSPosed / Vector provider module scans under `/data/adb/modules` and `/data/adb/modules_update`;
 - LSPosed repository endpoint matrix checks for `modules.lsposed.org`, `backup.modules.lsposed.org`, and the generated jsDelivr mirror;
 - GitHub token storage status without exporting the token;
-- AshReXcue alias and module-file evidence.
 
 The workbench must not mutate scope databases, module folders, provider state, GitHub tokens, or repository cache files. It reports what MMRL can see, how it resolved a decision, and which next action is safe for the user.
 
@@ -62,7 +61,7 @@ History safeguards:
 - evidence rows, GitHub tokens, Authorization headers, cookies, scope database contents, and raw root command output are not persisted in history;
 - at most 10 snapshots are retained;
 - **Clear local history** deletes only Debug Workbench history and must not touch modules, repository caches, LSPosed scope databases, provider modules, or token storage;
-- support bundle export includes `debug-history.txt` and `debug-history.json` so intermittent repo 403s, provider visibility changes, and AshReXcue recognition changes can be compared by support without exposing secrets.
+- support bundle export includes `debug-history.txt` and `debug-history.json` so intermittent repo 403s and provider visibility changes can be compared by support without exposing secrets.
 
 The comparison UI is passive. It does not re-run actions, mutate state, or infer repairs automatically. It only reports status changes between the current probe result and the previous local snapshot.
 
@@ -74,7 +73,6 @@ Guided flows:
 
 - **Manager not recognized** focuses on LSPosed/libxposed/Vector manager package visibility and provider fallback evidence.
 - **Xposed repo 403** focuses on the repository endpoint matrix and app-wide GitHub token status.
-- **AshReXcue not detected** focuses on AshReXcue folder, `module.prop` id/name, canonical alias, and staged-vs-active module evidence.
 - **GitHub token problems** focuses on encrypted token availability/decryption and whether GitHub-backed repository fallbacks still fail.
 
 Each flow runs the normal read-only probe set, filters the results to the relevant probe ids, and produces remedy cards. The cards are intentionally human-readable so support can tell whether the failure is package visibility, missing launch intent, primary repository 403, missing token, broken token decryption, or an unknown module identity alias.
@@ -95,11 +93,11 @@ The final seal is documentation and regression-contract only. It does not add ne
 
 Sealed capabilities:
 
-- read-only probes for GitHub token status, LSPosed/libxposed/Vector manager visibility, provider module scan, Xposed repository endpoint matrix, and AshReXcue identity;
+- read-only probes for GitHub token status, LSPosed/libxposed/Vector manager visibility, provider module scan, and Xposed repository endpoint matrix;
 - guarded actions limited to resolved manager opening, provider refresh bridge, repository service start/stop, support bundle export, and local history clearing;
 - sanitized support bundles with `debug-report.txt`, `debug-report.json`, `debug-history.txt`, `debug-history.json`, `debug-guide.txt`, `debug-guide.json`, and `README.txt`;
 - bounded local history of at most 10 redacted summaries;
-- guided diagnostics for manager recognition, Xposed repo 403, AshReXcue detection, and GitHub token issues;
+- guided diagnostics for manager recognition, Xposed repo 403, and GitHub token issues;
 - source contracts that keep tokens, Authorization headers, cookies, evidence rows, root command output, module/provider state, repository cache state, and LSPosed scope databases out of unsafe mutation paths.
 
 Release gate:
@@ -113,13 +111,13 @@ Release gate:
 
 ## Phase 8 root visibility hardening
 
-Phase 8 extends the final-sealed Debug Workbench with deeper evidence for cases where the app reports that Vector, LSPosed, or AshReXcue is missing even though the user believes the module or manager is installed.
+Phase 8 extends the final-sealed Debug Workbench with deeper evidence for cases where the app reports that Vector or LSPosed is missing even though the user believes the module or manager is installed.
 
 The hardening keeps the workbench read-only while making the missing layer visible:
 
-- LSPosed and AshReXcue probes now use root-aware `SuFile` reads for `/data/adb/modules` and `/data/adb/modules_update` instead of relying only on app-process `File` access;
-- provider and AshReXcue probes report root existence, directory status, readability, child count, a bounded children preview, and any listing error;
-- provider and AshReXcue candidate rows report whether `module.prop` was readable and which canonical identity matched;
+- LSPosed provider probes use root-aware `SuFile` reads for `/data/adb/modules` and `/data/adb/modules_update` instead of relying only on app-process `File` access;
+- provider probes report root existence, directory status, readability, child count, a bounded children preview, and any listing error;
+- provider candidate rows report whether `module.prop` was readable and which canonical identity matched;
 - LSPosed manager diagnostics include package enumeration hints for visible `lsposed`, `libxposed`, `vector`, and `matrix` package names;
 - Vector manager handling checks package visibility for `org.matrix.vector.manager` and keeps `org.matrix.vector.daemon` visible to the package manager;
 - manager launch resolution checks normal launcher intents, package-specific `LAUNCH_MANAGER` actions/categories, and the LSPosed compatibility launch action;

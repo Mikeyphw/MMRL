@@ -17,7 +17,7 @@ Phase 12 makes the Phase 10/11 unified browser model visible inside the existing
   - source type chips populated from the current canonical rows
   - provider compatibility chips populated from the current canonical rows
   - active filter summaries and a clear action
-- Installed view keeps the existing root-module cards, actions, switch behavior, WebUI/action buttons, AshReXcue filters, snapshots, and update sheets.
+- Installed view keeps the existing root-module cards, actions, switch behavior, WebUI/action buttons, snapshots, and update sheets.
 - Non-installed unified views render read-only canonical cards that expose source, mode, state, badges, match explanation, aliases, source URL, and scope diagnostics.
 
 ## Intentional non-goals
@@ -31,7 +31,7 @@ Those belong in later phases after the data-plane and first UI bridge are valida
 
 ## Why this shape
 
-The installed-module screen already owns root manager actions, provider state changes, version locking, AshReXcue recovery, snapshots, and WebUI launchers. Replacing it in the same phase as the first unified UI would create a large blast radius. Phase 12 instead uses the unified model as a control and read-only exploration layer while keeping installed modules on their proven cards.
+The installed-module screen already owns root manager actions, provider state changes, version locking, snapshots, and WebUI launchers. Replacing it in the same phase as the first unified UI would create a large blast radius. Phase 12 instead uses the unified model as a control and read-only exploration layer while keeping installed modules on their proven cards.
 
 ## Contracts added
 

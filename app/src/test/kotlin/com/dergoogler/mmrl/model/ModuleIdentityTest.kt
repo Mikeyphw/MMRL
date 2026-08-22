@@ -1,5 +1,6 @@
 package com.dergoogler.mmrl.model
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,17 +17,8 @@ class ModuleIdentityTest {
     }
 
     @Test
-    fun `ashrexcue aliases match bundled module identity`() {
-        assertTrue(ModuleIdentity.isAshReXcue("AshLooper"))
-        assertTrue(ModuleIdentity.isAshReXcue("AshReXcue_Bootloop_Protector"))
-        assertTrue(ModuleIdentity.isAshReXcue("ashrexcue-bootloop-protector"))
+    fun `ordinary module identity has no hidden alias expansion`() {
+        assertEquals("example.module", ModuleIdentity.canonical("  EXAMPLE.MODULE "))
+        assertEquals(setOf("example.module"), ModuleIdentity.aliasesFor(" Example.Module "))
     }
-
-    @Test
-    fun `ashrexcue aliases are canonical installed identities`() {
-        assertTrue(ModuleIdentity.matches("ashlooper", "ashrexcue"))
-        assertTrue(ModuleIdentity.matches("AshReXcue Bootloop Protector", "ashrexcue"))
-        assertTrue(ModuleIdentity.aliasesFor("ashrexcue").contains("ashlooper"))
-    }
-
 }

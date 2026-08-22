@@ -1,6 +1,6 @@
 # LSPosed scope/provider final seal
 
-This seal closes the staged LSPosed/Vector roadmap on top of the Vector provider baseline and the repository-token/AshReXcue hotfix.
+This seal closes the staged LSPosed/Vector roadmap on top of the Vector provider baseline and the repository-token hotfix.
 
 ## Completed roadmap
 
@@ -8,7 +8,7 @@ This seal closes the staged LSPosed/Vector roadmap on top of the Vector provider
 2. **Guarded scope editor**: review-first scope plans, package target sanitizing, SQLite transactions, root-side backups, and WAL/SHM cleanup after restore.
 3. **LSPosed manager seal**: explicit manager-open mode selection for installed manager app, active provider action bridge, bundled manager APK, and unavailable providers.
 4. **Provider refresh bridge**: post-write refresh planning that opens the installed manager, runs the active provider action bridge, or gives reboot fallback guidance.
-5. **Repository/token/AshReXcue hotfix**: LSPosed/Xposed repository mirror fallback, app-wide encrypted GitHub API token reuse, and canonical AshReXcue installed-module aliases.
+5. **Repository/token hotfix**: LSPosed/Xposed repository mirror fallback and app-wide encrypted GitHub API token reuse.
 6. **Final integration/regression seal**: documentation and source contracts that lock the full APK-module, provider, scope, refresh, repository, token, and installed-identity stack together.
 
 ## Non-goals kept sealed
@@ -19,7 +19,6 @@ This seal closes the staged LSPosed/Vector roadmap on top of the Vector provider
 - MMRL does not treat Vector or LSPosed framework root modules as APK modules.
 - MMRL does not pretend a bundled `manager.apk` is launchable unless Android exposes an installed manager package.
 - MMRL does not store raw GitHub API tokens in `UserPreferences`.
-- MMRL does not use repository metadata alone to decide that AshReXcue is missing.
 
 ## Validation expectation
 

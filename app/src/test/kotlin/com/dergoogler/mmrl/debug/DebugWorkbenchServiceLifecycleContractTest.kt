@@ -24,14 +24,6 @@ class DebugWorkbenchServiceLifecycleContractTest {
         assertFalse(actions.contains("RepositoryService.start(context, interval = 1L)"))
     }
 
-    @Test
-    fun `ash rescue runtime has locator fallback before debug probes are needed`() {
-        val repository = source("app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshRepository.kt")
-        assertTrue(repository.contains("AshModuleLocator().inspect()"))
-        assertTrue(repository.contains("locatorModuleStateRaw"))
-        assertTrue(repository.contains("if (rootServiceInstalled) return rootServiceRaw"))
-        assertTrue(repository.contains("return if (locatorInstalled) locatorRaw else rootServiceRaw"))
-    }
 
     @Test
     fun `parked warnings are fixed`() {
