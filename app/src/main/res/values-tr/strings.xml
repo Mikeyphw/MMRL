@@ -431,8 +431,7 @@
     <string name="from_other_repositories">Diğer Depolardan</string>
     <string name="settings_date_pattern_dialog_desc">Tarih modeli olarak ayrıştırılıcaktır:\n[color=primary]%1$s[/color]</string>
     <string name="explore_repos_discover_text">Cihazınız için [bold]%2$d[/bold] üzerinde modül içeren[bold]%1$d[/bold] güvenilir depolardan modülleri keşfedin ve yükleyin.</string>
-    <string name="external_app_required_desc">Deneyiminizi geliştirmek ve daha sağlam WebUI işlevselliği sağlamak için MMRL artık özel bir harici uygulama kullanmaktadır: WebUI X: Taşınabilir. Bu, daha iyi performans, gelişmiş güvenlik ve WebUI özellikleri için daha sık güncellemeler sağlar. WebUI X\'i yüklemeniz gerekecek: Portable\'ı yükleyerek modüllerinizin WebUI\'lerine erişmeye devam edebilirsiniz. MMRL\'yi Google Play Store üzerinden yükleyen kullanıcılar WebUI X için Google Play Store sayfasına yönlendirilecektir: Portable için Google Play Store sayfasına yönlendirilecektir.</string>
-    <string name="page_superuser">Süper Kullanıcı</string>
+<string name="page_superuser">Süper Kullanıcı</string>
     <string name="menu_pin_has_root">Pin Root\'a Sahip</string>
     <string name="menu_show_system_apps">Sistem Uygulamalarını Göster</string>
     <string name="menu_show_category">Kategoriyi Göster</string>

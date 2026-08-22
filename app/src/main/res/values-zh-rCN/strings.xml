@@ -411,8 +411,7 @@
     <string name="menu_sort_option_size">按大小</string>
     <string name="settings_try_wxp">试试 WebUI X: Portable！</string>
     <string name="external_app_required_title">需要外部应用程序</string>
-    <string name="external_app_required_desc">为了增强您的使用体验并提供更强大的 WebUI 功能，MMRL 现在使用了一个专用的外部应用程序： WebUI X: Portable。这样不仅可以提高性能，增强安全性，而且会更频繁地扩展 WebUI 功能。您需要安装 WebUI X: Portable 才能继续访问模块的 WebUI。通过 Google Play 商店安装 MMRL 的用户将被重定向到 WebUI X: Portable 的 Google Play 商店页面。</string>
-    <string name="settings_terminal_line_numbers">行号</string>
+<string name="settings_terminal_line_numbers">行号</string>
     <string name="settings_terminal_line_numbers_desc">在终端左侧显示行号</string>
     <string name="super_user_apps">超级用户应用</string>
     <string name="view_module_permissions">权限</string>

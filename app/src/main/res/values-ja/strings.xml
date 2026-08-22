@@ -398,8 +398,7 @@
     <string name="view_module_no_description">説明はありません。</string>
     <string name="create_webui_shortcut">WebUI ショートカットを作成</string>
     <string name="remove_webui_shortcut">WebUI ショートカットを削除</string>
-    <string name="external_app_required_desc">MMRL は、ユーザーエクスペリエンスの向上と WebUI 機能の強化のために専用の外部アプリ「WebUI X: Portable」を導入しました。パフォーマンスの向上、セキュリティの強化と WebUI 機能の定期的な更新が可能になります。モジュールの WebUI に引き続きアクセスするには、WebUI X: Portable をインストールする必要があります。Google Play ストアから MMRL をインストールしたユーザーは、Google Play ストア上の WebUI X: Portable にリダイレクトされます。</string>
-    <string name="settings_webui_engine_wx">WebUI X</string>
+<string name="settings_webui_engine_wx">WebUI X</string>
     <string name="settings_webui_engine">WebUI エンジン</string>
     <string name="settings_webui_engine_desc">お好みのエンジンを選択してください。</string>
     <string name="super_user_apps">スーパーユーザーアプリ</string>

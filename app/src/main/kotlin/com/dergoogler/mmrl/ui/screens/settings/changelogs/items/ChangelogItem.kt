@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.dergoogler.mmrl.BuildConfig
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Const
 import com.dergoogler.mmrl.ext.fadingEdge
@@ -103,11 +102,7 @@ fun ChangelogBottomSheet(
                     .padding(16.dp)
                     .fillMaxWidth(),
             onClick = {
-                if (BuildConfig.IS_GOOGLE_PLAY_BUILD) {
-                    browser.openUri(Const.GOOGLE_PLAY_DOWNLOAD)
-                } else {
-                    browser.openUri(Const.GITHUB_DOWNLOAD + "/tag/${changelog.versionName}")
-                }
+                browser.openUri(Const.GITHUB_DOWNLOAD + "/tag/${changelog.versionName}")
             },
         ) {
             Text(stringResource(id = R.string.module_download))

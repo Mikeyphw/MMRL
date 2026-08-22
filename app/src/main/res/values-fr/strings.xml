@@ -382,8 +382,7 @@
     <string name="menu_sort_option_size">Taille</string>
     <string name="settings_try_wxp">Essayez WebUI X : Portable !</string>
     <string name="external_app_required_title">Application externe requise</string>
-    <string name="external_app_required_desc">Afin d\'améliorer votre expérience et de fournir des fonctionnalités WebUI plus robustes, MMRL utilise désormais une application externe dédiée : WebUI X : Portable. Cette application permet d\'améliorer les performances, la sécurité et la fréquence des mises à jour des fonctionnalités de l\'interface WebUI. Vous devrez installer WebUI X : Portable pour continuer à accéder aux WebUI de vos modules. Les utilisateurs qui ont installé MMRL via le Google Play Store seront redirigés vers la page Google Play Store pour WebUI X : Portable.</string>
-    <string name="settings_always_show_update_alert">Toujours afficher l\'alerte de mise à jour</string>
+<string name="settings_always_show_update_alert">Toujours afficher l\'alerte de mise à jour</string>
     <string name="update_available">Mise à jour disponible !</string>
     <string name="settings_webui_engine_desc">Sélectionnez votre moteur préféré</string>
     <string name="view_module_no_description">Aucune description fournie.</string>

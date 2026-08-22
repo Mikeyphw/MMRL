@@ -443,5 +443,4 @@
     <string name="settings_disable_su">Nonaktifkan kompatibilitas SU</string>
     <string name="settings_disable_su_desc">Nonaktifkan kemampuan aplikasi apa pun untuk mendapatkan hak akses root melalui perintah ⁠`su` (proses root yang ada tidak akan terpengaruh).</string>
     <string name="external_app_required_title">Aplikasi Eksternal Diperlukan</string>
-    <string name="external_app_required_desc">Untuk meningkatkan pengalaman Anda dan menyediakan fungsionalitas WebUI yang lebih andal, MMRL sekarang menggunakan aplikasi eksternal khusus: WebUI X: Portable. Hal ini memungkinkan kinerja yang lebih baik, peningkatan keamanan, dan pembaruan yang lebih sering untuk fitur WebUI. Anda perlu memasang WebUI X: Portable untuk terus mengakses WebUI pada modul Anda. Pengguna yang memasang MMRL melalui Google Play Store akan dialihkan ke halaman Google Play Store untuk WebUI X: Portable.</string>
 </resources>

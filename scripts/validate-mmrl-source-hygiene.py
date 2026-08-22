@@ -118,20 +118,31 @@ def check_gradle_release_gates() -> None:
         "checkDependencies = true",
         "assembleOfficialDebug",
         "assembleOfficialRelease",
-        "assembleOfficialPlaystore",
         "connectedOfficialDebugAndroidTest",
         "resolveVersionCode(31320)",
         "releaseSigningProperties = project.releaseSigningProperties()",
-        "refusing to create unsigned or debug-signed release/playstore artifacts",
-        "matchingFallbacks += listOf(\"release\")",
-        "variant.sources.assets?.addGeneratedSourceDirectory",
+        "refusing to create an unsigned or debug-signed release artifact",
     ):
         if needle not in app:
             fail(f"app Gradle release seal is missing {needle}")
     if "signingConfigs.getByName(\"debug\")" in app:
-        fail("release/playstore signing must not silently fall back to debug signing")
+        fail("release signing must not silently fall back to debug signing")
     if "startsWith(\"merge\") && name.endsWith(\"Assets\")" in app:
         fail("generated variant assets must be wired through variant sources, not guessed task names")
+
+    if "create(\"playstore\")" in app or "assembleOfficialPlaystore" in app or "IS_GOOGLE_PLAY_BUILD" in app:
+        fail("app Gradle must not define the removed Play Store variant or BuildConfig gate")
+    hidden_api = text("hidden-api/build.gradle.kts")
+    if "playstore" in hidden_api.lower():
+        fail("hidden-api must not define the removed Play Store build type")
+    for path in (
+        "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/changelogs/items/ChangelogItem.kt",
+        "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/SettingsScreen.kt",
+        "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModuleItem.kt",
+        "app/src/main/kotlin/com/dergoogler/mmrl/utils/PackageManager.kt",
+    ):
+        if "IS_GOOGLE_PLAY_BUILD" in text(path):
+            fail(f"{path} still contains Play Store build branching")
 
     project_ext = text("build-logic/src/main/kotlin/ProjectExt.kt")
     for needle in (
@@ -155,7 +166,7 @@ def check_gradle_release_gates() -> None:
         fail("root clean must remove subproject build outputs")
 
     devtool = text(".devtool.toml")
-    for needle in (":app:assembleOfficialPlaystore", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_host_provider = "auto"'):
+    for needle in (":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_host_provider = "auto"'):
         if needle not in devtool:
             fail(f"Devtool final validation metadata is missing {needle}")
     if "-Pmmrl.fullLint=true" in devtool:
@@ -193,8 +204,10 @@ def check_source_hygiene() -> None:
     if ".tar.zst" not in pack or "--zstd" not in pack:
         fail("pack_repo.sh must use matching .tar.zst naming with zstd compression")
     release = text("build-release-apk.sh")
-    if "build_variant \"$FLAVOR\" playstore" not in release:
-        fail("build-release-apk.sh all mode must build the playstore variant")
+    if "build_variant \"$FLAVOR\" debug" not in release or "build_variant \"$FLAVOR\" release" not in release:
+        fail("build-release-apk.sh all mode must build personal-use debug and release variants")
+    if "playstore" in release.lower():
+        fail("build-release-apk.sh must not reference the removed Play Store variant")
 
     if (ROOT / ".git").is_dir():
         import subprocess
@@ -236,6 +249,47 @@ def check_room_schemas() -> None:
         if actual != int(schema.stem):
             fail(f"Room schema {schema.relative_to(ROOT)} declares version {actual}, expected {schema.stem}")
 
+def check_ci_validation_signing() -> None:
+    workflow = text(".github/workflows/mmrl-release-seal.yml")
+    for needle in (
+        "Prepare ephemeral CI validation signing",
+        "mmrl-ci-validation.jks",
+        "keytool -genkeypair",
+        "keyStore=$KEYSTORE",
+        "matrix.task-set == 'release'",
+    ):
+        if needle not in workflow:
+            fail(f"OV14 CI validation signing setup is missing {needle}")
+    if "playstore" in workflow.lower():
+        fail("OV14 CI must not restore the removed Play Store lane")
+
+
+
+def check_personal_use_bughunt_cleanup() -> None:
+    forbidden_backups = [
+        ROOT / ".devtool.toml.before-mmrl-cmake-rootfix",
+        ROOT / ".devtool.toml.before-phased-performance-all",
+        ROOT / "app/build.gradle.kts.bak",
+        ROOT / "app/build.gradle.kts.before-mmrlx-auth-fix",
+    ]
+    present = [str(path.relative_to(ROOT)) for path in forbidden_backups if path.exists()]
+    if present:
+        fail("personal-use cleanup retained obsolete store build backups: " + ", ".join(present))
+
+    production = text("app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationRecoveryPolicy.kt")
+    if "TASKER_ASH" in production:
+        fail("removed Ash Tasker worker origin leaked back into OperationRecoveryPolicy")
+
+    stale_test = ROOT / "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepoTokenAshContractTest.kt"
+    if stale_test.exists():
+        fail("stale Ash-named LSPosed test must be renamed after the split")
+
+    for path in (ROOT / "app/src/main/res").rglob("*.xml"):
+        body = path.read_text(encoding="utf-8", errors="replace").lower()
+        if "google play" in body or "play store" in body:
+            fail(f"personal-use UI still references store distribution: {path.relative_to(ROOT)}")
+
+
 def check_final_seal_files() -> None:
     for path in (
         ".github/workflows/mmrl-release-seal.yml",
@@ -257,6 +311,8 @@ check_gradle_release_gates()
 check_api_qualified_theme_resources()
 check_source_hygiene()
 check_room_schemas()
+check_ci_validation_signing()
+check_personal_use_bughunt_cleanup()
 check_final_seal_files()
 
 if FAILURES:

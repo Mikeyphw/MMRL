@@ -140,6 +140,12 @@ tasks.register("verifyAshReXcuePurgedFromMmrl") {
         val settings = file("settings.gradle.kts").readText()
         check(":ashrexcue" !in settings) { "MMRL must not include a temporary :ashrexcue project" }
         val appBuild = file("app/build.gradle.kts").readText()
+        check("create(\"playstore\")" !in appBuild && "assembleOfficialPlaystore" !in appBuild && "IS_GOOGLE_PLAY_BUILD" !in appBuild) {
+            "OV14 personal-use MMRL must not define or gate behavior on a Play Store build variant"
+        }
+        check("playstore" !in file("hidden-api/build.gradle.kts").readText().lowercase()) {
+            "OV14 hidden-api must not define a Play Store build type"
+        }
         check("packageAshReXcueModule" !in appBuild && "src/main/ash-module" !in appBuild) {
             "MMRL must not package the AshReXcue recovery module"
         }
@@ -295,3 +301,103 @@ tasks.register("verifyOv13CrossRepositoryIndependence") {
     }
 }
 
+
+
+val verifyMmrlSourceHygiene by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Run MMRL source-hygiene validation as a first-class OV14 Gradle gate."
+    workingDir(rootDir)
+    commandLine("python3", "scripts/validate-mmrl-source-hygiene.py")
+}
+
+/** OV14: final standalone MMRL release seal after the AshReXcue purge and independence gates. */
+tasks.register("verifyOv14FinalReleaseSeal") {
+    group = "verification"
+    description = "Runs the final MMRL split/independence/source-hygiene release contract."
+    dependsOn(
+        "verifyStableToolchainBaseline",
+        "verifyOv13CrossRepositoryIndependence",
+        verifyMmrlSourceHygiene,
+    )
+
+    doLast {
+        val appBuild = file("app/build.gradle.kts").readText()
+        listOf(
+            "ov14FullLintOfficialDebug",
+            "verifyOv14ReleaseArtifacts",
+            "mmrlReleaseSeal",
+            "assembleOfficialDebug",
+            "assembleOfficialRelease",
+            "compileOfficialDebugAndroidTestKotlin",
+        ).forEach { required ->
+            check(required in appBuild) { "OV14 app release seal is missing $required" }
+        }
+        check("requested.substringAfterLast(':') in setOf(\"ov14FullLintOfficialDebug\", \"mmrlReleaseSeal\")" in appBuild) {
+            "OV14 full-lint alias must enable strict MMRL lint only for the final seal"
+        }
+
+        val devtool = file(".devtool.toml").readText()
+        listOf(
+            "verifyOv14FinalReleaseSeal",
+            ":platform:testDebugUnitTest",
+            ":platform:testNativeContracts",
+            ":app:testOfficialDebugUnitTest",
+            ":app:ov14FullLintOfficialDebug",
+            ":app:verifyOv14ReleaseArtifacts",
+            ":app:compileOfficialDebugAndroidTestKotlin",
+        ).forEach { required ->
+            check(required in devtool) { "OV14 Devtool release seal is missing $required" }
+        }
+        check("-Pmmrl.fullLint=true" !in devtool) {
+            "OV14 must not make normal Devtool lint globally strict; use the dedicated final-seal alias"
+        }
+
+        val script = file("scripts/run-mmrl-release-seal.sh").readText()
+        check("verifyOv14FinalReleaseSeal" in script && "ORG_GRADLE_PROJECT_mmrl.fullLint=true" in script) {
+            "OV14 manual MMRL release seal must retain source/static gating and strict full lint"
+        }
+        val workflow = file(".github/workflows/mmrl-release-seal.yml").readText()
+        check("verifyOv14FinalReleaseSeal" in workflow && "-Pmmrl.fullLint=true" in workflow) {
+            "OV14 CI release seal must run the final independence gate and strict full lint"
+        }
+        check("Prepare ephemeral CI validation signing" in workflow && "mmrl-ci-validation.jks" in workflow && "keytool -genkeypair" in workflow) {
+            "OV14 CI release lane must provision non-production validation signing instead of failing for missing signing.properties"
+        }
+        check("playstore" !in workflow.lowercase()) {
+            "OV14 personal-use CI must not restore the removed Play Store lane"
+        }
+        val obsoleteStoreBackups = listOf(
+            ".devtool.toml.before-mmrl-cmake-rootfix",
+            ".devtool.toml.before-phased-performance-all",
+            "app/build.gradle.kts.bak",
+            "app/build.gradle.kts.before-mmrlx-auth-fix",
+        ).map(::file).filter { it.exists() }
+        check(obsoleteStoreBackups.isEmpty()) {
+            "OV14 bughunt seal forbids obsolete store-build backups: ${obsoleteStoreBackups.joinToString()}"
+        }
+        val recoveryPolicy = file("app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationRecoveryPolicy.kt").readText()
+        check("TASKER_ASH" !in recoveryPolicy) { "OV14 bughunt seal forbids the removed Ash Tasker worker origin" }
+        check(!file("app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepoTokenAshContractTest.kt").exists()) {
+            "OV14 bughunt seal forbids stale Ash-named LSPosed tests"
+        }
+        val userFacingStoreMentions = fileTree("app/src/main/res") { include("**/*.xml") }.files.filter { source ->
+            val body = source.readText().lowercase()
+            "google play" in body || "play store" in body
+        }
+        check(userFacingStoreMentions.isEmpty()) {
+            "OV14 personal-use UI must not advertise store distribution: ${userFacingStoreMentions.joinToString()}"
+        }
+        check(":app:compileOfficialDebugAndroidTestKotlin" in script && ":app:verifyOv14ReleaseArtifacts" in script) {
+            "OV14 manual release seal must compile instrumentation contracts and verify final APK outputs"
+        }
+
+        val snapshotModel = file("app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt").readText()
+        val snapshotTest = file("app/src/test/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicyTest.kt").readText()
+        check("data class ModuleSnapshot(" in snapshotModel && "object ModuleSnapshotPlanner" in snapshotModel) {
+            "OV14 must preserve MMRL's module-snapshot implementation"
+        }
+        check("ModuleSnapshotPlanner.compare" in snapshotTest) {
+            "OV14 must preserve executable module-snapshot regression coverage"
+        }
+    }
+}

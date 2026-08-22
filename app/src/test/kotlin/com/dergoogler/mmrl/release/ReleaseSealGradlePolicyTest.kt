@@ -20,20 +20,17 @@ class ReleaseSealGradlePolicyTest {
     }
 
     @Test
-    fun `final seal includes all official variants and instrumentation compilation`() {
+    fun `final seal includes personal use debug release and instrumentation compilation`() {
         val app = source("app/build.gradle.kts")
         listOf(
             "testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"",
             "assembleOfficialDebug",
             "assembleOfficialRelease",
-            "assembleOfficialPlaystore",
             "connectedOfficialDebugAndroidTest",
             "androidTestImplementation(libs.androidx.test.runner)",
             "androidTestImplementation(libs.androidx.junit)",
             "releaseSigningProperties = project.releaseSigningProperties()",
-            "refusing to create unsigned or debug-signed release/playstore artifacts",
-            "matchingFallbacks += listOf(\"release\")",
-            "variant.sources.assets?.addGeneratedSourceDirectory",
+            "refusing to create an unsigned or debug-signed release artifact",
         ).forEach { assertTrue("missing Gradle final-seal token $it", app.contains(it)) }
     }
 
@@ -42,7 +39,9 @@ class ReleaseSealGradlePolicyTest {
         val devtool = source(".devtool.toml")
         assertTrue(devtool.contains(":app:assembleOfficialDebug"))
         assertTrue(devtool.contains(":app:assembleOfficialRelease"))
-        assertTrue(devtool.contains(":app:assembleOfficialPlaystore"))
+        assertFalse(devtool.contains(":app:assembleOfficialPlaystore"))
+        assertFalse(app.contains("create(\"playstore\")"))
+        assertFalse(app.contains("IS_GOOGLE_PLAY_BUILD"))
         assertFalse(devtool.contains("-Pmmrl.fullLint=true"))
         assertTrue(devtool.contains("ndk_host_provider = \"auto\""))
         val releaseSeal = source("scripts/run-mmrl-release-seal.sh")

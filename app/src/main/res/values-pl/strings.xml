@@ -374,8 +374,7 @@
     <string name="architecture">Architektura</string>
     <string name="remove_webui_shortcut">Usuń skrót WebUI</string>
     <string name="create_webui_shortcut">Utwórz skrót WebUI</string>
-    <string name="external_app_required_desc">W celu zwiększenia komfortu użytkowania i zapewnienia bardziej niezawodnych funkcji WebUI, MMRL wykorzystuje teraz dedykowaną aplikację zewnętrzną: WebUI X: Portable. Pozwala to na lepszą wydajność, zwiększone bezpieczeństwo i częstsze aktualizacje funkcji WebUI. Musisz zainstalować WebUI X: Portable, aby kontynuować dostęp do WebUI dla swoich modułów. Użytkownicy, którzy zainstalowali MMRL za pośrednictwem Sklepu Google Play, zostaną przekierowani na stronę Sklepu Google Play dla WebUI X: Portable.</string>
-    <string name="settings_webui_engine_wx">WebUI X</string>
+<string name="settings_webui_engine_wx">WebUI X</string>
     <string name="settings_webui_engine_prefer_module">Zdefiniowany przez konfigurację modułu</string>
     <string name="settings_webui_engine">Silnik WebUI</string>
     <string name="settings_webui_engine_ksu">WebUI KSU</string>

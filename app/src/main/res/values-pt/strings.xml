@@ -331,8 +331,7 @@
     <string name="allow_filesystem_api">Permitir acesso a API FileSystem?</string>
     <string name="allow_filesystem_api_desc">Você quer permitir que esse módulo use a API FileSystem? Se você não confia nele, pode negar o acesso</string>
     <string name="settings_provider_service">Provedor de serviço</string>
-    <string name="external_app_required_desc">Para melhorar a sua experiência e providenciar uma funcionalidade mais robusta ao WebUI, MMRL agora utiliza uma aplicação externa: WebUI X: Portátil. Isso permite uma performance melhor, mais segurança, e atualizações mais frequentes para funções do WebUI. Você precisará instalar o WebUI X: Portátil para continuar acessando a WebUI em seus módulos. Usuários que instalaram MMRL pela Google Play Store serão redirecionados para a página da Google Play Store do WebUI X: Portátil.</string>
-    <string name="external_app_required_title">Aplicativo externo necessário</string>
+<string name="external_app_required_title">Aplicativo externo necessário</string>
     <string name="settings_try_wxp">Experimente o WebUI X: Portátil!</string>
     <string name="settings_webui_engine">Engine WebUI</string>
     <string name="remove_webui_shortcut">Remover atalho do WebUI</string>

@@ -14,7 +14,6 @@ object Const {
 
     const val PRIVACY_POLICY_URL = "https://mmrl.dev/legal/privacy"
     const val TERMS_OF_SERVICE_URL = "https://mmrl.dev/legal/terms"
-    const val GOOGLE_PLAY_DOWNLOAD = "https://github.com/Mikeyphw/MMRL/releases"
     const val GITHUB_DOWNLOAD = "https://github.com/Mikeyphw/MMRL/releases"
     const val SANMER_GITHUB_URL = "https://github.com/SanmerDev"
     const val GOOGLER_GITHUB_URL = "https://github.com/DerGoogler"

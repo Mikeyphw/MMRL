@@ -7,12 +7,6 @@ android {
 }
 
 android {
-    buildTypes {
-        create("playstore") {
-            initWith(buildTypes.getByName("release"))
-        }
-    }
-
     publishing {
         singleVariant("release")
     }

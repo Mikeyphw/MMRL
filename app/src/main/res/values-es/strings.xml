@@ -387,8 +387,7 @@
     <string name="remove_webui_shortcut">Eliminar el acceso directo a WebUI</string>
     <string name="settings_try_wxp">¡Pruebe WebUI X: Portable!</string>
     <string name="external_app_required_title">Se requiere una aplicación externa</string>
-    <string name="external_app_required_desc">Para mejorar su experiencia y proporcionar una funcionalidad WebUI más sólida, MMRL ahora utiliza una aplicación externa dedicada: WebUI X: Portable. Esto permite un mejor rendimiento, una seguridad mejorada y actualizaciones más frecuentes de las funciones de WebUI. Deberá instalar WebUI X: Portable para continuar accediendo a WebUI para sus módulos. Los usuarios que instalaron MMRL a través de Google Play Store serán redirigidos a la página de Google Play Store para WebUI X: Portable.</string>
-    <string name="settings_terminal_line_numbers">Números de línea</string>
+<string name="settings_terminal_line_numbers">Números de línea</string>
     <string name="settings_terminal_line_numbers_desc">Muestra los números de línea en el lado izquierdo del terminal</string>
     <string name="super_user_apps">Aplicaciones de SuperUsuario</string>
     <string name="view_module_permissions">Permisos</string>

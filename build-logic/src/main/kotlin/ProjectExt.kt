@@ -86,13 +86,13 @@ fun Project.releaseSigningProperties(): ReleaseSigningProperties? {
 }
 
 val Project.releaseKeyStore: File get() = releaseSigningProperties()?.keyStore
-    ?: throw GradleException("Release signing.properties is required for release/playstore artifacts")
+    ?: throw GradleException("Release signing.properties is required for release artifacts")
 val Project.releaseKeyStorePassword: String get() = releaseSigningProperties()?.keyStorePassword
-    ?: throw GradleException("Release signing.properties is required for release/playstore artifacts")
+    ?: throw GradleException("Release signing.properties is required for release artifacts")
 val Project.releaseKeyAlias: String get() = releaseSigningProperties()?.keyAlias
-    ?: throw GradleException("Release signing.properties is required for release/playstore artifacts")
+    ?: throw GradleException("Release signing.properties is required for release artifacts")
 val Project.releaseKeyPassword: String get() = releaseSigningProperties()?.keyPassword
-    ?: throw GradleException("Release signing.properties is required for release/playstore artifacts")
+    ?: throw GradleException("Release signing.properties is required for release artifacts")
 val Project.hasReleaseKeyStore: Boolean get() = releaseSigningProperties() != null
 
 private fun signingProperties(rootDir: File): Properties {

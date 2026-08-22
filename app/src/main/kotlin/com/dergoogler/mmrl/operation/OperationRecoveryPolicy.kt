@@ -22,5 +22,5 @@ object OperationRecoveryPolicy {
     fun recoverWhenStale(status: OperationStatus): Boolean = status in interruptibleStatuses
 
     private fun isDurableWorkerOrigin(origin: String?): Boolean =
-        origin == "TASKER" || origin == "TASKER_ASH"
+        origin == "TASKER"
 }

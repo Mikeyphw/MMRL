@@ -9,7 +9,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.dergoogler.mmrl.BuildConfig
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Const
 import com.dergoogler.mmrl.ext.isPackageInstalled
@@ -65,13 +64,7 @@ fun SettingsScreen() {
             context.isPackageInstalled(userPreferences.webuixPackageName).takeFalse {
                 ButtonItem(
                     onClick = {
-                        browser.openUri(
-                            if (BuildConfig.IS_GOOGLE_PLAY_BUILD) {
-                                "https://play.google.com/store/apps/details?id=com.dergoogler.mmrl.wx"
-                            } else {
-                                "https://github.com/MMRLApp/WebUI-X-Portable"
-                            },
-                        )
+                        browser.openUri("https://github.com/MMRLApp/WebUI-X-Portable")
                     },
                 ) {
                     Icon(painter = painterResource(R.drawable.sandbox))

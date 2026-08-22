@@ -19,7 +19,6 @@ app/releaseCandidate/*
 app/beta/*
 app/alpha/*
 app/debugMin/*
-app/playstore/*
 .externalNativeBuild/
 .cxx/
 

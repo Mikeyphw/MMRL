@@ -4,6 +4,5 @@
     <string name="requireNewVersion_try_the_following">こちらをお試しください:</string>
     <string name="requireNewVersion_try_the_following_two">回避策については、モジュールの開発者にお問い合わせください。</string>
     <string name="requireNewVersion_cannot_load_webui">WebUI を読み込めません</string>
-    <string name="requireNewVersion_try_the_following_one">Google Play または GitHub のリリースから MMRL を最新のバージョンに更新します。</string>
-    <string name="requireNewVersion_refresh">更新</string>
+<string name="requireNewVersion_refresh">更新</string>
 </resources>

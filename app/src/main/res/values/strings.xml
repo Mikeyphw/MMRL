@@ -444,7 +444,7 @@
     <string name="menu_sort_option_size">Size</string>
     <string name="settings_try_wxp">Try WebUI X: Portable!</string>
     <string name="external_app_required_title">External App Required</string>
-    <string name="external_app_required_desc">To enhance your experience and provide more robust WebUI functionality, MMRL now utilizes a dedicated external application: WebUI X: Portable. This allows for better performance, improved security, and more frequent updates for WebUI features. You\'ll need to install WebUI X: Portable to continue accessing WebUI\'s for your modules. Users who installed MMRL via the Google Play Store will be redirected to the Google Play Store page for WebUI X: Portable.</string>
+    <string name="external_app_required_desc">To enhance your experience and provide more robust WebUI functionality, MMRL now utilizes a dedicated external application: WebUI X: Portable. This allows for better performance, improved security, and more frequent updates for WebUI features. You\'ll need to install WebUI X: Portable to continue accessing WebUI\'s for your modules.</string>
     <string name="settings_terminal_line_numbers">Line Numbers</string>
     <string name="settings_terminal_line_numbers_desc">Shows line numbers on the left side of the terminal</string>
     <string name="super_user_apps">SuperUser Apps</string>

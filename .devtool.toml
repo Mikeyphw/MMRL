@@ -60,17 +60,14 @@ required = true
 [validation.phases]
 preflight = [
   "verifyStableToolchainBaseline",
-  "verifyMmrlStandaloneProductCleanup",
-  "verifyOv13CrossRepositoryIndependence",
+  "verifyOv14FinalReleaseSeal",
   "help",
 ]
 compile = [
   ":app:compileOfficialDebugSources",
   ":app:compileOfficialDebugAndroidTestKotlin",
 ]
-resources = [
-  ":app:processOfficialDebugResources",
-]
+resources = [":app:processOfficialDebugResources"]
 unit-test = [
   ":platform:testDebugUnitTest",
   ":platform:testNativeContracts",
@@ -79,23 +76,21 @@ unit-test = [
 package = [
   ":app:assembleOfficialDebug",
   ":app:assembleOfficialRelease",
-  ":app:assembleOfficialPlaystore",
+  ":app:verifyOv14ReleaseArtifacts",
 ]
-lint = [
-  ":app:lintOfficialDebug",
-]
+lint = [":app:ov14FullLintOfficialDebug"]
 
 [validation.final]
 release-seal = [
-  "verifyMmrlStandaloneProductCleanup",
-  "verifyOv13CrossRepositoryIndependence",
+  "verifyOv14FinalReleaseSeal",
   ":platform:testDebugUnitTest",
   ":platform:testNativeContracts",
   ":app:testOfficialDebugUnitTest",
-  ":app:lintOfficialDebug",
+  ":app:ov14FullLintOfficialDebug",
+  ":app:compileOfficialDebugAndroidTestKotlin",
   ":app:assembleOfficialDebug",
   ":app:assembleOfficialRelease",
-  ":app:assembleOfficialPlaystore",
+  ":app:verifyOv14ReleaseArtifacts",
 ]
 native = [":platform:testDebugUnitTest", ":platform:testNativeContracts"]
 

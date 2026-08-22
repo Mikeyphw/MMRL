@@ -17,16 +17,17 @@ printf 'mmrl-release-seal: source hygiene\n'
 python3 scripts/validate-mmrl-source-hygiene.py
 
 printf 'mmrl-release-seal: standalone product cleanup gate\n'
-run_devtool_validate --task 'verifyOv13CrossRepositoryIndependence'
+run_devtool_validate --task 'verifyOv14FinalReleaseSeal'
 
 printf 'mmrl-release-seal: JVM, native, and variant assembly via devtool validator\n'
 run_devtool_validate \
   --task ':platform:testNativeContracts' \
   --task ':platform:testDebugUnitTest' \
   --task ':app:testOfficialDebugUnitTest' \
+  --task ':app:compileOfficialDebugAndroidTestKotlin' \
   --task ':app:assembleOfficialDebug' \
   --task ':app:assembleOfficialRelease' \
-  --task ':app:assembleOfficialPlaystore'
+  --task ':app:verifyOv14ReleaseArtifacts'
 
 printf 'mmrl-release-seal: full lint via devtool validator\n'
 run_devtool_full_lint_validate \

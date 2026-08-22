@@ -5,7 +5,7 @@ import java.nio.file.Paths
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class LsposedRepoTokenAshContractTest {
+class LsposedRepoTokenContractTest {
     private val root = repositoryRoot()
 
     @Test

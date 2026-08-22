@@ -4,7 +4,7 @@
     <string name="requireNewVersion_cannot_load_webui">Cannot load WebUI</string>
     <string name="requireNewVersion_require_text">requires at least MMRL &gt;=</string>
     <string name="requireNewVersion_try_the_following">Try the following:</string>
-    <string name="requireNewVersion_try_the_following_one">Update MMRL to the latest version from Google Play or GitHub Releases.</string>
+    <string name="requireNewVersion_try_the_following_one">Update MMRL to the latest version from GitHub Releases.</string>
     <string name="requireNewVersion_try_the_following_two">Reach out to the module developer for a possible workaround.</string>
     <string name="requireNewVersion_refresh">Refresh</string>
 </resources>

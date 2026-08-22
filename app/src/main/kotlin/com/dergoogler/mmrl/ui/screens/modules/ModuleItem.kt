@@ -41,7 +41,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.dergoogler.mmrl.BuildConfig
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.fadingEdge
 import com.dergoogler.mmrl.ext.isPackageInstalled
@@ -396,13 +395,7 @@ fun BottomSheetForWXP(onCancel: () -> Unit) {
                 onClick = {
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
                         if (!sheetState.isVisible) {
-                            browser.openUri(
-                                if (BuildConfig.IS_GOOGLE_PLAY_BUILD) {
-                                    "https://play.google.com/store/apps/details?id=com.dergoogler.mmrl.wx"
-                                } else {
-                                    "https://github.com/MMRLApp/WebUI-X-Portable"
-                                },
-                            )
+                            browser.openUri("https://github.com/MMRLApp/WebUI-X-Portable")
                         }
                     }
                 },

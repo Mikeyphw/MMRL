@@ -8,13 +8,11 @@ import org.junit.Test
 class OperationRecoveryPolicyTest {
     @Test fun `durable Tasker queued work survives process recreation`() {
         assertFalse(OperationRecoveryPolicy.recoverImmediately(OperationStatus.QUEUED, "TASKER"))
-        assertFalse(OperationRecoveryPolicy.recoverImmediately(OperationStatus.QUEUED, "TASKER_ASH"))
         assertTrue(OperationRecoveryPolicy.recoverImmediately(OperationStatus.QUEUED, null))
     }
 
     @Test fun `only durable Tasker approval waits survive ordinary process restart`() {
         assertFalse(OperationRecoveryPolicy.recoverImmediately(OperationStatus.WAITING_APPROVAL, "TASKER"))
-        assertFalse(OperationRecoveryPolicy.recoverImmediately(OperationStatus.WAITING_APPROVAL, "TASKER_ASH"))
         assertTrue(OperationRecoveryPolicy.recoverImmediately(OperationStatus.WAITING_APPROVAL, null))
         assertTrue(OperationRecoveryPolicy.recoverImmediately(OperationStatus.WAITING_APPROVAL, "APP"))
         assertTrue(OperationRecoveryPolicy.recoverWhenStale(OperationStatus.WAITING_APPROVAL))

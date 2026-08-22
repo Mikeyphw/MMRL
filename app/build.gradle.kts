@@ -18,9 +18,12 @@ val baseAppName = "MMRL Fork"
 val mmrlSourceNamespace = "com.dergoogler.mmrl"
 val mmrlForkApplicationId = "com.mikeyphw.mmrl"
 val mmrlWebUiPermissionId = "com.dergoogler.mmrl"
+val ov14FullLintRequested = gradle.startParameter.taskNames.any { requested ->
+    requested.substringAfterLast(':') in setOf("ov14FullLintOfficialDebug", "mmrlReleaseSeal")
+}
 val fullLintReport = providers.gradleProperty("mmrl.fullLint")
     .map(String::toBoolean)
-    .getOrElse(false)
+    .getOrElse(false) || ov14FullLintRequested
 
 val appVersion = resolveVersionCode(31320)
 val releaseSigningProperties = project.releaseSigningProperties()
@@ -89,7 +92,6 @@ android {
             )
             resValue("string", "app_name", baseAppName)
             buildConfigField("Boolean", "IS_DEV_VERSION", "false")
-            buildConfigField("Boolean", "IS_GOOGLE_PLAY_BUILD", "false")
             isDebuggable = false
             isJniDebuggable = false
             versionNameSuffix = "-release"
@@ -98,17 +100,9 @@ android {
             manifestPlaceholders["webuiPermissionId"] = mmrlWebUiPermissionId
         }
 
-        create("playstore") {
-            initWith(buildTypes.getByName("release"))
-            matchingFallbacks += listOf("release")
-            buildConfigField("Boolean", "IS_GOOGLE_PLAY_BUILD", "true")
-            versionNameSuffix = "-playstore"
-        }
-
         debug {
             resValue("string", "app_name", "$baseAppName Debug")
             buildConfigField("Boolean", "IS_DEV_VERSION", "true")
-            buildConfigField("Boolean", "IS_GOOGLE_PLAY_BUILD", "false")
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isJniDebuggable = true
@@ -120,7 +114,7 @@ android {
         }
 
         all {
-            if (name == "release" || name == "playstore") {
+            if (name == "release") {
                 releaseSigning?.let { signingConfig = it }
             }
 
@@ -192,9 +186,9 @@ android {
 
 if (releaseSigningProperties == null) {
     val missingReleaseSigningMessage =
-        "Release signing.properties with keyStore, keyStorePassword, keyAlias, and keyPassword is required; refusing to create unsigned or debug-signed release/playstore artifacts."
+        "Release signing.properties with keyStore, keyStorePassword, keyAlias, and keyPassword is required; refusing to create an unsigned or debug-signed release artifact."
     tasks.configureEach {
-        if (name.matches(Regex("^(assemble|bundle|package).*?(Release|Playstore).*"))) {
+        if (name.matches(Regex("^(assemble|bundle|package).*?Release.*"))) {
             doFirst("requireReleaseSigningForOfficialArtifacts") {
                 throw GradleException(missingReleaseSigningMessage)
             }
@@ -350,17 +344,38 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 
+tasks.register("ov14FullLintOfficialDebug") {
+    group = "verification"
+    description = "Run OfficialDebug lint with MMRL's final full-lint policy enabled."
+    dependsOn("lintOfficialDebug")
+}
+
+tasks.register("verifyOv14ReleaseArtifacts") {
+    group = "verification"
+    description = "Verify that OV14 produced non-empty personal-use debug and signed release APKs."
+    dependsOn("assembleOfficialDebug", "assembleOfficialRelease")
+    doLast {
+        val apks = fileTree(layout.buildDirectory.dir("outputs/apk")) { include("**/*.apk") }
+            .files.filter { it.isFile && it.length() > 0L }
+        val requiredKinds = listOf("debug", "release")
+        requiredKinds.forEach { kind ->
+            check(apks.any { it.name.contains("-$kind.apk", ignoreCase = true) || "/$kind/" in it.invariantSeparatorsPath }) {
+                "OV14 did not produce a non-empty official $kind APK; found ${apks.map { it.name }}"
+            }
+        }
+    }
+}
+
 tasks.register("mmrlReleaseSeal") {
     group = "verification"
-    description = "Run the O11 final release seal for all official variants and compile instrumentation contracts."
+    description = "Run the OV14 final standalone MMRL personal-use release seal for official debug/release and instrumentation contracts."
     dependsOn(
+        ":verifyOv14FinalReleaseSeal",
         ":platform:testDebugUnitTest",
         ":platform:testNativeContracts",
         "testOfficialDebugUnitTest",
-        "lintOfficialDebug",
-        "assembleOfficialDebug",
-        "assembleOfficialRelease",
-        "assembleOfficialPlaystore",
+        "ov14FullLintOfficialDebug",
+        "verifyOv14ReleaseArtifacts",
         "compileOfficialDebugAndroidTestKotlin",
     )
 }

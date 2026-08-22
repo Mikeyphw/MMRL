@@ -17,7 +17,6 @@ class Bh64FinalSealContractTest {
             ":app:lintOfficialDebug -Pmmrl.fullLint=true",
             ":app:assembleOfficialDebug",
             ":app:assembleOfficialRelease",
-            ":app:assembleOfficialPlaystore",
             ":platform:testDebugUnitTest",
             ":platform:testNativeContracts",
             "verifyMmrlStandaloneProductCleanup",
@@ -31,7 +30,8 @@ class Bh64FinalSealContractTest {
         assertTrue(workflow.contains("validate-wrappers: true"))
         assertTrue(workflow.contains(":app:assembleOfficialDebug"))
         assertTrue(workflow.contains(":app:assembleOfficialRelease"))
-        assertTrue(workflow.contains(":app:assembleOfficialPlaystore"))
+        assertTrue(workflow.contains(":app:assembleOfficialRelease"))
+        assertTrue(!workflow.contains("playstore", ignoreCase = true))
         assertTrue(workflow.contains(":app:compileOfficialDebugAndroidTestKotlin"))
         assertTrue(workflow.contains(":platform:testDebugUnitTest"))
         assertTrue(workflow.contains(":platform:testNativeContracts"))
@@ -42,7 +42,7 @@ class Bh64FinalSealContractTest {
         val script = source("scripts/validate-mmrl-source-hygiene.py")
         listOf(
             "distributionSha256Sum",
-            "assembleOfficialPlaystore",
+            "assembleOfficialRelease",
             "testNativeContracts",
             ".devtool/build-artifacts/",
             ".tar.zst",

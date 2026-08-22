@@ -35,6 +35,7 @@ class ReleaseSealSourceHygieneTest {
         assertTrue(hiddenApi.contains("JavaVersion.VERSION_21"))
         assertFalse(hiddenApi.contains("JavaVersion.VERSION_11"))
         assertFalse(hiddenApi.contains("JavaVersion.VERSION_17"))
+        assertFalse(hiddenApi.contains("playstore", ignoreCase = true))
 
         val devtool = source(".devtool.toml")
         assertTrue(devtool.contains("version = \"9.7.1\""))
@@ -60,11 +61,11 @@ class ReleaseSealSourceHygieneTest {
     }
 
     @Test
-    fun `release packaging builds playstore when all variants are requested`() {
+    fun `release packaging builds only personal use variants when all is requested`() {
         val script = source("build-release-apk.sh")
         assertTrue(script.contains("build_variant \"${'$'}FLAVOR\" debug"))
         assertTrue(script.contains("build_variant \"${'$'}FLAVOR\" release"))
-        assertTrue(script.contains("build_variant \"${'$'}FLAVOR\" playstore"))
+        assertFalse(script.contains("playstore", ignoreCase = true))
         assertTrue(script.contains("if [[ \"${'$'}BUILD_TYPE\" == \"all\" ]]"))
     }
 
@@ -81,7 +82,6 @@ class ReleaseSealSourceHygieneTest {
         val rootBuild = source("build.gradle.kts")
         val appBuild = source("app/build.gradle.kts")
         assertTrue(rootBuild.contains("delete(subprojects.map { it.layout.buildDirectory })"))
-        assertTrue(appBuild.contains("variant.sources.assets?.addGeneratedSourceDirectory"))
         assertFalse(appBuild.contains("startsWith(\"merge\") && name.endsWith(\"Assets\")"))
     }
 

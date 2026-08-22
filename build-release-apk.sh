@@ -47,7 +47,6 @@ build_variant() {
 if [[ "$BUILD_TYPE" == "all" ]]; then
   build_variant "$FLAVOR" debug
   build_variant "$FLAVOR" release
-  build_variant "$FLAVOR" playstore
 else
   build_variant "$FLAVOR" "$BUILD_TYPE"
 fi

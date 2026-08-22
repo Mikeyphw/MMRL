@@ -372,8 +372,7 @@
     <string name="menu_sort_option_size">Размер</string>
     <string name="settings_try_wxp">Попробуйте использовать WebUI X: Portable!</string>
     <string name="external_app_required_title">Требуется внешнее приложение</string>
-    <string name="external_app_required_desc">Чтобы улучшить ваши впечатления и обеспечить более надежную функциональность WebUI, MMRL теперь использует специальное внешнее приложение: WebUI X: Portable. Это позволяет повысить производительность, улучшить безопасность и чаще обновлять функции WebUI. Вам нужно будет установить WebUI X: Portable, чтобы продолжить доступ к WebUI для ваших модулей. Пользователи, установившие MMRL через Google Play Store, будут перенаправлены на страницу Google Play Store для WebUI X: Portable.</string>
-    <string name="settings_terminal_line_numbers">Номера строк</string>
+<string name="settings_terminal_line_numbers">Номера строк</string>
     <string name="settings_terminal_line_numbers_desc">Показывает номера строк в левой части терминала</string>
     <string name="super_user_apps">SuperUser Приложения</string>
     <string name="settings_date_pattern_dialog_desc">Шаблон даты будет разобран как:\n[color=primary]%1$s[/color]</string>
