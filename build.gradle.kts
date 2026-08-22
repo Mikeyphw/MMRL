@@ -201,15 +201,96 @@ tasks.register("verifyMmrlStandaloneProductCleanup") {
 
         val releaseSeal = file("scripts/run-mmrl-release-seal.sh").readText()
         check("validate-ashrexcue-release.sh" !in releaseSeal) { "MMRL release seal still calls the removed recovery validator" }
-        check("verifyMmrlStandaloneProductCleanup" in releaseSeal) { "MMRL release seal must run the standalone product cleanup gate" }
+        check("verifyMmrlStandaloneProductCleanup" in releaseSeal || "verifyOv13CrossRepositoryIndependence" in releaseSeal) { "MMRL release seal must run the standalone cleanup directly or through the OV13 independence gate" }
         val workflow = file(".github/workflows/mmrl-release-seal.yml").readText()
-        check("validate-ashrexcue-release.sh" !in workflow && "verifyMmrlStandaloneProductCleanup" in workflow) {
-            "Release workflow must use the standalone product cleanup gate"
+        check("validate-ashrexcue-release.sh" !in workflow && ("verifyMmrlStandaloneProductCleanup" in workflow || "verifyOv13CrossRepositoryIndependence" in workflow)) {
+            "Release workflow must run the standalone cleanup directly or through the OV13 independence gate"
         }
 
         val snapshotModel = file("app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt").readText()
         check("data class ModuleSnapshot(" in snapshotModel && "object ModuleSnapshotPlanner" in snapshotModel) {
             "MMRL-owned ModuleSnapshot feature must remain present after product cleanup"
+        }
+    }
+}
+
+/** Split OV13: seal MMRL against any future AshReXcue runtime/build relationship. */
+tasks.register("verifyOv13CrossRepositoryIndependence") {
+    group = "verification"
+    description = "Seals standalone MMRL against AshReXcue package, source, manifest, build, checkout, or symlink coupling."
+    dependsOn("verifyMmrlStandaloneProductCleanup")
+
+    doLast {
+        val productionFiles = fileTree(rootDir) {
+            include("**/src/main/**/*.kt", "**/src/main/**/*.java", "**/src/main/**/*.aidl", "**/src/main/**/*.xml")
+            exclude("**/build/**", ".gradle/**", ".git/**")
+        }.files.sortedBy { it.relativeTo(rootDir).path }
+
+        val forbiddenProductTokens = listOf(
+            "ashrexcue",
+            "ashlooper",
+            "com.dergoogler.mmrl.ash",
+            "com.mikeyphw.ashrexcue",
+            "ashrexcuectl",
+            "ash-module",
+            "mmrl_ash_",
+            "ash_recovery",
+        )
+        val violations = mutableListOf<String>()
+        productionFiles.forEach { source ->
+            val lower = source.readText().lowercase()
+            forbiddenProductTokens.forEach { forbidden ->
+                if (forbidden in lower) violations += "${source.relativeTo(rootDir)} -> $forbidden"
+            }
+        }
+        check(violations.isEmpty()) {
+            "OV13 MMRL production surface regained AshReXcue knowledge:\n${violations.joinToString("\n")}"
+        }
+
+        val buildFiles = listOf(
+            file("settings.gradle.kts"),
+            file("app/build.gradle.kts"),
+            file("gradle/libs.versions.toml"),
+            file("gradle.properties"),
+        ).filter { it.isFile }
+        val buildSurface = buildFiles.joinToString("\n") { it.readText().lowercase() }
+        listOf(
+            "../ashrexcue",
+            "/code/ashrexcue",
+            "project(\":ashrexcue",
+            "projects.ashrexcue",
+            "include(\":ashrexcue",
+            "includebuild(\"../ashrexcue",
+            "includebuild('../ashrexcue",
+            "com.mikeyphw.ashrexcue",
+        ).forEach { forbidden ->
+            check(forbidden !in buildSurface) { "OV13 MMRL build regained AshReXcue coupling: $forbidden" }
+        }
+
+        val manifest = file("app/src/main/AndroidManifest.xml").readText().lowercase()
+        check("ashrexcue" !in manifest && "ashlooper" !in manifest) {
+            "OV13 MMRL manifest must not query, target, expose, or special-case AshReXcue"
+        }
+
+        val sourceRoots = listOf("app", "platform", "datastore", "ext", "gradle", "scripts").map(::file).filter { it.exists() }
+        val repoRoot = rootDir.toPath().toRealPath()
+        val escapedSymlinks = sourceRoots.flatMap { sourceRoot ->
+            sourceRoot.walkTopDown().filter { java.nio.file.Files.isSymbolicLink(it.toPath()) }.mapNotNull { link ->
+                val target = runCatching { link.toPath().toRealPath() }.getOrNull() ?: return@mapNotNull null
+                if (target.startsWith(repoRoot)) null else "${link.relativeTo(rootDir)} -> $target"
+            }.toList()
+        }
+        check(escapedSymlinks.isEmpty()) {
+            "OV13 forbids source-controlled symlinks escaping the MMRL repository:\n${escapedSymlinks.joinToString("\n")}"
+        }
+
+        val snapshotModel = file("app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt").readText()
+        val snapshotStore = file("app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulePolicyStore.kt").readText()
+        check("data class ModuleSnapshot(" in snapshotModel && "object ModuleSnapshotPlanner" in snapshotModel) {
+            "OV13 must preserve MMRL's own module-snapshot model/planner"
+        }
+        check("suspend fun saveSnapshot(" in snapshotStore) {
+            "OV13 must preserve MMRL's own module-snapshot persistence"
         }
     }
 }

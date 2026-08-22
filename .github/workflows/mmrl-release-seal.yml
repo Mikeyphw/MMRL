@@ -43,7 +43,7 @@ jobs:
 
       - name: Standalone product cleanup gate
         if: matrix.task-set == 'static'
-        run: ./gradlew verifyMmrlStandaloneProductCleanup --console=plain
+        run: ./gradlew verifyOv13CrossRepositoryIndependence --console=plain
 
       - name: Platform JVM and native contract tests
         if: matrix.task-set == 'static'

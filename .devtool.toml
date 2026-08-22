@@ -61,6 +61,7 @@ required = true
 preflight = [
   "verifyStableToolchainBaseline",
   "verifyMmrlStandaloneProductCleanup",
+  "verifyOv13CrossRepositoryIndependence",
   "help",
 ]
 compile = [
@@ -87,6 +88,7 @@ lint = [
 [validation.final]
 release-seal = [
   "verifyMmrlStandaloneProductCleanup",
+  "verifyOv13CrossRepositoryIndependence",
   ":platform:testDebugUnitTest",
   ":platform:testNativeContracts",
   ":app:testOfficialDebugUnitTest",
