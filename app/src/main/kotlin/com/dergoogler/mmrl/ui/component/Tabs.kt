@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.IntOffset
 
 @Composable
 internal fun Tabs(
@@ -133,7 +134,7 @@ private fun AnimatedIndicator(
         modifier =
             Modifier
                 .wrapContentSize(align = Alignment.BottomStart)
-                .offset(x = indicatorStart)
+                .offset { IntOffset(indicatorStart.roundToPx(), 0) }
                 .width(indicatorEnd - indicatorStart)
                 .height(3.dp),
     )

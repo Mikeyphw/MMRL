@@ -203,7 +203,7 @@
     <string name="settings_modules_installer">Instalador</string>
     <string name="selinux_status_enforcing">Obediente</string>
     <string name="reboot">Reiniciar</string>
-    <string name="events_christmas">← Arbol.</string>
+    <string name="events_christmas">← Árbol.</string>
     <string name="unsafe_url_redirecting">URL no segura: %1$s. Redireccionando…</string>
     <string name="install_screen_reboot_title">¿Reiniciar?</string>
     <string name="install_screen_reboot_text">¿Está seguro de que desea reiniciar su dispositivo?</string>

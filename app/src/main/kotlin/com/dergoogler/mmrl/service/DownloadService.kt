@@ -179,7 +179,7 @@ class DownloadService : LifecycleService() {
                     operationHistoryRepository.appendLog(historyId, "Download slot acquired")
 
                     if (reusableReceipt != null) {
-                        val authoritativeUri = Uri.parse(reusableReceipt.sourceUri)
+                        val authoritativeUri = reusableReceipt.sourceUri.toUri()
                         operationHistoryRepository.appendLog(historyId, "Reused verified download receipt ${reusableReceipt.sha256}")
                         val sourceCommitted = operationHistoryRepository.sourceUri(historyId, authoritativeUri.toString())
                         val terminalCommitted = operationHistoryRepository.succeed(

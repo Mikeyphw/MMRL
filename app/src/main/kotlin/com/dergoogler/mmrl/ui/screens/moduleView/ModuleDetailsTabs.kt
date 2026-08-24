@@ -24,7 +24,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +43,7 @@ import com.dergoogler.mmrl.ui.screens.moduleView.sections.Information
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.Information0
 import com.dergoogler.mmrl.ui.screens.moduleView.sections.Screenshots
 import com.dergoogler.mmrl.ui.theme.LocalSemanticColors
+import androidx.compose.ui.platform.LocalWindowInfo
 
 private enum class DetailsPage { OVERVIEW, CHANGES, FILES, DETAILS }
 
@@ -105,7 +105,7 @@ internal fun ModuleDetailsTabs() {
         stringResource(R.string.module_details_details),
     )
     var selected by rememberSaveable { mutableIntStateOf(0) }
-    val wide = LocalConfiguration.current.screenWidthDp >= 840
+    val wide = LocalWindowInfo.current.containerSize.width >= with(LocalDensity.current) { 840.dp.roundToPx() }
     val largeText = LocalDensity.current.fontScale >= 1.3f
 
     if (wide) {

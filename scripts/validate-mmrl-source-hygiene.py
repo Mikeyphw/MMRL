@@ -251,6 +251,63 @@ def check_product_boundary() -> None:
         fail("root Gradle build must expose verifyMmrlProductBoundary")
 
 
+
+def check_build_graph_quality_convergence() -> None:
+    datastore = text("datastore/build.gradle.kts")
+    if "alias(libs.plugins.self.hilt)" not in datastore:
+        fail("datastore must use the shared self.hilt convention")
+    for forbidden in ("alias(libs.plugins.hilt)", "implementation(libs.hilt.android)", "libs.hilt.compiler"):
+        if forbidden in datastore:
+            fail(f"datastore retains obsolete Hilt wiring: {forbidden}")
+    if (ROOT / "app/src/main/kotlin/com/dergoogler/mmrl/datastore/di/DataStoreModule.kt").exists():
+        fail("app must not duplicate the datastore-owned DataStore<UserPreferences> Hilt binding")
+
+    convention = text("build-logic/src/main/kotlin/HiltConventionPlugin.kt")
+    for needle in (
+        'apply(plugin = "dagger.hilt.android.plugin")',
+        'apply(plugin = "com.google.devtools.ksp")',
+        '"implementation"(libs.findLibrary("hilt.android").get())',
+        '"ksp"(libs.findLibrary("hilt.compiler").get())',
+    ):
+        if needle not in convention:
+            fail(f"self.hilt convention is missing {needle}")
+
+    app = text("app/build.gradle.kts")
+    for issue in ("MissingTranslation", "UnusedResources", "GradleDependency", "NewerVersionAvailable", "PluralsCandidate"):
+        if f'"{issue}"' not in app:
+            fail(f"lint policy is missing deliberate exclusion {issue}")
+    if "enableSplit = false" not in app:
+        fail("runtime locale switching requires bundle language splitting to be disabled")
+    for direct in (
+        'implementation("com.joaomgcd:taskerpluginlibrary',
+        'implementation("dev.chrisbanes.haze',
+    ):
+        if direct in app:
+            fail(f"app dependency must use version catalog instead of {direct}")
+
+    catalog = text("gradle/libs.versions.toml")
+    if "runtimeAndroid =" in catalog or "runtimeAndroidVersion =" in catalog or re.search(r"(?m)^runtime-android\s*=", catalog):
+        fail("Compose runtime must have one version-catalog version source")
+    for alias in ("tasker-plugin", "haze = {", "haze-materials"):
+        if alias not in catalog:
+            fail(f"version catalog is missing {alias}")
+
+    prefs = text("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/model/UserPreferences.kt")
+    constants = text("app/src/main/kotlin/com/dergoogler/mmrl/app/Const.kt")
+    if "PUBLIC_DOWNLOADS: File by lazy" in prefs or "runCatching" not in prefs:
+        fail("UserPreferences PUBLIC_DOWNLOADS must be JVM-test-safe")
+    if "val PUBLIC_DOWNLOADS: File\n        get()" not in constants or "runCatching" not in constants:
+        fail("Const.PUBLIC_DOWNLOADS must not eagerly initialize Android Environment")
+
+    mise = text("mise.toml")
+    if "28.2.13676358" in mise or "29.0.14206865" not in mise:
+        fail("mise Android SDK/NDK tasks must converge on NDK r29")
+
+    locale_config = text("app/src/main/res/xml/locales_config.xml")
+    for locale in ("fa", "ko", "lv", "nl", "uk"):
+        if f'android:name="{locale}"' not in locale_config:
+            fail(f"locale config is missing packaged locale {locale}")
+
 def check_api_qualified_theme_resources() -> None:
     base_theme = text("app/src/main/res/values/themes.xml")
     api27_theme = text("app/src/main/res/values-v27/themes.xml")
@@ -365,6 +422,7 @@ def check_final_seal_files() -> None:
 check_wrapper()
 check_stable_toolchain_baseline()
 check_product_boundary()
+check_build_graph_quality_convergence()
 check_gradle_release_gates()
 check_api_qualified_theme_resources()
 check_source_hygiene()

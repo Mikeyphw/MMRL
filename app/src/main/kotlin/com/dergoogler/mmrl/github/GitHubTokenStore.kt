@@ -9,6 +9,7 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import androidx.core.content.edit
 
 class GitHubTokenStore(
     context: Context,
@@ -43,17 +44,17 @@ class GitHubTokenStore(
         }
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, secretKey())
-        preferences
-            .edit()
-            .putString(KEY_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
-            .putString(
+        preferences.edit {
+            putString(KEY_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
+            putString(
                 KEY_CIPHER_TEXT,
                 Base64.encodeToString(cipher.doFinal(clean.toByteArray(Charsets.UTF_8)), Base64.NO_WRAP),
-            ).apply()
+            )
+        }
     }
 
     fun clearToken() {
-        preferences.edit().clear().apply()
+        preferences.edit { clear() }
     }
 
     private fun secretKey(): SecretKey {

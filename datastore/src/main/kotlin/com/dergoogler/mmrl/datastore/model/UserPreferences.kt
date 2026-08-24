@@ -148,10 +148,14 @@ data class UserPreferences(
 
     companion object {
         /** Runtime Android path retained for callers that need Environment resolution. */
-        val PUBLIC_DOWNLOADS: File by lazy(LazyThreadSafetyMode.PUBLICATION) {
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                ?: File(DEFAULT_PUBLIC_DOWNLOADS_PATH)
-        }
+        val PUBLIC_DOWNLOADS: File
+            get() =
+                runCatching {
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                }.getOrElse {
+                    // android.jar stubs throw from Environment methods in plain JVM tests.
+                    File(DEFAULT_PUBLIC_DOWNLOADS_PATH)
+                }
 
         @OptIn(ExperimentalSerializationApi::class)
         fun decodeFrom(input: InputStream): UserPreferences = ProtoBuf.decodeFromByteArray(input.readBytes())

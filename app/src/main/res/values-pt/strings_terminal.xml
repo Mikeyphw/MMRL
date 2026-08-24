@@ -7,7 +7,7 @@
     <string name="failed_to_remove_updated_folder">[color=red]! Falha ao remover a pasta atualizada[/color]</string>
     <string name="service_is_not_available">! Serviço não está disponível</string>
     <string name="unable_to_gather_module_info_of_file">! Não foi possível reunir informações do módulo do arquivo:%1$s</string>
-    <string name="cannot_install_blacklisted_modules_settings_security_blacklist_alerts">! Não é possivel instalar módulos da lista negra. Configurações → Segurança → Alertas de lista negra</string>
+    <string name="cannot_install_blacklisted_modules_settings_security_blacklist_alerts">! Não é possível instalar módulos da lista negra. Configurações → Segurança → Alertas de lista negra</string>
     <string name="installation_aborted_due_to_an_error">! Instalação abortada devido a um erro</string>
     <string name="install_view_path">- Caminho: %1$s</string>
     <string name="copying_zip_to_temp_directory">- Copiando o zip para o diretório temporário</string>

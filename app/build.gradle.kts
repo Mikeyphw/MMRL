@@ -44,20 +44,25 @@ android {
             "ar",
             "de",
             "es",
+            "fa",
             "fr",
             "hi",
             "in",
             "it",
             "ja",
-            "ta",
+            "ko",
+            "lv",
+            "nl",
             "pl",
             "pt",
             "ro",
             "ru",
+            "ta",
             "tr",
+            "uk",
             "vi",
             "zh-rCN",
-            "zh-rTW"
+            "zh-rTW",
         )
     }
 
@@ -162,12 +167,29 @@ android {
         }
     }
 
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
     }
 
     lint {
+        // Deliberate policy exclusions: community locales may be partial, dynamic/catalog
+        // resources are not safely removable from lint reachability alone, dependency upgrades
+        // are reviewed explicitly, and plural migrations require coordinated locale work.
+        disable += setOf(
+            "MissingTranslation",
+            "UnusedResources",
+            "GradleDependency",
+            "NewerVersionAvailable",
+            "PluralsCandidate",
+        )
+
         // Normal developer/devtool lint remains narrow so intermediate overlays are not
         // blocked by legacy report-only debt. The final release seal passes
         // -Pmmrl.fullLint=true, which restores full lint and makes findings fatal.
@@ -213,7 +235,7 @@ androidComponents {
 }
 
 dependencies {
-    implementation("com.joaomgcd:taskerpluginlibrary:0.4.10")
+    implementation(libs.tasker.plugin)
     testImplementation(libs.junit)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.core)
@@ -305,8 +327,8 @@ dependencies {
     implementation(project(":terminal-compat"))
     implementation(project(":webui-core-compat"))
 
-    implementation("dev.chrisbanes.haze:haze:1.6.10")
-    implementation("dev.chrisbanes.haze:haze-materials:1.6.10")
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
 
     implementation(libs.composedestinations.core)
     ksp(libs.composedestinations.ksp)

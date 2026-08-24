@@ -13,8 +13,11 @@ object AppCrashHandler {
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             runCatching { launchCrashActivity(appContext, throwable) }
-                .onFailure { previous?.uncaughtException(thread, throwable) }
-            exitProcess(0)
+            if (previous != null) {
+                previous.uncaughtException(thread, throwable)
+            } else {
+                exitProcess(1)
+            }
         }
     }
 

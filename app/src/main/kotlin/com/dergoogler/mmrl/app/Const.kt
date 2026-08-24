@@ -7,10 +7,17 @@ import java.io.File
 typealias PLM = PlatformManager
 
 object Const {
-    val PUBLIC_DOWNLOADS: File =
-        Environment.getExternalStoragePublicDirectory(
-            Environment.DIRECTORY_DOWNLOADS,
-        )
+    private const val JVM_FALLBACK_DOWNLOADS_DIRECTORY = "Download"
+
+    val PUBLIC_DOWNLOADS: File
+        get() =
+            runCatching {
+                Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS,
+                )
+            }.getOrElse {
+                File(JVM_FALLBACK_DOWNLOADS_DIRECTORY)
+            }
 
     const val PRIVACY_POLICY_URL = "https://mmrl.dev/legal/privacy"
     const val TERMS_OF_SERVICE_URL = "https://mmrl.dev/legal/terms"

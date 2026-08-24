@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.self.hilt)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -55,6 +55,4 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.material3.android)
     implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.hilt.android)
-    implementation(libs.hilt.compiler)
 }

@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -76,6 +75,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 
 @Destination<RootGraph>
 @Composable
@@ -87,7 +88,7 @@ fun ModuleUpdatesScreen(viewModel: ModulesViewModel = hiltViewModel()) =
         val navigator = LocalDestinationsNavigator.current
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
         val bottomPadding = LocalMainScreenInnerPaddings.current.calculateBottomPadding()
-        val wide = LocalConfiguration.current.screenWidthDp >= 900
+        val wide = LocalWindowInfo.current.containerSize.width >= with(LocalDensity.current) { 900.dp.roundToPx() }
         val scope = rememberCoroutineScope()
         val snackbar = LocalSnackbarHost.current
 

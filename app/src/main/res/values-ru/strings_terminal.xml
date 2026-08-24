@@ -21,7 +21,7 @@
     <string name="failed_to_remove_updated_folder">[color=red]! Не удалось удалить обновленную папку[/color]</string>
     <string name="unable_to_find_path_for_uri">[color=red]! Невозможно найти путь для uri: %1$s[/color]</string>
     <string name="is_not_a_module_file_magisk_modules_must_be_zip_files_skipping">! %1$s не является файлом модуля. Модули Magisk должны быть файлами .zip. Пропускаем…</string>
-    <string name="waiting_for_platformmanager_to_initialize">[bold]- Ожидание инициализации PlatformManager...[/bold]</string>
+    <string name="waiting_for_platformmanager_to_initialize">[bold]- Ожидание инициализации PlatformManager…[/bold]</string>
     <string name="failed_to_initialize_platform">[color=red]! Не удалось инициализировать платформу[/color]</string>
     <string name="platform_initialized">[bold]- Платформа инициализирована[/bold]</string>
     <string name="platform_initialization_failed_cannot_install">[color=red]! Инициализация платформы не удалась. Невозможно продолжить установку.[/color]</string>
