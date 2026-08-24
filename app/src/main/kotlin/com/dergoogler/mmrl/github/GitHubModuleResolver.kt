@@ -72,6 +72,21 @@ data class GitHubResolveResult(
     val recommended: GitHubCandidate?,
 )
 
+internal object GitHubReleaseSelectionPolicy {
+    fun select(
+        releases: List<GitHubModuleResolver.GitHubRelease>,
+        includePreReleases: Boolean,
+        acceptAsset: (GitHubModuleResolver.GitHubAsset) -> Boolean,
+    ): Pair<GitHubModuleResolver.GitHubRelease, List<GitHubModuleResolver.GitHubAsset>>? {
+        releases.forEach { release ->
+            if (release.draft || (!includePreReleases && release.prerelease)) return@forEach
+            val assets = release.assets.filter(acceptAsset)
+            if (assets.isNotEmpty()) return release to assets
+        }
+        return null
+    }
+}
+
 class GitHubModuleResolver {
     private val client by lazy { NetworkUtils.createOkHttpClient() }
     private val releasesAdapter by lazy {
@@ -143,36 +158,38 @@ class GitHubModuleResolver {
                 .flatMap { page ->
                     releasesAdapter.fromJson(apiText(repo, "releases?per_page=30&page=$page", token)).orEmpty()
                 }
-        val release =
-            releases.firstOrNull { !it.draft && (includePreReleases || !it.prerelease) }
-                ?: error("No matching GitHub release found")
-
         val nameRule = request.assetNameRegex()
         val rejectRule = request.rejectNameRegex()
         val preferredRule = request.preferredNameRegex()
-        return release.assets
-            .filter { it.name.endsWith(".zip", ignoreCase = true) }
-            .filter { asset -> nameRule?.containsMatchIn(asset.name) ?: true }
-            .filterNot { asset -> rejectRule?.containsMatchIn(asset.name) ?: false }
-            .map { asset ->
-                val score = assetScore(asset.name) + if (preferredRule?.containsMatchIn(asset.name) == true) 240 else 0
-                GitHubCandidate(
-                    id = "release-${release.id}-${asset.id}",
-                    name = asset.name,
-                    sourceName = release.name?.takeIf(String::isNotBlank) ?: release.tagName,
-                    version = release.tagName,
-                    versionCode = syntheticVersionCode(release.tagName),
-                    downloadUrl = asset.browserDownloadUrl ?: asset.url,
-                    apiDownloadUrl = asset.url,
-                    size = asset.size,
-                    updatedAt = asset.updatedAt ?: release.publishedAt,
-                    mode = GitHubSourceMode.RELEASE,
-                    score = score,
-                    artifactStrategy = request.artifactStrategy,
-                    artifactId = asset.id,
-                    diagnostics = "release asset matched saved source rules; strategy=${request.artifactStrategy.queryValue}; release=${release.id}; asset=${asset.id}",
-                )
-            }
+        val selected = GitHubReleaseSelectionPolicy.select(
+            releases = releases.distinctBy { it.id },
+            includePreReleases = includePreReleases,
+        ) { asset ->
+            asset.name.endsWith(".zip", ignoreCase = true) &&
+                (nameRule?.containsMatchIn(asset.name) ?: true) &&
+                !(rejectRule?.containsMatchIn(asset.name) ?: false)
+        } ?: error("No GitHub release contains an installable file matching the saved source rules")
+
+        val (release, assets) = selected
+        return assets.map { asset ->
+            val score = assetScore(asset.name) + if (preferredRule?.containsMatchIn(asset.name) == true) 240 else 0
+            GitHubCandidate(
+                id = "release-${release.id}-${asset.id}",
+                name = asset.name,
+                sourceName = release.name?.takeIf(String::isNotBlank) ?: release.tagName,
+                version = release.tagName,
+                versionCode = syntheticVersionCode(release.tagName),
+                downloadUrl = asset.browserDownloadUrl ?: asset.url,
+                apiDownloadUrl = asset.url,
+                size = asset.size,
+                updatedAt = asset.updatedAt ?: release.publishedAt,
+                mode = GitHubSourceMode.RELEASE,
+                score = score,
+                artifactStrategy = request.artifactStrategy,
+                artifactId = asset.id,
+                diagnostics = "release asset matched saved source rules; strategy=${request.artifactStrategy.queryValue}; release=${release.id}; asset=${asset.id}",
+            )
+        }
     }
 
     private fun resolveNightly(
@@ -250,18 +267,23 @@ class GitHubModuleResolver {
             }
             var finished = 0L
             destination.delete()
-            body.byteStream().buffered().use { input ->
-                destination.outputStream().buffered().use { output ->
-                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read == -1) break
-                        if (read == 0) continue
-                        finished = NetworkPolicy.addReceivedBytes(finished, read)
-                        output.write(buffer, 0, read)
-                        if (length > 0L) onProgress((finished.toDouble() / length).toFloat().coerceIn(0f, 1f))
+            try {
+                body.byteStream().buffered().use { input ->
+                    destination.outputStream().buffered().use { output ->
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read == -1) break
+                            if (read == 0) continue
+                            finished = NetworkPolicy.addReceivedBytes(finished, read)
+                            output.write(buffer, 0, read)
+                            if (length > 0L) onProgress((finished.toDouble() / length).toFloat().coerceIn(0f, 1f))
+                        }
                     }
                 }
+            } catch (error: Throwable) {
+                destination.delete()
+                throw error
             }
         }
         require(destination.isFile && destination.length() > 0L) { "Downloaded file is empty" }

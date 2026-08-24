@@ -46,7 +46,8 @@ class RepositoryRefreshWorker(
                     }
                 }.awaitAll()
             }
-            if (results.any { !it } && runAttemptCount < MAX_RETRIES) Result.retry() else Result.success()
+            val failureCount = results.count { !it }
+            if (RefreshBatchPolicy.shouldRetry(failureCount, runAttemptCount, MAX_RETRIES)) Result.retry() else Result.success()
         } finally {
             RepositoryService.markRuntimeRunning(false)
         }

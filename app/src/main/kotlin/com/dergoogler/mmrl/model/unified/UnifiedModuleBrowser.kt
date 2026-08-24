@@ -482,6 +482,8 @@ private class UnifiedModuleCollectionBuilder(
             module.packageName,
             module.displayName,
             module.displayDescription,
+            module.repositoryTitle.orEmpty(),
+            module.repositorySummary.orEmpty(),
             module.sourceUrl.orEmpty(),
             module.homepageUrl.orEmpty(),
             module.url.orEmpty(),

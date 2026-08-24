@@ -104,14 +104,27 @@ data class LsposedRepoModule(
     val scope: List<String>
         get() = repositoryScope.orEmpty()
 
+    /**
+     * LSPosed repository contract:
+     * - GitHub repository `description` is the human-readable module name.
+     * - repository `SUMMARY` is the short front-page description.
+     *
+     * The API exposes those values as `description` and `summary` respectively,
+     * so do not swap them when presenting a module tile.
+     */
+    val repositoryTitle: String?
+        get() = description?.trim()?.takeIf(String::isNotBlank)
+
+    val repositorySummary: String?
+        get() = summary?.trim()?.takeIf(String::isNotBlank)
+
     val displayName: String
-        get() = summary?.takeIf { it.isNotBlank() }
-            ?: name.substringAfterLast('.').replace('_', ' ').replace('-', ' ')
+        get() = repositoryTitle ?: fallbackDisplayName(name)
 
     val displayDescription: String
-        get() = description?.takeIf { it.isNotBlank() }
-            ?: readme?.lineSequence()?.firstOrNull { it.isNotBlank() }
-            ?: "No description provided by the LSPosed repository."
+        get() = repositorySummary
+            ?: readmeSummary(readme)
+            ?: "No summary provided by the LSPosed repository."
 
     val latestStableVersion: LsposedVersion?
         get() = latestRelease?.let(LsposedVersion::parse)
@@ -143,6 +156,40 @@ data class LsposedRepoModule(
             stargazerCount = detail.stargazerCount ?: stargazerCount,
         )
 }
+
+internal object LsposedRepositoryIndexPolicy {
+    fun validate(modules: List<LsposedRepoModule>): List<LsposedRepoModule> {
+        require(modules.isNotEmpty()) { "LSPosed repository index is empty" }
+        require(modules.none { it.name.isBlank() }) { "LSPosed repository contains a blank package name" }
+        val duplicate = modules
+            .groupBy { LsposedIdentity.normalize(it.name) }
+            .entries
+            .firstOrNull { it.value.size > 1 }
+        require(duplicate == null) {
+            "LSPosed repository contains duplicate package name: ${duplicate?.key}"
+        }
+        return modules
+    }
+}
+
+private fun fallbackDisplayName(packageName: String): String =
+    packageName
+        .substringAfterLast('.')
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .trim()
+        .ifBlank { packageName }
+
+private fun readmeSummary(readme: String?): String? =
+    readme
+        ?.lineSequence()
+        ?.map { it.trim() }
+        ?.firstOrNull { line ->
+            line.isNotBlank() &&
+                !line.startsWith("#") &&
+                !line.startsWith("![") &&
+                !line.startsWith("<img", ignoreCase = true)
+        }
 
 @JsonClass(generateAdapter = true)
 data class LsposedRelease(

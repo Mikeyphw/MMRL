@@ -42,46 +42,52 @@ class LsposedRepository(private val context: Context) {
         val cache = File(cacheDir, "modules.json")
         val meta = File(cacheDir, "modules.meta.json")
         val cachedBody = cache.takeIf { it.isFile && it.length() > 0L }?.readText()
+        val cachedModules = cachedBody?.let { body ->
+            runCatching { parseRepositoryModules(body) }
+                .onFailure { error -> Timber.w(error, "Ignoring invalid LSPosed repository cache") }
+                .getOrNull()
+        }
         val cachedFetchedAt = readCacheFetchedAt(meta)
         val cachedFreshness = LsposedRepositoryCachePolicy.freshnessFor(cachedFetchedAt)
-        val canUseFreshCache = !forceRefresh && cachedBody != null && cachedFreshness == LsposedCacheFreshness.FRESH
-        val loaded = if (canUseFreshCache) {
+        val canUseFreshCache = !forceRefresh && cachedBody != null && cachedModules != null && cachedFreshness == LsposedCacheFreshness.FRESH
+
+        val (loaded, modules) = if (canUseFreshCache) {
             CachedRepositoryBody(
                 body = cachedBody.orEmpty(),
                 fetchedAt = cachedFetchedAt,
                 sourceUrl = readCacheSourceUrl(meta),
                 freshness = LsposedCacheFreshness.FRESH,
                 errorMessage = null,
-            )
+            ) to cachedModules.orEmpty()
         } else {
-            runCatching { requestTextWithSource(LSPOSED_MODULES_URL, LSPOSED_MODULES_FALLBACK_URLS) }
-                .map { remote ->
-                    writeAtomic(cache, remote.body)
-                    writeAtomic(
-                        meta,
-                        JSONObject()
-                            .put("fetched_at", remote.fetchedAt)
-                            .put("source_url", remote.sourceUrl)
-                            .toString(),
-                    )
-                    remote.copy(freshness = LsposedCacheFreshness.FRESH)
+            runCatching {
+                val remote = requestTextWithSource(LSPOSED_MODULES_URL, LSPOSED_MODULES_FALLBACK_URLS)
+                // Validate and normalize the new generation before replacing the last known-good cache.
+                val parsed = parseRepositoryModules(remote.body)
+                writeAtomic(cache, remote.body)
+                writeAtomic(
+                    meta,
+                    JSONObject()
+                        .put("fetched_at", remote.fetchedAt)
+                        .put("source_url", remote.sourceUrl)
+                        .toString(),
+                )
+                remote.copy(freshness = LsposedCacheFreshness.FRESH) to parsed
+            }.getOrElse { failure ->
+                if (cachedBody != null && cachedModules != null) {
+                    CachedRepositoryBody(
+                        body = cachedBody,
+                        fetchedAt = cachedFetchedAt,
+                        sourceUrl = readCacheSourceUrl(meta),
+                        freshness = LsposedCacheFreshness.STALE,
+                        errorMessage = failure.message ?: "Unable to refresh LSPosed repository",
+                    ) to cachedModules
+                } else {
+                    throw failure
                 }
-                .getOrElse { failure ->
-                    cachedBody?.let { fallbackBody ->
-                        CachedRepositoryBody(
-                            body = fallbackBody,
-                            fetchedAt = cachedFetchedAt,
-                            sourceUrl = readCacheSourceUrl(meta),
-                            freshness = LsposedCacheFreshness.STALE,
-                            errorMessage = failure.message ?: "Unable to refresh LSPosed repository",
-                        )
-                    } ?: throw failure
-                }
+            }
         }
-        val modules = moduleListAdapter.fromJson(loaded.body)
-            .orEmpty()
-            .filterNot { it.hide == true }
-            .sortedBy { it.displayName.lowercase() }
+
         LsposedRepositoryCacheState(
             modules = modules,
             fetchedAt = loaded.fetchedAt,
@@ -90,6 +96,15 @@ class LsposedRepository(private val context: Context) {
             errorMessage = loaded.errorMessage,
         )
     }
+
+    private fun parseRepositoryModules(body: String): List<LsposedRepoModule> =
+        LsposedRepositoryIndexPolicy
+            .validate(
+                moduleListAdapter.fromJson(body)
+                    ?: error("LSPosed repository returned an empty JSON payload"),
+            )
+            .filterNot { it.hide == true }
+            .sortedBy { it.displayName.lowercase() }
 
     suspend fun loadDetail(packageName: String): LsposedRepoModule = withContext(Dispatchers.IO) {
         moduleAdapter.fromJson(

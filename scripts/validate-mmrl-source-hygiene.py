@@ -419,10 +419,50 @@ def check_final_seal_files() -> None:
             fail(f"missing final seal artifact: {path}")
 
 
+def check_module_platform_convergence() -> None:
+    models = text("app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedModels.kt")
+    for needle in (
+        "val repositoryTitle: String?",
+        "val repositorySummary: String?",
+        "get() = repositoryTitle ?: fallbackDisplayName(name)",
+        "?: readmeSummary(readme)",
+        "LsposedRepositoryIndexPolicy",
+    ):
+        if needle not in models:
+            fail(f"LSPosed repository presentation contract is missing {needle}")
+    if "get() = summary?.takeIf { it.isNotBlank() }" in models:
+        fail("LSPosed repository title must not be derived from SUMMARY")
+
+    repository = text("app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt")
+    parse_pos = repository.find("val parsed = parseRepositoryModules(remote.body)")
+    publish_pos = repository.find("writeAtomic(cache, remote.body)")
+    if parse_pos < 0 or publish_pos < 0 or publish_pos <= parse_pos:
+        fail("LSPosed remote generation must validate before replacing the cache")
+
+    github = text("app/src/main/kotlin/com/dergoogler/mmrl/github/GitHubModuleResolver.kt")
+    for needle in ("GitHubReleaseSelectionPolicy.select", "destination.delete()", "catch (error: Throwable)"):
+        if needle not in github:
+            fail(f"GitHub source reliability contract is missing {needle}")
+
+    update_worker = text("app/src/main/kotlin/com/dergoogler/mmrl/service/ModuleUpdateWorker.kt")
+    refresh_worker = text("app/src/main/kotlin/com/dergoogler/mmrl/service/RepositoryRefreshWorker.kt")
+    if "RefreshBatchPolicy.mergeObservedKeys" not in update_worker:
+        fail("partial module-update refresh must preserve previous notification state")
+    if "RefreshBatchPolicy.shouldRetry" not in update_worker or "RefreshBatchPolicy.shouldRetry" not in refresh_worker:
+        fail("background source workers must share bounded refresh retry semantics")
+
+    require_contains(
+        "docs/MODULE_PLATFORM_CONVERGENCE.md",
+        "MMRL therefore renders `description` as the tile title and `summary` as the tile description.",
+        "A newly downloaded LSPosed index is parsed and validated before replacing the last known-good cache.",
+    )
+
+
 check_wrapper()
 check_stable_toolchain_baseline()
 check_product_boundary()
 check_build_graph_quality_convergence()
+check_module_platform_convergence()
 check_gradle_release_gates()
 check_api_qualified_theme_resources()
 check_source_hygiene()

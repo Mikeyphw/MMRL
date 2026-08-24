@@ -76,8 +76,13 @@ class ModuleUpdateWorker(
                     notifyUpdate(local, newest)
                 }
             }
-            entryPoint.userPreferencesRepository().replaceNotifiedModuleUpdates(activeNotificationKeys)
-            if (failures > 0 && runAttemptCount < MAX_RETRIES) Result.retry() else Result.success()
+            val persistedNotificationKeys = RefreshBatchPolicy.mergeObservedKeys(
+                previous = preferences.notifiedModuleUpdates,
+                current = activeNotificationKeys,
+                refreshComplete = failures == 0,
+            )
+            entryPoint.userPreferencesRepository().replaceNotifiedModuleUpdates(persistedNotificationKeys)
+            if (RefreshBatchPolicy.shouldRetry(failures, runAttemptCount, MAX_RETRIES)) Result.retry() else Result.success()
         } finally {
             ModuleService.markRuntimeRunning(false)
         }
