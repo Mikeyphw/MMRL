@@ -73,9 +73,11 @@ open class MMRLComponentActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val existingUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             throwable.printStackTrace()
-            startCrashActivity(thread, throwable)
+            runCatching { startCrashActivity(thread, throwable) }
+            existingUncaughtExceptionHandler?.uncaughtException(thread, throwable)
         }
 
         if (windowFlags != 0) {

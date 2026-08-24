@@ -21,7 +21,7 @@
     <string name="non_root_platform_is_not_supported">[color=error]! No se admiten plataformas no rooteadas[/color]</string>
     <string name="module_manager_is_null">! El administrador de módulos es nulo</string>
     <string name="file_manager_is_null">! El administrador de archivos es nulo</string>
-    <string name="waiting_for_platformmanager_to_initialize">[bold]- Esperando a que PlatformManager se inicialice...[/bold]</string>
+    <string name="waiting_for_platformmanager_to_initialize">[bold]- Esperando a que PlatformManager se inicialice…[/bold]</string>
     <string name="failed_to_initialize_platform">[color=red]! No se pudo inicializar la plataforma[/color]</string>
     <string name="platform_initialized">[bold]- Plataforma inicializada[/bold]</string>
     <string name="platform_initialization_failed_cannot_install">[color=red]! Error en la inicialización de la plataforma. No se puede continuar con la instalación.[/color]</string>

@@ -81,6 +81,7 @@ import com.dergoogler.mmrl.ash.model.ThemePreset
 import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
 import java.io.File
 import java.util.Locale
+import androidx.core.content.edit
 
 @Composable
 fun AshReXcueApp(viewModel: AshViewModel) {
@@ -100,7 +101,7 @@ fun AshReXcueApp(viewModel: AshViewModel) {
             theme = theme,
             onThemeChanged = {
                 theme = it
-                prefs.edit().putString("theme", it.name).apply()
+                prefs.edit { putString("theme", it.name) }
             },
         )
     }

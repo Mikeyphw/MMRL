@@ -298,7 +298,7 @@
     <string name="settings_modules_permissions">Módulos e permissões</string>
     <string name="select">Selecionar</string>
     <string name="continue_with">Continuar com %1$s</string>
-    <string name="welcome">Bem vindo!</string>
+    <string name="welcome">Bem-vindo!</string>
     <string name="settings_webui_engine_ksu">KSU WebUI“</string>
     <string name="settings_webui_engine_wx">WebUI X</string>
     <string name="platform">Plataforma</string>
@@ -316,7 +316,7 @@
     <string name="settings_always_show_update_alert">Sempre mostrar alerta de atualização</string>
     <string name="view_module_permissions">Permissões</string>
     <string name="super_user_apps">Aplicativos de super usiário</string>
-    <string name="settings_terminal_line_numbers">Numero de linhas</string>
+    <string name="settings_terminal_line_numbers">Número de linhas</string>
     <string name="settings_terminal_line_numbers_desc">Mostrar o número de linhas no lado esquerdo do terminal</string>
     <string name="select_your_platform">Selecione a sua plataforma</string>
     <string name="view_module_features_mmrl_webui">WebUI MMRL</string>

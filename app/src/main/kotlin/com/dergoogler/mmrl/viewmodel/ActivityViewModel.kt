@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 @HiltViewModel
 class ActivityViewModel
@@ -275,7 +276,7 @@ class ActivityViewModel
                 entry.sourceUri
                     ?.lineSequence()
                     ?.filter { it.isNotBlank() }
-                    ?.map { Uri.parse(it) }
+                    ?.map { it.toUri() }
                     ?.toList()
                     .orEmpty()
             if (uris.isEmpty()) {

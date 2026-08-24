@@ -53,7 +53,7 @@ data class ModId(
             return id == other
         }
 
-        return (id as java.lang.String).equalsIgnoreCase(other)
+        return id.equals(other, ignoreCase = true)
     }
 
     override fun hashCode(): Int = id.hashCode()

@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="copying_zip_to_temp_directory">نسخ الملف الى المجلد المؤقت</string>
-    <string name="unable_to_gather_module_info_of_file">غير قادر على جمع معلومات الوحدة الخاصة بالملف</string>
-    <string name="service_is_not_available">الخدمة غير متاحة</string>
+<string name="service_is_not_available">الخدمة غير متاحة</string>
     <string name="cannot_install_blacklisted_modules_settings_security_blacklist_alerts">لا يمكن تثبيت وحدات القائمة السوداء. الاعدادات &gt; الحماية &gt; القائمة السوداء</string>
     <string name="installation_aborted_due_to_an_error">تم الغاء التثبيت بسبب خطأ</string>
     <string name="install_view_module_info">معلومات الوحدة</string>

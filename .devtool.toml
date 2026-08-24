@@ -17,16 +17,22 @@ chroot_name = "androidos"
 variant = "officialDebug"
 aapt2_provider = "auto"
 instrumentation = "never"
+ndk_host_provider = "auto"
+arm64_ndk_url = "https://github.com/HomuHomu833/android-ndk-custom/releases/download/r29/android-ndk-r29-aarch64-linux-android.tar.xz"
 prefer_native_termux = false
 
 [targets.mmrl_android.gradle]
-version = "9.5.0"
+provider = "wrapper"
+version = "9.7.1"
 max_workers = 4
 structured_events = false
 no_daemon = false
 daemon_idle_timeout_ms = 900000
 fail_fast = true
 offline = false
+args = [
+  "-Pandroid.sync.suppressAgpWarnings=EXTERNAL_NATIVE_BUILD_CONFIGURATION",
+]
 
 [targets.mmrl_android.tasks]
 restore = ["help"]
@@ -37,3 +43,6 @@ clean = ["clean"]
 
 [targets.mmrl_android.artifacts]
 required = true
+
+[validation]
+memory_guard_mb = 0

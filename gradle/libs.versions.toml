@@ -1,5 +1,7 @@
 [versions]
-androidGradlePlugin = "9.3.0"
+haze = "1.6.10"
+taskerPlugin = "0.4.10"
+androidGradlePlugin = "9.3.2"
 androidxActivity = "1.10.1"
 androidxAnnotation = "1.9.1"
 androidxAppCompat = "1.7.1"
@@ -25,12 +27,12 @@ coilCompose = "2.7.0"
 composeMarkdown = "0.5.4"
 hiddenApiRefine = "4.4.0"
 hilt = "2.59.2"
-kotlin = "2.3.20"
-kotlinReflect = "2.3.20"
+kotlin = "2.4.10"
+kotlinReflect = "2.4.10"
 kotlinxCoroutines = "1.8.1"
 kotlinxDatetime = "0.6.0"
 kotlinxSerialization = "1.7.1"
-ksp = "2.3.10"
+ksp = "2.3.11"
 libsu = "6.0.0"
 protobuf = "4.34.1"
 protobufPlugin = "0.9.6"
@@ -39,7 +41,6 @@ shizuku = "13.1.5"
 squareRetrofit = "2.11.0"
 squareOkhttp = "4.12.0"
 squareMoshi = "1.15.1"
-runtimeAndroid = "1.7.6"
 webuiXPortable = "c92f5f6c3c"
 workRuntimeKtx = "2.10.0"
 lifecycleProcess = "2.8.7"
@@ -51,11 +52,13 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 material = "1.12.0"
 material3Android = "1.3.2"
-runtimeAndroidVersion = "1.7.8"
 swiperefreshlayout = "1.1.0"
 composedestinations = "2.2.0"
 
 [libraries]
+tasker-plugin = { module = "com.joaomgcd:taskerpluginlibrary", version.ref = "taskerPlugin" }
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "haze" }
 composedestinations-ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "composedestinations" }
 composedestinations-core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "composedestinations" }
 apache-commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "apacheCommons" }
@@ -65,7 +68,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "androidxComposeMaterial3" }
 androidx-compose-material3-windowSizeClass = { group = "androidx.compose.material3", name = "material3-window-size-class", version.ref = "androidxComposeMaterial3" }
-androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtimeAndroid" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "androidxCompose" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "androidxCompose" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "androidxCompose" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "androidxCompose" }
@@ -140,14 +143,13 @@ android-gradle = { group = "com.android.tools.build", name = "gradle", version.r
 compose-gradle= { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradle = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 ksp-gradle = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
-androidx-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroid" }
+androidx-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "androidxCompose" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3Android" }
-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroidVersion" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
 webuix-hwui = { module = "com.github.MMRLApp.WebUI-X-Portable:hwui", version.ref = "webuiXPortable" }
 webuix-helper = { module = "com.github.MMRLApp.WebUI-X-Portable:helper", version.ref = "webuiXPortable" }

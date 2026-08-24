@@ -25,9 +25,9 @@ import com.dergoogler.mmrl.ext.nullvoke
 fun IconText(
     text: String,
     @DrawableRes resId: Int?,
+    modifier: Modifier = Modifier,
     alignment: Alignment.Horizontal = Alignment.Start,
     tint: Color = MaterialTheme.colorScheme.surfaceTint,
-    modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
     fontSize: TextUnit = TextUnit.Unspecified,
     fontStyle: FontStyle? = null,

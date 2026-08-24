@@ -143,10 +143,20 @@ data class UserPreferences(
     }
 
     companion object {
-        val PUBLIC_DOWNLOADS: File =
-            Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS,
-            )
+        private const val JVM_FALLBACK_DOWNLOADS_DIRECTORY = "Download"
+
+        val PUBLIC_DOWNLOADS: File
+            get() =
+                runCatching {
+                    Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOWNLOADS,
+                    )
+                }.getOrElse {
+                    // android.jar stubs throw from Environment methods in
+                    // plain JVM tests. Production Android still resolves the
+                    // actual shared Downloads directory above.
+                    File(JVM_FALLBACK_DOWNLOADS_DIRECTORY)
+                }
 
         @OptIn(ExperimentalSerializationApi::class)
         fun decodeFrom(input: InputStream): UserPreferences = ProtoBuf.decodeFromByteArray(input.readBytes())

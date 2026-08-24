@@ -34,20 +34,25 @@ android {
             "ar",
             "de",
             "es",
+            "fa",
             "fr",
             "hi",
             "in",
             "it",
             "ja",
-            "ta",
+            "ko",
+            "lv",
+            "nl",
             "pl",
             "pt",
             "ro",
             "ru",
+            "ta",
             "tr",
+            "uk",
             "vi",
             "zh-rCN",
-            "zh-rTW"
+            "zh-rTW",
         )
     }
 
@@ -143,7 +148,7 @@ android {
     }
 
     sourceSets.getByName("main") {
-        assets.srcDir(layout.buildDirectory.dir("generated/assets/ash-module").get().asFile)
+        assets.directories += layout.buildDirectory.dir("generated/assets/ash-module").get().asFile.path
     }
 
     compileOptions {
@@ -169,6 +174,28 @@ android {
                 "**.bin",
                 "**/*.proto"
             )
+        }
+    }
+
+    lint {
+        // Deliberate project policy:
+        // - community locale sets are allowed to be partial;
+        // - resource API/catalog retention is not inferred from lint reachability;
+        // - dependency upgrades are reviewed explicitly instead of being driven by lint;
+        // - plural-resource migrations require coordinated locale changes.
+        disable += setOf(
+            "MissingTranslation",
+            "UnusedResources",
+            "GradleDependency",
+            "NewerVersionAvailable",
+            "PluralsCandidate",
+        )
+        warningsAsErrors = true
+    }
+
+    bundle {
+        language {
+            enableSplit = false
         }
     }
 
@@ -208,7 +235,7 @@ androidComponents {
 }
 
 dependencies {
-    implementation("com.joaomgcd:taskerpluginlibrary:0.4.10")
+    implementation(libs.tasker.plugin)
     testImplementation(libs.junit)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.swiperefreshlayout)
@@ -295,8 +322,8 @@ dependencies {
     implementation(project(":terminal-compat"))
     implementation(project(":webui-core-compat"))
 
-    implementation("dev.chrisbanes.haze:haze:1.6.10")
-    implementation("dev.chrisbanes.haze:haze-materials:1.6.10")
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
 
     implementation(libs.composedestinations.core)
     ksp(libs.composedestinations.ksp)

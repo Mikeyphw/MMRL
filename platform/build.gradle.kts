@@ -12,7 +12,6 @@ android {
     namespace = "com.dergoogler.mmrl.platform"
     compileSdk = 36
     ndkVersion = "29.0.14206865"
-
     publishing {
         singleVariant("release")
     }
@@ -93,6 +92,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.protobuf)
     implementation(libs.square.moshi)
     ksp(libs.square.moshi.kotlin)
+    testImplementation(libs.junit)
 }
 
 // AGP 9.0 applies KGP internally without going through Gradle's plugin manager, which prevents

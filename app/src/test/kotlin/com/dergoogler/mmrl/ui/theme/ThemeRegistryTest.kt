@@ -24,4 +24,9 @@ class ThemeRegistryTest {
         assertEquals(ThemeRegistry.DEFAULT_ID, ThemeRegistry.migrateLegacyId(-1))
         assertEquals(ThemeRegistry.DEFAULT_ID, ThemeRegistry.migrateLegacyId(999))
     }
+
+    @Test
+    fun customThemeValidationRemainsJvmSafe() {
+        assertTrue(CustomThemeDocument().validate().isSuccess)
+    }
 }

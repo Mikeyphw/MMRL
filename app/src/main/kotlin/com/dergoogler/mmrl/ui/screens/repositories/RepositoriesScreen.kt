@@ -87,6 +87,7 @@ import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import kotlin.reflect.KFunction1
+import androidx.compose.runtime.mutableIntStateOf
 
 @Destination<RootGraph>
 @Composable
@@ -126,7 +127,7 @@ fun RepositoriesScreen() =
         }
 
         var add by remember { mutableStateOf(false) }
-        var selectedTab by remember { mutableStateOf(0) }
+        var selectedTab by remember { mutableIntStateOf(0) }
         if (add) {
             if (selectedTab == 0) {
                 AddDialog(

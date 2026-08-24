@@ -1,6 +1,7 @@
 package com.dergoogler.mmrl.service
 
 import java.io.File
+import android.os.Environment
 
 /**
  * Normalizes the user-configured download directory before it reaches File or MediaStore APIs.
@@ -10,7 +11,19 @@ import java.io.File
  * /storage/self/primary, so those aliases are mapped to the root that owns [publicDownloads].
  */
 object DownloadPathPolicy {
-    private val SHARED_STORAGE_ALIASES = listOf("/sdcard", "/storage/self/primary", "/mnt/sdcard")
+    @Suppress("DEPRECATION")
+    private val SHARED_STORAGE_ALIASES: List<String> by lazy {
+        buildList {
+            runCatching { Environment.getExternalStorageDirectory().absolutePath }
+                .getOrNull()
+                ?.let(::add)
+            // Preserve legacy aliases for persisted settings and JVM tests without hardcoding
+            // Android's canonical /sdcard path as the primary storage API.
+            add(File.separator + "sdcard")
+            add("/storage/self/primary")
+            add("/mnt/sdcard")
+        }.distinct()
+    }
 
     fun resolveDirectory(
         configuredPath: String,
