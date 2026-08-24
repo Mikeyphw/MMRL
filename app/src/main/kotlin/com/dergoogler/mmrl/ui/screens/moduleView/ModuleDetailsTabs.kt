@@ -1,3 +1,6 @@
+// Legacy repository fields remain readable for backward compatibility; new data uses permissions/manager.
+@file:Suppress("DEPRECATION")
+
 package com.dergoogler.mmrl.ui.screens.moduleView
 
 import android.os.Build

@@ -61,13 +61,15 @@ fun CrashHandlerScreen(
 
     val hasHelp = helpMessage != null
     var helperSheet by remember { mutableStateOf(false) }
-    if (helperSheet && hasHelp) {
-        HelpBottomSheet(
-            text = helpMessage!!,
-            onClose = {
-                helperSheet = false
-            },
-        )
+    if (helperSheet) {
+        helpMessage?.let { message ->
+            HelpBottomSheet(
+                text = message,
+                onClose = {
+                    helperSheet = false
+                },
+            )
+        }
     }
 
     val borderModifier = 2.5.dp

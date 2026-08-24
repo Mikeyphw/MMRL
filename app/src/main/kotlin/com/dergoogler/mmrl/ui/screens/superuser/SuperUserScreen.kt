@@ -7,6 +7,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -23,7 +24,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.model.SuperUserMenu
-import com.dergoogler.mmrl.ext.currentScreenWidth
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ui.component.Loading
 import com.dergoogler.mmrl.ui.component.LocalScreenProvider
@@ -33,6 +33,7 @@ import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurSearchToolbar
 import com.dergoogler.mmrl.ui.providable.LocalSuperUserViewModel
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
+import com.dergoogler.mmrl.ui.providable.LocalWindowSizeClass
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 
@@ -121,7 +122,7 @@ private fun TopBar(
     setMenu: (SuperUserMenu) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    val width = currentScreenWidth()
+    val isSmallWindow = LocalWindowSizeClass.current.widthSizeClass == WindowWidthSizeClass.Compact
 
     var currentQuery by remember { mutableStateOf(query) }
     DisposableEffect(isSearch) {
@@ -143,7 +144,7 @@ private fun TopBar(
             currentQuery = ""
         },
         title = {
-            if (!width.isSmall) return@BlurSearchToolbar
+            if (!isSmallWindow) return@BlurSearchToolbar
 
             TopAppBarEventIcon()
         },

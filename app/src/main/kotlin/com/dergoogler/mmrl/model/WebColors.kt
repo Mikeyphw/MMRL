@@ -1,3 +1,6 @@
+// Reflection narrows runtime Material color KClass types before reading Color properties.
+@file:Suppress("UNCHECKED_CAST")
+
 package com.dergoogler.mmrl.model
 
 import androidx.compose.material3.ButtonColors

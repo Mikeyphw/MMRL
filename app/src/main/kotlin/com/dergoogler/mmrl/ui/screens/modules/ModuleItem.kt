@@ -74,6 +74,7 @@ import com.dergoogler.mmrl.utils.toFormattedDateSafely
 import com.dergoogler.mmrl.utils.webUILauncher
 import dev.dergoogler.mmrl.compat.core.LocalUriHandler
 import kotlinx.coroutines.launch
+import com.dergoogler.mmrl.platform.file.inputStream
 
 @Composable
 fun ModuleItem(
@@ -173,7 +174,7 @@ fun ModuleItem(
                                         endY = 0f,
                                     ),
                             ),
-                        inputStream = it.newInputStream(),
+                        inputStream = it.inputStream(),
                     )
                 }
             }
