@@ -11,7 +11,7 @@ import java.util.Properties
 const val COMPILE_SDK = 36
 const val TARGET_SDK = 36
 const val BUILD_TOOLS_VERSION = "36.0.0"
-const val NDK_VERSION = "28.2.13676358"
+const val NDK_VERSION = "29.0.14206865"
 const val MIN_SDK = 26
 
 // ####  CONFIG END  ####

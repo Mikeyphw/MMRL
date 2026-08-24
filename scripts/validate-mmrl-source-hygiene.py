@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static O11 source hygiene gate for MMRL release snapshots."""
+"""Static source/toolchain/product-boundary hygiene gate for MMRL snapshots."""
 from __future__ import annotations
 
 import json
@@ -45,10 +45,11 @@ def check_wrapper() -> None:
 def check_stable_toolchain_baseline() -> None:
     catalog = text("gradle/libs.versions.toml")
     for needle in (
-        'androidGradlePlugin = "9.3.1"',
+        'androidGradlePlugin = "9.3.2"',
         'kotlin = "2.4.10"',
         'kotlinReflect = "2.4.10"',
         'ksp = "2.3.11"',
+        'hilt = "2.60.1"',
     ):
         if needle not in catalog:
             fail(f"normalized stable toolchain catalog is missing {needle}")
@@ -71,6 +72,7 @@ def check_stable_toolchain_baseline() -> None:
         "const val COMPILE_SDK = 36",
         "const val TARGET_SDK = 36",
         'const val BUILD_TOOLS_VERSION = "36.0.0"',
+        'const val NDK_VERSION = "29.0.14206865"',
     ):
         if needle not in project_ext:
             fail(f"normalized Android baseline is missing {needle}")
@@ -85,8 +87,9 @@ def check_stable_toolchain_baseline() -> None:
             fail(f"root stable toolchain gate is missing {needle}")
 
     devtool = text(".devtool.toml")
-    if 'version = "9.7.1"' not in devtool or '"verifyStableToolchainBaseline"' not in devtool:
-        fail("Devtool must use Gradle 9.7.1 and run the stable toolchain preflight")
+    for needle in ('version = "9.7.1"', 'provider = "wrapper"', '"verifyStableToolchainBaseline"', 'memory_guard_mb = 0'):
+        if needle not in devtool:
+            fail(f"Devtool normalized toolchain policy is missing {needle}")
 
     java_files = (
         "build-logic/src/main/kotlin/ApplicationConventionPlugin.kt",
@@ -166,7 +169,7 @@ def check_gradle_release_gates() -> None:
         fail("root clean must remove subproject build outputs")
 
     devtool = text(".devtool.toml")
-    for needle in (":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_host_provider = "auto"'):
+    for needle in (":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_host_provider = "auto"', 'provider = "wrapper"', 'memory_guard_mb = 0'):
         if needle not in devtool:
             fail(f"Devtool final validation metadata is missing {needle}")
     if "-Pmmrl.fullLint=true" in devtool:
@@ -185,6 +188,68 @@ def check_gradle_release_gates() -> None:
         fail("platform host native contracts must use the dedicated MMRL_HOST_CXX override")
     if 'Android NDK CXX' not in platform:
         fail("platform host native contracts must reject accidental Android NDK compilers")
+
+def check_product_boundary() -> None:
+    expected_projects = {
+        ":app",
+        ":hidden-api",
+        ":platform",
+        ":ui",
+        ":ext",
+        ":datastore",
+        ":terminal-compat",
+        ":webui-core-compat",
+        ":compat",
+    }
+    settings = text("settings.gradle.kts")
+    included = set(re.findall(r'"(:[A-Za-z0-9_-]+)"', settings))
+    if included != expected_projects:
+        fail(f"unexpected settings.gradle.kts project set: {sorted(included)}")
+
+    allowed_build_dirs = {p[1:] for p in expected_projects} | {"build-logic"}
+    actual_build_dirs = {
+        p.name
+        for p in ROOT.iterdir()
+        if p.is_dir() and (p / "build.gradle.kts").is_file()
+    }
+    if actual_build_dirs != allowed_build_dirs:
+        fail(
+            "unexpected top-level Gradle modules: "
+            f"expected={sorted(allowed_build_dirs)} actual={sorted(actual_build_dirs)}"
+        )
+
+    allowed_main_entries = {"AndroidManifest.xml", "assets", "java", "kotlin", "res"}
+    app_main = ROOT / "app/src/main"
+    actual_main_entries = {p.name for p in app_main.iterdir()}
+    unexpected_main = actual_main_entries - allowed_main_entries
+    if unexpected_main:
+        fail(f"unexpected app/src/main entries: {sorted(unexpected_main)}")
+
+    allowed_package_roots = {
+        "app", "database", "datastore", "debug", "github", "installer", "lsposed",
+        "model", "network", "operation", "pathHandler", "receiver", "repository",
+        "service", "stub", "tasker", "ui", "utils", "viewmodel",
+    }
+    package_root = ROOT / "app/src/main/kotlin/com/dergoogler/mmrl"
+    actual_package_roots = {p.name for p in package_root.iterdir() if p.is_dir()}
+    unexpected_packages = actual_package_roots - allowed_package_roots
+    if unexpected_packages:
+        fail(f"unexpected MMRL production package roots: {sorted(unexpected_packages)}")
+
+    aidl = list((ROOT / "app/src/main").rglob("*.aidl"))
+    if aidl:
+        fail("app-level AIDL sources are not part of the current MMRL boundary: " + ", ".join(str(p.relative_to(ROOT)) for p in aidl))
+
+    app_build = text("app/build.gradle.kts")
+    if "aidl = false" not in app_build:
+        fail("unused app AIDL generation must remain disabled")
+    if 'create("playstore")' in app_build.lower():
+        fail("personal-use MMRL must not define a store-distribution flavor")
+
+    root_build = text("build.gradle.kts")
+    if 'tasks.register("verifyMmrlProductBoundary")' not in root_build:
+        fail("root Gradle build must expose verifyMmrlProductBoundary")
+
 
 def check_api_qualified_theme_resources() -> None:
     base_theme = text("app/src/main/res/values/themes.xml")
@@ -259,13 +324,13 @@ def check_ci_validation_signing() -> None:
         "matrix.task-set == 'release'",
     ):
         if needle not in workflow:
-            fail(f"OV14 CI validation signing setup is missing {needle}")
+            fail(f"CI validation signing setup is missing {needle}")
     if "playstore" in workflow.lower():
-        fail("OV14 CI must not restore the removed Play Store lane")
+        fail("CI must not define a store-distribution lane")
 
 
 
-def check_personal_use_bughunt_cleanup() -> None:
+def check_personal_use_cleanup() -> None:
     forbidden_backups = [
         ROOT / ".devtool.toml.before-mmrl-cmake-rootfix",
         ROOT / ".devtool.toml.before-phased-performance-all",
@@ -275,14 +340,6 @@ def check_personal_use_bughunt_cleanup() -> None:
     present = [str(path.relative_to(ROOT)) for path in forbidden_backups if path.exists()]
     if present:
         fail("personal-use cleanup retained obsolete store build backups: " + ", ".join(present))
-
-    production = text("app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationRecoveryPolicy.kt")
-    if "TASKER_ASH" in production:
-        fail("removed Ash Tasker worker origin leaked back into OperationRecoveryPolicy")
-
-    stale_test = ROOT / "app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepoTokenAshContractTest.kt"
-    if stale_test.exists():
-        fail("stale Ash-named LSPosed test must be renamed after the split")
 
     for path in (ROOT / "app/src/main/res").rglob("*.xml"):
         body = path.read_text(encoding="utf-8", errors="replace").lower()
@@ -307,12 +364,13 @@ def check_final_seal_files() -> None:
 
 check_wrapper()
 check_stable_toolchain_baseline()
+check_product_boundary()
 check_gradle_release_gates()
 check_api_qualified_theme_resources()
 check_source_hygiene()
 check_room_schemas()
 check_ci_validation_signing()
-check_personal_use_bughunt_cleanup()
+check_personal_use_cleanup()
 check_final_seal_files()
 
 if FAILURES:

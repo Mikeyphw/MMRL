@@ -21,21 +21,21 @@ cmake_version = "3.22.1"
 variant = "officialDebug"
 aapt2_provider = "termux"
 instrumentation = "never"
-prefer_native_termux = true
+prefer_native_termux = false
 
 [targets.mmrl_android.gradle]
 version = "9.7.1"
-provider = "auto"
-max_workers = 2
+provider = "wrapper"
+max_workers = 1
 structured_events = false
-no_daemon = false
+no_daemon = true
 daemon_idle_timeout_ms = 900000
-parallel = true
+parallel = false
 build_cache = true
 fail_fast = true
 offline = false
 args = [
-  "-Dorg.gradle.parallel=true",
+  "-Dorg.gradle.parallel=false",
   "-Dorg.gradle.vfs.watch=false",
   "-Pkotlin.incremental=true",
   "-Pkotlin.compiler.execution.strategy=in-process",
@@ -43,9 +43,7 @@ args = [
 
 [targets.mmrl_android.tasks]
 restore = ["help"]
-build = [
-  ":app:assembleOfficialDebug"
-]
+build = [":app:assembleOfficialDebug"]
 test = [
   ":platform:testDebugUnitTest",
   ":platform:testNativeContracts",
@@ -60,7 +58,7 @@ required = true
 [validation.phases]
 preflight = [
   "verifyStableToolchainBaseline",
-  "verifyOv14FinalReleaseSeal",
+  "verifyMmrlProductBoundary",
   "help",
 ]
 compile = [
@@ -76,107 +74,100 @@ unit-test = [
 package = [
   ":app:assembleOfficialDebug",
   ":app:assembleOfficialRelease",
-  ":app:verifyOv14ReleaseArtifacts",
+  ":app:verifyReleaseArtifacts",
 ]
-lint = [":app:ov14FullLintOfficialDebug"]
+lint = [":app:fullLintOfficialDebug"]
 
 [validation.final]
 release-seal = [
-  "verifyOv14FinalReleaseSeal",
+  "verifyStableToolchainBaseline",
+  "verifyMmrlProductBoundary",
   ":platform:testDebugUnitTest",
   ":platform:testNativeContracts",
   ":app:testOfficialDebugUnitTest",
-  ":app:ov14FullLintOfficialDebug",
+  ":app:fullLintOfficialDebug",
   ":app:compileOfficialDebugAndroidTestKotlin",
   ":app:assembleOfficialDebug",
   ":app:assembleOfficialRelease",
-  ":app:verifyOv14ReleaseArtifacts",
+  ":app:verifyReleaseArtifacts",
 ]
 native = [":platform:testDebugUnitTest", ":platform:testNativeContracts"]
 
 [validation]
 android_safe = false
-max_workers = 2
-cpu_limit = 2
-parallel = true
+max_workers = 1
+cpu_limit = 1
+parallel = false
 split_gradle = true
-no_daemon = false
-stop_daemon_after_phase = false
-low_priority = false
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
-gradle_packaging_metaspace_mb = 640
-gradle_lint_metaspace_mb = 640
-memory_guard_mb = 512
+no_daemon = true
+stop_daemon_after_phase = true
+low_priority = true
+gradle_heap_mb = 1024
+gradle_metaspace_mb = 384
+gradle_packaging_metaspace_mb = 384
+gradle_lint_metaspace_mb = 384
+memory_guard_mb = 0
 affected_module_lint = true
-
 
 [validation.phase_profiles.preflight]
 max_workers = 1
 cpu_limit = 1
-gradle_heap_mb = 768
-gradle_metaspace_mb = 640
-memory_guard_mb = 384
-no_daemon = false
-low_priority = false
-
+gradle_heap_mb = 640
+gradle_metaspace_mb = 320
+memory_guard_mb = 0
+no_daemon = true
+low_priority = true
 
 [validation.phase_profiles.compile]
-max_workers = 2
-cpu_limit = 2
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
-memory_guard_mb = 512
-no_daemon = false
-low_priority = false
-
+max_workers = 1
+cpu_limit = 1
+gradle_heap_mb = 1024
+gradle_metaspace_mb = 384
+memory_guard_mb = 0
+no_daemon = true
+low_priority = true
 
 [validation.phase_profiles.resources]
-max_workers = 2
-cpu_limit = 2
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
-memory_guard_mb = 512
-no_daemon = false
-low_priority = false
-
+max_workers = 1
+cpu_limit = 1
+gradle_heap_mb = 768
+gradle_metaspace_mb = 320
+memory_guard_mb = 0
+no_daemon = true
+low_priority = true
 
 [validation.phase_profiles.unit-test]
-max_workers = 2
-cpu_limit = 2
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
-memory_guard_mb = 512
-no_daemon = false
-low_priority = false
-
+max_workers = 1
+cpu_limit = 1
+gradle_heap_mb = 640
+gradle_metaspace_mb = 320
+memory_guard_mb = 0
+no_daemon = true
+low_priority = true
 
 [validation.phase_profiles.package]
-max_workers = 2
-cpu_limit = 2
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
-memory_guard_mb = 640
-no_daemon = false
-low_priority = false
-
+max_workers = 1
+cpu_limit = 1
+gradle_heap_mb = 1024
+gradle_metaspace_mb = 384
+memory_guard_mb = 0
+no_daemon = true
+low_priority = true
 
 [validation.phase_profiles.lint]
 max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1280
-gradle_metaspace_mb = 640
-memory_guard_mb = 640
-no_daemon = false
-low_priority = false
-
+cpu_limit = 1
+gradle_heap_mb = 640
+gradle_metaspace_mb = 320
+memory_guard_mb = 0
+no_daemon = true
+low_priority = true
 
 [validation.phase_profiles.instrumentation]
 max_workers = 1
-cpu_limit = 2
-gradle_heap_mb = 1024
-gradle_metaspace_mb = 640
-memory_guard_mb = 512
-no_daemon = false
-low_priority = false
-
+cpu_limit = 1
+gradle_heap_mb = 768
+gradle_metaspace_mb = 320
+memory_guard_mb = 0
+no_daemon = true
+low_priority = true

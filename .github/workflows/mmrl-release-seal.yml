@@ -65,9 +65,9 @@ jobs:
           keyPassword=mmrl-ci-validation
           EOF
 
-      - name: Standalone product cleanup gate
+      - name: Toolchain and product boundary gates
         if: matrix.task-set == 'static'
-        run: ./gradlew verifyOv14FinalReleaseSeal --console=plain
+        run: ./gradlew verifyStableToolchainBaseline verifyMmrlProductBoundary --console=plain
 
       - name: Platform JVM and native contract tests
         if: matrix.task-set == 'static'

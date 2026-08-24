@@ -15,10 +15,11 @@ tasks.register<Delete>("clean") {
 }
 
 val stableToolchainVersions = mapOf(
-    "androidGradlePlugin" to "9.3.1",
+    "androidGradlePlugin" to "9.3.2",
     "kotlin" to "2.4.10",
     "kotlinReflect" to "2.4.10",
     "ksp" to "2.3.11",
+    "hilt" to "2.60.1",
 )
 
 val stableVersionCatalog = extensions
@@ -32,7 +33,7 @@ val prereleaseVersionPattern = Regex(
 
 tasks.register("verifyStableToolchainBaseline") {
     group = "verification"
-    description = "Verifies MMRL's normalized stable Android/JVM toolchain baseline."
+    description = "Verifies MMRL's normalized stable Android/JVM/native toolchain baseline."
 
     doLast {
         check(gradle.gradleVersion == "9.7.1") {
@@ -63,8 +64,19 @@ tasks.register("verifyStableToolchainBaseline") {
             "const val COMPILE_SDK = 36",
             "const val TARGET_SDK = 36",
             "const val BUILD_TOOLS_VERSION = \"36.0.0\"",
+            "const val NDK_VERSION = \"29.0.14206865\"",
         ).forEach { required ->
-            check(required in projectExt) { "MMRL normalized Android baseline is missing: $required" }
+            check(required in projectExt) { "MMRL normalized Android/native baseline is missing: $required" }
+        }
+
+        val devtool = file(".devtool.toml").readText()
+        listOf(
+            "version = \"9.7.1\"",
+            "provider = \"wrapper\"",
+            "memory_guard_mb = 0",
+            "parallel = false",
+        ).forEach { required ->
+            check(required in devtool) { "MMRL Devtool baseline is missing: $required" }
         }
 
         val java21Sources = listOf(
@@ -86,318 +98,83 @@ tasks.register("verifyStableToolchainBaseline") {
                 "$relativePath still contains a pre-Java-21 compatibility target"
             }
             if ("sourceCompatibility" in body || "targetCompatibility" in body) {
-                check("JavaVersion.VERSION_21" in body) {
-                    "$relativePath must target Java 21"
-                }
+                check("JavaVersion.VERSION_21" in body) { "$relativePath must target Java 21" }
             }
         }
     }
 }
-
 
 /**
- * Split OV09 regression gate: MMRL must not contain or compile against the
- * embedded AshReXcue implementation. Module-manager snapshots remain owned by
- * MMRL and are intentionally verified separately.
+ * MMRL is one product. Seal the repository by allowlisting the modules and
+ * package roots which belong to that product instead of encoding knowledge of
+ * any external or previously co-located application.
  */
-tasks.register("verifyAshReXcuePurgedFromMmrl") {
+tasks.register("verifyMmrlProductBoundary") {
     group = "verification"
-    description = "Verifies that embedded AshReXcue runtime/UI code is absent while MMRL module snapshots remain intact."
+    description = "Verifies that MMRL contains only its declared Gradle modules and production package roots."
 
     doLast {
-        val forbiddenPaths = listOf(
-            "ashrexcue",
-            "app/src/main/ash-module",
-            "app/src/main/aidl/com/dergoogler/mmrl/ash",
-            "app/src/main/kotlin/com/dergoogler/mmrl/ash",
-            "app/src/main/kotlin/com/dergoogler/mmrl/tasker/TaskerAshActions.kt",
-            "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/home/items/AshProtectionCard.kt",
-            "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshModuleIntelligenceCard.kt",
-            "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/moduleView/sections/AshReXcueIntegration.kt",
-            "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/bootProtection/BootProtectionScreen.kt",
+        val allowedProjects = setOf(
+            ":app",
+            ":hidden-api",
+            ":platform",
+            ":ui",
+            ":ext",
+            ":datastore",
+            ":terminal-compat",
+            ":webui-core-compat",
+            ":compat",
         )
-        val present = forbiddenPaths.filter { relativePath ->
-            val candidate = file(relativePath)
-            candidate.isFile || (candidate.isDirectory && candidate.walkTopDown().any { it.isFile })
+        val actualProjects = subprojects.map { it.path }.toSet()
+        check(actualProjects == allowedProjects) {
+            "Unexpected MMRL Gradle project set. Expected $allowedProjects, found $actualProjects"
         }
-        check(present.isEmpty()) { "Embedded AshReXcue files returned to MMRL: ${present.joinToString()}" }
 
-        val sourceViolations = fileTree("app/src/main") {
-            include("**/*.kt", "**/*.java", "**/*.aidl")
-        }.flatMap { source ->
-            source.readLines().mapIndexedNotNull { index, line ->
-                val trimmed = line.trim()
-                if (trimmed.startsWith("import com.dergoogler.mmrl.ash") ||
-                    trimmed.startsWith("package com.dergoogler.mmrl.ash")) {
-                    "${source.relativeTo(rootDir)}:${index + 1}: $trimmed"
-                } else null
-            }
+        val allowedTopLevelBuilds = allowedProjects.map { it.removePrefix(":") }.toSet() + "build-logic"
+        val topLevelBuilds = rootDir.listFiles().orEmpty()
+            .filter { it.isDirectory && File(it, "build.gradle.kts").isFile }
+            .map { it.name }
+            .toSet()
+        check(topLevelBuilds == allowedTopLevelBuilds) {
+            "Unexpected top-level Gradle modules. Expected $allowedTopLevelBuilds, found $topLevelBuilds"
         }
-        check(sourceViolations.isEmpty()) {
-            "MMRL still compiles against embedded AshReXcue sources:\n${sourceViolations.joinToString("\n")}" 
+
+        val appMain = file("app/src/main")
+        val allowedMainEntries = setOf("AndroidManifest.xml", "assets", "java", "kotlin", "res")
+        val actualMainEntries = appMain.listFiles().orEmpty().map { it.name }.toSet()
+        check(actualMainEntries.all { it in allowedMainEntries }) {
+            "Unexpected app/src/main entries: ${actualMainEntries - allowedMainEntries}"
         }
+
+        val packageRoot = file("app/src/main/kotlin/com/dergoogler/mmrl")
+        val allowedPackageRoots = setOf(
+            "app", "database", "datastore", "debug", "github", "installer", "lsposed",
+            "model", "network", "operation", "pathHandler", "receiver", "repository",
+            "service", "stub", "tasker", "ui", "utils", "viewmodel",
+        )
+        val actualPackageRoots = packageRoot.listFiles().orEmpty()
+            .filter { it.isDirectory }
+            .map { it.name }
+            .toSet()
+        check(actualPackageRoots.all { it in allowedPackageRoots }) {
+            "Unexpected MMRL production package roots: ${actualPackageRoots - allowedPackageRoots}"
+        }
+
+        val aidlFiles = fileTree("app/src/main") { include("**/*.aidl") }.files
+        check(aidlFiles.isEmpty()) { "MMRL app must not carry undeclared app-level AIDL sources: $aidlFiles" }
+
+        val appBuild = file("app/build.gradle.kts").readText()
+        check("aidl = false" in appBuild) { "MMRL app must keep unused AIDL generation disabled" }
+        check("create(\"playstore\")" !in appBuild.lowercase()) { "MMRL personal-use build must not define a store flavor" }
 
         val settings = file("settings.gradle.kts").readText()
-        check(":ashrexcue" !in settings) { "MMRL must not include a temporary :ashrexcue project" }
-        val appBuild = file("app/build.gradle.kts").readText()
-        check("create(\"playstore\")" !in appBuild && "assembleOfficialPlaystore" !in appBuild && "IS_GOOGLE_PLAY_BUILD" !in appBuild) {
-            "OV14 personal-use MMRL must not define or gate behavior on a Play Store build variant"
-        }
-        check("playstore" !in file("hidden-api/build.gradle.kts").readText().lowercase()) {
-            "OV14 hidden-api must not define a Play Store build type"
-        }
-        check("packageAshReXcueModule" !in appBuild && "src/main/ash-module" !in appBuild) {
-            "MMRL must not package the AshReXcue recovery module"
-        }
+        check("includeBuild(\"build-logic\")" in settings) { "MMRL must keep its local convention-plugin build" }
 
-        val snapshotModel = file("app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt").readText()
-        val snapshotStore = file("app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulePolicyStore.kt").readText()
-        check("data class ModuleSnapshot(" in snapshotModel && "object ModuleSnapshotPlanner" in snapshotModel) {
-            "MMRL-owned ModuleSnapshot feature must remain present"
-        }
-        check("suspend fun saveSnapshot(" in snapshotStore) {
-            "MMRL-owned module snapshot persistence must remain present"
-        }
-    }
-}
-
-/** Split OV10: remove dead embedded-recovery product residue after the runtime purge. */
-tasks.register("verifyMmrlStandaloneProductCleanup") {
-    group = "verification"
-    description = "Verifies that MMRL contains no dead embedded-recovery UI, Tasker, history, resource, or release-seal residue."
-    dependsOn("verifyAshReXcuePurgedFromMmrl")
-
-    doLast {
-        val history = file("app/src/main/kotlin/com/dergoogler/mmrl/database/entity/history/OperationHistoryEntity.kt").readText()
-        listOf("ASH_RESCUE", "ASH_RESTORATION", "ASH_SETTINGS", "ASH_DIAGNOSTICS").forEach { token ->
-            check(token !in history) { "Legacy embedded-recovery operation kind returned: $token" }
-        }
-
-        val taskerOutput = file("app/src/main/java/com/dergoogler/mmrl/tasker/TaskerResultOutput.java").readText()
-        check("mmrl_ash_" !in taskerOutput) { "Legacy embedded-recovery Tasker outputs returned" }
-        val taskerInput = file("app/src/main/java/com/dergoogler/mmrl/tasker/TaskerRequestInput.java").readText()
-        listOf("recommendation_id", "module_folder", "guidance_outcome", "dry_run").forEach { token ->
-            check(token !in taskerInput) { "Legacy embedded-recovery Tasker input returned: $token" }
-        }
-
-        val strings = file("app/src/main/res/values/strings.xml").readText()
-        listOf("page_ashrexcue", "activity_source_ashrexcue", "settings_boot_protection", "tasker_action_ash_", "tasker_var_ash_", "recovery_center_title").forEach { token ->
-            check(token !in strings) { "Dead embedded-recovery resource returned: $token" }
-        }
-
-        val preferences = file("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/model/UserPreferences.kt").readText()
-        (66..71).forEach { retiredField ->
-            check("@ProtoNumber($retiredField)" !in preferences) {
-                "Retired embedded-recovery protobuf field number was reused: $retiredField"
-            }
-        }
-        check("retired with the standalone recovery-app split" in preferences) {
-            "Retired protobuf field numbers 66..71 must remain documented and reserved"
-        }
-        val preferenceSurface = listOf(
-            file("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesDataSource.kt"),
-            file("datastore/src/main/kotlin/com/dergoogler/mmrl/datastore/UserPreferencesRepository.kt"),
-        ).joinToString("\n") { it.readText() }
-        check("setAshHealth" !in preferenceSurface && "setTaskerAllowAshRecovery" !in preferenceSurface) {
-            "Dead embedded-recovery preference setters returned"
-        }
-
-        val recoveryDocs = file("docs").listFiles().orEmpty().filter { it.name.startsWith("ASHREXCUE") }
-        check(recoveryDocs.isEmpty()) { "Embedded recovery documentation returned: ${recoveryDocs.joinToString { it.name }}" }
-
-        val releaseSeal = file("scripts/run-mmrl-release-seal.sh").readText()
-        check("validate-ashrexcue-release.sh" !in releaseSeal) { "MMRL release seal still calls the removed recovery validator" }
-        check("verifyMmrlStandaloneProductCleanup" in releaseSeal || "verifyOv13CrossRepositoryIndependence" in releaseSeal) { "MMRL release seal must run the standalone cleanup directly or through the OV13 independence gate" }
-        val workflow = file(".github/workflows/mmrl-release-seal.yml").readText()
-        check("validate-ashrexcue-release.sh" !in workflow && ("verifyMmrlStandaloneProductCleanup" in workflow || "verifyOv13CrossRepositoryIndependence" in workflow)) {
-            "Release workflow must run the standalone cleanup directly or through the OV13 independence gate"
-        }
-
-        val snapshotModel = file("app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt").readText()
-        check("data class ModuleSnapshot(" in snapshotModel && "object ModuleSnapshotPlanner" in snapshotModel) {
-            "MMRL-owned ModuleSnapshot feature must remain present after product cleanup"
-        }
-    }
-}
-
-/** Split OV13: seal MMRL against any future AshReXcue runtime/build relationship. */
-tasks.register("verifyOv13CrossRepositoryIndependence") {
-    group = "verification"
-    description = "Seals standalone MMRL against AshReXcue package, source, manifest, build, checkout, or symlink coupling."
-    dependsOn("verifyMmrlStandaloneProductCleanup")
-
-    doLast {
-        val productionFiles = fileTree(rootDir) {
-            include("**/src/main/**/*.kt", "**/src/main/**/*.java", "**/src/main/**/*.aidl", "**/src/main/**/*.xml")
-            exclude("**/build/**", ".gradle/**", ".git/**")
-        }.files.sortedBy { it.relativeTo(rootDir).path }
-
-        val forbiddenProductTokens = listOf(
-            "ashrexcue",
-            "ashlooper",
-            "com.dergoogler.mmrl.ash",
-            "com.mikeyphw.ashrexcue",
-            "ashrexcuectl",
-            "ash-module",
-            "mmrl_ash_",
-            "ash_recovery",
-        )
-        val violations = mutableListOf<String>()
-        productionFiles.forEach { source ->
-            val lower = source.readText().lowercase()
-            forbiddenProductTokens.forEach { forbidden ->
-                if (forbidden in lower) violations += "${source.relativeTo(rootDir)} -> $forbidden"
-            }
-        }
-        check(violations.isEmpty()) {
-            "OV13 MMRL production surface regained AshReXcue knowledge:\n${violations.joinToString("\n")}"
-        }
-
-        val buildFiles = listOf(
-            file("settings.gradle.kts"),
-            file("app/build.gradle.kts"),
-            file("gradle/libs.versions.toml"),
-            file("gradle.properties"),
-        ).filter { it.isFile }
-        val buildSurface = buildFiles.joinToString("\n") { it.readText().lowercase() }
-        listOf(
-            "../ashrexcue",
-            "/code/ashrexcue",
-            "project(\":ashrexcue",
-            "projects.ashrexcue",
-            "include(\":ashrexcue",
-            "includebuild(\"../ashrexcue",
-            "includebuild('../ashrexcue",
-            "com.mikeyphw.ashrexcue",
-        ).forEach { forbidden ->
-            check(forbidden !in buildSurface) { "OV13 MMRL build regained AshReXcue coupling: $forbidden" }
-        }
-
-        val manifest = file("app/src/main/AndroidManifest.xml").readText().lowercase()
-        check("ashrexcue" !in manifest && "ashlooper" !in manifest) {
-            "OV13 MMRL manifest must not query, target, expose, or special-case AshReXcue"
-        }
-
-        val sourceRoots = listOf("app", "platform", "datastore", "ext", "gradle", "scripts").map(::file).filter { it.exists() }
-        val repoRoot = rootDir.toPath().toRealPath()
-        val escapedSymlinks = sourceRoots.flatMap { sourceRoot ->
-            sourceRoot.walkTopDown().filter { java.nio.file.Files.isSymbolicLink(it.toPath()) }.mapNotNull { link ->
-                val target = runCatching { link.toPath().toRealPath() }.getOrNull() ?: return@mapNotNull null
-                if (target.startsWith(repoRoot)) null else "${link.relativeTo(rootDir)} -> $target"
-            }.toList()
-        }
-        check(escapedSymlinks.isEmpty()) {
-            "OV13 forbids source-controlled symlinks escaping the MMRL repository:\n${escapedSymlinks.joinToString("\n")}"
-        }
-
-        val snapshotModel = file("app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt").readText()
-        val snapshotStore = file("app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulePolicyStore.kt").readText()
-        check("data class ModuleSnapshot(" in snapshotModel && "object ModuleSnapshotPlanner" in snapshotModel) {
-            "OV13 must preserve MMRL's own module-snapshot model/planner"
-        }
-        check("suspend fun saveSnapshot(" in snapshotStore) {
-            "OV13 must preserve MMRL's own module-snapshot persistence"
-        }
-    }
-}
-
-
-
-val verifyMmrlSourceHygiene by tasks.registering(Exec::class) {
-    group = "verification"
-    description = "Run MMRL source-hygiene validation as a first-class OV14 Gradle gate."
-    workingDir(rootDir)
-    commandLine("python3", "scripts/validate-mmrl-source-hygiene.py")
-}
-
-/** OV14: final standalone MMRL release seal after the AshReXcue purge and independence gates. */
-tasks.register("verifyOv14FinalReleaseSeal") {
-    group = "verification"
-    description = "Runs the final MMRL split/independence/source-hygiene release contract."
-    dependsOn(
-        "verifyStableToolchainBaseline",
-        "verifyOv13CrossRepositoryIndependence",
-        verifyMmrlSourceHygiene,
-    )
-
-    doLast {
-        val appBuild = file("app/build.gradle.kts").readText()
-        listOf(
-            "ov14FullLintOfficialDebug",
-            "verifyOv14ReleaseArtifacts",
-            "mmrlReleaseSeal",
-            "assembleOfficialDebug",
-            "assembleOfficialRelease",
-            "compileOfficialDebugAndroidTestKotlin",
-        ).forEach { required ->
-            check(required in appBuild) { "OV14 app release seal is missing $required" }
-        }
-        check("requested.substringAfterLast(':') in setOf(\"ov14FullLintOfficialDebug\", \"mmrlReleaseSeal\")" in appBuild) {
-            "OV14 full-lint alias must enable strict MMRL lint only for the final seal"
-        }
-
-        val devtool = file(".devtool.toml").readText()
-        listOf(
-            "verifyOv14FinalReleaseSeal",
-            ":platform:testDebugUnitTest",
-            ":platform:testNativeContracts",
-            ":app:testOfficialDebugUnitTest",
-            ":app:ov14FullLintOfficialDebug",
-            ":app:verifyOv14ReleaseArtifacts",
-            ":app:compileOfficialDebugAndroidTestKotlin",
-        ).forEach { required ->
-            check(required in devtool) { "OV14 Devtool release seal is missing $required" }
-        }
-        check("-Pmmrl.fullLint=true" !in devtool) {
-            "OV14 must not make normal Devtool lint globally strict; use the dedicated final-seal alias"
-        }
-
-        val script = file("scripts/run-mmrl-release-seal.sh").readText()
-        check("verifyOv14FinalReleaseSeal" in script && "ORG_GRADLE_PROJECT_mmrl.fullLint=true" in script) {
-            "OV14 manual MMRL release seal must retain source/static gating and strict full lint"
-        }
-        val workflow = file(".github/workflows/mmrl-release-seal.yml").readText()
-        check("verifyOv14FinalReleaseSeal" in workflow && "-Pmmrl.fullLint=true" in workflow) {
-            "OV14 CI release seal must run the final independence gate and strict full lint"
-        }
-        check("Prepare ephemeral CI validation signing" in workflow && "mmrl-ci-validation.jks" in workflow && "keytool -genkeypair" in workflow) {
-            "OV14 CI release lane must provision non-production validation signing instead of failing for missing signing.properties"
-        }
-        check("playstore" !in workflow.lowercase()) {
-            "OV14 personal-use CI must not restore the removed Play Store lane"
-        }
-        val obsoleteStoreBackups = listOf(
-            ".devtool.toml.before-mmrl-cmake-rootfix",
-            ".devtool.toml.before-phased-performance-all",
-            "app/build.gradle.kts.bak",
-            "app/build.gradle.kts.before-mmrlx-auth-fix",
-        ).map(::file).filter { it.exists() }
-        check(obsoleteStoreBackups.isEmpty()) {
-            "OV14 bughunt seal forbids obsolete store-build backups: ${obsoleteStoreBackups.joinToString()}"
-        }
-        val recoveryPolicy = file("app/src/main/kotlin/com/dergoogler/mmrl/operation/OperationRecoveryPolicy.kt").readText()
-        check("TASKER_ASH" !in recoveryPolicy) { "OV14 bughunt seal forbids the removed Ash Tasker worker origin" }
-        check(!file("app/src/test/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepoTokenAshContractTest.kt").exists()) {
-            "OV14 bughunt seal forbids stale Ash-named LSPosed tests"
-        }
-        val userFacingStoreMentions = fileTree("app/src/main/res") { include("**/*.xml") }.files.filter { source ->
-            val body = source.readText().lowercase()
-            "google play" in body || "play store" in body
-        }
-        check(userFacingStoreMentions.isEmpty()) {
-            "OV14 personal-use UI must not advertise store distribution: ${userFacingStoreMentions.joinToString()}"
-        }
-        check(":app:compileOfficialDebugAndroidTestKotlin" in script && ":app:verifyOv14ReleaseArtifacts" in script) {
-            "OV14 manual release seal must compile instrumentation contracts and verify final APK outputs"
-        }
-
-        val snapshotModel = file("app/src/main/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicy.kt").readText()
-        val snapshotTest = file("app/src/test/kotlin/com/dergoogler/mmrl/model/local/ModuleVersionPolicyTest.kt").readText()
-        check("data class ModuleSnapshot(" in snapshotModel && "object ModuleSnapshotPlanner" in snapshotModel) {
-            "OV14 must preserve MMRL's module-snapshot implementation"
-        }
-        check("ModuleSnapshotPlanner.compare" in snapshotTest) {
-            "OV14 must preserve executable module-snapshot regression coverage"
+        val applicationModules = subprojects.filter { project ->
+            project.plugins.hasPlugin("com.android.application")
+        }.map { it.path }
+        check(applicationModules == listOf(":app")) {
+            "MMRL must expose exactly one Android application module, found $applicationModules"
         }
     }
 }

@@ -1,13 +1,15 @@
-# MMRL final release seal
+# MMRL release seal
 
-O11 is the final remediation overlay. There is no O12 in this campaign.
+MMRL is a personal-use Android module manager with one application module and a
+fixed set of internal library modules. The release seal validates the current
+product directly rather than replaying historical overlay-specific gates.
 
 ## Required gates
 
-The release seal must run from a clean checkout and execute:
+Run from a clean checkout:
 
 - `python3 scripts/validate-mmrl-source-hygiene.py`
-- `devtool -r . validate --task verifyMmrlStandaloneProductCleanup`
+- `./gradlew verifyStableToolchainBaseline verifyMmrlProductBoundary`
 - `./gradlew :platform:testDebugUnitTest`
 - `./gradlew :platform:testNativeContracts`
 - `./gradlew :app:testOfficialDebugUnitTest`
@@ -16,16 +18,18 @@ The release seal must run from a clean checkout and execute:
 - `./gradlew :app:assembleOfficialRelease`
 - `MMRL_RUN_CONNECTED_TESTS=1 scripts/run-mmrl-release-seal.sh` when an Android device or emulator is available.
 
-## What this seals
+## Current baseline
 
-- Personal-use official debug and signed release variants are release-gated; store-distribution build lanes are not part of this fork.
-- Full lint is fatal only in the final seal path, preserving fast intermediate developer lint.
-- Gradle wrapper downloads are checksum-pinned.
-- Generated Devtool and APK/AAB/AAR outputs are excluded from source snapshots.
-- Source archive naming matches its zstd compressor.
-- Instrumentation contracts cover installed manifest/exported surfaces, boot receivers, FileProvider/content-URI grants and WorkManager/lifecycle service wiring.
-- Platform JVM and native tests cover JNI/filesystem contract boundaries.
-- BH64 is represented by the final release gate and the clean-checkout CI workflow.
+- Gradle 9.7.1
+- Android Gradle Plugin 9.3.2
+- Kotlin 2.4.10
+- KSP 2.3.11
+- Hilt 2.60.1
+- Java 21
+- compileSdk / targetSdk 36
+- Build Tools 36.0.0
+- NDK 29.0.14206865
+- CMake 3.22.1
 
-
-Focused bug-hunt v4 removes obsolete store-build backup configs and stale embedded-Ash compatibility residue.
+The personal-use branch has no store-distribution build lane. Connected
+instrumentation remains optional unless explicitly required for a release run.

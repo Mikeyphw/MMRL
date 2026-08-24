@@ -18,12 +18,12 @@ val baseAppName = "MMRL Fork"
 val mmrlSourceNamespace = "com.dergoogler.mmrl"
 val mmrlForkApplicationId = "com.mikeyphw.mmrl"
 val mmrlWebUiPermissionId = "com.dergoogler.mmrl"
-val ov14FullLintRequested = gradle.startParameter.taskNames.any { requested ->
-    requested.substringAfterLast(':') in setOf("ov14FullLintOfficialDebug", "mmrlReleaseSeal")
+val fullLintRequested = gradle.startParameter.taskNames.any { requested ->
+    requested.substringAfterLast(':') in setOf("fullLintOfficialDebug", "mmrlReleaseSeal")
 }
 val fullLintReport = providers.gradleProperty("mmrl.fullLint")
     .map(String::toBoolean)
-    .getOrElse(false) || ov14FullLintRequested
+    .getOrElse(false) || fullLintRequested
 
 val appVersion = resolveVersionCode(31320)
 val releaseSigningProperties = project.releaseSigningProperties()
@@ -130,7 +130,7 @@ android {
     }
 
     buildFeatures {
-        aidl = true
+        aidl = false
         buildConfig = true
         resValues = true
     }
@@ -344,15 +344,15 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 
-tasks.register("ov14FullLintOfficialDebug") {
+tasks.register("fullLintOfficialDebug") {
     group = "verification"
     description = "Run OfficialDebug lint with MMRL's final full-lint policy enabled."
     dependsOn("lintOfficialDebug")
 }
 
-tasks.register("verifyOv14ReleaseArtifacts") {
+tasks.register("verifyReleaseArtifacts") {
     group = "verification"
-    description = "Verify that OV14 produced non-empty personal-use debug and signed release APKs."
+    description = "Verify non-empty personal-use official debug and signed release APKs."
     dependsOn("assembleOfficialDebug", "assembleOfficialRelease")
     doLast {
         val apks = fileTree(layout.buildDirectory.dir("outputs/apk")) { include("**/*.apk") }
@@ -360,7 +360,7 @@ tasks.register("verifyOv14ReleaseArtifacts") {
         val requiredKinds = listOf("debug", "release")
         requiredKinds.forEach { kind ->
             check(apks.any { it.name.contains("-$kind.apk", ignoreCase = true) || "/$kind/" in it.invariantSeparatorsPath }) {
-                "OV14 did not produce a non-empty official $kind APK; found ${apks.map { it.name }}"
+                "MMRL did not produce a non-empty official $kind APK; found ${apks.map { it.name }}"
             }
         }
     }
@@ -368,20 +368,21 @@ tasks.register("verifyOv14ReleaseArtifacts") {
 
 tasks.register("mmrlReleaseSeal") {
     group = "verification"
-    description = "Run the OV14 final standalone MMRL personal-use release seal for official debug/release and instrumentation contracts."
+    description = "Run the MMRL personal-use release seal for official debug/release and instrumentation contracts."
     dependsOn(
-        ":verifyOv14FinalReleaseSeal",
+        ":verifyMmrlProductBoundary",
+        ":verifyStableToolchainBaseline",
         ":platform:testDebugUnitTest",
         ":platform:testNativeContracts",
         "testOfficialDebugUnitTest",
-        "ov14FullLintOfficialDebug",
-        "verifyOv14ReleaseArtifacts",
+        "fullLintOfficialDebug",
+        "verifyReleaseArtifacts",
         "compileOfficialDebugAndroidTestKotlin",
     )
 }
 
 tasks.register("mmrlConnectedReleaseSeal") {
     group = "verification"
-    description = "Run device/emulator-backed O11 instrumentation contracts."
+    description = "Run device/emulator-backed MMRL instrumentation contracts."
     dependsOn("connectedOfficialDebugAndroidTest")
 }
