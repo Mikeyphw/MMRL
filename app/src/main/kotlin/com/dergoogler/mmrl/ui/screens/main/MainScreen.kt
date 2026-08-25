@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,7 +56,6 @@ import androidx.navigation.NavBackStackEntry
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.ext.none
 import com.dergoogler.mmrl.ui.component.TopAppBar
-import com.dergoogler.mmrl.ui.component.HomeNavigationButton
 import com.dergoogler.mmrl.ui.component.scaffold.ResponsiveScaffold
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurBottomToolbar
@@ -78,6 +78,7 @@ import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.DebugWorkbenchScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModuleUpdatesScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
@@ -86,6 +87,7 @@ import dev.chrisbanes.haze.rememberHazeState
 
 private val compactDestinations =
     listOf(
+        MainDestination.Home,
         MainDestination.Repository,
         MainDestination.Modules,
         MainDestination.Activity,
@@ -118,7 +120,6 @@ fun MainScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val bulkInstallViewModel: BulkInstallViewModel = hiltViewModel()
     val activityViewModel: ActivityViewModel = hiltViewModel()
-    val pendingReboots by activityViewModel.pendingRebootCount.collectAsStateWithLifecycle()
     val activityAttentionCount by activityViewModel.activityAttentionCount.collectAsStateWithLifecycle()
 
     LaunchedEffect(openActivityOnLaunch) {
@@ -154,7 +155,6 @@ fun MainScreen(
         if (moreDestinationsOpen) {
             MoreDestinationsSheet(
                 updates = updates,
-                pendingReboots = pendingReboots,
                 activityAttentionCount = activityAttentionCount,
                 onDismiss = { moreDestinationsOpen = false },
             )
@@ -166,8 +166,7 @@ fun MainScreen(
                     bottomBar = {
                         BottomNav(
                             updates = updates,
-                            pendingReboots = pendingReboots,
-                            activityAttentionCount = activityAttentionCount,
+                                        activityAttentionCount = activityAttentionCount,
                             onMoreClick = { moreDestinationsOpen = true },
                         )
                     },
@@ -188,8 +187,7 @@ fun MainScreen(
                     railBar = {
                         RailNav(
                             updates = updates,
-                            pendingReboots = pendingReboots,
-                            activityAttentionCount = activityAttentionCount,
+                                        activityAttentionCount = activityAttentionCount,
                         )
                     },
                     contentWindowInsets = WindowInsets.none,
@@ -207,8 +205,7 @@ fun MainScreen(
             else -> {
                 ExpandedMainLayout(
                     updates = updates,
-                    pendingReboots = pendingReboots,
-                    activityAttentionCount = activityAttentionCount,
+                        activityAttentionCount = activityAttentionCount,
                     contentModifier = Modifier.hazeSource(hazeState),
                 )
             }
@@ -220,7 +217,6 @@ fun MainScreen(
 @Composable
 private fun ExpandedMainLayout(
     updates: Int,
-    pendingReboots: Int,
     activityAttentionCount: Int,
     contentModifier: Modifier,
 ) {
@@ -230,12 +226,9 @@ private fun ExpandedMainLayout(
                 modifier = Modifier.width(280.dp),
             ) {
                 TopAppBar(
-                    navigationIcon = {
-                        HomeNavigationButton()
-                    },
                     title = {
                         Text(
-                            text = stringResource(R.string.navigation_home_button_title),
+                            text = stringResource(R.string.app_name),
                             style = MaterialTheme.typography.titleLarge,
                         )
                     },
@@ -252,8 +245,7 @@ private fun ExpandedMainLayout(
                         DrawerDestinationItem(
                             screen = screen,
                             updates = updates,
-                            pendingReboots = pendingReboots,
-                            activityAttentionCount = activityAttentionCount,
+                                        activityAttentionCount = activityAttentionCount,
                         )
                     }
                 }
@@ -291,7 +283,6 @@ private fun CurrentNavHost(modifier: Modifier = Modifier) {
 @Composable
 private fun BottomNav(
     updates: Int,
-    pendingReboots: Int,
     activityAttentionCount: Int,
     onMoreClick: () -> Unit,
 ) {
@@ -301,7 +292,8 @@ private fun BottomNav(
     val largeText = LocalDensity.current.fontScale >= 1.3f
     val superUserSelected by navController.isRouteOnBackStackAsState(MainDestination.SuperUser.direction)
     val settingsSelected by navController.isRouteOnBackStackAsState(MainDestination.Settings.direction)
-    val moreSelected = superUserSelected || settingsSelected
+    val debugSelected by navController.isRouteOnBackStackAsState(DebugWorkbenchScreenDestination)
+    val moreSelected = superUserSelected || settingsSelected || debugSelected
 
     BlurBottomToolbar(
         modifier = Modifier.imePadding(),
@@ -312,12 +304,14 @@ private fun BottomNav(
 
             NavigationBarItem(
                 icon = {
-                    BaseNavIcon(screen, isSelected, updates, pendingReboots, activityAttentionCount)
+                    BaseNavIcon(screen, isSelected, updates, activityAttentionCount)
                 },
                 label = {
                     Text(
                         text = stringResource(id = screen.label),
                         style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 alwaysShowLabel = !prefs.hideBottomBarLabels && !largeText,
@@ -339,6 +333,8 @@ private fun BottomNav(
                 Text(
                     text = stringResource(R.string.page_more),
                     style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             },
             alwaysShowLabel = !prefs.hideBottomBarLabels && !largeText,
@@ -351,7 +347,6 @@ private fun BottomNav(
 @Composable
 private fun RailNav(
     updates: Int,
-    pendingReboots: Int,
     activityAttentionCount: Int,
 ) {
     val prefs = LocalUserPreferences.current
@@ -360,9 +355,6 @@ private fun RailNav(
 
     NavigationRail(
         modifier = Modifier.fillMaxHeight(),
-        header = {
-            HomeNavigationButton()
-        },
     ) {
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -379,12 +371,14 @@ private fun RailNav(
                 NavigationRailItem(
                     modifier = Modifier.fillMaxWidth(),
                     icon = {
-                        BaseNavIcon(screen, isSelected, updates, pendingReboots, activityAttentionCount)
+                        BaseNavIcon(screen, isSelected, updates, activityAttentionCount)
                     },
                     label = {
                         Text(
                             text = stringResource(id = screen.label),
                             style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     },
                     alwaysShowLabel = !prefs.hideBottomBarLabels,
@@ -402,7 +396,6 @@ private fun RailNav(
 private fun DrawerDestinationItem(
     screen: MainDestination,
     updates: Int,
-    pendingReboots: Int,
     activityAttentionCount: Int,
     onNavigate: (() -> Unit)? = null,
 ) {
@@ -413,12 +406,14 @@ private fun DrawerDestinationItem(
 
     NavigationDrawerItem(
         icon = {
-            BaseNavIcon(screen, isSelected, updates, pendingReboots, activityAttentionCount)
+            BaseNavIcon(screen, isSelected, updates, activityAttentionCount)
         },
         label = {
             Text(
                 text = stringResource(id = screen.label),
                 style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         },
         selected = isSelected,
@@ -429,11 +424,43 @@ private fun DrawerDestinationItem(
     )
 }
 
+@Composable
+private fun DebugWorkbenchDestinationItem(
+    onNavigate: (() -> Unit)? = null,
+) {
+    val navigator = LocalDestinationsNavigator.current
+    val navController = LocalNavController.current
+    val isSelected by navController.isRouteOnBackStackAsState(DebugWorkbenchScreenDestination)
+
+    NavigationDrawerItem(
+        icon = {
+            Icon(
+                painter = painterResource(R.drawable.bug),
+                contentDescription = stringResource(R.string.settings_debug_workbench),
+            )
+        },
+        label = {
+            Text(
+                text = stringResource(R.string.settings_debug_workbench),
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        selected = isSelected,
+        onClick = {
+            onNavigate?.invoke()
+            navigator.navigate(DebugWorkbenchScreenDestination) {
+                launchSingleTop = true
+            }
+        },
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MoreDestinationsSheet(
     updates: Int,
-    pendingReboots: Int,
     activityAttentionCount: Int,
     onDismiss: () -> Unit,
 ) {
@@ -455,11 +482,11 @@ private fun MoreDestinationsSheet(
                 DrawerDestinationItem(
                     screen = screen,
                     updates = updates,
-                    pendingReboots = pendingReboots,
-                    activityAttentionCount = activityAttentionCount,
+                        activityAttentionCount = activityAttentionCount,
                     onNavigate = onDismiss,
                 )
             }
+            DebugWorkbenchDestinationItem(onNavigate = onDismiss)
             Spacer(Modifier.height(4.dp))
         }
     }
@@ -486,14 +513,13 @@ private fun BaseNavIcon(
     screen: MainDestination,
     selected: Boolean,
     updates: Int,
-    pendingReboots: Int,
     activityAttentionCount: Int,
 ) {
     if (screen == MainDestination.Activity && activityAttentionCount > 0) {
         BadgedBox(
             badge = {
                 Badge {
-                    Text(text = activityAttentionCount.coerceAtMost(99).toString())
+                    Text(text = navigationBadgeText(activityAttentionCount))
                 }
             },
         ) {
@@ -510,7 +536,7 @@ private fun BaseNavIcon(
         BadgedBox(
             badge = {
                 Badge {
-                    Text(text = updates.toString())
+                    Text(text = navigationBadgeText(updates))
                 }
             },
         ) {
@@ -544,3 +570,10 @@ private fun BaseNavIcon(
         contentDescription = stringResource(screen.label),
     )
 }
+
+private fun navigationBadgeText(count: Int): String =
+    when {
+        count <= 0 -> ""
+        count > 99 -> "99+"
+        else -> count.toString()
+    }

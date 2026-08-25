@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.debug.DebugActionResult
 import com.dergoogler.mmrl.debug.DebugActionRunner
 import com.dergoogler.mmrl.debug.DebugGuideResult
@@ -74,7 +75,7 @@ fun DebugWorkbenchScreen() {
     }
 
     SettingsScaffold(
-        title = "Debug Workbench",
+        title = R.string.settings_debug_workbench,
     ) {
         Section {
             ButtonItem(

@@ -76,7 +76,7 @@ class ActivityViewModel
 
         val activityAttentionCount =
             allHistory.map { entries ->
-                entries.count { entry -> entry.isFailed || entry.isPendingReboot || entry.isRunning }
+                entries.count(OperationHistoryEntity::needsActivityAttention)
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
@@ -96,6 +96,7 @@ class ActivityViewModel
                     .filter { entry ->
                         when (filter) {
                             ActivityFilter.ALL -> true
+                            ActivityFilter.ATTENTION -> entry.needsActivityAttention()
                             ActivityFilter.RUNNING -> entry.isRunning
                             ActivityFilter.DOWNLOADS -> entry.kind == OperationKind.DOWNLOAD.name
                             ActivityFilter.FAILED -> entry.isFailed
@@ -457,9 +458,12 @@ class ActivityViewModel
             viewModelScope.launch { messagesFlow.emit(message) }
         }
     }
+private fun OperationHistoryEntity.needsActivityAttention(): Boolean =
+    isFailed || isPendingReboot || isRunning
 
 enum class ActivityFilter {
     ALL,
+    ATTENTION,
     RUNNING,
     DOWNLOADS,
     FAILED,

@@ -308,6 +308,64 @@ def check_build_graph_quality_convergence() -> None:
         if f'android:name="{locale}"' not in locale_config:
             fail(f"locale config is missing packaged locale {locale}")
 
+def check_ui_tasker_debug_product_convergence() -> None:
+    main = text("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/main/MainScreen.kt")
+    compact = re.search(r"private val compactDestinations =\n\s*listOf\((.*?)\n\s*\)", main, re.S)
+    if not compact:
+        fail("could not locate compact main navigation contract")
+    else:
+        body = compact.group(1)
+        expected = (
+            "MainDestination.Home",
+            "MainDestination.Repository",
+            "MainDestination.Modules",
+            "MainDestination.Activity",
+        )
+        for needle in expected:
+            if needle not in body:
+                fail(f"compact navigation is missing {needle}")
+        if "MainDestination.SuperUser" in body or "MainDestination.Settings" in body:
+            fail("compact navigation must keep secondary destinations behind More")
+    for needle in (
+        "DebugWorkbenchScreenDestination",
+        "DebugWorkbenchDestinationItem(onNavigate = onDismiss)",
+        "maxLines = 1",
+        "overflow = TextOverflow.Ellipsis",
+        'count > 99 -> "99+"',
+    ):
+        if needle not in main:
+            fail(f"adaptive navigation contract is missing {needle}")
+
+    activity_vm = text("app/src/main/kotlin/com/dergoogler/mmrl/viewmodel/ActivityViewModel.kt")
+    for needle in (
+        "ActivityFilter.ATTENTION -> entry.needsActivityAttention()",
+        "entries.count(OperationHistoryEntity::needsActivityAttention)",
+        "isFailed || isPendingReboot || isRunning",
+    ):
+        if needle not in activity_vm:
+            fail(f"Activity attention contract is missing {needle}")
+
+    tasker = text("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/tasker/TaskerScreen.kt")
+    for needle in (
+        "TaskerPublicContract.VERSION",
+        "TaskerPublicContract.SCHEMA",
+        "ActivityScreenDestination",
+        "settings_tasker_review_activity",
+    ):
+        if needle not in tasker:
+            fail(f"Tasker UI contract is missing {needle}")
+
+    debug = text("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt")
+    if "title = R.string.settings_debug_workbench" not in debug:
+        fail("Debug Workbench must use the canonical product string")
+    if "Run read-only probes" not in debug:
+        fail("Debug Workbench must retain an explicit read-only probe path")
+
+    app = text("app/build.gradle.kts")
+    if "playstore" in app.lower() or "IS_GOOGLE_PLAY_BUILD" in app:
+        fail("OV04 personal-use product must not restore a store distribution branch")
+
+
 def check_api_qualified_theme_resources() -> None:
     base_theme = text("app/src/main/res/values/themes.xml")
     api27_theme = text("app/src/main/res/values-v27/themes.xml")
@@ -463,6 +521,7 @@ check_stable_toolchain_baseline()
 check_product_boundary()
 check_build_graph_quality_convergence()
 check_module_platform_convergence()
+check_ui_tasker_debug_product_convergence()
 check_gradle_release_gates()
 check_api_qualified_theme_resources()
 check_source_hygiene()

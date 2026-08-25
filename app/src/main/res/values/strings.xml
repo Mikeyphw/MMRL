@@ -220,6 +220,8 @@
     <string name="settings_security_allow_filesystem_api">Allow FileSystem API</string>
     <string name="settings_developer">Developer</string>
     <string name="settings_developer_desc">Debugging tools for developers</string>
+    <string name="settings_debug_workbench">Debug Workbench</string>
+    <string name="settings_debug_workbench_desc">Read-only diagnostics, guided checks, redacted history, and explicit support actions for repositories, GitHub sources, LSPosed, and Vector.</string>
     <string name="settings_webui_remote_url">WebUI Remote URL</string>
     <string name="settings_webui_remote_url_desc">To simplify debugging, provide a local domain such as http://localhost. See the alert above for more.</string>
     <string name="settings_webui_remote_url_alert_desc">WebUI will now consistently use your provided address for all modules, bypass SSL errors, and disable the access to /data/adb/modules/{ID}/webroot. Note that a self-signed local web server is required to use this feature, which is intended for debugging purposes only, is not meant for everyday use, and is used at your own risk.</string>
@@ -557,6 +559,7 @@
     <string name="activity_empty">No operations have been recorded yet</string>
     <string name="activity_filter_empty">No operations match this filter</string>
     <string name="activity_filter_all">All</string>
+    <string name="activity_filter_attention">Attention</string>
     <string name="activity_filter_running">Running</string>
     <string name="activity_filter_downloads">Downloads</string>
     <string name="activity_filter_failed">Failed</string>
@@ -803,6 +806,11 @@
     <string name="settings_tasker_desc">Controlled module automation with approval, Activity logs, and reviewed installs</string>
     <string name="settings_tasker_enabled">Enable Tasker integration</string>
     <string name="settings_tasker_enabled_desc">Controls queued downloads and privileged actions. Read-only status and query actions remain available.</string>
+    <string name="settings_tasker_contract">Contract and review</string>
+    <string name="settings_tasker_contract_version">Public contract</string>
+    <string name="settings_tasker_contract_version_desc">Version %1$d · %2$s</string>
+    <string name="settings_tasker_review_activity">Review Tasker activity</string>
+    <string name="settings_tasker_review_activity_desc">Open Activity to review approvals, failures, retries, and operation results.</string>
     <string name="settings_tasker_capabilities">Capabilities</string>
     <string name="settings_tasker_downloads">Allow downloads</string>
     <string name="settings_tasker_downloads_desc">Allow Tasker to queue module ZIP downloads through MMRL.</string>

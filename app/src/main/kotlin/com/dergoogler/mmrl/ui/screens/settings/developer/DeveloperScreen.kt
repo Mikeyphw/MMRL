@@ -64,11 +64,10 @@ fun DeveloperScreen() {
             }
 
             ButtonItem(
-                enabled = userPreferences.developerMode,
                 onClick = { navigator.navigate(DebugWorkbenchScreenDestination) },
             ) {
-                Title("Debug Workbench")
-                Description("Read-only diagnostics for LSPosed, Vector Manager, Xposed repo access, GitHub token storage.")
+                Title(R.string.settings_debug_workbench)
+                Description(R.string.settings_debug_workbench_desc)
             }
         }
 

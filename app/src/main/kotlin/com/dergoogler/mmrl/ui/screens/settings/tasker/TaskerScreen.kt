@@ -5,23 +5,29 @@ import androidx.compose.ui.res.stringResource
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.datastore.model.TaskerApprovalPolicy
 import com.dergoogler.mmrl.model.ModuleIdentity
+import com.dergoogler.mmrl.tasker.TaskerPublicContract
 import com.dergoogler.mmrl.ui.component.SettingsScaffold
+import com.dergoogler.mmrl.ui.component.listItem.dsl.component.ButtonItem
+import com.dergoogler.mmrl.ui.component.listItem.dsl.component.Item
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.RadioDialogItem
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.Section
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.SwitchItem
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.TextEditDialogItem
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Description
 import com.dergoogler.mmrl.ui.component.listItem.dsl.component.item.Title
+import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalSettings
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ActivityScreenDestination
 
 @Destination<RootGraph>
 @Composable
 fun TaskerScreen() {
     val preferences = LocalUserPreferences.current
     val settings = LocalSettings.current
+    val navigator = LocalDestinationsNavigator.current
     val enabled = preferences.taskerIntegrationEnabled
 
     SettingsScaffold(title = R.string.settings_tasker) {
@@ -31,6 +37,29 @@ fun TaskerScreen() {
         ) {
             Title(R.string.settings_tasker_enabled)
             Description(R.string.settings_tasker_enabled_desc)
+        }
+
+        Section(title = stringResource(R.string.settings_tasker_contract)) {
+            Item {
+                Title(R.string.settings_tasker_contract_version)
+                Description(
+                    stringResource(
+                        R.string.settings_tasker_contract_version_desc,
+                        TaskerPublicContract.VERSION,
+                        TaskerPublicContract.SCHEMA,
+                    ),
+                )
+            }
+            ButtonItem(
+                onClick = {
+                    navigator.navigate(ActivityScreenDestination) {
+                        launchSingleTop = true
+                    }
+                },
+            ) {
+                Title(R.string.settings_tasker_review_activity)
+                Description(R.string.settings_tasker_review_activity_desc)
+            }
         }
 
         Section(title = stringResource(R.string.settings_tasker_capabilities)) {

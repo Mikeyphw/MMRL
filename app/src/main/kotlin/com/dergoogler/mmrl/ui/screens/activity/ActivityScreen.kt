@@ -341,6 +341,7 @@ private fun ActivityFilters(
             val label =
                 when (filter) {
                     ActivityFilter.ALL -> stringResource(R.string.activity_filter_all)
+                    ActivityFilter.ATTENTION -> stringResource(R.string.activity_filter_attention)
                     ActivityFilter.RUNNING -> stringResource(R.string.activity_filter_running)
                     ActivityFilter.DOWNLOADS -> stringResource(R.string.activity_filter_downloads)
                     ActivityFilter.FAILED -> stringResource(R.string.activity_filter_failed)
