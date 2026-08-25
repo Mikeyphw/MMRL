@@ -387,24 +387,3 @@ tasks.register("verifyReleaseArtifacts") {
         }
     }
 }
-
-tasks.register("mmrlReleaseSeal") {
-    group = "verification"
-    description = "Run the MMRL personal-use release seal for official debug/release and instrumentation contracts."
-    dependsOn(
-        ":verifyMmrlProductBoundary",
-        ":verifyStableToolchainBaseline",
-        ":platform:testDebugUnitTest",
-        ":platform:testNativeContracts",
-        "testOfficialDebugUnitTest",
-        "fullLintOfficialDebug",
-        "verifyReleaseArtifacts",
-        "compileOfficialDebugAndroidTestKotlin",
-    )
-}
-
-tasks.register("mmrlConnectedReleaseSeal") {
-    group = "verification"
-    description = "Run device/emulator-backed MMRL instrumentation contracts."
-    dependsOn("connectedOfficialDebugAndroidTest")
-}

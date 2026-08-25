@@ -121,7 +121,6 @@ def check_gradle_release_gates() -> None:
         "checkDependencies = true",
         "assembleOfficialDebug",
         "assembleOfficialRelease",
-        "connectedOfficialDebugAndroidTest",
         "resolveVersionCode(31320)",
         "releaseSigningProperties = project.releaseSigningProperties()",
         "refusing to create an unsigned or debug-signed release artifact",
@@ -167,6 +166,8 @@ def check_gradle_release_gates() -> None:
     root_build = text("build.gradle.kts")
     if "delete(subprojects.map { it.layout.buildDirectory })" not in root_build:
         fail("root clean must remove subproject build outputs")
+    if 'tasks.register("mmrlDeviceValidation")' not in root_build or ':app:connectedOfficialDebugAndroidTest' not in root_build:
+        fail("root Gradle build must expose the optional connected-device validation gate")
 
     devtool = text(".devtool.toml")
     for needle in (":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_host_provider = "auto"', 'provider = "wrapper"', 'memory_guard_mb = 0'):
@@ -363,7 +364,7 @@ def check_ui_tasker_debug_product_convergence() -> None:
 
     app = text("app/build.gradle.kts")
     if "playstore" in app.lower() or "IS_GOOGLE_PLAY_BUILD" in app:
-        fail("OV04 personal-use product must not restore a store distribution branch")
+        fail("personal-use product must not restore a store distribution branch")
 
 
 def check_api_qualified_theme_resources() -> None:
@@ -446,15 +447,25 @@ def check_ci_validation_signing() -> None:
 
 
 def check_personal_use_cleanup() -> None:
-    forbidden_backups = [
-        ROOT / ".devtool.toml.before-mmrl-cmake-rootfix",
-        ROOT / ".devtool.toml.before-phased-performance-all",
-        ROOT / "app/build.gradle.kts.bak",
-        ROOT / "app/build.gradle.kts.before-mmrlx-auth-fix",
-    ]
-    present = [str(path.relative_to(ROOT)) for path in forbidden_backups if path.exists()]
-    if present:
-        fail("personal-use cleanup retained obsolete store build backups: " + ", ".join(present))
+    excluded_roots = {".git", ".gradle", ".idea", ".kotlin", ".devtool", "build", "build-logs"}
+    suffixes = (".bak", ".orig", ".rej", "~")
+    backups: list[str] = []
+    generated: list[str] = []
+    for path in ROOT.rglob("*"):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(ROOT)
+        if rel.parts and rel.parts[0] in excluded_roots:
+            continue
+        name = path.name
+        if name.endswith(suffixes) or ".before-" in name:
+            backups.append(rel.as_posix())
+        if path.suffix.lower() in {".apk", ".aab", ".aar", ".idsig", ".hprof"}:
+            generated.append(rel.as_posix())
+    if backups:
+        fail("repository retained obsolete backup/scratch files: " + ", ".join(sorted(backups)))
+    if generated:
+        fail("repository retained generated release artifacts: " + ", ".join(sorted(generated)))
 
     for path in (ROOT / "app/src/main/res").rglob("*.xml"):
         body = path.read_text(encoding="utf-8", errors="replace").lower()
@@ -466,8 +477,10 @@ def check_final_seal_files() -> None:
     for path in (
         ".github/workflows/mmrl-release-seal.yml",
         "scripts/run-mmrl-release-seal.sh",
+        "scripts/run-mmrl-device-validation.sh",
         "scripts/validate-mmrl-source-hygiene.py",
         "docs/MMRL_FINAL_RELEASE_SEAL.md",
+        "app/src/test/kotlin/com/dergoogler/mmrl/release/FinalReleaseSealContractTest.kt",
         "app/src/androidTest/kotlin/com/dergoogler/mmrl/release/FinalManifestIntegrationInstrumentedTest.kt",
         "app/src/androidTest/kotlin/com/dergoogler/mmrl/release/FinalWorkManagerAndLifecycleInstrumentedTest.kt",
         "app/src/androidTest/kotlin/com/dergoogler/mmrl/release/FinalFileProviderContentUriInstrumentedTest.kt",
@@ -475,6 +488,49 @@ def check_final_seal_files() -> None:
     ):
         if not (ROOT / path).is_file():
             fail(f"missing final seal artifact: {path}")
+
+
+def check_authoritative_final_release_seal() -> None:
+    root_build = text("build.gradle.kts")
+    app_build = text("app/build.gradle.kts")
+    for needle in (
+        'tasks.register("verifyRepositoryHygiene")',
+        'tasks.register("mmrlReleaseSeal")',
+        'tasks.register("mmrlDeviceValidation")',
+        '"verifyStableToolchainBaseline"',
+        '"verifyMmrlProductBoundary"',
+        '"verifyRepositoryHygiene"',
+        '":app:fullLintOfficialDebug"',
+        '":app:verifyReleaseArtifacts"',
+    ):
+        if needle not in root_build:
+            fail(f"root final release seal is missing {needle}")
+    if 'tasks.register("mmrlReleaseSeal")' in app_build or 'tasks.register("mmrlConnectedReleaseSeal")' in app_build:
+        fail("app module retains a competing aggregate release-seal task")
+
+    devtool = text(".devtool.toml")
+    if 'verifyRepositoryHygiene' not in devtool:
+        fail("Devtool release metadata must include repository hygiene")
+    if 'gradle_heap_mb = 1024' in devtool:
+        fail("Termux final validation must not restore the high-pressure 1024 MiB heap profile")
+
+    runner = text("scripts/run-mmrl-release-seal.sh")
+    for needle in (
+        "--memory-guard-mb 0",
+        "MMRL_GRADLE_HEAP_MB:-768",
+        "MMRL_LINT_HEAP_MB:-640",
+        "scripts/run-mmrl-device-validation.sh",
+    ):
+        if needle not in runner:
+            fail(f"release runner is missing {needle}")
+
+    device = text("scripts/run-mmrl-device-validation.sh")
+    for needle in ('MMRL_ADB_SERIAL', 'connectedOfficialDebugAndroidTest', 'su -c id', 'uid=0'):
+        if needle not in device:
+            fail(f"device validation is missing {needle}")
+
+    if (ROOT / "app/src/test/kotlin/com/dergoogler/mmrl/release/Bh64FinalSealContractTest.kt").exists():
+        fail("obsolete O11/BH64 release seal contract is still active")
 
 
 def check_module_platform_convergence() -> None:
@@ -529,6 +585,7 @@ check_room_schemas()
 check_ci_validation_signing()
 check_personal_use_cleanup()
 check_final_seal_files()
+check_authoritative_final_release_seal()
 
 if FAILURES:
     for failure in FAILURES:

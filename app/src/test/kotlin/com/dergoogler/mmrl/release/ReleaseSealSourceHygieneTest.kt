@@ -20,7 +20,7 @@ class ReleaseSealSourceHygieneTest {
     fun `normalized stable toolchain lane is sealed`() {
         val catalog = source("gradle/libs.versions.toml")
         listOf(
-            "androidGradlePlugin = \"9.3.1\"",
+            "androidGradlePlugin = \"9.3.2\"",
             "kotlin = \"2.4.10\"",
             "kotlinReflect = \"2.4.10\"",
             "ksp = \"2.3.11\"",

@@ -67,7 +67,7 @@ jobs:
 
       - name: Toolchain and product boundary gates
         if: matrix.task-set == 'static'
-        run: ./gradlew verifyStableToolchainBaseline verifyMmrlProductBoundary --console=plain
+        run: ./gradlew verifyStableToolchainBaseline verifyMmrlProductBoundary verifyRepositoryHygiene --console=plain
 
       - name: Platform JVM and native contract tests
         if: matrix.task-set == 'static'
@@ -106,4 +106,4 @@ jobs:
           validate-wrappers: true
 
       - name: Compile instrumentation tests
-        run: ./gradlew :app:compileOfficialDebugAndroidTestKotlin --build-cache --console=plain
+        run: ./gradlew :app:compileOfficialDebugSources :app:processOfficialDebugResources :app:compileOfficialDebugAndroidTestKotlin --build-cache --console=plain

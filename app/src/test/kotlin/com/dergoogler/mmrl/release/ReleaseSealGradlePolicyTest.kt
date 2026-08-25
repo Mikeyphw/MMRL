@@ -22,20 +22,23 @@ class ReleaseSealGradlePolicyTest {
     @Test
     fun `final seal includes personal use debug release and instrumentation compilation`() {
         val app = source("app/build.gradle.kts")
+        val rootBuild = source("build.gradle.kts")
         listOf(
             "testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"",
             "assembleOfficialDebug",
             "assembleOfficialRelease",
-            "connectedOfficialDebugAndroidTest",
             "androidTestImplementation(libs.androidx.test.runner)",
             "androidTestImplementation(libs.androidx.junit)",
             "releaseSigningProperties = project.releaseSigningProperties()",
             "refusing to create an unsigned or debug-signed release artifact",
         ).forEach { assertTrue("missing Gradle final-seal token $it", app.contains(it)) }
+        assertTrue(rootBuild.contains("mmrlDeviceValidation"))
+        assertTrue(rootBuild.contains(":app:connectedOfficialDebugAndroidTest"))
     }
 
     @Test
     fun `devtool final validation metadata is complete and uses supported mode`() {
+        val app = source("app/build.gradle.kts")
         val devtool = source(".devtool.toml")
         assertTrue(devtool.contains(":app:assembleOfficialDebug"))
         assertTrue(devtool.contains(":app:assembleOfficialRelease"))
@@ -48,6 +51,7 @@ class ReleaseSealGradlePolicyTest {
         assertTrue(releaseSeal.contains("ORG_GRADLE_PROJECT_mmrl.fullLint=true"))
         assertTrue(devtool.contains(":platform:testDebugUnitTest"))
         assertTrue(devtool.contains(":platform:testNativeContracts"))
+        assertTrue(devtool.contains("verifyRepositoryHygiene"))
         assertFalse(devtool.contains("minimum_phase"))
         assertFalse(devtool.contains("final-overlay"))
     }

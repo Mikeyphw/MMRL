@@ -59,6 +59,7 @@ required = true
 preflight = [
   "verifyStableToolchainBaseline",
   "verifyMmrlProductBoundary",
+  "verifyRepositoryHygiene",
   "help",
 ]
 compile = [
@@ -82,6 +83,7 @@ lint = [":app:fullLintOfficialDebug"]
 release-seal = [
   "verifyStableToolchainBaseline",
   "verifyMmrlProductBoundary",
+  "verifyRepositoryHygiene",
   ":platform:testDebugUnitTest",
   ":platform:testNativeContracts",
   ":app:testOfficialDebugUnitTest",
@@ -102,10 +104,10 @@ split_gradle = true
 no_daemon = true
 stop_daemon_after_phase = true
 low_priority = true
-gradle_heap_mb = 1024
-gradle_metaspace_mb = 384
-gradle_packaging_metaspace_mb = 384
-gradle_lint_metaspace_mb = 384
+gradle_heap_mb = 768
+gradle_metaspace_mb = 320
+gradle_packaging_metaspace_mb = 320
+gradle_lint_metaspace_mb = 320
 memory_guard_mb = 0
 affected_module_lint = true
 
@@ -121,8 +123,8 @@ low_priority = true
 [validation.phase_profiles.compile]
 max_workers = 1
 cpu_limit = 1
-gradle_heap_mb = 1024
-gradle_metaspace_mb = 384
+gradle_heap_mb = 768
+gradle_metaspace_mb = 320
 memory_guard_mb = 0
 no_daemon = true
 low_priority = true
@@ -148,8 +150,8 @@ low_priority = true
 [validation.phase_profiles.package]
 max_workers = 1
 cpu_limit = 1
-gradle_heap_mb = 1024
-gradle_metaspace_mb = 384
+gradle_heap_mb = 768
+gradle_metaspace_mb = 320
 memory_guard_mb = 0
 no_daemon = true
 low_priority = true

@@ -178,3 +178,69 @@ tasks.register("verifyMmrlProductBoundary") {
         }
     }
 }
+
+private val mmrlRepositoryHygieneExcludedRoots = setOf(
+    ".git", ".gradle", ".idea", ".kotlin", ".devtool", "build", "build-logs",
+)
+
+/**
+ * Reject source-tree backup/scratch artifacts which can silently revive obsolete build logic.
+ * Runtime Devtool state is intentionally excluded because it is local execution metadata.
+ */
+tasks.register("verifyRepositoryHygiene") {
+    group = "verification"
+    description = "Verifies that the MMRL source tree contains no stale backup/generated release artifacts."
+
+    doLast {
+        val forbiddenSuffixes = listOf(".bak", ".orig", ".rej", "~")
+        val forbiddenMarkers = listOf(".before-")
+        val forbiddenExtensions = setOf("apk", "aab", "aar", "ap_", "idsig", "hprof")
+
+        val offenders = rootDir.walkTopDown()
+            .onEnter { dir ->
+                dir == rootDir || dir.name !in mmrlRepositoryHygieneExcludedRoots
+            }
+            .filter { it.isFile }
+            .filter { file ->
+                val name = file.name
+                forbiddenSuffixes.any(name::endsWith) ||
+                    forbiddenMarkers.any(name::contains) ||
+                    file.extension.lowercase() in forbiddenExtensions
+            }
+            .map { it.relativeTo(rootDir).invariantSeparatorsPath }
+            .toList()
+
+        check(offenders.isEmpty()) {
+            "MMRL source tree contains stale backup/generated artifacts: $offenders"
+        }
+    }
+}
+
+/**
+ * One authoritative host-side MMRL release contract. The shell release runner invokes
+ * the same tasks in memory-bounded phases on Termux; CI may invoke this aggregate task.
+ * Device-backed validation is deliberately separate and optional.
+ */
+tasks.register("mmrlReleaseSeal") {
+    group = "verification"
+    description = "Run the complete host-side MMRL personal-use release seal."
+    dependsOn(
+        "verifyStableToolchainBaseline",
+        "verifyMmrlProductBoundary",
+        "verifyRepositoryHygiene",
+        ":platform:testDebugUnitTest",
+        ":platform:testNativeContracts",
+        ":app:testOfficialDebugUnitTest",
+        ":app:fullLintOfficialDebug",
+        ":app:compileOfficialDebugAndroidTestKotlin",
+        ":app:processOfficialDebugResources",
+        ":app:verifyReleaseArtifacts",
+    )
+}
+
+tasks.register("mmrlDeviceValidation") {
+    group = "verification"
+    description = "Run optional connected-device instrumentation after the host release seal passes."
+    dependsOn(":app:connectedOfficialDebugAndroidTest")
+}
+
