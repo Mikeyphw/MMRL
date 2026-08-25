@@ -435,8 +435,6 @@ private fun DeviceStatusHeader(
 }
 
 @Composable
-
-@Composable
 private fun ModuleGroupHeader(
     title: String,
     count: Int,
@@ -1369,14 +1367,6 @@ private fun Platform.displayLabel(): String = when (this) {
     Platform.NonRoot -> stringResource(R.string.non_root)
     Platform.Unknown -> stringResource(R.string.unknown)
 }
-
-@Composable
-
-@Composable
-
-@Composable
-
-@Composable
 
 @Composable
 private fun ModuleSnapshotPlanStatus.displayLabel(): String = when (this) {
