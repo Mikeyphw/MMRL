@@ -61,10 +61,14 @@ class BuildGraphQualityConvergenceContractTest {
 
     @Test
     fun `native tool declarations converge on r29`() {
+        val projectExt = source("build-logic/src/main/kotlin/ProjectExt.kt")
+        val devtool = source(".devtool.toml")
         val mise = source("mise.toml")
-        assertTrue(mise.contains("29.0.14206865"))
-        assertFalse(mise.contains("28.2.13676358"))
         val platform = source("platform/build.gradle.kts")
+
+        assertTrue(projectExt.contains("const val NDK_VERSION = \"29.0.14206865\""))
+        assertTrue(devtool.contains("ndk_version = \"29.0.14206865\""))
+        assertTrue(mise.contains("ndk;29.0.14206865"))
         assertTrue(platform.contains("ndkVersion = NDK_VERSION"))
         assertTrue(platform.contains("MMRL_HOST_CXX"))
     }

@@ -73,6 +73,7 @@ tasks.register("verifyStableToolchainBaseline") {
         listOf(
             "version = \"9.7.1\"",
             "provider = \"wrapper\"",
+            "ndk_version = \"29.0.14206865\"",
             "memory_guard_mb = 0",
             "parallel = false",
         ).forEach { required ->

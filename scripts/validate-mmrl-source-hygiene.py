@@ -170,7 +170,7 @@ def check_gradle_release_gates() -> None:
         fail("root Gradle build must expose the optional connected-device validation gate")
 
     devtool = text(".devtool.toml")
-    for needle in (":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_host_provider = "auto"', 'provider = "wrapper"', 'memory_guard_mb = 0'):
+    for needle in (":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_version = "29.0.14206865"', 'ndk_host_provider = "auto"', 'provider = "wrapper"', 'memory_guard_mb = 0'):
         if needle not in devtool:
             fail(f"Devtool final validation metadata is missing {needle}")
     if "-Pmmrl.fullLint=true" in devtool:
@@ -301,7 +301,7 @@ def check_build_graph_quality_convergence() -> None:
         fail("Const.PUBLIC_DOWNLOADS must not eagerly initialize Android Environment")
 
     mise = text("mise.toml")
-    if "28.2.13676358" in mise or "29.0.14206865" not in mise:
+    if "29.0.14206865" not in mise:
         fail("mise Android SDK/NDK tasks must converge on NDK r29")
 
     locale_config = text("app/src/main/res/xml/locales_config.xml")

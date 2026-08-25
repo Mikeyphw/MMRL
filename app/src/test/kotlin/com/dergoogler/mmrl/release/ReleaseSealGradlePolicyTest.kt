@@ -46,6 +46,7 @@ class ReleaseSealGradlePolicyTest {
         assertFalse(app.contains("create(\"playstore\")"))
         assertFalse(app.contains("IS_GOOGLE_PLAY_BUILD"))
         assertFalse(devtool.contains("-Pmmrl.fullLint=true"))
+        assertTrue(devtool.contains("ndk_version = \"29.0.14206865\""))
         assertTrue(devtool.contains("ndk_host_provider = \"auto\""))
         val releaseSeal = source("scripts/run-mmrl-release-seal.sh")
         assertTrue(releaseSeal.contains("ORG_GRADLE_PROJECT_mmrl.fullLint=true"))

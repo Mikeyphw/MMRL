@@ -16,6 +16,7 @@ chroot_name = "androidos"
 [targets.mmrl_android.android]
 system_deps = "auto"
 native_provider = "ndk"
+ndk_version = "29.0.14206865"
 ndk_host_provider = "auto"
 cmake_version = "3.22.1"
 variant = "officialDebug"
