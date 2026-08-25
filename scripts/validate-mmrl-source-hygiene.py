@@ -87,9 +87,19 @@ def check_stable_toolchain_baseline() -> None:
             fail(f"root stable toolchain gate is missing {needle}")
 
     devtool = text(".devtool.toml")
-    for needle in ('version = "9.7.1"', 'provider = "wrapper"', '"verifyStableToolchainBaseline"', 'memory_guard_mb = 0'):
+    for needle in ('version = "9.7.1"', 'provider = "wrapper"', '"verifyStableToolchainBaseline"', 'memory_guard_mb = 0', 'gradle_metaspace_mb = 0'):
         if needle not in devtool:
             fail(f"Devtool normalized toolchain policy is missing {needle}")
+
+    gradle_properties = text("gradle.properties")
+    if "MaxMetaspaceSize" in gradle_properties:
+        fail("gradle.properties must not hard-cap Gradle or Kotlin metaspace")
+    for key in ("gradle_metaspace_mb", "gradle_packaging_metaspace_mb", "gradle_lint_metaspace_mb"):
+        matches = re.findall(rf"(?m)^{key}\s*=\s*(\d+)\s*$", devtool)
+        if not matches:
+            fail(f"Devtool metaspace policy is missing {key}")
+        elif any(value != "0" for value in matches):
+            fail(f"Devtool metaspace policy must disable every {key} cap")
 
     java_files = (
         "build-logic/src/main/kotlin/ApplicationConventionPlugin.kt",

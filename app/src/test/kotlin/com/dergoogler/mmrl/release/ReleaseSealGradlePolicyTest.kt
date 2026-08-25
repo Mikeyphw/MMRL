@@ -58,6 +58,22 @@ class ReleaseSealGradlePolicyTest {
     }
 
     @Test
+    fun `Gradle and Devtool do not impose metaspace caps`() {
+        val properties = source("gradle.properties")
+        val devtool = source(".devtool.toml")
+
+        assertFalse(properties.contains("MaxMetaspaceSize"))
+        listOf("gradle_metaspace_mb", "gradle_packaging_metaspace_mb", "gradle_lint_metaspace_mb").forEach { key ->
+            val values = Regex("(?m)^$key\\s*=\\s*(\\d+)\\s*$")
+                .findAll(devtool)
+                .map { it.groupValues[1] }
+                .toList()
+            assertTrue("missing Devtool metaspace policy for $key", values.isNotEmpty())
+            assertTrue("$key must be disabled in every validation profile", values.all { it == "0" })
+        }
+    }
+
+    @Test
     fun `api 27 navigation bar theme attribute is version qualified`() {
         val baseTheme = source("app/src/main/res/values/themes.xml")
         val api27Theme = source("app/src/main/res/values-v27/themes.xml")
