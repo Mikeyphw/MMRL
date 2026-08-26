@@ -43,4 +43,19 @@ class ModulePlatformConvergenceContractTest {
         assertTrue(github.contains("catch (error: Throwable)"))
         assertTrue(github.contains("destination.delete()"))
     }
+
+    @Test
+    fun `platform reads survive Binder death and refresh after reconnect`() {
+        val manager = source("platform/src/main/kotlin/com/dergoogler/mmrl/platform/PlatformManager.kt")
+        val remember = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/remember/platform.kt")
+
+        assertTrue(manager.contains("Remote platform call failed; using fallback"))
+        assertTrue(manager.contains("if (!isAlive || mServiceOrNull == null)"))
+        assertTrue(remember.contains("val alive = isAlive"))
+        assertTrue(remember.contains("val service = mServiceOrNull"))
+        assertTrue(remember.contains("produceState(initialValue = fallback, fallback, alive, service)"))
+        assertTrue(remember.contains("get(fallback, block)"))
+        assertFalse(remember.contains("isAliveFlow"))
+    }
+
 }

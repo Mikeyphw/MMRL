@@ -759,7 +759,28 @@ object PlatformManager {
     fun <T> get(
         fallback: T,
         block: PlatformManager.() -> T,
-    ): T = if (isAlive) block(this) else fallback
+    ): T {
+        if (!isAlive) return fallback
+
+        return try {
+            block(this)
+        } catch (error: RemoteException) {
+            // Binder liveness can change between the isAlive check above and the actual
+            // transaction. Treat transport loss as a transient platform outage; the
+            // registered DeathRecipient owns teardown/rebind and will publish liveness.
+            Log.w(TAG, "Remote platform call failed; using fallback", error)
+            fallback
+        } catch (error: IllegalStateException) {
+            // handleServiceLoss detaches mServiceOrNull synchronously. A caller can race
+            // that detach after observing isAlive=true but before resolving moduleManager.
+            if (!isAlive || mServiceOrNull == null) {
+                Log.w(TAG, "Platform service became unavailable during call; using fallback", error)
+                fallback
+            } else {
+                throw error
+            }
+        }
+    }
 
     /**
      * Asynchronously executes a block of code if the [PlatformManager] is alive.

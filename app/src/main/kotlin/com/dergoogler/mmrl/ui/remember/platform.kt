@@ -14,13 +14,13 @@ fun <T> PlatformManager.remember(
     fallback: T,
     block: PlatformManager.() -> T,
 ): State<T> {
-    return produceState(initialValue = fallback, fallback, mServiceOrNull, isAliveFlow) {
-        if (isAlive) {
-            value = block()
-            return@produceState
-        }
-
-        value = fallback
+    // Read Compose-backed liveness during composition so Binder death/reconnect invalidates
+    // this producer. Keep the concrete service identity as a key as well so a fast
+    // false -> true reconnect still refreshes values from the newly published Binder.
+    val alive = isAlive
+    val service = mServiceOrNull
+    return produceState(initialValue = fallback, fallback, alive, service) {
+        value = if (alive) get(fallback, block) else fallback
     }
 }
 
