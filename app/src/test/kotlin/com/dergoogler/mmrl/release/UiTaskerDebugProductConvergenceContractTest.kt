@@ -60,8 +60,9 @@ class UiTaskerDebugProductConvergenceContractTest {
         val developer = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/developer/DeveloperScreen.kt")
         val debug = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt")
         assertTrue(main.contains("DebugWorkbenchScreenDestination"))
+        assertTrue(main.contains("DebugWorkbenchDestinationItem(onNavigate = onDismiss)"))
         assertTrue(developer.contains("R.string.settings_debug_workbench"))
-        assertFalse(developer.contains("enabled = userPreferences.developerMode"))
+        assertTrue(developer.contains("enabled = userPreferences.developerMode"))
         assertTrue(debug.contains("Run read-only probes"))
     }
 
