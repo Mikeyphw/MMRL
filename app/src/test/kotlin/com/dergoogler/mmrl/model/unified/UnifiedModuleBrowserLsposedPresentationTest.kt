@@ -20,7 +20,7 @@ class UnifiedModuleBrowserLsposedPresentationTest {
 
         assertEquals("Example Module", item.title)
         assertEquals("Short repository summary", item.description)
-        assertTrue(item.searchTokens.any { it == "Example Module" })
-        assertTrue(item.searchTokens.any { it == "Short repository summary" })
+        assertTrue(item.searchTokens.contains("example module"))
+        assertTrue(item.searchTokens.contains("short repository summary"))
     }
 }

@@ -65,6 +65,7 @@ fun DeveloperScreen() {
 
             ButtonItem(
                 onClick = { navigator.navigate(DebugWorkbenchScreenDestination) },
+                enabled = userPreferences.developerMode,
             ) {
                 Title(R.string.settings_debug_workbench)
                 Description(R.string.settings_debug_workbench_desc)

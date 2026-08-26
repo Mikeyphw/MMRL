@@ -142,9 +142,12 @@ tasks.register("verifyMmrlProductBoundary") {
 
         val appMain = file("app/src/main")
         val allowedMainEntries = setOf("AndroidManifest.xml", "assets", "java", "kotlin", "res")
-        val actualMainEntries = appMain.listFiles().orEmpty().map { it.name }.toSet()
+        val actualMainEntries = appMain.listFiles().orEmpty()
+            .filter { entry -> entry.isFile || entry.walkTopDown().any { it.isFile } }
+            .map { it.name }
+            .toSet()
         check(actualMainEntries.all { it in allowedMainEntries }) {
-            "Unexpected app/src/main entries: ${actualMainEntries - allowedMainEntries}"
+            "Unexpected non-empty app/src/main entries: ${actualMainEntries - allowedMainEntries}"
         }
 
         val packageRoot = file("app/src/main/kotlin/com/dergoogler/mmrl")

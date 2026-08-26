@@ -14,8 +14,9 @@ class DebugWorkbenchContractTest {
         val developer = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/developer/DeveloperScreen.kt")
         val screen = source("app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/debug/DebugWorkbenchScreen.kt")
 
-        assertTrue(developer.contains("DebugWorkbenchScreenDestination"))
-        assertTrue(developer.contains("Debug Workbench"))
+        assertTrue(developer.contains("navigator.navigate(DebugWorkbenchScreenDestination)"))
+        assertTrue(developer.contains("Title(R.string.settings_debug_workbench)"))
+        assertTrue(developer.contains("Description(R.string.settings_debug_workbench_desc)"))
         assertTrue(developer.contains("enabled = userPreferences.developerMode"))
         assertTrue(screen.contains("Run read-only probes"))
         assertTrue(screen.contains("Copy redacted report"))

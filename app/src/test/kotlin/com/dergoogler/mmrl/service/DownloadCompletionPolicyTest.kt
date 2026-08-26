@@ -20,6 +20,6 @@ class DownloadCompletionPolicyTest {
     @Test
     fun `post commit callback failure is isolated from durable download success`() {
         assertNotNull(DownloadCompletionPolicy.runPostCommitBestEffort { error("listener failed") })
-        assertNull(DownloadCompletionPolicy.runPostCommitBestEffort { Unit })
+        assertNull(DownloadCompletionPolicy.runPostCommitBestEffort { })
     }
 }

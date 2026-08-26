@@ -23,9 +23,11 @@ class TaskerPublicContractTest {
 
     @Test
     fun `tasker output variable names use documented mmrl prefix`() {
-        val annotation = TaskerResultOutput::class.java
-            .getMethod("getOperationId")
-            .getAnnotation(TaskerOutputVariable::class.java)
+        val annotation = requireNotNull(
+            TaskerResultOutput::class.java
+                .getMethod("getOperationId")
+                .getAnnotation(TaskerOutputVariable::class.java),
+        )
         assertEquals("mmrl_operation_id", annotation.name)
     }
 }

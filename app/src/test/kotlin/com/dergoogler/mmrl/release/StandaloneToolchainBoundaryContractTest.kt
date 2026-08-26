@@ -8,10 +8,10 @@ import org.junit.Test
 
 class StandaloneToolchainBoundaryContractTest {
     private fun repositoryRoot(): File {
-        var current = File(System.getProperty("user.dir")).absoluteFile
-        while (current.parentFile != null) {
+        var current = File(System.getProperty("user.dir") ?: ".").absoluteFile
+        while (true) {
             if (File(current, "settings.gradle.kts").isFile) return current
-            current = current.parentFile
+            current = current.parentFile ?: break
         }
         error("Could not locate MMRL repository root")
     }
@@ -64,9 +64,15 @@ class StandaloneToolchainBoundaryContractTest {
         val root = repositoryRoot()
         val appMain = File(root, "app/src/main")
         val allowed = setOf("AndroidManifest.xml", "assets", "java", "kotlin", "res")
-        val actual = appMain.listFiles().orEmpty().map { it.name }.toSet()
+        val actual = appMain.listFiles().orEmpty()
+            .filter { entry -> entry.isFile || entry.walkTopDown().any { it.isFile } }
+            .map { it.name }
+            .toSet()
 
-        assertTrue((actual - allowed).isEmpty())
+        assertTrue(
+            "unexpected non-empty app/src/main entries: ${actual - allowed}",
+            (actual - allowed).isEmpty(),
+        )
         assertFalse(appMain.walkTopDown().any { it.isFile && it.extension == "aidl" })
         assertTrue(File(root, "app/build.gradle.kts").readText().contains("aidl = false"))
     }

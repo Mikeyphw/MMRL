@@ -7,10 +7,10 @@ import org.junit.Test
 
 class BuildGraphQualityConvergenceContractTest {
     private fun root(): File {
-        var current = File(System.getProperty("user.dir")).absoluteFile
-        while (current.parentFile != null) {
+        var current = File(System.getProperty("user.dir") ?: ".").absoluteFile
+        while (true) {
             if (File(current, "settings.gradle.kts").isFile) return current
-            current = current.parentFile
+            current = current.parentFile ?: break
         }
         error("Could not locate MMRL repository root")
     }

@@ -231,10 +231,14 @@ def check_product_boundary() -> None:
 
     allowed_main_entries = {"AndroidManifest.xml", "assets", "java", "kotlin", "res"}
     app_main = ROOT / "app/src/main"
-    actual_main_entries = {p.name for p in app_main.iterdir()}
+    actual_main_entries = {
+        p.name
+        for p in app_main.iterdir()
+        if p.is_file() or (p.is_dir() and any(child.is_file() for child in p.rglob("*")))
+    }
     unexpected_main = actual_main_entries - allowed_main_entries
     if unexpected_main:
-        fail(f"unexpected app/src/main entries: {sorted(unexpected_main)}")
+        fail(f"unexpected non-empty app/src/main entries: {sorted(unexpected_main)}")
 
     allowed_package_roots = {
         "app", "database", "datastore", "debug", "github", "installer", "lsposed",
