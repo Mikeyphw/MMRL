@@ -37,7 +37,7 @@ import dev.dergoogler.mmrl.compat.Converters
         OperationHistoryEntity::class,
         OperationTechnicalLogEntity::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -59,7 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
 
 
-        internal const val CURRENT_SCHEMA_VERSION = 21
+        internal const val CURRENT_SCHEMA_VERSION = 22
 
         internal val supportedMigrationStarts: IntRange = 1 until CURRENT_SCHEMA_VERSION
 
@@ -188,7 +188,13 @@ abstract class AppDatabase : RoomDatabase() {
                     db.execSQL("CREATE INDEX IF NOT EXISTS `index_onlineModules_id_repoUrl` ON `onlineModules` (`id`, `repoUrl`)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS `index_onlineModules_repoUrl` ON `onlineModules` (`repoUrl`)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS `index_versions_id_repoUrl` ON `versions` (`id`, `repoUrl`)")
-                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_localModules_source_id_repoUrl` ON `localModules_source` (`id`, `repoUrl`)")
+                }
+            }
+
+        internal val MIGRATION_21_22 =
+            object : Migration(21, 22) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("DROP INDEX IF EXISTS `index_localModules_source_id_repoUrl`")
                 }
             }
 
@@ -201,6 +207,7 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_18_19,
                     MIGRATION_19_20,
                     MIGRATION_20_21,
+                    MIGRATION_21_22,
                 )
 
         private fun createVersion15TablesIfMissing(db: SupportSQLiteDatabase) {

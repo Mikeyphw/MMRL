@@ -16,8 +16,8 @@ import org.junit.Test
 class PersistenceRoundTripPolicyTest {
     @Test
     fun `room database exposes explicit migrations for every supported old version and no destructive fallback`() {
-        assertEquals(21, AppDatabase.CURRENT_SCHEMA_VERSION)
-        assertEquals((1 until 21).toList(), AppDatabase.supportedMigrationStarts.toList())
+        assertEquals(22, AppDatabase.CURRENT_SCHEMA_VERSION)
+        assertEquals((1 until 22).toList(), AppDatabase.supportedMigrationStarts.toList())
         assertEquals(false, AppDatabase.destructiveFallbackEnabled())
     }
 
