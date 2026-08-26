@@ -17836,6 +17836,946 @@
         "status": "rolled-back"
       },
       "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-24T18:10:24.407144Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_split_hotfix_complete_ashrexcue_purge_v1.zip",
+      "artifact_name": "mmrl_split_hotfix_complete_ashrexcue_purge_v1.zip",
+      "type": "overlay",
+      "sha256": "3e409644b4317eff06485590c761b767bc9d0dc5e7d39b075bca94e94dc377dc",
+      "content_identity": {
+        "sha256": "3e409644b4317eff06485590c761b767bc9d0dc5e7d39b075bca94e94dc377dc",
+        "size": 26118
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Hotfix enforce MMRL standalone boundary and purge AshReXcue",
+      "commit_hash": "0aff0f9dac6db8d6be1be245195b862cd14bf276",
+      "file_count": 4,
+      "change_counts": {
+        "delete": 29,
+        "modify": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "mmrl_split_hotfix_complete_ashrexcue_purge_v1",
+        "description": "Hotfix enforcing the MMRL/AshReXcue split boundary: removes all embedded AshReXcue/AshLooper UI, navigation, root service/AIDL, Room schema/database, bundled recovery module payload and build packaging from MMRL. MMRL remains the module/repository manager only.",
+        "target": "mmrl_android",
+        "repository": {
+          "name": "MMRL"
+        },
+        "workspace": {
+          "root": "."
+        },
+        "baseline": {
+          "previous_overlay": "mmrl_split_ov13_cross_repository_independence_v1",
+          "revision": "user-snapshot-2026-08-24-150058",
+          "source_archive": "MMRL-20260824-150058.tar.gz",
+          "source_archive_sha256": "4306701047846c56d98f89f9a020383a9436d26a2198232c1c806918e1b99cf4"
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/build.gradle.kts",
+              "action": "modify",
+              "sha256": "515f071d9bc3da997353fdfbe7b61a4abcfabda7bc0b2f9118940bb59b9cae71",
+              "size": 10752,
+              "source_sha256": "1be02e60a113a1f2ac15bfb5b72036130ce02ba50005efa738c4fbd43148465d"
+            },
+            {
+              "path": "app/src/main/AndroidManifest.xml",
+              "action": "modify",
+              "sha256": "216622db3b7d1c3bbabeb815d69e08daa2f0eebf70def53ac82eaf20554e85ba",
+              "size": 13749,
+              "source_sha256": "f69b6027afc97ff3699d0b18e557c3e38e672630979b81e79be315963ff84553"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/navigation/MainDestination.kt",
+              "action": "modify",
+              "sha256": "c2b9a68c5b8c5d1b9320992c3b28c746236b77840e1796d75e3c448fa32ff7a9",
+              "size": 3019,
+              "source_sha256": "3369a791e4ad92a341cd61fbe545d432658bb059272c77109f36a798ec2ad0b8"
+            },
+            {
+              "path": "app/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "020bf3542a8a70710a053898674ba9bef939ac6779f29ba50aa1b61314843225",
+              "size": 64326,
+              "source_sha256": "7150dc568987c656f3c41598137f559cf3749bc5153eb38f1cf34cb587ed00e7"
+            },
+            {
+              "path": "app/schemas/com.dergoogler.mmrl.ash.database.AppDatabase/1.json",
+              "action": "delete",
+              "source_sha256": "2f95671a6529566ed6bf6ac55683f51945d70697325f8a77c27c053d9597a5a2"
+            },
+            {
+              "path": "app/src/main/aidl/com/dergoogler/mmrl/ash/root/IAshReXcueService.aidl",
+              "action": "delete",
+              "source_sha256": "e217d7d59ef72720d473568fdb69d94b7b5fe1a484299864322798e90bc5e50c"
+            },
+            {
+              "path": "app/src/main/ash-module/META-INF/com/google/android/update-binary",
+              "action": "delete",
+              "source_sha256": "57014cec73c602ee4af91df4379337330b50565216a5a32fc9b48e39d1b210a9"
+            },
+            {
+              "path": "app/src/main/ash-module/META-INF/com/google/android/updater-script",
+              "action": "delete",
+              "source_sha256": "d2b8203193a083e43ad076fde01b9c7821e0aa521e1f8077b8628fb1cdb70c60"
+            },
+            {
+              "path": "app/src/main/ash-module/action.sh",
+              "action": "delete",
+              "source_sha256": "dab91e0553867fc0074ae4c7d538e59ee413cefc65494ec00180a7e97464afbf"
+            },
+            {
+              "path": "app/src/main/ash-module/ashrexcuectl",
+              "action": "delete",
+              "source_sha256": "86acfee25219adb562b83eff974012a24fb03c7ec963b40e88b0028bc7abbc7a"
+            },
+            {
+              "path": "app/src/main/ash-module/banner",
+              "action": "delete",
+              "source_sha256": "06f27036ed7b065b2bac4119a3be9fdb8e209f3a7332dbb24f4f0096ae20a775"
+            },
+            {
+              "path": "app/src/main/ash-module/customize.sh",
+              "action": "delete",
+              "source_sha256": "eaad25af43a6d42bd5eb15f3a77841e7e550e2c2bc2f86c67a77f45099283d17"
+            },
+            {
+              "path": "app/src/main/ash-module/jq/jq",
+              "action": "delete",
+              "source_sha256": "6bc62f25981328edd3cfcfe6fe51b073f2d7e7710d7ef7fcdac28d4e384fc3d4"
+            },
+            {
+              "path": "app/src/main/ash-module/manual_fail_file.sh",
+              "action": "delete",
+              "source_sha256": "d7a96f62bfc44e10fd437a6919e7e28dc80d9dd8f7dfcb0ff27fb1985e6139be"
+            },
+            {
+              "path": "app/src/main/ash-module/module.prop",
+              "action": "delete",
+              "source_sha256": "b9c14a5edb2591d1084c140a17a8c9c6bcad916aef79c117826606dadc89958f"
+            },
+            {
+              "path": "app/src/main/ash-module/post-fs-data.sh",
+              "action": "delete",
+              "source_sha256": "8bffa2e7d93ecf665638b1283f790c4e3a238efb7d1ec308ece1734092a02a9d"
+            },
+            {
+              "path": "app/src/main/ash-module/service.sh",
+              "action": "delete",
+              "source_sha256": "d5ba16ac955ea53b256416ca95567ae6d232f319435dfedccd5119171ce19425"
+            },
+            {
+              "path": "app/src/main/ash-module/settings.prop",
+              "action": "delete",
+              "source_sha256": "cf454778df36bc9776f64fa78e7ac8adefcdf808eba70e8b7cafd43c78ac8b4a"
+            },
+            {
+              "path": "app/src/main/ash-module/uninstall.sh",
+              "action": "delete",
+              "source_sha256": "e5a51d303726584550e6eb4f6a087813aa67bd905e9541ea7ad87c87b76d8f9e"
+            },
+            {
+              "path": "app/src/main/ash-module/utils.sh",
+              "action": "delete",
+              "source_sha256": "c756e662377076f3534545ecce26fbca829e64261274c17f27eff10373734a5b"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshScreen.kt",
+              "action": "delete",
+              "source_sha256": "af7990728515eb2b4b1ab3a5dac0c0e4634846fadc08cf843cae7c111d431ca4"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/AshViewModel.kt",
+              "action": "delete",
+              "source_sha256": "ae345deae81b4946e1dcfeccc2d2be091baef542a6720ae37f22950385d91bdf"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/data/AshRepository.kt",
+              "action": "delete",
+              "source_sha256": "bb56e4175a185e5dd1fbcd551b8f9cc427236fc605c67a44656e6f4f4bc65690"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/database/ActivityDao.kt",
+              "action": "delete",
+              "source_sha256": "e048a2522012244d5c556ed8ae1275ba7207b585bba2960632552f3d80464e75"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/database/ActivityEntity.kt",
+              "action": "delete",
+              "source_sha256": "425c9824a63d6f88a401e35a1b120e773856ec47113f2d1073df5ff256204b92"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/database/AppDatabase.kt",
+              "action": "delete",
+              "source_sha256": "1390f92882f6f2f07e56d124843db4604324beab81c8bca4fbe95a8adf06447d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/di/AppModule.kt",
+              "action": "delete",
+              "source_sha256": "51d88305bf0e92a800be14666c6cac0fc5580fe51c86c58ce46a318474a518d3"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/model/Models.kt",
+              "action": "delete",
+              "source_sha256": "e4daf4dd8abaa8ff810966a205d09a3208bdd50b3907679ec4fb6a30be17ed36"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshCtlExecutor.kt",
+              "action": "delete",
+              "source_sha256": "21072bd3adf232dfcb24c632c27528cbbb9f394c77fda31ff9b38ee4169329f5"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/AshRootService.kt",
+              "action": "delete",
+              "source_sha256": "3fa1636b266393ede1d1e6d8d0508067d8a8cc441156437ecbd50583c753b97d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/root/RootServiceClient.kt",
+              "action": "delete",
+              "source_sha256": "d3a8c01a88bdf67dc6b921b1712e1cd7a1a88dc34ea5bd8e4f9470af2efe8bde"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/ui/App.kt",
+              "action": "delete",
+              "source_sha256": "1c8d6535c11a32aa14c7aaa9663ea60bd1ff5d54b25e8f4e83c021c076e8c18d"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ash/ui/Theme.kt",
+              "action": "delete",
+              "source_sha256": "764471d5cb2d2ddfa985c531db84a495edcdc7857abffd5b1b9dfcb7156d62f2"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Hotfix enforce MMRL standalone boundary and purge AshReXcue"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "79a5ad31da4b4ad382b4dfce5cb7240e",
+      "history_id": "b77bc64642281b4d16524eb3c595016e",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260824T181021Z-9d8c477184fd",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-25T17:57:36.431705Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_compile_hotfix_timber_composable_v1.zip",
+      "artifact_name": "mmrl_compile_hotfix_timber_composable_v1.zip",
+      "type": "overlay",
+      "sha256": "9ae0728bede44396622f15c67683243c0292b315f925e204a81ac1ee381a6eac",
+      "content_identity": {
+        "sha256": "9ae0728bede44396622f15c67683243c0292b315f925e204a81ac1ee381a6eac",
+        "size": 20072
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Fix MMRL Kotlin compile blockers",
+      "commit_hash": "e055823ea221b3f9c3547f90025ef0cca96d2875",
+      "file_count": 3,
+      "change_counts": {
+        "add": 1,
+        "modify": 2
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL Kotlin compile hotfix: Timber + Composable annotations",
+        "description": "Fixes the OfficialDebug Kotlin compilation blockers by importing the existing Timber-to-Arbor compatibility alias in LsposedRepository, removing repeated non-repeatable @Composable annotations in ModulesList, and adding source-hygiene regression coverage for both failures.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedRepository.kt",
+              "action": "modify",
+              "sha256": "da257566f91c00153de15a6b216bc4e3208a31d6a8acba5618616d8de684a264",
+              "size": 27968,
+              "source_sha256": "580289e134435e6c416074ff3de148ea6409e523f6bac4ced180921b68042dee"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/modules/ModulesList.kt",
+              "action": "modify",
+              "sha256": "4f3311040ad38e310b80594108f54f96b842c958da0921dd983978bc27e059b6",
+              "size": 59560,
+              "source_sha256": "2fec14f9ca4e445e95f9e8744629827d118dab50c833cf802fa892f639af80b0"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/KotlinCompileRegressionSourceHygieneTest.kt",
+              "action": "add",
+              "sha256": "d99d72b9d26b0de79dbfeca0950f82bb4a00c7bc6bf0a1647d0686134b77cca6",
+              "size": 1380
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Fix MMRL Kotlin compile blockers"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "2609a371f397420f8cce2db9d97f0202",
+      "history_id": "53c9b8b2120d5ee69efefd8425a28a77",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260825T175733Z-c1704bcae760",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-25T18:28:09.677474Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_ndk29_single_version_pin_v1.zip",
+      "artifact_name": "mmrl_ndk29_single_version_pin_v1.zip",
+      "type": "overlay",
+      "sha256": "10746a0caf48daab3e5778fca6b51903612044549c6c60aa9001d4d45e4b0e7a",
+      "content_identity": {
+        "sha256": "10746a0caf48daab3e5778fca6b51903612044549c6c60aa9001d4d45e4b0e7a",
+        "size": 20715
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Pin MMRL exclusively to NDK r29",
+      "commit_hash": "44a4751e4e278f281a8f3b93d653928fa4438dc1",
+      "file_count": 5,
+      "change_counts": {
+        "modify": 5
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL single NDK r29 toolchain pin",
+        "description": "Pins Devtool and all active MMRL native toolchain contracts to NDK 29.0.14206865 so Devtool can no longer auto-select NDK r28 while Gradle uses r29. Strengthens Gradle, source-hygiene, and unit-test release gates around the exact r29 pin.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": ".devtool.toml",
+              "action": "modify",
+              "sha256": "c04511d6ccc61f5fff46061626c669de0bcdef1384d43ef7cab19f428ad90164",
+              "size": 3814,
+              "source_sha256": "f30aa388edc93b65eaa3a2616f077a9f406c45ccf1170f52faedb748ff016f63"
+            },
+            {
+              "path": "build.gradle.kts",
+              "action": "modify",
+              "sha256": "c48bf8d452cdf7cb9c2e046a097e542ba7e837d46f7f5f602bd2ebcfd22c2734",
+              "size": 10092,
+              "source_sha256": "76a520b70803fafb26b227e993a02d1dced4fede4e32ad7a66c270ad1302210f"
+            },
+            {
+              "path": "scripts/validate-mmrl-source-hygiene.py",
+              "action": "modify",
+              "sha256": "1965df5c0d62abe1e864dde46ec41069aaa03fd5cea9729d5f0627678ecf5361",
+              "size": 27453,
+              "source_sha256": "5ccc7177d3fe08394cd68a2db23c09db7ead63ab7988893adab98a67485d4069"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+              "action": "modify",
+              "sha256": "513d47116db6ec52984f8251b8aa01db979500bcafca0773423649ba93b607d3",
+              "size": 4656,
+              "source_sha256": "e2de2303a233f2b44f41b0ad8f1eef600c34bd1323a3cd5ba49aacfca58d72fe"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/BuildGraphQualityConvergenceContractTest.kt",
+              "action": "modify",
+              "sha256": "8b811df12ff2165ba3326a7f7fbf03315660c74adb6063b42a6f86cadaaec502",
+              "size": 3388,
+              "source_sha256": "4fc5473dbb64b38211dfb8f011c7ae05694d7af783a00059b72dad2b31769e0d"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Pin MMRL exclusively to NDK r29"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "be2903e9d83f47c1b0a1cc30d1629846",
+      "history_id": "0eb88fd153e96096c9bf5c5178088ea4",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260825T182807Z-eb056e8ec420",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-25T18:40:59.354413Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_unlimited_metaspace_hotfix_v1.zip",
+      "artifact_name": "mmrl_unlimited_metaspace_hotfix_v1.zip",
+      "type": "overlay",
+      "sha256": "6fcd31254c26baa00f51a12d8445b95253c4ecc7354984f8cce71dfb13f9112c",
+      "content_identity": {
+        "sha256": "6fcd31254c26baa00f51a12d8445b95253c4ecc7354984f8cce71dfb13f9112c",
+        "size": 14531
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Remove MMRL Gradle metaspace caps",
+      "commit_hash": "44ed284fb81458a99a29c4fb1f6a75e7df9b091c",
+      "file_count": 4,
+      "change_counts": {
+        "modify": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL unlimited Gradle metaspace hotfix",
+        "description": "Removes MMRL hard MaxMetaspaceSize caps and disables all Devtool Gradle metaspace guards while preserving the 1 GiB Gradle heap limit. Adds source-hygiene and unit regression coverage so Termux validation cannot silently reintroduce a 320/384 MiB metaspace ceiling.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": ".devtool.toml",
+              "action": "modify",
+              "sha256": "7e17f490e2d5c7cadb0ce646670e21fdc72d3a2909d0dbe327bcfd38e91d75f1",
+              "size": 3794,
+              "source_sha256": "c04511d6ccc61f5fff46061626c669de0bcdef1384d43ef7cab19f428ad90164"
+            },
+            {
+              "path": "gradle.properties",
+              "action": "modify",
+              "sha256": "a65e35f8790ebb41782f3ea80e5767b3f600e5004a9b9d9c804957ab9dca2196",
+              "size": 580,
+              "source_sha256": "b029a5f92657023e1eb1598ee83877f2caf6c17420ca84bf7575b10e1a0450b1"
+            },
+            {
+              "path": "scripts/validate-mmrl-source-hygiene.py",
+              "action": "modify",
+              "sha256": "3a06162d0ca03e709fd737df942f76fcc6f1c7bc8800a41d1423f8fede1c5c20",
+              "size": 28044,
+              "source_sha256": "1965df5c0d62abe1e864dde46ec41069aaa03fd5cea9729d5f0627678ecf5361"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ReleaseSealGradlePolicyTest.kt",
+              "action": "modify",
+              "sha256": "fbb574515fa56c0a1143400f7bc88e032a51da5de18ce1db5166634420e826ba",
+              "size": 5380,
+              "source_sha256": "513d47116db6ec52984f8251b8aa01db979500bcafca0773423649ba93b607d3"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Remove MMRL Gradle metaspace caps"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "ea49fa0227d9428d96aa72cdc5c11978",
+      "history_id": "dcd18581c0ad35cd15f8cb4f0029de02",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260825T184057Z-3f025e848ac8",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-26T16:17:26.529203Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_validation_test_contract_hotfix_v1.zip",
+      "artifact_name": "mmrl_validation_test_contract_hotfix_v1.zip",
+      "type": "overlay",
+      "sha256": "836480cf68cc903e95384832e7548d04ba002262d5c84fe4d2384ea6ec397e2e",
+      "content_identity": {
+        "sha256": "836480cf68cc903e95384832e7548d04ba002262d5c84fe4d2384ea6ec397e2e",
+        "size": 23511
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Fix MMRL validation test contracts",
+      "commit_hash": "10dafe2640232b4ca24fa1ec23c9f6dc64309b2a",
+      "file_count": 9,
+      "change_counts": {
+        "modify": 9
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL validation-test contract hotfix",
+        "description": "Fixes the three OfficialDebug unit-test failures after the Kotlin/NDK/metaspace hotfixes: restores the Debug Workbench developer-mode gate and makes its source contract resource-aware; aligns LSPosed presentation assertions with intentionally normalized search tokens; makes the standalone source-boundary contract ignore empty untracked source directories while still rejecting non-empty undeclared sources and all app-level AIDL. Also removes the four Kotlin test warnings reported by Devtool and aligns root/source-hygiene boundary checks with the same content-based rule.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/settings/developer/DeveloperScreen.kt",
+              "action": "modify",
+              "sha256": "21a6b608c8d4a44d60eb36052c1192329f15d1d1c70b38111132a4971941d871",
+              "size": 3398,
+              "source_sha256": "8db7a2347db893ed56bad51c5143a6fe4cbc3938264d0584203dd849bffa8f6b"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/debug/DebugWorkbenchContractTest.kt",
+              "action": "modify",
+              "sha256": "0fdd35e0c6d40e8440ebd04c73482b6dd8047756c05cedb7b6e5337c81e54fd9",
+              "size": 4132,
+              "source_sha256": "3c4e4d87c9a1a0ba5fe5bfa7ca1f69a419915804d1039d40d57bc8e3051b33ed"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/model/unified/UnifiedModuleBrowserLsposedPresentationTest.kt",
+              "action": "modify",
+              "sha256": "03f8ec54424729af36a06520d3b98248b906d1056ef1427e5a9fb1524b0c8271",
+              "size": 928,
+              "source_sha256": "194d43b6923cec4c67da03fdd04125685583878a4bf5d0d92b150b380222fbb8"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/StandaloneToolchainBoundaryContractTest.kt",
+              "action": "modify",
+              "sha256": "23a6a252b2474b864cdc1246d08ff41f68615c4d2740c9acf1542db317aad6c1",
+              "size": 3948,
+              "source_sha256": "e0d5b64bb2ebeb46af3dd06b0e317af1071cb7fffb01a252151e9d54569b6734"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/BuildGraphQualityConvergenceContractTest.kt",
+              "action": "modify",
+              "sha256": "086422f49a971b5a85fc8ca6c1124f8fcbcf0ce50202bf67d718fe2b399632a1",
+              "size": 3382,
+              "source_sha256": "8b811df12ff2165ba3326a7f7fbf03315660c74adb6063b42a6f86cadaaec502"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/service/DownloadCompletionPolicyTest.kt",
+              "action": "modify",
+              "sha256": "a89fd505df01ac8d8a125e905ca336ae1f025525b413fde14f748b560e26f649",
+              "size": 940,
+              "source_sha256": "09223289d12c302c0b0d39f27764ff962e3905c506e4b7fcaa00749fdf182f4f"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/tasker/TaskerPublicContractTest.kt",
+              "action": "modify",
+              "sha256": "b7e2af7501c8a061ebc0b959ecf47a22b621868fbff7036e2198b3c10ec6b9a3",
+              "size": 1185,
+              "source_sha256": "810ca6cd7299afc6ecade7f283cb9e8ded35db582e6b6905aa9f81da58309526"
+            },
+            {
+              "path": "build.gradle.kts",
+              "action": "modify",
+              "sha256": "8927da4e5f6dd233a591a4b9a5667d3fcf97bf2de7f6015e410b9f106313d55a",
+              "size": 10215,
+              "source_sha256": "c48bf8d452cdf7cb9c2e046a097e542ba7e837d46f7f5f602bd2ebcfd22c2734"
+            },
+            {
+              "path": "scripts/validate-mmrl-source-hygiene.py",
+              "action": "modify",
+              "sha256": "59ba019057e1bbcf5fb0fc81e1d58813195fd7f44b10130e4660fb2c5ab2c5c7",
+              "size": 28166,
+              "source_sha256": "3a06162d0ca03e709fd737df942f76fcc6f1c7bc8800a41d1423f8fede1c5c20"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Fix MMRL validation test contracts"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "593efc3e1b514178a886eda8dfd87e0d",
+      "history_id": "1546214c40c1f95ad484e3072dd382c6",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260826T161723Z-960ca1358ced",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-26T17:26:20.521935Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_debug_workbench_convergence_contract_hotfix_v2.zip",
+      "artifact_name": "mmrl_debug_workbench_convergence_contract_hotfix_v2.zip",
+      "type": "overlay",
+      "sha256": "",
+      "content_identity": {
+        "sha256": "",
+        "size": null
+      },
+      "status": "failed",
+      "validation_status": "not-run",
+      "commit_message": "",
+      "commit_hash": "",
+      "file_count": 0,
+      "change_counts": {},
+      "manifest": {},
+      "operation_id": "6cb5c4014a31470fba385fdaf241f9b1",
+      "history_id": "4d5ef0e095d90e5c3ed641b7bc654d32",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "artifact-check",
+          "returncode": 1,
+          "skipped": false,
+          "failure_kind": "artifact_failure",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "validation_plan": {}
     }
   ]
 }
