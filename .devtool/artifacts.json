@@ -18776,6 +18776,312 @@
         }
       ],
       "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-26T17:26:56.291883Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_debug_workbench_convergence_contract_hotfix_v2.zip",
+      "artifact_name": "mmrl_debug_workbench_convergence_contract_hotfix_v2.zip",
+      "type": "overlay",
+      "sha256": "2cc255eda1b3cf9c0740bc53ad7ff4f9711739e561e5067c10ee88775b7ea387",
+      "content_identity": {
+        "sha256": "2cc255eda1b3cf9c0740bc53ad7ff4f9711739e561e5067c10ee88775b7ea387",
+        "size": 5218
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Fix Debug Workbench convergence contract",
+      "commit_hash": "5d1edd0af2132f4f3993877b9e28b10cd21e6e55",
+      "file_count": 1,
+      "change_counts": {
+        "modify": 1
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL Debug Workbench convergence contract hotfix v2",
+        "description": "Fixes the final stale UiTaskerDebugProductConvergenceContractTest assertion so it agrees with the developer-mode gating contract while preserving Debug Workbench availability from the main More sheet.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/UiTaskerDebugProductConvergenceContractTest.kt",
+              "action": "modify",
+              "sha256": "a1573fe6a453ff1088abc8d34e54f1683cb7eb9dc27a6339d3a48055d8da293d",
+              "size": 3755,
+              "source_sha256": "65de7726c749c83220aea3f9233633ef7a373c3bd2ff53346e46c54aec7da39b"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Fix Debug Workbench convergence contract"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "0a9633061f6b45cb8c84e885ba7045ce",
+      "history_id": "73417c4727d3bda294e7b807813829f7",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260826T172654Z-58b9917de260",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-27T16:59:55.290628Z",
+      "artifact": "/storage/emulated/0/Download/studyflow_cpov01_public_exam_profile_target_shell_v1.zip",
+      "artifact_name": "studyflow_cpov01_public_exam_profile_target_shell_v1.zip",
+      "type": "overlay",
+      "sha256": "433ab5450fe49fdcb09420f950c1c51403a19c7475c8876a4be9b20191083b2b",
+      "content_identity": {
+        "sha256": "433ab5450fe49fdcb09420f950c1c51403a19c7475c8876a4be9b20191083b2b",
+        "size": 55433
+      },
+      "status": "failed",
+      "validation_status": "not-run",
+      "commit_message": "Add public examination target profile shell",
+      "commit_hash": "",
+      "file_count": 15,
+      "change_counts": {
+        "add": 13,
+        "modify": 2
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "studyflow_cpov01_public_exam_profile_target_shell_v1",
+        "description": "CPOV01 adds the repository-backed public examination profile shell using existing StudyTarget, ExamStage and StudyPlan models, with ownership guards, bilingual Plan Settings UI and onboarding routing.",
+        "repository": {
+          "name": "studyflow"
+        },
+        "workspace": {
+          "name": "studyflow_android",
+          "root": "."
+        },
+        "target": "studyflow_android",
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "requires_clean_worktree": false,
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Add public examination target profile shell"
+          }
+        },
+        "validation": {
+          "required": true,
+          "restore": false,
+          "build": true,
+          "test": true,
+          "rollback_on_failure": true,
+          "tasks": [
+            "verifyCpov00Toolchain",
+            "verifyCpov01PublicExamProfile",
+            ":feature:plans:testDebugUnitTest",
+            ":core:data:compileDebugKotlin",
+            ":feature:plans:compileDebugKotlin",
+            ":app:compileDebugKotlin",
+            ":app:testReleaseUnitTest",
+            ":desktopApp:compileKotlin"
+          ]
+        },
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": ".devtool.toml",
+              "action": "modify",
+              "sha256": "3406b21a57e1339eac254e50bed79f5679aad88231ad5ba23d43ba1691f4fb4a",
+              "size": 10563,
+              "source_sha256": "7ca240e9cfecea44df1f9784cd46569f15e2e833e9227f300dbc7b12e324678c"
+            },
+            {
+              "path": "CPOV01_PUBLIC_EXAM_PROFILE_TARGET_SHELL.md",
+              "action": "add",
+              "sha256": "867ca4a8b00e6647d83177ad3e1f6fee90f16b61627d9eb2420d6897fef59911",
+              "size": 1155
+            },
+            {
+              "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt",
+              "action": "modify",
+              "sha256": "06f05853014385fea335a77c51fcd78f46ceaa0b0b42b5cbab8ef9b4a4709471",
+              "size": 51709,
+              "source_sha256": "703ac8874b3c3e1d9e414be0aba98c9437fc715ae7859c1342cfd352a19cdaa4"
+            },
+            {
+              "path": "build.gradle.kts",
+              "action": "modify",
+              "sha256": "d8d6b3aa97591d1ffc45b5236a4931ce7eb50b4d7aba13835cf9d591f4282d54",
+              "size": 38754,
+              "source_sha256": "cd880c9660b410f27d017b621747073273143e2596e825168ce90891a6b2e01b"
+            },
+            {
+              "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyContentRepository.kt",
+              "action": "modify",
+              "sha256": "21f4b98699d1052a9273ce798a8f323ce86639e710b89cf54d3a52b0bf26ca6e",
+              "size": 22579,
+              "source_sha256": "9dd9083f4d7f0277c9927c9c57c0fd31d3ba63d0fbf1c92b1d1a830d09f72bce"
+            },
+            {
+              "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyStructureDao.kt",
+              "action": "modify",
+              "sha256": "880d432df520688a53d8f4f8b915515af283dd4f229c9bd5a2b026aae92fa622",
+              "size": 3583,
+              "source_sha256": "3c36135e7ba3cc9bf21c3e12f425ea81090360634ea014756c9b733c356440e3"
+            },
+            {
+              "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudyContent.kt",
+              "action": "modify",
+              "sha256": "5798080b78626befa4130c3547e19de676cd195a0dd1c06e260ce82ad45f639a",
+              "size": 6240,
+              "source_sha256": "1c45f7538f923d2289c7c7fe48a3d4aef3232824a9dc4a6aad9a6e0d9e00b165"
+            },
+            {
+              "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/StudyContentRepository.kt",
+              "action": "modify",
+              "sha256": "7f8fb2077715aa0a51bc6693e1cd8be577fea3b251b63bc8db3190feaa7dc52b",
+              "size": 2115,
+              "source_sha256": "9d247113fcee4d6f43ed6a9d5d548eb351ae23b42af36f8b2f133632a162bc2a"
+            },
+            {
+              "path": "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/OnboardingSamplePlanWizardScreen.kt",
+              "action": "modify",
+              "sha256": "0c187b0ea272eb25bff38c03e39154fa48b1eed7e607de3b5df25d553f8822fe",
+              "size": 19205,
+              "source_sha256": "f3a9718a506868051af7ca18f6eabff85dab73d3fdb4efc11181e56929a10f24"
+            },
+            {
+              "path": "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanSettingsScreen.kt",
+              "action": "modify",
+              "sha256": "41cd741664e443bfe372e61d61e8b2e7e2d20c67b536a187f173f7955ba62694",
+              "size": 10582,
+              "source_sha256": "07df303f8b61bb4ec3183188d2bad39bc2539949f00a65440f065bccc6adf159"
+            },
+            {
+              "path": "feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PublicExamProfileSection.kt",
+              "action": "add",
+              "sha256": "46ed6578462d3efe254e375ba7e94a082f6914a30be9a5f0adb84d12cf740cfc",
+              "size": 15354
+            },
+            {
+              "path": "feature/plans/src/main/res/values-pt-rBR/strings.xml",
+              "action": "modify",
+              "sha256": "e91ad7e6e6ad82d3d7dd3deb38fb50f351257a2e173e6ddcc5ef8ebc482f5cca",
+              "size": 23827,
+              "source_sha256": "d22fdbabc5c6c7429a671d44b69f67f08468efaaa16fba82da1aaa000ee8f755"
+            },
+            {
+              "path": "feature/plans/src/main/res/values/strings.xml",
+              "action": "modify",
+              "sha256": "c7ddfe74cdec6b9700fcd98871eb5010f383e6361fe0d3bef46a10bfcc7363f5",
+              "size": 22153,
+              "source_sha256": "434ae396384752d8df3df0f979a0111211880b5e2452fa038649d704c97de263"
+            },
+            {
+              "path": "feature/plans/src/test/java/com/mikeyphw/studyflow/feature/plans/PublicExamProfileFormTest.kt",
+              "action": "add",
+              "sha256": "fb56b588f486407dd67c5d28352341ff420c778cbf497ce8150a305b17697476",
+              "size": 3530
+            },
+            {
+              "path": "scripts/verify_cpov01_public_exam_profile.py",
+              "action": "add",
+              "sha256": "8d8bb2ce1e4d06207ed84a15277fba56c518652d0e9fce9ad5761a9715464ebc",
+              "size": 4452
+            }
+          ]
+        }
+      },
+      "operation_id": "0b74f6d0f8554a52aa2c1280685c7848",
+      "history_id": "707ee78e71e7c537238b48669dc0b93a",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "artifact-manifest",
+          "returncode": 1,
+          "skipped": false,
+          "failure_kind": "artifact_failure",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "validation_plan": {}
     }
   ]
 }
