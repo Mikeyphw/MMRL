@@ -20,7 +20,7 @@ open class KernelSUModuleManager(protected val rootPlatform: Platform = Platform
 
     override fun getVersionCode(): Int {
         if (!RootManagerCapabilityPolicy.mayQueryNative(rootPlatform)) return mVersionCode
-        val ksuVersion = KsuNative.nativeGetVersion()
+        val ksuVersion = KsuNative.rawGetVersion()
 
         return if (ksuVersion != -1) {
             ksuVersion
@@ -30,10 +30,10 @@ open class KernelSUModuleManager(protected val rootPlatform: Platform = Platform
     }
 
     override fun setSuEnabled(enabled: Boolean): Boolean =
-        supportedCapabilities().supported && KsuNative.nativeSetSuEnabled(enabled)
+        supportedCapabilities().supported && KsuNative.rawSetSuEnabled(enabled)
 
     override fun isSuEnabled(): Boolean =
-        supportedCapabilities().supported && KsuNative.nativeIsSuEnabled()
+        supportedCapabilities().supported && KsuNative.rawIsSuEnabled()
 
     private fun supportedCapabilities() =
         RootManagerCapabilityPolicy.capabilities(
@@ -44,17 +44,17 @@ open class KernelSUModuleManager(protected val rootPlatform: Platform = Platform
 
     override fun isLkmMode(): NullableBoolean {
         val capabilities = supportedCapabilities()
-        return NullableBoolean(if (capabilities.canQueryLkmMode) KsuNative.nativeIsLkmMode() else null)
+        return NullableBoolean(if (capabilities.canQueryLkmMode) KsuNative.rawIsLkmMode() else null)
     }
 
     override fun getSuperUserCount(): Int =
-        if (supportedCapabilities().supported) KsuNative.nativeGetAllowList().size else -1
+        if (supportedCapabilities().supported) KsuNative.rawGetAllowList().size else -1
 
     override fun isSafeMode(): Boolean =
-        supportedCapabilities().supported && KsuNative.nativeIsSafeMode()
+        supportedCapabilities().supported && KsuNative.rawIsSafeMode()
 
     override fun uidShouldUmount(uid: Int): Boolean =
-        supportedCapabilities().supported && KsuNative.nativeUidShouldUmount(uid)
+        supportedCapabilities().supported && KsuNative.rawUidShouldUmount(uid)
 
     override fun getModuleCompatibility(): ModuleCompatibility {
         val capabilities = supportedCapabilities()

@@ -58,4 +58,37 @@ class ModulePlatformConvergenceContractTest {
         assertFalse(remember.contains("isAliveFlow"))
     }
 
+    @Test
+    fun `KernelSU JNI entrypoints keep stable JVM names and linkage cannot kill Binder service`() {
+        val native = source("platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/KsuNative.kt")
+        val manager = source("platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/KernelSUModuleManager.kt")
+        val jni = source("platform/src/main/jni/kernelsu/jni.cpp")
+
+        assertFalse(native.contains("internal external fun"))
+        listOf(
+            "nativeGetVersion",
+            "nativeGetAllowList",
+            "nativeIsSafeMode",
+            "nativeIsLkmMode",
+            "nativeUidShouldUmount",
+            "nativeIsSuEnabled",
+            "nativeSetSuEnabled",
+        ).forEach { name ->
+            assertTrue(native.contains("private external fun $name"))
+            assertTrue(jni.contains("Java_com_dergoogler_mmrl_platform_ksu_KsuNative_$name"))
+        }
+        assertTrue(native.contains("catch (error: LinkageError)"))
+        assertTrue(native.contains("nativeLoaded = false"))
+        assertTrue(manager.contains("KsuNative.rawGetVersion()"))
+        assertFalse(manager.contains("KsuNative.nativeGetVersion()"))
+    }
+
+    @Test
+    fun `module repository preserves cached state across Binder death`() {
+        val repository = source("app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulesRepository.kt")
+        assertTrue(repository.contains("PlatformManager.get<List<LocalModule>?>(null) { moduleManager.modules }"))
+        assertTrue(repository.contains("?: return@withContext"))
+        assertFalse(repository.contains("replaceLocalGeneration(PlatformManager.moduleManager.modules)"))
+    }
+
 }

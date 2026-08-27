@@ -5,6 +5,7 @@ import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.github.GitHubTokenStore
 import com.dergoogler.mmrl.network.runRequest
 import com.dergoogler.mmrl.platform.PlatformManager
+import com.dergoogler.mmrl.platform.content.LocalModule
 import com.dergoogler.mmrl.platform.model.ModId
 import com.dergoogler.mmrl.stub.IMMRLApiManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -25,12 +26,15 @@ class ModulesRepository
 
         suspend fun getLocalAll() =
             withContext(Dispatchers.IO) {
-                localRepository.replaceLocalGeneration(PlatformManager.moduleManager.modules)
+                val modules = PlatformManager.get<List<LocalModule>?>(null) { moduleManager.modules }
+                    ?: return@withContext
+                localRepository.replaceLocalGeneration(modules)
             }
 
         suspend fun getLocal(id: ModId) =
             withContext(Dispatchers.IO) {
-                val module = PlatformManager.moduleManager.getModuleById(id)
+                val module = PlatformManager.get<LocalModule?>(null) { moduleManager.getModuleById(id) }
+                    ?: return@withContext
                 localRepository.insertLocal(module)
             }
 
