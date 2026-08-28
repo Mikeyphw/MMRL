@@ -19082,6 +19082,243 @@
         }
       ],
       "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-27T18:30:35.640730Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_ksu_jni_binder_cascade_hotfix_v1.zip",
+      "artifact_name": "mmrl_ksu_jni_binder_cascade_hotfix_v1.zip",
+      "type": "overlay",
+      "sha256": "423d3506a60a74d5d494867f649416d38caeac16919da8950939b79aacb4acf2",
+      "content_identity": {
+        "sha256": "423d3506a60a74d5d494867f649416d38caeac16919da8950939b79aacb4acf2",
+        "size": 9456
+      },
+      "status": "ok",
+      "validation_status": "not-run",
+      "commit_message": "Fix KernelSU JNI ABI and Binder death cascade",
+      "commit_hash": "549af57851352217ca6a7b1ee79569080c1c0498",
+      "file_count": 4,
+      "change_counts": {
+        "modify": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL KernelSU JNI ABI and Binder cascade hotfix v1",
+        "description": "Fixes Kotlin internal native name mangling that made KernelSU JNI calls resolve as *$platform while C++ exported unmangled symbols; makes KSU native linkage failures degrade safely instead of killing the privileged Binder service; and routes local-module repository reads through the Binder-safe PlatformManager fallback path so transient service death preserves cached state.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/KsuNative.kt",
+              "action": "modify",
+              "sha256": "ec39a7b21808f0e746c79f17984b6918ba6ec24e0c0f9afc54067e040035348f",
+              "size": 8690,
+              "source_sha256": "2fc802b5131da20e7a6a41f425d73bd2653a9444e21379069eef33f01d372384"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/KernelSUModuleManager.kt",
+              "action": "modify",
+              "sha256": "fece4062f25e28b451e26038f59bd647bf7d7c0ab94d04f01b200a5f54461ab9",
+              "size": 6047,
+              "source_sha256": "1ee739a9ad56cd719bf5c7a7f389be990791fc881f86beea06da5648020dfbf1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulesRepository.kt",
+              "action": "modify",
+              "sha256": "1789a4bf3ee4d106dd4f622816d22eade511828661d5082b43d5c53f632d5cbb",
+              "size": 2792,
+              "source_sha256": "d7116fa13346d65277995c1eb79d9723e2cfc9d7f58f1ba83c3480b518b26830"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ModulePlatformConvergenceContractTest.kt",
+              "action": "modify",
+              "sha256": "b7dc5d1ec5034d1e186e77f45bdaf232b2fb384a3392067523d66555da8b9dd4",
+              "size": 4586,
+              "source_sha256": "982325d9457142e2be3ae8b659715faa0477ef669f94ed926be90cac7848cc1d"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Fix KernelSU JNI ABI and Binder death cascade"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "dc775deccc3b4c82bb9c525341a5267d",
+      "history_id": "9e3703725fa85ecac66489f3c13567a3",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "apply-overlay",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-add",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-commit",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "git-index-reconcile",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "apply-verification",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        },
+        {
+          "name": "artifact-cleanup",
+          "returncode": 0,
+          "skipped": false,
+          "failure_kind": "",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "transaction": {
+        "id": "20260827T183032Z-3d872bf19488",
+        "status": "completed"
+      },
+      "validation_plan": {}
+    },
+    {
+      "schema_version": 3,
+      "applied_at": "2026-08-28T14:00:57.015930Z",
+      "artifact": "/storage/emulated/0/Download/mmrl_ksu_jni_binder_cascade_hotfix_v1.zip",
+      "artifact_name": "mmrl_ksu_jni_binder_cascade_hotfix_v1.zip",
+      "type": "overlay",
+      "sha256": "423d3506a60a74d5d494867f649416d38caeac16919da8950939b79aacb4acf2",
+      "content_identity": {
+        "sha256": "423d3506a60a74d5d494867f649416d38caeac16919da8950939b79aacb4acf2",
+        "size": 9456
+      },
+      "status": "failed",
+      "validation_status": "not-run",
+      "commit_message": "Fix KernelSU JNI ABI and Binder death cascade",
+      "commit_hash": "",
+      "file_count": 4,
+      "change_counts": {
+        "unchanged": 4
+      },
+      "manifest": {
+        "schema_version": 2,
+        "type": "overlay",
+        "name": "MMRL KernelSU JNI ABI and Binder cascade hotfix v1",
+        "description": "Fixes Kotlin internal native name mangling that made KernelSU JNI calls resolve as *$platform while C++ exported unmangled symbols; makes KSU native linkage failures degrade safely instead of killing the privileged Binder service; and routes local-module repository reads through the Binder-safe PlatformManager fallback path so transient service death preserves cached state.",
+        "target": "mmrl_android",
+        "repository": "MMRL",
+        "workspace": ".",
+        "inventory": {
+          "format": 1,
+          "entries": [
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/ksu/KsuNative.kt",
+              "action": "modify",
+              "sha256": "ec39a7b21808f0e746c79f17984b6918ba6ec24e0c0f9afc54067e040035348f",
+              "size": 8690,
+              "source_sha256": "2fc802b5131da20e7a6a41f425d73bd2653a9444e21379069eef33f01d372384"
+            },
+            {
+              "path": "platform/src/main/kotlin/com/dergoogler/mmrl/platform/manager/KernelSUModuleManager.kt",
+              "action": "modify",
+              "sha256": "fece4062f25e28b451e26038f59bd647bf7d7c0ab94d04f01b200a5f54461ab9",
+              "size": 6047,
+              "source_sha256": "1ee739a9ad56cd719bf5c7a7f389be990791fc881f86beea06da5648020dfbf1"
+            },
+            {
+              "path": "app/src/main/kotlin/com/dergoogler/mmrl/repository/ModulesRepository.kt",
+              "action": "modify",
+              "sha256": "1789a4bf3ee4d106dd4f622816d22eade511828661d5082b43d5c53f632d5cbb",
+              "size": 2792,
+              "source_sha256": "d7116fa13346d65277995c1eb79d9723e2cfc9d7f58f1ba83c3480b518b26830"
+            },
+            {
+              "path": "app/src/test/kotlin/com/dergoogler/mmrl/release/ModulePlatformConvergenceContractTest.kt",
+              "action": "modify",
+              "sha256": "b7dc5d1ec5034d1e186e77f45bdaf232b2fb384a3392067523d66555da8b9dd4",
+              "size": 4586,
+              "source_sha256": "982325d9457142e2be3ae8b659715faa0477ef669f94ed926be90cac7848cc1d"
+            }
+          ]
+        },
+        "apply": {
+          "atomic": true,
+          "conflict_policy": "fail",
+          "path_policy": "repository-relative",
+          "commit": {
+            "enabled": true,
+            "strategy": "single",
+            "message": "Fix KernelSU JNI ABI and Binder death cascade"
+          }
+        },
+        "validation": {
+          "required": false,
+          "restore": false,
+          "build": false,
+          "test": false,
+          "rollback_on_failure": true
+        }
+      },
+      "operation_id": "29cb06cc0a6340cba4fd1686c153df31",
+      "history_id": "43e5280d00fb730f04783888d6b0b9cc",
+      "rollback_status": "not-needed",
+      "child_outcomes": [
+        {
+          "name": "artifact-manifest",
+          "returncode": 1,
+          "skipped": false,
+          "failure_kind": "artifact_failure",
+          "overlay_id": "",
+          "overlay_index": 1,
+          "target": ""
+        }
+      ],
+      "validation_plan": {}
     }
   ]
 }

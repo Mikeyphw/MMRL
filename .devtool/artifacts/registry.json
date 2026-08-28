@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "adc95058cc90",
+      "name": "MMRL-Fork-v34463-debug-debug.apk",
+      "path": "app/build/outputs/apk/official/debug/MMRL-Fork-v34463-debug-debug.apk",
+      "type": "apk",
+      "size": 27807366,
+      "sha256": "db6b790658bc7d36af673d4494a32e3a4e0c7b7159f75813cc36d03c8429b76d",
+      "commit": "059f21c393125fd67a10c929bfd4f2545d8971ba",
+      "created_at": "2026-08-28T15:52:57.067679Z",
+      "registered_at": "2026-08-28T15:52:57.067710Z",
+      "valid": true,
+      "metadata": {
+        "path": "app/build/outputs/apk/official/debug/MMRL-Fork-v34463-debug-debug.apk",
+        "type": "apk",
+        "variant": "official",
+        "module": "app",
+        "size": 27807366,
+        "sha256": "db6b790658bc7d36af673d4494a32e3a4e0c7b7159f75813cc36d03c8429b76d",
+        "valid": true,
+        "package_id": "com.mikeyphw.mmrl.debug",
+        "version_code": "34463",
+        "version_name": "v34463-debug",
+        "min_sdk": "",
+        "target_sdk": "36",
+        "launchable_activity": "com.dergoogler.mmrl.ui.activity.MainActivity",
+        "signed": null,
+        "abis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "member:AndroidManifest.xml",
+            "status": "passed",
+            "detail": "present"
+          },
+          {
+            "name": "aapt2_badging",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "signature",
+            "status": "skipped",
+            "detail": "apksigner not found"
+          }
+        ]
+      }
+    },
+    {
+      "id": "9adce9680015",
+      "name": "mmrl-official.apk",
+      "path": ".devtool/build-artifacts/mmrl-official.apk",
+      "type": "apk",
+      "size": 27807366,
+      "sha256": "db6b790658bc7d36af673d4494a32e3a4e0c7b7159f75813cc36d03c8429b76d",
+      "commit": "059f21c393125fd67a10c929bfd4f2545d8971ba",
+      "created_at": "2026-08-28T15:52:57.028488Z",
+      "registered_at": "2026-08-28T15:52:57.028522Z",
+      "valid": true,
+      "metadata": {
+        "path": ".devtool/build-artifacts/mmrl-official.apk",
+        "type": "apk",
+        "variant": "mmrl-official",
+        "module": "",
+        "size": 27807366,
+        "sha256": "db6b790658bc7d36af673d4494a32e3a4e0c7b7159f75813cc36d03c8429b76d",
+        "valid": true,
+        "package_id": "com.mikeyphw.mmrl.debug",
+        "version_code": "34463",
+        "version_name": "v34463-debug",
+        "min_sdk": "",
+        "target_sdk": "36",
+        "launchable_activity": "com.dergoogler.mmrl.ui.activity.MainActivity",
+        "signed": null,
+        "abis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "member:AndroidManifest.xml",
+            "status": "passed",
+            "detail": "present"
+          },
+          {
+            "name": "aapt2_badging",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "signature",
+            "status": "skipped",
+            "detail": "apksigner not found"
+          }
+        ]
+      }
+    }
+  ],
+  "updated_at": "2026-08-28T15:52:57.073813Z"
+}
