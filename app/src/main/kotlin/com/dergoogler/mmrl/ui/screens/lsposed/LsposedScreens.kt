@@ -25,6 +25,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -36,7 +37,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -50,12 +53,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.datastore.model.Option
+import com.dergoogler.mmrl.datastore.model.RepositoryMenu
 import com.dergoogler.mmrl.lsposed.LsposedIdentity
 import com.dergoogler.mmrl.lsposed.LsposedInstalledModule
 import com.dergoogler.mmrl.lsposed.LsposedManagerOpenMode
 import com.dergoogler.mmrl.lsposed.LsposedModulePolicy
 import com.dergoogler.mmrl.lsposed.LsposedRepoModule
 import com.dergoogler.mmrl.lsposed.LsposedRepository
+import com.dergoogler.mmrl.lsposed.LsposedRepositorySortPolicy
 import com.dergoogler.mmrl.lsposed.LsposedScopeState
 import com.dergoogler.mmrl.lsposed.LsposedScopeTarget
 import com.dergoogler.mmrl.lsposed.LsposedSafetyClassifier
@@ -66,7 +72,15 @@ import com.dergoogler.mmrl.lsposed.LsposedSnapshotPlanItem
 import com.dergoogler.mmrl.lsposed.LsposedUiContract
 import com.dergoogler.mmrl.lsposed.LsposedVersionPolicy
 import com.dergoogler.mmrl.ui.activity.terminal.action.ActionActivity
+import com.dergoogler.mmrl.ui.component.BottomSheet
+import com.dergoogler.mmrl.ui.component.MenuChip
+import com.dergoogler.mmrl.ui.component.Segment
+import com.dergoogler.mmrl.ui.component.SegmentedButtons
+import com.dergoogler.mmrl.ui.component.SegmentedButtonsDefaults
+import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
+import com.dergoogler.mmrl.ui.remember.rememberUserPreferencesRepository
 import com.dergoogler.mmrl.viewmodel.LsposedViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun LsposedRepositoryTab(
@@ -77,7 +91,16 @@ fun LsposedRepositoryTab(
     val state by viewModel.state.collectAsStateWithLifecycle()
     LsposedEvents(viewModel)
     val query = state.query
-    val modules = state.modules.filter { LsposedModulePolicy.matchesQuery(it, query) }
+    val repositoryMenu = LocalUserPreferences.current.repositoryMenu
+    val userPreferencesRepository = rememberUserPreferencesRepository()
+    val preferenceScope = rememberCoroutineScope()
+    val modules = remember(state.modules, state.installed, query, repositoryMenu) {
+        LsposedRepositorySortPolicy.sort(
+            modules = state.modules.filter { LsposedModulePolicy.matchesQuery(it, query) },
+            installed = state.installed,
+            menu = repositoryMenu,
+        )
+    }
     val installedPackages = state.installed.map { it.packageName }.toSet()
     var pendingInstall by remember { mutableStateOf<LsposedRepoModule?>(null) }
 
@@ -90,6 +113,16 @@ fun LsposedRepositoryTab(
         loading = state.loading,
         error = state.error,
         onRefresh = { viewModel.refresh(force = true) },
+        headerAction = {
+            LsposedRepositorySortMenu(
+                menu = repositoryMenu,
+                setMenu = { value ->
+                    preferenceScope.launch {
+                        userPreferencesRepository.setRepositoryMenu(value)
+                    }
+                },
+            )
+        },
         contentTopPadding = contentTopPadding,
         detailRail = {
             LsposedRepositorySideRail(
@@ -285,6 +318,7 @@ private fun LsposedTabContent(
     loading: Boolean,
     error: String?,
     onRefresh: () -> Unit,
+    headerAction: (@Composable () -> Unit)? = null,
     contentTopPadding: Dp?,
     detailRail: (@Composable () -> Unit)? = null,
     content: LazyListScope.(Boolean) -> Unit,
@@ -318,6 +352,7 @@ private fun LsposedTabContent(
                         loading = loading,
                         error = error,
                         onRefresh = onRefresh,
+                        headerAction = headerAction,
                     )
                     content(true)
                 }
@@ -350,6 +385,7 @@ private fun LsposedTabContent(
                     loading = loading,
                     error = error,
                     onRefresh = onRefresh,
+                    headerAction = headerAction,
                 )
                 content(false)
             }
@@ -365,6 +401,7 @@ private fun LazyListScope.lsposedHeaderItems(
     loading: Boolean,
     error: String?,
     onRefresh: () -> Unit,
+    headerAction: (@Composable () -> Unit)? = null,
 ) {
     item {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -385,8 +422,11 @@ private fun LazyListScope.lsposedHeaderItems(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = onRefresh) {
-                    Text(stringResource(R.string.refresh))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    headerAction?.invoke()
+                    TextButton(onClick = onRefresh) {
+                        Text(stringResource(R.string.refresh))
+                    }
                 }
             }
             OutlinedTextField(
@@ -419,6 +459,107 @@ private fun LazyListScope.lsposedHeaderItems(
                     text = error,
                     modifier = Modifier.padding(14.dp),
                     style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LsposedRepositorySortMenu(
+    menu: RepositoryMenu,
+    setMenu: (RepositoryMenu) -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+
+    IconButton(onClick = { open = true }) {
+        Icon(
+            painter = painterResource(id = R.drawable.sort_outline),
+            contentDescription = stringResource(R.string.menu_sort_mode),
+        )
+    }
+
+    if (!open) return
+
+    BottomSheet(onDismissRequest = { open = false }) {
+        Text(
+            text = stringResource(R.string.menu_advanced_menu),
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.menu_sort_mode),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            SegmentedButtons(
+                border = SegmentedButtonsDefaults.border(color = MaterialTheme.colorScheme.secondary),
+            ) {
+                listOf(
+                    Option.Name to R.string.menu_sort_option_name,
+                    Option.UpdatedTime to R.string.menu_sort_option_updated,
+                    Option.Size to R.string.menu_sort_option_size,
+                ).forEach { (option, label) ->
+                    Segment(
+                        selected = menu.option == option,
+                        onClick = { setMenu(menu.copy(option = option)) },
+                        colors = SegmentedButtonsDefaults.buttonColor(
+                            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            selectedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
+                        icon = null,
+                    ) {
+                        Text(stringResource(label))
+                    }
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.menu_sort_order),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            SegmentedButtons(
+                border = SegmentedButtonsDefaults.border(color = MaterialTheme.colorScheme.primary),
+            ) {
+                listOf(
+                    false to R.string.menu_ascending,
+                    true to R.string.menu_descending,
+                ).forEach { (descending, label) ->
+                    Segment(
+                        selected = menu.descending == descending,
+                        onClick = { setMenu(menu.copy(descending = descending)) },
+                        colors = SegmentedButtonsDefaults.buttonColor(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                        icon = null,
+                    ) {
+                        Text(stringResource(label))
+                    }
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.repository_pinning),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MenuChip(
+                    selected = menu.pinInstalled,
+                    onClick = { setMenu(menu.copy(pinInstalled = !menu.pinInstalled)) },
+                    label = { Text(stringResource(R.string.menu_pin_installed)) },
+                )
+                MenuChip(
+                    selected = menu.pinUpdatable,
+                    onClick = { setMenu(menu.copy(pinUpdatable = !menu.pinUpdatable)) },
+                    label = { Text(stringResource(R.string.menu_pin_updatable)) },
                 )
             }
         }
