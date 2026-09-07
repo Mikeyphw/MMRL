@@ -3,7 +3,6 @@
 
 #include <sys/ioctl.h>
 #include <sys/prctl.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -19,8 +18,6 @@
 
 namespace {
 
-constexpr uint32_t KSU_INSTALL_MAGIC1 = 0xDEADBEEF;
-constexpr uint32_t KSU_INSTALL_MAGIC2 = 0xCAFEBABE;
 constexpr uint32_t KSU_UAPI_V4_PROFILE = 2;
 constexpr uint32_t KSU_GET_INFO_FLAG_LKM = 1U << 0;
 constexpr uint32_t KSU_GET_INFO_FLAG_MANAGER = 1U << 1;
@@ -174,17 +171,12 @@ int scan_driver_fd() {
 
 int init_driver_fd() {
     if (g_driver_fd != -2) return g_driver_fd;
-    int fd = scan_driver_fd();
-    if (fd < 0) {
-        int installed = -1;
-#ifdef SYS_reboot
-        // Current KernelSU installs a per-process driver descriptor through this guarded reboot
-        // supercall. On kernels/forks that do not recognize it, it simply fails and we fall back.
-        syscall(SYS_reboot, KSU_INSTALL_MAGIC1, KSU_INSTALL_MAGIC2, 0, &installed);
-#endif
-        if (installed >= 0) fd = installed;
-    }
-    g_driver_fd = fd;
+
+    // Android app processes run under a seccomp policy that can kill the reboot syscall before KernelSU
+    // gets a chance to interpret its magic install-fd supercall. KernelSU's own Manager bridge
+    // therefore only consumes a [ksu_driver] descriptor that the kernel has already injected into
+    // the process. If no descriptor is present, callers fall back to the historical prctl channel.
+    g_driver_fd = scan_driver_fd();
     return g_driver_fd;
 }
 

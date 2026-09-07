@@ -5,7 +5,6 @@ import android.content.ServiceConnection
 import com.dergoogler.mmrl.platform.Platform
 import com.dergoogler.mmrl.platform.Platform.Companion.createPlatformIntent
 import com.dergoogler.mmrl.platform.PlatformManager
-import com.dergoogler.mmrl.platform.ksu.KsuNative
 import com.dergoogler.mmrl.platform.model.IProvider
 import com.dergoogler.mmrl.platform.stub.IServiceManager
 import com.topjohnwu.superuser.Shell
@@ -71,12 +70,7 @@ suspend fun initPlatform(
     PlatformManager.selectPreferred(platform)
     if (previous != platform) PlatformManager.release()
     if (platform.isNonRoot || platform.isUnknown) return false
-    val initialized = PlatformManager.init { init(platform, context, this) }
-    if (KsuInitializationPolicy.shouldAttemptManagerAuthorization(initialized, PlatformManager.platform)) {
-        // Manager authorization must precede every app-side KernelSU capability query.
-        KsuNative.becomeManager(context.packageName)
-    }
-    return initialized
+    return PlatformManager.init { init(platform, context, this) }
 }
 
 suspend fun initPlatform(
