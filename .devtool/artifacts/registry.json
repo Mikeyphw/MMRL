@@ -1,6 +1,151 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "items": [
+    {
+      "id": "9668e2878c67",
+      "name": "mmrl-official-2.apk",
+      "path": ".devtool/build-artifacts/mmrl-official-2.apk",
+      "canonical_path": ".devtool/build-artifacts/mmrl-official-2.apk",
+      "source_path": ".devtool/build-artifacts/mmrl-official-2.apk",
+      "exported_path": "",
+      "type": "apk",
+      "size": 27807490,
+      "sha256": "8bc2362ae9d86a3e2e01cf5dbe3d7851b45e1515a3f6f728df7a7c22a5b2a1b2",
+      "commit": "b8068d1969d8c36be465b4924aebfc0affc1a538",
+      "run_id": "5b8d0497ea2d40008f7631a5bac3cb49",
+      "producer": "android",
+      "command": "build",
+      "target": "mmrl_android",
+      "variant": "",
+      "state": "produced",
+      "producer_task": "",
+      "verification_requested": true,
+      "verification_status": "valid",
+      "created_at": "2026-09-07T19:18:28.578171Z",
+      "registered_at": "2026-09-07T19:18:28.578171Z",
+      "valid": true,
+      "metadata": {
+        "producer": "android",
+        "command": "build",
+        "target": "mmrl_android",
+        "variant": "",
+        "run_id": "5b8d0497ea2d40008f7631a5bac3cb49",
+        "path": ".devtool/build-artifacts/mmrl-official-2.apk",
+        "source_path": ".devtool/build-artifacts/mmrl-official-2.apk",
+        "type": "apk",
+        "size": 27807490,
+        "sha256": "8bc2362ae9d86a3e2e01cf5dbe3d7851b45e1515a3f6f728df7a7c22a5b2a1b2",
+        "valid": true,
+        "state": "produced",
+        "producer_task": "",
+        "checks": [
+          {
+            "name": "exists",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "non_empty",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "zip_integrity",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "member:AndroidManifest.xml",
+            "status": "passed",
+            "detail": "present"
+          },
+          {
+            "name": "aapt2_badging",
+            "status": "passed",
+            "detail": ""
+          },
+          {
+            "name": "signature",
+            "status": "skipped",
+            "detail": "apksigner not found"
+          }
+        ],
+        "metadata": {
+          "path": ".devtool/build-artifacts/mmrl-official-2.apk",
+          "type": "apk",
+          "variant": "mmrl-official-2",
+          "module": "",
+          "size": 27807490,
+          "sha256": "8bc2362ae9d86a3e2e01cf5dbe3d7851b45e1515a3f6f728df7a7c22a5b2a1b2",
+          "valid": true,
+          "package_id": "com.mikeyphw.mmrl.debug",
+          "version_code": "34464",
+          "version_name": "v34464-debug",
+          "min_sdk": "",
+          "target_sdk": "36",
+          "launchable_activity": "com.dergoogler.mmrl.ui.activity.MainActivity",
+          "signed": null,
+          "abis": [
+            "arm64-v8a",
+            "armeabi-v7a",
+            "x86",
+            "x86_64"
+          ],
+          "checks": [
+            {
+              "name": "exists",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "non_empty",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "zip_integrity",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "member:AndroidManifest.xml",
+              "status": "passed",
+              "detail": "present"
+            },
+            {
+              "name": "aapt2_badging",
+              "status": "passed",
+              "detail": ""
+            },
+            {
+              "name": "signature",
+              "status": "skipped",
+              "detail": "apksigner not found"
+            }
+          ]
+        },
+        "module": "",
+        "package_id": "com.mikeyphw.mmrl.debug",
+        "version_code": "34464",
+        "version_name": "v34464-debug",
+        "min_sdk": "",
+        "target_sdk": "36",
+        "launchable_activity": "com.dergoogler.mmrl.ui.activity.MainActivity",
+        "signed": null,
+        "abis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "gradle_tasks": [
+          ":app:assembleOfficialDebug"
+        ],
+        "verification_requested": true,
+        "verification_status": "valid"
+      },
+      "event_key": "5b8d0497ea2d40008f7631a5bac3cb49:8bc2362ae9d86a3e2e01cf5dbe3d7851b45e1515a3f6f728df7a7c22a5b2a1b2:9668e2878c67"
+    },
     {
       "id": "adc95058cc90",
       "name": "MMRL-Fork-v34463-debug-debug.apk",
@@ -134,5 +279,6 @@
       }
     }
   ],
-  "updated_at": "2026-08-28T15:52:57.073813Z"
+  "updated_at": "2026-09-07T19:18:28.579301Z",
+  "verifications": []
 }
