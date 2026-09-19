@@ -1,0 +1,154 @@
+package com.dergoogler.mmrl.ui.activity
+
+import android.Manifest
+import android.os.Build
+import android.content.Intent
+import android.os.Bundle
+import androidx.annotation.RequiresApi
+import androidx.compose.animation.Crossfade
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.Text
+import androidx.compose.runtime.setValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.dergoogler.mmrl.app.Const
+import com.dergoogler.mmrl.database.entity.Repo.Companion.toRepo
+import com.dergoogler.mmrl.datastore.model.WorkingMode
+import com.dergoogler.mmrl.datastore.model.WorkingMode.Companion.isRoot
+import com.dergoogler.mmrl.datastore.model.WorkingMode.Companion.isSetup
+import com.dergoogler.mmrl.network.NetworkUtils
+import com.dergoogler.mmrl.repository.RepositoryDeepLinkProvenanceStore
+import com.dergoogler.mmrl.ui.component.dialog.ConfirmDialog
+import com.dergoogler.mmrl.ui.activity.terminal.action.ActionActivity
+import com.dergoogler.mmrl.ui.activity.terminal.install.InstallActivity
+import com.dergoogler.mmrl.ui.screens.main.MainScreen
+import com.dergoogler.mmrl.utils.BlurUtil
+import kotlinx.coroutines.launch
+import timber.log.Timber
+
+class MainActivity : MMRLComponentActivity() {
+    private var isLoading by mutableStateOf(true)
+    private var openActivityOnLaunch by mutableStateOf(false)
+    private var openUpdatesOnLaunch by mutableStateOf(false)
+    private var pendingRepositoryProposal by mutableStateOf<MainLaunchIntentPolicy.RepositoryProposal?>(null)
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    override val requirePermissions = listOf(Manifest.permission.POST_NOTIFICATIONS)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        super.onCreate(savedInstanceState)
+        applyLaunchRequest(MainLaunchIntentPolicy.consume(intent))
+
+        splashScreen.setKeepOnScreenCondition { isLoading }
+
+        setBaseContent {
+            val userPreferences by userPreferencesRepository.data
+                .collectAsStateWithLifecycle(initialValue = null)
+
+            val preferences =
+                if (userPreferences == null) {
+                    return@setBaseContent
+                } else {
+                    isLoading = false
+                    checkNotNull(userPreferences)
+                }
+
+            LaunchedEffect(userPreferences) {
+                if (preferences.workingMode.isSetup) {
+                    Timber.d("add default repository")
+                    localRepository.insertRepo(Const.DEMO_REPO_URL.toRepo())
+                }
+
+                modulesRepository.getBlacklist()
+
+                NetworkUtils.setEnableDoh(preferences.useDoh)
+
+                if (!BlurUtil.isBlurSupported()) {
+                    setEnableBlur(false)
+                }
+
+                setActivityEnabled<InstallActivity>(preferences.workingMode.isRoot)
+                setActivityEnabled<ActionActivity>(preferences.workingMode.isRoot)
+            }
+
+            pendingRepositoryProposal?.let { proposal ->
+                ConfirmDialog(
+                    title = { Text("Add repository?") },
+                    description = {
+                        Text("Host: ${proposal.normalizedHost}\n\nURL: ${proposal.normalizedUrl}\n\nThis repository was proposed by an external deep link. It will only be saved after you confirm.")
+                    },
+                    onClose = { pendingRepositoryProposal = null },
+                    onDismissRequest = { pendingRepositoryProposal = null },
+                    onConfirm = { approveRepositoryProposal(proposal) },
+                )
+            }
+
+            Crossfade(
+                targetState = preferences.workingMode.isSetup,
+                label = "MainActivity",
+            ) { isSetup ->
+                if (isSetup) {
+                    SetupScreen(
+                        setWorkingMode = ::setWorkingMode,
+                    )
+                } else {
+                    MainScreen(
+                        openActivityOnLaunch = openActivityOnLaunch,
+                        openUpdatesOnLaunch = openUpdatesOnLaunch,
+                        onActivityOpened = { openActivityOnLaunch = false },
+                        onUpdatesOpened = { openUpdatesOnLaunch = false },
+                    )
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyLaunchRequest(MainLaunchIntentPolicy.consume(intent))
+    }
+
+
+    private fun applyLaunchRequest(request: MainLaunchIntentPolicy.LaunchRequest) {
+        if (request.openActivity) openActivityOnLaunch = true
+        if (request.openUpdates) openUpdatesOnLaunch = true
+        request.repositoryProposal?.let { proposal ->
+            pendingRepositoryProposal = proposal
+        }
+    }
+
+    private fun approveRepositoryProposal(proposal: MainLaunchIntentPolicy.RepositoryProposal) {
+        pendingRepositoryProposal = null
+        lifecycleScope.launch {
+            localRepository.insertRepo(proposal.normalizedUrl.toRepo())
+            RepositoryDeepLinkProvenanceStore(applicationContext).recordApproved(
+                normalizedUrl = proposal.normalizedUrl,
+                source = proposal.source,
+            )
+        }
+    }
+
+    private fun setWorkingMode(value: WorkingMode) {
+        lifecycleScope.launch {
+            userPreferencesRepository.setWorkingMode(value)
+        }
+    }
+
+    private fun setEnableBlur(value: Boolean) {
+        lifecycleScope.launch {
+            userPreferencesRepository.setEnableBlur(value)
+        }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_ACTIVITY = "com.mikeyphw.mmrl.extra.OPEN_ACTIVITY"
+        const val EXTRA_OPEN_UPDATES = "com.mikeyphw.mmrl.extra.OPEN_UPDATES"
+    }
+}

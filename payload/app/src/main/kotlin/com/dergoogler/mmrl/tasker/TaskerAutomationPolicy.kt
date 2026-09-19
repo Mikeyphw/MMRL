@@ -1,0 +1,69 @@
+package com.dergoogler.mmrl.tasker
+
+import com.dergoogler.mmrl.platform.model.ModId
+import java.net.URI
+
+/**
+ * Pure validation shared by Tasker configuration/runtime code.
+ * Keeping it Android-free makes the automation boundary easy to unit test.
+ */
+internal object TaskerAutomationPolicy {
+    fun requireSupportedDownloadUrl(value: String): String {
+        val trimmed = value.trim()
+        val uri = runCatching { URI(trimmed) }
+            .getOrElse { throw IllegalArgumentException("Invalid download URL") }
+        require(uri.scheme.equals("https", ignoreCase = true) || uri.scheme.equals("http", ignoreCase = true)) {
+            "Only HTTP and HTTPS downloads are supported"
+        }
+        require(!uri.host.isNullOrBlank()) { "Download URL must include a host" }
+        require(uri.userInfo.isNullOrBlank()) { "Download URL must not include embedded credentials" }
+        return trimmed
+    }
+
+    fun redactUrlForHistory(value: String): String {
+        val uri = runCatching { URI(value.trim()) }.getOrNull() ?: return "<invalid-url>"
+        val sanitized = URI(
+            uri.scheme,
+            null,
+            uri.host,
+            uri.port,
+            uri.path,
+            uri.query?.takeIf { it.isNotBlank() }?.let { "redacted=1" },
+            null,
+        )
+        return sanitized.toString()
+    }
+
+    fun requireSafeModuleId(value: String): String {
+        val clean = value.trim()
+        require(ModId.isValidId(clean)) { "Invalid module ID" }
+        return clean
+    }
+
+    fun requireExactModuleMatch(
+        expected: String,
+        actual: String,
+    ): String {
+        val expectedId = requireSafeModuleId(expected)
+        val actualId = requireSafeModuleId(actual)
+        require(expectedId == actualId) {
+            "Module ID mismatch: expected $expectedId, got $actualId"
+        }
+        return actualId
+    }
+
+    fun sanitizeFilename(value: String): String {
+        val clean = value
+            .substringAfterLast('/')
+            .substringAfterLast('\\')
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+            .trim('_')
+        require(clean.isNotBlank() && clean.any { it != '.' }) { "Invalid filename" }
+        val base = if (clean.endsWith(".zip", ignoreCase = true)) clean.dropLast(4) else clean
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(Charsets.UTF_8))
+            .take(8)
+            .joinToString("") { "%02x".format(it) }
+        return "$base-$digest.zip"
+    }
+}
