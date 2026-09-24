@@ -1,6 +1,6 @@
 [project]
-kind = "android"
-default_target = "mmrl_android"
+runner = "android"
+platform = "android"
 
 [execution]
 environment = "auto"
@@ -8,10 +8,11 @@ chroot_name = "androidos"
 device_serial = ""
 
 [targets.mmrl_android]
-type = "android"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+runner = "android"
+platform = "android"
 
 [targets.mmrl_android.android]
 system_deps = "auto"
@@ -174,3 +175,6 @@ gradle_metaspace_mb = 0
 memory_guard_mb = 0
 no_daemon = true
 low_priority = true
+
+[workspace]
+default_target = "mmrl_android"
