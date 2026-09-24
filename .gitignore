@@ -33,16 +33,8 @@ app/debugMin/*
 # MacOS
 .DS_Store
 
-# Devtool runtime state
-.devtool/cache/
-.devtool/reports/
-.devtool/test-history.json
-.devtool/tmp/
 
 # Generated release/devtool outputs
-.devtool/build-artifacts/
-.devtool/artifacts.json
-.devtool/artifacts.d/
 *.apk
 *.aab
 *.aar
@@ -57,14 +49,10 @@ build-logs/
 !.github/workflows/
 !.github/workflows/*.yml
 
-# Devtool generated artifact metadata
-.devtool/artifacts.d/*.json
 
 
-# Devtool generated metadata and build outputs
 build-logs/*.log
 
-.devtool/build-artifacts/*
 
 # BEGIN repo-cleanup managed ignores
 # Gradle / Kotlin generated state
@@ -93,14 +81,11 @@ htmlcov/
 # Node generated state
 **/node_modules/
 
-# Devtool runtime state.
-# Intentionally DO NOT ignore .devtool/artifacts.d.
-**/.devtool/state/
-**/.devtool/reports/
-**/.devtool/tmp/
-**/.devtool/build-artifacts/
 
 # OS noise
 .DS_Store
 Thumbs.db
 # END repo-cleanup managed ignores
+
+# Devtool local runtime state
+.devtool/
