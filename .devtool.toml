@@ -21,7 +21,7 @@ ndk_host_provider = "auto"
 cmake_version = "3.22.1"
 variant = "officialDebug"
 aapt2_provider = "termux"
-instrumentation = "never"
+instrumentation = "when-device-present"
 prefer_native_termux = false
 
 [targets.mmrl_android.gradle]
