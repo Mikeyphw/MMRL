@@ -1,15 +1,12 @@
 # MMRL final release seal
 
-This document is the authoritative release contract for the feature-rich personal-use MMRL branch after consolidated overlays OV01 through OV05.
-
-MMRL is one Android application plus its internal library modules. The standalone recovery application is not part of this repository's product graph. There is no Play Store distribution lane.
+This document is the authoritative release contract for the personal-use MMRL branch. MMRL is one Android application plus its internal library modules; there is no Play Store distribution lane.
 
 ## Current toolchain
 
 - Gradle 9.7.1
 - Android Gradle Plugin 9.3.2
-- Kotlin 2.4.10
-- Kotlin reflect 2.4.10
+- Kotlin 2.4.10 / Kotlin reflect 2.4.10
 - KSP 2.3.11
 - Hilt 2.60.1
 - Java 21
@@ -18,43 +15,47 @@ MMRL is one Android application plus its internal library modules. The standalon
 - NDK 29.0.14206865
 - CMake 3.22.1
 
-## Authoritative host seal
+## Authoritative release
 
-The root Gradle task `mmrlReleaseSeal` is the aggregate host-side contract. On Termux, `scripts/run-mmrl-release-seal.sh` executes the same contract in memory-bounded phases so Android LMKD/daemon pressure does not turn one very large Gradle invocation into a false source failure.
+The release authority is Devtool AOPS04:
 
-The required host gates are:
+```sh
+scripts/run-mmrl-release-seal.sh
+# -> devtool --repo . --target mmrl_android release
+```
 
-- `python3 scripts/validate-mmrl-source-hygiene.py`
-- `verifyStableToolchainBaseline`
-- `verifyMmrlProductBoundary`
-- `verifyRepositoryHygiene`
-- `:platform:testDebugUnitTest`
-- `:platform:testNativeContracts`
-- `:app:testOfficialDebugUnitTest`
-- `:app:compileOfficialDebugSources`
-- `:app:processOfficialDebugResources`
-- `:app:compileOfficialDebugAndroidTestKotlin`
-- `:app:fullLintOfficialDebug` with `mmrl.fullLint=true`
-- `:app:assembleOfficialDebug`
-- `:app:assembleOfficialRelease`
-- `:app:verifyReleaseArtifacts`
+The `officialRelease` lane is explicitly release-qualified. Devtool runs repository/toolchain/product hygiene, host native contracts, `:app:testOfficialReleaseUnitTest`, strict `:app:fullLintOfficialRelease`, `:app:assembleOfficialRelease`, signature verification, signer-identity verification, configured device instrumentation, install smoke, optional upgrade smoke, and immutable release-evidence sealing.
 
-A release build requires a complete `signing.properties`; unsigned or debug-signed release artifacts are rejected.
+The root Gradle `mmrlReleaseSeal` task remains a project-domain aggregate for compatibility and manual Gradle inspection; it is not the execution authority.
+
+Release signing remains project-owned through a complete `signing.properties`. Devtool declares `mode = "project"` with `policy = "release-required"`, so credentials stay out of Devtool config while produced artifacts are still verified with the canonical signing service.
+
+## Persistent validation
+
+MMRL's configured validation phases are durable Devtool checkpoints. Use `./devtoolw validate-session`, `./devtoolw validate-session --complete`, or `./devtoolw validate-session --retry-failed --complete`. Successful unchanged phases are reused; no `clean` is inserted between phases. Less-common validation controls can be passed after `--` or invoked through Devtool's native `validate` control surface.
 
 ## Connected-device validation
 
-`scripts/run-mmrl-device-validation.sh` implements the optional device gate. `MMRL_RUN_CONNECTED_TESTS=auto` runs instrumentation when exactly one authorized adb device is available and otherwise records an explicit skip. Set `MMRL_RUN_CONNECTED_TESTS=1` to make device availability mandatory and `MMRL_ADB_SERIAL` when more than one device is connected.
+The canonical instrumentation lane is `officialDebug`. ADB provider/device selection comes from `[targets.mmrl_android.android.adb]`; instrumentation build/install/run/cleanup and logcat/screenshot failure evidence come from Devtool Android Operations. `./devtoolw device` runs the EXO `device-native` workflow.
 
-The connected gate runs `:app:connectedOfficialDebugAndroidTest`, covering installed-manifest behavior, FileProvider/content URIs, Room migration contracts, and WorkManager/lifecycle contracts.
+Release instrumentation is `when-device-present`, while the enabled install-smoke gate means a full release still requires an admitted device. Direct `./devtoolw device` instrumentation is `required`. `MMRL_ADB_SERIAL` may be supplied by the thin frontend and is projected to `ANDROID_SERIAL`; the repository no longer parses `adb devices` or invokes raw Gradle itself. The explicit package-only release mode disables device gates.
 
-After connected tests, an optional non-mutating root smoke is executed only when `su -c id` actually reports `uid=0`. Lack of root is a skip, not a failure.
+## Evidence and hygiene
 
-## Repository hygiene
+A release session records Git/Devtool identity, Android providers, selected variant/device, signing policy and certificate identity, gate results, artifact SHA-256 values, and the final verdict. Evidence is immutable and registered through Devtool's run/artifact machinery.
 
-The active source tree must not retain `*.bak`, `*.orig`, `*.rej`, `*.before-*`, editor backups, or generated APK/AAB/AAR artifacts. Runtime Devtool state is local metadata and is not treated as source.
-
-Historical subsystem design documents may remain for feature provenance, but they are not alternative product release seals. This file, the root `mmrlReleaseSeal` task, the release runner, and the CI workflow define the current ship gate.
+The active source tree must not retain backup/scratch files or generated APK/AAB/AAR artifacts. Runtime Devtool state is local execution metadata, not source.
 
 ## Termux resource policy
 
-Final validation uses one worker, CPU limit 1, no Gradle parallel execution, the project wrapper, memory guard disabled, and bounded heaps (768 MiB for build/package and 640 MiB for unit/lint where configured). This is deliberate for Android/Termux stability and does not weaken any source/test/lint gate.
+Validation remains Android-safe and constrained: one worker, CPU limit 1, no Gradle parallel execution, wrapper Gradle, Configuration Cache off, memory guard disabled, and bounded phase heaps. This resource policy does not remove any source/test/lint/release gate.
+
+## Durable validation before release
+
+For long Termux qualification runs, use:
+
+```bash
+./devtoolw validate-session --complete
+```
+
+Devtool checkpoints each Android validation phase under `.devtool/state/android-validation/`, preserves Gradle/build caches between phases, and can resume/retry failed phases without replaying already-qualified predecessors whose inputs remain valid. This validation session complements AOPS04 release evidence; it does not replace the canonical `devtool release` run.

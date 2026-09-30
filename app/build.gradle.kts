@@ -19,7 +19,7 @@ val mmrlSourceNamespace = "com.dergoogler.mmrl"
 val mmrlForkApplicationId = "com.mikeyphw.mmrl"
 val mmrlWebUiPermissionId = "com.dergoogler.mmrl"
 val fullLintRequested = gradle.startParameter.taskNames.any { requested ->
-    requested.substringAfterLast(':') in setOf("fullLintOfficialDebug", "mmrlReleaseSeal")
+    requested.substringAfterLast(':') in setOf("fullLintOfficialDebug", "fullLintOfficialRelease", "mmrlReleaseSeal")
 }
 val fullLintReport = providers.gradleProperty("mmrl.fullLint")
     .map(String::toBoolean)
@@ -370,6 +370,12 @@ tasks.register("fullLintOfficialDebug") {
     group = "verification"
     description = "Run OfficialDebug lint with MMRL's final full-lint policy enabled."
     dependsOn("lintOfficialDebug")
+}
+
+tasks.register("fullLintOfficialRelease") {
+    group = "verification"
+    description = "Run OfficialRelease lint with MMRL's final full-lint policy enabled."
+    dependsOn("lintOfficialRelease")
 }
 
 tasks.register("verifyReleaseArtifacts") {

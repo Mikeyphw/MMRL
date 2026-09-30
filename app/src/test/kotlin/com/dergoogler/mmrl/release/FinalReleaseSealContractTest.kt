@@ -31,25 +31,23 @@ class FinalReleaseSealContractTest {
     }
 
     @Test
-    fun `release runner uses bounded Termux phases and automatic device validation`() {
+    fun `release runner enters canonical Devtool AOPS04 release authority`() {
         val runner = source("scripts/run-mmrl-release-seal.sh")
-        assertTrue(runner.contains("--memory-guard-mb 0"))
-        assertTrue(runner.contains("MMRL_GRADLE_HEAP_MB:-768"))
-        assertTrue(runner.contains("MMRL_LINT_HEAP_MB:-640"))
-        assertTrue(runner.contains("verifyRepositoryHygiene"))
-        assertTrue(runner.contains("MMRL_RUN_CONNECTED_TESTS:-auto"))
-        assertTrue(runner.contains("scripts/run-mmrl-device-validation.sh"))
+        assertTrue(runner.contains("--target mmrl_android release"))
+        assertTrue(runner.contains("DEVTOOL_BIN"))
+        assertFalse(runner.contains("gradlew"))
+        assertFalse(runner.contains("devtoolw release"))
     }
 
     @Test
-    fun `device validation is explicit device aware and root optional`() {
+    fun `device validation delegates selection and instrumentation to Devtool`() {
         val device = source("scripts/run-mmrl-device-validation.sh")
-        assertTrue(device.contains("${'$'}2 == \"device\""))
         assertTrue(device.contains("MMRL_ADB_SERIAL"))
-        assertTrue(device.contains("connectedOfficialDebugAndroidTest"))
-        assertTrue(device.contains("su -c id"))
-        assertTrue(device.contains("uid=0"))
-        assertTrue(device.contains("root unavailable; root smoke skipped"))
+        assertTrue(device.contains("ANDROID_SERIAL"))
+        assertTrue(device.contains("--target mmrl_android instrumentation"))
+        assertFalse(device.contains("adb devices"))
+        assertFalse(device.contains("gradlew"))
+        assertFalse(device.contains("su -c id"))
     }
 
     @Test
@@ -63,7 +61,9 @@ class FinalReleaseSealContractTest {
             "NDK 29.0.14206865",
             "verifyRepositoryHygiene",
             ":app:assembleOfficialRelease",
-            "MMRL_RUN_CONNECTED_TESTS=auto",
+            "Devtool AOPS04",
+            "officialRelease",
+            "immutable release-evidence",
         ).forEach { assertTrue("missing final documentation token $it", doc.contains(it)) }
     }
 

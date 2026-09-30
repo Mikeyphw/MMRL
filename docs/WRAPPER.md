@@ -1,6 +1,6 @@
 # MMRL repository wrapper
 
-MMRL exposes its supported local automation through the generated `devtoolw` launcher. The launcher is intentionally thin and delegates to Devtool's repository wrapper contract in `.devtool.toml`, preserving canonical Devtool routing, EXO execution records, run-store evidence, and target identity.
+MMRL exposes ordinary repository automation through the generated `devtoolw` launcher. The launcher delegates to Devtool's repository wrapper contract in `.devtool.toml`, preserving canonical routing, EXO execution records, run-store evidence, and target identity.
 
 ```sh
 ./devtoolw --help
@@ -8,23 +8,17 @@ MMRL exposes its supported local automation through the generated `devtoolw` lau
 ./devtoolw test
 ./devtoolw lint
 ./devtoolw validate
+./devtoolw validate-session --complete
 ./devtoolw package
-./devtoolw release
+./devtoolw release-check
 ./devtoolw device
 ./devtoolw clean
 ```
 
-`release` invokes the target-local `release-seal` workflow. `device` invokes the temporary `device-compat` workflow retained until MMRL-DT-X02 qualifies Devtool's native instrumentation path.
+`validate-session` is the durable sequential validation entry point; it defaults to `--sequential --failure-action pause` and exposes common completion/retry/runtime controls. `release-check` is the repository-owned EXO pre-release DAG. `device` uses the native Android runner/instrumentation action and is no longer a raw-Gradle compatibility workflow.
 
-Inspect or verify the contract with:
+The authoritative release command is `devtool --repo . --target mmrl_android release` (or `scripts/run-mmrl-release-seal.sh`). Current wrapper schema 2 does not expose `release` or `instrumentation` as wrapper-native actions; MMRL deliberately avoids nested Devtool recursion to fake that capability.
 
-```sh
-devtool wrapper describe
-devtool wrapper discover
-devtool wrapper verify
-devtool wrapper seal
-```
-
-For repository diagnosis, use `devtool --repo . --target mmrl_android doctor`; the current wrapper canonical-command registry does not expose `doctor`, and MMRL does not emulate it with a nested Devtool invocation.
+Inspect or verify the wrapper contract with `devtool wrapper describe`, `devtool wrapper discover`, `devtool wrapper verify`, and `devtool wrapper seal`. For repository diagnosis use `devtool --repo . --target mmrl_android doctor`.
 
 Do not edit `devtoolw` or `devtoolw.cmd` by hand. Refresh Devtool-managed launchers with `devtool wrapper update` after upgrading Devtool.

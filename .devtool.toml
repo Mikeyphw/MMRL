@@ -27,14 +27,69 @@ ndk_host_provider = "auto"
 cmake_version = "3.22.1"
 variant = "officialDebug"
 aapt2_provider = "termux"
-instrumentation = "when-device-present"
 prefer_native_termux = false
+
+# X02 makes Devtool's AOPS02/AOPS03 device fabric authoritative. The default
+# release instrumentation remains optional when no device is present. Full AOPS04
+# release still requires a device while install_smoke=true; package-only callers
+# can explicitly disable smoke gates.
+[targets.mmrl_android.android.adb]
+provider = "auto"
+device_policy = "exactly-one"
+
+[targets.mmrl_android.android.instrumentation]
+policy = "required"
+variant = "officialDebug"
+module = "app"
+keep_installed = false
+capture_logcat_on_failure = true
+capture_screenshot_on_failure = true
+
+# MMRL continues to own signing.properties and never moves password values into
+# Devtool configuration. Devtool owns release-signing policy, artifact signature
+# verification, signer-identity evidence, and fail-closed release qualification.
+[targets.mmrl_android.android.signing.release]
+mode = "project"
+policy = "release-required"
+
+[targets.mmrl_android.android.release]
+variant = "officialRelease"
+module = "app"
+unit_tests = true
+lint = true
+device_tests = "when-device-present"
+install_smoke = true
+upgrade_smoke = true
+verify_signature = true
+verify_certificate_identity = true
+package = "com.mikeyphw.mmrl"
+activity = "com.dergoogler.mmrl.ui.activity.MainActivity"
+keep_installed = true
+
+[targets.mmrl_android.android.variants.officialDebug]
+build_type = "debug"
+flavor = "official"
+signing = "debug"
+deployable = true
+release_gates = false
+module = "app"
+
+[targets.mmrl_android.android.variants.officialRelease]
+build_type = "release"
+flavor = "official"
+signing = "release"
+signing_profile = "release"
+deployable = true
+release_gates = true
+module = "app"
 
 [targets.mmrl_android.gradle]
 version = "9.7.1"
 provider = "wrapper"
 resource_profile = "constrained"
 max_workers = 1
+heap_mb = 768
+validation_packaging_heap_mb = 768
 configuration_cache = "off"
 telemetry_level = "standard"
 no_daemon = true
@@ -54,6 +109,20 @@ test = [
 ]
 lint = [":app:lintOfficialDebug"]
 clean = ["clean"]
+# AOPS04 activates this independent release lane instead of reusing the target's
+# ordinary OfficialDebug task bindings. Variant-bound tasks therefore remain
+# truthful to the release/instrumentation lane identities.
+release_test = [
+  "verifyStableToolchainBaseline",
+  "verifyMmrlProductBoundary",
+  "verifyRepositoryHygiene",
+  ":platform:testNativeContracts",
+  ":app:testOfficialReleaseUnitTest",
+]
+release_lint = [":app:fullLintOfficialRelease"]
+release_build = [":app:assembleOfficialRelease"]
+release_instrumentation = [":app:connectedOfficialDebugAndroidTest"]
+instrumentation = [":app:connectedOfficialDebugAndroidTest"]
 
 [targets.mmrl_android.artifacts]
 required = true
@@ -121,14 +190,16 @@ inputs = ["settings.gradle.kts", "build.gradle.kts", "gradle.properties", "gradl
 outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
 metadata = { resource_class = "gradle-heavy", roadmap_id = "MMRL-DT-X01" }
 
-# Temporary compatibility boundary. X02 replaces this shell/raw-Gradle fallback
-# with Devtool's canonical ADB/instrumentation execution and evidence path.
-[targets.mmrl_android.jobs.device-compat]
-runner = "command"
-command = ["bash", "scripts/run-mmrl-device-validation.sh"]
-inputs = ["scripts/run-mmrl-device-validation.sh", "gradlew", "gradle/**", "settings.gradle.kts", "build.gradle.kts", "gradle.properties", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**"]
-outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
-metadata = { resource_class = "device-exclusive", global_reservations = ["mmrl-adb-device"], roadmap_id = "MMRL-DT-X01", compatibility_boundary = "devtool-adb-parser" }
+# Native device boundary. `action = "instrumentation"` lowers through the
+# canonical AndroidGradleRunner and AndroidInstrumentationOrchestrator: Gradle
+# build ownership stays with Devtool, then the AOPS02 device manager installs,
+# runs, captures failure evidence, and cleans up according to policy.
+[targets.mmrl_android.jobs.device-native]
+runner = "android"
+action = "instrumentation"
+inputs = [".devtool.toml", "settings.gradle.kts", "build.gradle.kts", "gradle.properties", "gradle/**", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**"]
+outputs = [".gradle/**", ".kotlin/**", ".devtool/reports/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
+metadata = { resource_class = "device-exclusive", global_reservations = ["mmrl-adb-device"], roadmap_id = "MMRL-DT-X02", device_authority = "devtool-aops02-aops03" }
 
 [targets.mmrl_android.workflows]
 validate = [
@@ -140,16 +211,16 @@ validate = [
   { id = "package-seal", ref = "job:package-seal", depends_on = ["strict-lint"] },
 ]
 device = [
-  { id = "device-compat", ref = "job:device-compat", depends_on = [] },
+  { id = "device-native", ref = "job:device-native", depends_on = [] },
 ]
-release-seal = [
+release-check = [
   { id = "source-hygiene", ref = "job:source-hygiene", depends_on = [] },
   { id = "static-gates", ref = "job:static-gates", depends_on = ["source-hygiene"] },
   { id = "unit-contracts", ref = "job:unit-contracts", depends_on = ["static-gates"] },
   { id = "compile-contracts", ref = "job:compile-contracts", depends_on = ["static-gates"] },
   { id = "strict-lint", ref = "job:strict-lint", depends_on = ["unit-contracts", "compile-contracts"] },
   { id = "package-seal", ref = "job:package-seal", depends_on = ["strict-lint"] },
-  { id = "device-compat", ref = "job:device-compat", depends_on = ["package-seal"] },
+  { id = "device-native", ref = "job:device-native", depends_on = ["package-seal"] },
 ]
 
 [validation.phases]
@@ -305,6 +376,40 @@ description = "Run an exact Gradle validation task"
 repeatable = true
 command_argv = ["--task", "{value}"]
 
+[wrapper.commands.validate-session]
+description = "Run MMRL through Devtool durable sequential validation checkpoints"
+devtool = "validate"
+target = "mmrl_android"
+allow_passthrough = true
+
+[wrapper.commands.validate-session.options.sequential]
+type = "boolean"
+description = "Keep validation state durable across phase boundaries"
+default = true
+command_argv = ["--sequential"]
+
+[wrapper.commands.validate-session.options.complete]
+type = "boolean"
+description = "Run every remaining validation phase"
+command_argv = ["--complete"]
+
+[wrapper.commands.validate-session.options.retry-failed]
+type = "boolean"
+description = "Retry the failed phase and its dependents after a repair"
+command_argv = ["--retry-failed"]
+
+[wrapper.commands.validate-session.options.max-runtime]
+type = "string"
+description = "Pause before the next phase when this runtime budget is reached"
+command_argv = ["--max-runtime", "{value}"]
+
+[wrapper.commands.validate-session.options.failure-action]
+type = "choice"
+description = "Preserve the tree and checkpoint state on validation failure"
+choices = ["pause", "rollback", "keep", "prompt"]
+default = "pause"
+command_argv = ["--failure-action", "{value}"]
+
 [wrapper.commands.clean]
 description = "Clean MMRL through Devtool"
 devtool = "clean"
@@ -317,13 +422,13 @@ devtool = "package"
 target = "mmrl_android"
 allow_passthrough = true
 
-[wrapper.commands.release]
-description = "Run the repository-owned MMRL release-seal workflow"
-workflow = "release-seal"
+[wrapper.commands.release-check]
+description = "Run the repository-owned pre-release validation DAG"
+workflow = "release-check"
 target = "mmrl_android"
 
 [wrapper.commands.device]
-description = "Run the temporary connected-device compatibility workflow"
+description = "Run canonical Devtool Android instrumentation through the device workflow"
 workflow = "device"
 target = "mmrl_android"
 

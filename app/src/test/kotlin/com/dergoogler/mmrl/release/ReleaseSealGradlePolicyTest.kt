@@ -32,8 +32,8 @@ class ReleaseSealGradlePolicyTest {
             "releaseSigningProperties = project.releaseSigningProperties()",
             "refusing to create an unsigned or debug-signed release artifact",
         ).forEach { assertTrue("missing Gradle final-seal token $it", app.contains(it)) }
-        assertTrue(rootBuild.contains("mmrlDeviceValidation"))
-        assertTrue(rootBuild.contains(":app:connectedOfficialDebugAndroidTest"))
+        assertFalse(rootBuild.contains("tasks.register(\"mmrlDeviceValidation\")"))
+        assertFalse(rootBuild.contains(":app:connectedOfficialDebugAndroidTest"))
     }
 
     @Test
@@ -49,7 +49,8 @@ class ReleaseSealGradlePolicyTest {
         assertTrue(devtool.contains("ndk_version = \"29.0.14206865\""))
         assertTrue(devtool.contains("ndk_host_provider = \"auto\""))
         val releaseSeal = source("scripts/run-mmrl-release-seal.sh")
-        assertTrue(releaseSeal.contains("ORG_GRADLE_PROJECT_mmrl.fullLint=true"))
+        assertFalse(releaseSeal.contains("ORG_GRADLE_PROJECT_mmrl.fullLint=true"))
+        assertTrue(devtool.contains("release_lint = [\":app:fullLintOfficialRelease\"]"))
         assertTrue(devtool.contains(":platform:testDebugUnitTest"))
         assertTrue(devtool.contains(":platform:testNativeContracts"))
         assertTrue(devtool.contains("verifyRepositoryHygiene"))
@@ -103,6 +104,33 @@ class ReleaseSealGradlePolicyTest {
         assertTrue(preferences.contains("BuildConfig.WEBUIX_PACKAGE_NAME"))
     }
 
+
+    @Test
+    fun `Devtool owns native Android release and instrumentation lanes`() {
+        val devtool = source(".devtool.toml")
+        listOf(
+            "[targets.mmrl_android.android.adb]",
+            "[targets.mmrl_android.android.instrumentation]",
+            "variant = \"officialDebug\"",
+            "[targets.mmrl_android.android.signing.release]",
+            "mode = \"project\"",
+            "policy = \"release-required\"",
+            "[targets.mmrl_android.android.release]",
+            "variant = \"officialRelease\"",
+            "verify_signature = true",
+            "verify_certificate_identity = true",
+            "[targets.mmrl_android.jobs.device-native]",
+            "action = \"instrumentation\"",
+            "release_test = [",
+            "release_lint = [\":app:fullLintOfficialRelease\"]",
+            "release_build = [\":app:assembleOfficialRelease\"]",
+            "heap_mb = 768",
+            "validation_packaging_heap_mb = 768",
+            "[wrapper.commands.validate-session]",
+            "command_argv = [\"--sequential\"]",
+        ).forEach { token -> assertTrue("missing X02 Devtool release token: ${'$'}token", devtool.contains(token)) }
+        assertFalse(devtool.contains("device-compat"))
+    }
     private fun source(path: String): String = root.resolve(path).readText()
 
     private fun repositoryRoot(): File = generateSequence(File(System.getProperty("user.dir") ?: ".").absoluteFile) { file ->

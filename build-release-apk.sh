@@ -14,13 +14,18 @@ fi
 
 case "$BUILD_TYPE" in
   all)
-    exec "$ROOT_DIR/devtoolw" release
+    exec "$ROOT_DIR/scripts/run-mmrl-release-seal.sh"
     ;;
   debug)
     exec "$ROOT_DIR/devtoolw" validate --task ':app:assembleOfficialDebug'
     ;;
   release)
-    exec "$ROOT_DIR/devtoolw" validate --task ':app:assembleOfficialRelease' --task ':app:verifyReleaseArtifacts'
+    exec "$ROOT_DIR/scripts/run-mmrl-release-seal.sh" \
+      --no-unit-tests \
+      --no-lint \
+      --device-tests disabled \
+      --no-install-smoke \
+      --no-upgrade-smoke
     ;;
   *)
     printf 'Unsupported build type: %s (expected debug, release, or all)\n' "$BUILD_TYPE" >&2

@@ -189,8 +189,8 @@ def check_gradle_release_gates() -> None:
     root_build = text("build.gradle.kts")
     if "delete(subprojects.map { it.layout.buildDirectory })" not in root_build:
         fail("root clean must remove subproject build outputs")
-    if 'tasks.register("mmrlDeviceValidation")' not in root_build or ':app:connectedOfficialDebugAndroidTest' not in root_build:
-        fail("root Gradle build must expose the optional connected-device validation gate")
+    if 'tasks.register("mmrlDeviceValidation")' in root_build:
+        fail("root Gradle must not retain a competing connected-device execution aggregate; Devtool owns instrumentation")
 
     devtool = text(".devtool.toml")
     for needle in (":app:assembleOfficialDebug", ":app:assembleOfficialRelease", ":platform:testDebugUnitTest", ":platform:testNativeContracts", 'ndk_version = "29.0.14206865"', 'ndk_host_provider = "auto"', 'provider = "wrapper"', 'memory_guard_mb = 0'):
@@ -199,12 +199,12 @@ def check_gradle_release_gates() -> None:
     if "-Pmmrl.fullLint=true" in devtool:
         fail("Devtool Gradle args must not enable full lint globally; strict lint belongs to the explicit release-seal path")
     if '"ORG_GRADLE_PROJECT_mmrl.fullLint" = "true"' not in devtool:
-        fail("release-seal target-local lint job must explicitly enable mmrl.fullLint")
+        fail("strict target-local lint job must explicitly enable mmrl.fullLint")
     for needle in (
         '[targets.mmrl_android.jobs.source-hygiene]',
         '[targets.mmrl_android.jobs.strict-lint]',
         '[targets.mmrl_android.workflows]',
-        'release-seal = [',
+        'release-check = [',
         'metadata = { read_only = true',
         'resource_class = "device-exclusive"',
     ):
@@ -426,10 +426,10 @@ def check_source_hygiene() -> None:
         fail("pack_repo.sh must use matching .tar.zst naming with zstd compression")
     release = text("build-release-apk.sh")
     for needle in (
-        'exec "$ROOT_DIR/devtoolw" release',
+        'scripts/run-mmrl-release-seal.sh',
         ":app:assembleOfficialDebug",
-        ":app:assembleOfficialRelease",
-        ":app:verifyReleaseArtifacts",
+        "--no-unit-tests",
+        "--device-tests disabled",
     ):
         if needle not in release:
             fail(f"build-release-apk.sh canonical Devtool delegation is missing {needle}")
@@ -545,7 +545,6 @@ def check_authoritative_final_release_seal() -> None:
     for needle in (
         'tasks.register("verifyRepositoryHygiene")',
         'tasks.register("mmrlReleaseSeal")',
-        'tasks.register("mmrlDeviceValidation")',
         '"verifyStableToolchainBaseline"',
         '"verifyMmrlProductBoundary"',
         '"verifyRepositoryHygiene"',
@@ -564,16 +563,14 @@ def check_authoritative_final_release_seal() -> None:
         fail("Termux final validation must not restore the high-pressure 1024 MiB heap profile")
 
     runner = text("scripts/run-mmrl-release-seal.sh")
-    for needle in ('devtoolw', 'release'):
+    for needle in ('DEVTOOL_BIN', '--target mmrl_android release', 'AOPS04'):
         if needle not in runner:
-            fail(f"release runner is missing canonical wrapper ingress: {needle}")
-    if "gradlew" in runner or "devtool --copy" in runner:
-        fail("release runner must not bypass devtoolw or use --copy as execution policy")
+            fail(f"release runner is missing canonical Devtool release ingress: {needle}")
+    if "gradlew" in runner or "devtoolw release" in runner or "--copy" in runner:
+        fail("release runner must enter AOPS04 directly without raw Gradle, fake wrapper release, or clipboard policy")
 
-    for path in ("build-android-app.sh", "build-release-apk.sh", "scripts/run-mmrl-release-seal.sh"):
+    for path in ("build-android-app.sh", "build-release-apk.sh", "scripts/run-mmrl-release-seal.sh", "scripts/run-mmrl-device-validation.sh"):
         body = text(path)
-        if "devtoolw" not in body:
-            fail(f"{path} must enter through the repository devtoolw contract")
         if "gradlew" in body:
             fail(f"{path} must not invoke raw Gradle")
 
@@ -581,9 +578,40 @@ def check_authoritative_final_release_seal() -> None:
         fail("canonical Devtool wrapper launchers are missing")
 
     device = text("scripts/run-mmrl-device-validation.sh")
-    for needle in ('MMRL_ADB_SERIAL', 'connectedOfficialDebugAndroidTest', 'su -c id', 'uid=0', 'MMRL-DT-X01 compatibility boundary'):
+    for needle in ('MMRL_ADB_SERIAL', 'ANDROID_SERIAL', '--target mmrl_android instrumentation'):
         if needle not in device:
-            fail(f"device validation is missing {needle}")
+            fail(f"device validation frontend is missing {needle}")
+    for forbidden in ('adb devices', 'connectedOfficialDebugAndroidTest', 'su -c id', 'uid=0', 'MMRL-DT-X01 compatibility boundary'):
+        if forbidden in device:
+            fail(f"device validation frontend retained obsolete compatibility logic: {forbidden}")
+
+    devtool = text(".devtool.toml")
+    for needle in (
+        '[targets.mmrl_android.android.adb]',
+        'device_policy = "exactly-one"',
+        '[targets.mmrl_android.android.instrumentation]',
+        'variant = "officialDebug"',
+        '[targets.mmrl_android.android.signing.release]',
+        'mode = "project"',
+        'policy = "release-required"',
+        '[targets.mmrl_android.android.release]',
+        'variant = "officialRelease"',
+        'verify_signature = true',
+        'verify_certificate_identity = true',
+        '[targets.mmrl_android.jobs.device-native]',
+        'action = "instrumentation"',
+        'release_test = [',
+        'release_lint = [":app:fullLintOfficialRelease"]',
+        'release_build = [":app:assembleOfficialRelease"]',
+        'heap_mb = 768',
+        'validation_packaging_heap_mb = 768',
+        '[wrapper.commands.validate-session]',
+        'command_argv = ["--sequential"]',
+    ):
+        if needle not in devtool:
+            fail(f"Devtool X02 Android release authority is missing {needle}")
+    if 'device-compat' in devtool or 'compatibility_boundary = "devtool-adb-parser"' in devtool:
+        fail("X01 device compatibility boundary must be removed after X02 native qualification")
 
     if (ROOT / "app/src/test/kotlin/com/dergoogler/mmrl/release/Bh64FinalSealContractTest.kt").exists():
         fail("obsolete O11/BH64 release seal contract is still active")

@@ -242,9 +242,4 @@ tasks.register("mmrlReleaseSeal") {
     )
 }
 
-tasks.register("mmrlDeviceValidation") {
-    group = "verification"
-    description = "Run optional connected-device instrumentation after the host release seal passes."
-    dependsOn(":app:connectedOfficialDebugAndroidTest")
-}
 

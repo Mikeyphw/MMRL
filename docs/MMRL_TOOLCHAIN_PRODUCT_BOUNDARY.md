@@ -40,12 +40,15 @@ phases, disables its memory guard for this target, uses phase-specific bounded
 heaps, and does not run Gradle in parallel. The active SDK/NDK/QEMU trees and
 Gradle dependency caches are preserved during low-storage cleanup.
 
-Run the lightweight structural gates with:
+Run the lightweight structural source contract with:
 
 ```bash
-./gradlew verifyStableToolchainBaseline verifyMmrlProductBoundary
 python3 scripts/validate-mmrl-source-hygiene.py
 ```
 
-Full build, unit, lint, release, and optional instrumentation gates are handled
-by the release-seal workflow.
+Build, test and lint enter through `./devtoolw`. Long validation uses
+`./devtoolw validate-session --complete`, which stores durable Devtool phase
+checkpoints. Device instrumentation is `./devtoolw device`. The authoritative
+release surface is `devtool --repo . --target mmrl_android release`; AOPS04 owns
+release task planning, project-signing policy, signature/certificate evidence,
+device smoke gates and immutable release evidence.

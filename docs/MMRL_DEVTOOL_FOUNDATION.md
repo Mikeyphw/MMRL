@@ -1,6 +1,6 @@
 # MMRL Devtool foundation
 
-MMRL-DT-X01 makes Devtool the repository-owned execution ingress without prematurely removing the one connected-device compatibility path that still needs qualification.
+MMRL-DT-X01 established the repository-owned execution ingress. MMRL-DT-X02 has now superseded its temporary connected-device compatibility boundary with native Devtool Android Operations; this file remains the foundation history.
 
 ## Canonical ingress
 
@@ -13,13 +13,13 @@ Primary commands are:
 - `./devtoolw lint`
 - `./devtoolw validate`
 - `./devtoolw package`
-- `./devtoolw release`
+- `./devtoolw release-check`
 - `./devtoolw clean`
 - `./devtoolw device`
 
 The current Devtool wrapper command registry does not expose `doctor` as a wrapper-native action, so repository diagnosis remains the canonical Devtool CLI surface: `devtool --repo . --target mmrl_android doctor`. This is intentionally not emulated through a nested wrapper workflow.
 
-`release` invokes the target-local `release-seal` workflow. The workflow owns source hygiene, static Gradle gates, unit/native contracts, Android compilation/resource contracts, strict lint, packaging/release verification, and the optional device compatibility boundary.
+`release-check` invokes the target-local pre-release DAG. The authoritative release entry point is now `devtool --repo . --target mmrl_android release`, because current wrapper schema 2 does not expose `release` as a native wrapper action.
 
 ## EXO/TLJ model
 
@@ -29,8 +29,8 @@ The repository declares target-local jobs with explicit input and output scopes.
 
 Devtool owns execution policy for its Gradle launches: one worker, constrained resources, no daemon, no parallel execution, VFS watch disabled, build cache enabled, standard structured telemetry, and Configuration Cache explicitly disabled to match MMRL's current Gradle policy. Android-safe validation is enabled and MMRL's low-memory Termux phase overrides remain explicit.
 
-## Temporary compatibility boundary
+## X02 supersession
 
-`scripts/run-mmrl-device-validation.sh` remains the only intentional first-party raw-Gradle compatibility path in this foundation wave. It exists because MMRL previously observed a Devtool ADB-state parser false skip. The job is explicitly named `device-compat` and modeled as device-exclusive. MMRL-DT-X02 must qualify Devtool's native ADB/instrumentation path and remove this exception when the scenario passes.
+The X01 `device-compat` raw-Gradle exception has been removed. `device-native` now lowers through Devtool's Android runner and canonical instrumentation orchestrator. Release qualification, signature identity, smoke gates, and immutable release evidence are owned by AOPS04.
 
-CI, Mise, artifact authority, and repository-wide raw-Gradle prohibition are intentionally deferred to MMRL-DT-X03; X01 establishes the repository execution model they will consume.
+CI, Mise, general artifact-consumer authority, and repository-wide Gradle takeover remain intentionally deferred to MMRL-DT-X03.
