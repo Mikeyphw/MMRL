@@ -7,6 +7,11 @@ environment = "auto"
 chroot_name = "androidos"
 device_serial = ""
 
+[toolchain]
+# MMRL does not require mise/asdf/pyenv for canonical Devtool execution.
+# mise.toml remains a developer convenience surface, not an execution authority.
+manager = "none"
+
 [targets.mmrl_android]
 root = "."
 execution_environment = "native-termux"
@@ -120,7 +125,7 @@ metadata = { resource_class = "gradle-heavy", roadmap_id = "MMRL-DT-X01" }
 # with Devtool's canonical ADB/instrumentation execution and evidence path.
 [targets.mmrl_android.jobs.device-compat]
 runner = "command"
-command = ["scripts/run-mmrl-device-validation.sh"]
+command = ["bash", "scripts/run-mmrl-device-validation.sh"]
 inputs = ["scripts/run-mmrl-device-validation.sh", "gradlew", "gradle/**", "settings.gradle.kts", "build.gradle.kts", "gradle.properties", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**"]
 outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
 metadata = { resource_class = "device-exclusive", global_reservations = ["mmrl-adb-device"], roadmap_id = "MMRL-DT-X01", compatibility_boundary = "devtool-adb-parser" }
