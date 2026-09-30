@@ -68,8 +68,9 @@ fi
 printf 'mmrl-device-validation: using %s\n' "$serial"
 export ANDROID_SERIAL="$serial"
 
-# Direct Gradle is intentional here: device selection was already validated above, so a
-# Devtool adb-state parser problem cannot turn a usable device into a false skip.
+# MMRL-DT-X01 compatibility boundary: direct Gradle is intentionally retained only here.
+# Device selection was already validated above, so the known Devtool adb-state parser problem
+# cannot turn a usable device into a false skip. MMRL-DT-X02 owns removal of this fallback.
 ./gradlew :app:connectedOfficialDebugAndroidTest \
   --max-workers=1 \
   --no-daemon \

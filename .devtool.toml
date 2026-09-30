@@ -28,20 +28,16 @@ prefer_native_termux = false
 [targets.mmrl_android.gradle]
 version = "9.7.1"
 provider = "wrapper"
+resource_profile = "constrained"
 max_workers = 1
-structured_events = true
+configuration_cache = "off"
+telemetry_level = "standard"
 no_daemon = true
-daemon_idle_timeout_ms = 900000
+vfs = false
 parallel = false
 build_cache = true
-fail_fast = false
-offline = false
-args = [
-  "-Dorg.gradle.parallel=false",
-  "-Dorg.gradle.vfs.watch=false",
-  "-Pkotlin.incremental=true",
-  "-Pkotlin.compiler.execution.strategy=in-process",
-]
+failure_policy = "collect"
+daemon_idle_timeout_ms = 900000
 
 [targets.mmrl_android.tasks]
 restore = ["help"]
@@ -56,6 +52,100 @@ clean = ["clean"]
 
 [targets.mmrl_android.artifacts]
 required = true
+
+# X01 establishes repository-owned EXO target-local jobs. Read-only contract
+# checks explicitly say so; Gradle/device jobs declare bounded write scopes so
+# the scheduler no longer has to treat every workflow node as an unknown writer.
+[targets.mmrl_android.jobs.source-hygiene]
+runner = "command"
+command = ["python3", "scripts/validate-mmrl-source-hygiene.py"]
+inputs = ["**/*"]
+metadata = { read_only = true, resource_class = "generic-read-only", roadmap_id = "MMRL-DT-X01" }
+
+[targets.mmrl_android.jobs.static-gates]
+runner = "gradle"
+gradle_tasks = [
+  "verifyStableToolchainBaseline",
+  "verifyMmrlProductBoundary",
+  "verifyRepositoryHygiene",
+]
+inputs = [".devtool.toml", "settings.gradle.kts", "build.gradle.kts", "gradle.properties", "gradle/**", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**", "scripts/**"]
+outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
+metadata = { resource_class = "gradle-heavy", roadmap_id = "MMRL-DT-X01" }
+
+[targets.mmrl_android.jobs.unit-contracts]
+runner = "gradle"
+gradle_tasks = [
+  ":platform:testNativeContracts",
+  ":platform:testDebugUnitTest",
+  ":app:testOfficialDebugUnitTest",
+]
+inputs = ["settings.gradle.kts", "build.gradle.kts", "gradle.properties", "gradle/**", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**"]
+outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
+metadata = { resource_class = "gradle-heavy", roadmap_id = "MMRL-DT-X01" }
+
+[targets.mmrl_android.jobs.compile-contracts]
+runner = "gradle"
+gradle_tasks = [
+  ":app:compileOfficialDebugSources",
+  ":app:processOfficialDebugResources",
+  ":app:compileOfficialDebugAndroidTestKotlin",
+]
+inputs = ["settings.gradle.kts", "build.gradle.kts", "gradle.properties", "gradle/**", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**"]
+outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
+metadata = { resource_class = "gradle-heavy", roadmap_id = "MMRL-DT-X01" }
+
+[targets.mmrl_android.jobs.strict-lint]
+runner = "gradle"
+gradle_tasks = [":app:fullLintOfficialDebug"]
+inputs = ["settings.gradle.kts", "build.gradle.kts", "gradle.properties", "gradle/**", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**"]
+outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
+metadata = { resource_class = "gradle-heavy", roadmap_id = "MMRL-DT-X01" }
+
+[targets.mmrl_android.jobs.strict-lint.env]
+"ORG_GRADLE_PROJECT_mmrl.fullLint" = "true"
+
+[targets.mmrl_android.jobs.package-seal]
+runner = "gradle"
+gradle_tasks = [
+  ":app:assembleOfficialDebug",
+  ":app:assembleOfficialRelease",
+  ":app:verifyReleaseArtifacts",
+]
+inputs = ["settings.gradle.kts", "build.gradle.kts", "gradle.properties", "gradle/**", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**"]
+outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
+metadata = { resource_class = "gradle-heavy", roadmap_id = "MMRL-DT-X01" }
+
+# Temporary compatibility boundary. X02 replaces this shell/raw-Gradle fallback
+# with Devtool's canonical ADB/instrumentation execution and evidence path.
+[targets.mmrl_android.jobs.device-compat]
+runner = "command"
+command = ["scripts/run-mmrl-device-validation.sh"]
+inputs = ["scripts/run-mmrl-device-validation.sh", "gradlew", "gradle/**", "settings.gradle.kts", "build.gradle.kts", "gradle.properties", "build-logic/**", "app/**", "platform/**", "ui/**", "datastore/**", "ext/**", "hidden-api/**", "terminal-compat/**", "webui-core-compat/**", "compat/**"]
+outputs = [".gradle/**", ".kotlin/**", "build/**", "build-logic/build/**", "app/build/**", "platform/build/**", "ui/build/**", "datastore/build/**", "ext/build/**", "hidden-api/build/**", "terminal-compat/build/**", "webui-core-compat/build/**", "compat/build/**"]
+metadata = { resource_class = "device-exclusive", global_reservations = ["mmrl-adb-device"], roadmap_id = "MMRL-DT-X01", compatibility_boundary = "devtool-adb-parser" }
+
+[targets.mmrl_android.workflows]
+validate = [
+  { id = "source-hygiene", ref = "job:source-hygiene", depends_on = [] },
+  { id = "static-gates", ref = "job:static-gates", depends_on = ["source-hygiene"] },
+  { id = "unit-contracts", ref = "job:unit-contracts", depends_on = ["static-gates"] },
+  { id = "compile-contracts", ref = "job:compile-contracts", depends_on = ["static-gates"] },
+  { id = "strict-lint", ref = "job:strict-lint", depends_on = ["unit-contracts", "compile-contracts"] },
+  { id = "package-seal", ref = "job:package-seal", depends_on = ["strict-lint"] },
+]
+device = [
+  { id = "device-compat", ref = "job:device-compat", depends_on = [] },
+]
+release-seal = [
+  { id = "source-hygiene", ref = "job:source-hygiene", depends_on = [] },
+  { id = "static-gates", ref = "job:static-gates", depends_on = ["source-hygiene"] },
+  { id = "unit-contracts", ref = "job:unit-contracts", depends_on = ["static-gates"] },
+  { id = "compile-contracts", ref = "job:compile-contracts", depends_on = ["static-gates"] },
+  { id = "strict-lint", ref = "job:strict-lint", depends_on = ["unit-contracts", "compile-contracts"] },
+  { id = "package-seal", ref = "job:package-seal", depends_on = ["strict-lint"] },
+  { id = "device-compat", ref = "job:device-compat", depends_on = ["package-seal"] },
+]
 
 [validation.phases]
 preflight = [
@@ -98,7 +188,7 @@ release-seal = [
 native = [":platform:testDebugUnitTest", ":platform:testNativeContracts"]
 
 [validation]
-android_safe = false
+android_safe = true
 max_workers = 1
 cpu_limit = 1
 parallel = false
@@ -175,6 +265,62 @@ gradle_metaspace_mb = 0
 memory_guard_mb = 0
 no_daemon = true
 low_priority = true
+
+[wrapper]
+schema = 2
+default_command = "build"
+
+[wrapper.commands.build]
+description = "Build the canonical MMRL Android target through Devtool"
+devtool = "build"
+target = "mmrl_android"
+allow_passthrough = true
+
+[wrapper.commands.test]
+description = "Run MMRL target tests through Devtool"
+devtool = "test"
+target = "mmrl_android"
+allow_passthrough = true
+
+[wrapper.commands.lint]
+description = "Run MMRL target lint through Devtool"
+devtool = "lint"
+target = "mmrl_android"
+allow_passthrough = true
+
+[wrapper.commands.validate]
+description = "Run Devtool validation for MMRL"
+devtool = "validate"
+target = "mmrl_android"
+allow_passthrough = true
+
+[wrapper.commands.validate.options.task]
+type = "string"
+description = "Run an exact Gradle validation task"
+repeatable = true
+command_argv = ["--task", "{value}"]
+
+[wrapper.commands.clean]
+description = "Clean MMRL through Devtool"
+devtool = "clean"
+target = "mmrl_android"
+allow_passthrough = true
+
+[wrapper.commands.package]
+description = "Package MMRL through Devtool"
+devtool = "package"
+target = "mmrl_android"
+allow_passthrough = true
+
+[wrapper.commands.release]
+description = "Run the repository-owned MMRL release-seal workflow"
+workflow = "release-seal"
+target = "mmrl_android"
+
+[wrapper.commands.device]
+description = "Run the temporary connected-device compatibility workflow"
+workflow = "device"
+target = "mmrl_android"
 
 [workspace]
 default_target = "mmrl_android"

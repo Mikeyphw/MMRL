@@ -51,7 +51,7 @@ if (($#)); then
 fi
 
 echo "==> $SCRIPT_DIR (mmrl_android)"
-devtool -r "$SCRIPT_DIR" --target mmrl_android build
+"$SCRIPT_DIR/devtoolw" build
 
 APK="$SCRIPT_DIR/app/build/outputs/apk/official/debug/MMRL-Fork-v34412-debug-debug.apk"
 if [[ ! -f "$APK" ]]; then

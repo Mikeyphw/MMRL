@@ -87,7 +87,20 @@ def check_stable_toolchain_baseline() -> None:
             fail(f"root stable toolchain gate is missing {needle}")
 
     devtool = text(".devtool.toml")
-    for needle in ('version = "9.7.1"', 'provider = "wrapper"', '"verifyStableToolchainBaseline"', 'memory_guard_mb = 0', 'gradle_metaspace_mb = 0'):
+    for needle in (
+        'version = "9.7.1"',
+        'provider = "wrapper"',
+        'resource_profile = "constrained"',
+        'configuration_cache = "off"',
+        'telemetry_level = "standard"',
+        'vfs = false',
+        'android_safe = true',
+        '"verifyStableToolchainBaseline"',
+        'memory_guard_mb = 0',
+        'gradle_metaspace_mb = 0',
+        '[wrapper]',
+        'schema = 2',
+    ):
         if needle not in devtool:
             fail(f"Devtool normalized toolchain policy is missing {needle}")
 
@@ -185,9 +198,18 @@ def check_gradle_release_gates() -> None:
             fail(f"Devtool final validation metadata is missing {needle}")
     if "-Pmmrl.fullLint=true" in devtool:
         fail("Devtool Gradle args must not enable full lint globally; strict lint belongs to the explicit release-seal path")
-    release_seal = text("scripts/run-mmrl-release-seal.sh")
-    if "ORG_GRADLE_PROJECT_mmrl.fullLint=true" not in release_seal:
-        fail("release-seal lint must explicitly enable mmrl.fullLint")
+    if '"ORG_GRADLE_PROJECT_mmrl.fullLint" = "true"' not in devtool:
+        fail("release-seal target-local lint job must explicitly enable mmrl.fullLint")
+    for needle in (
+        '[targets.mmrl_android.jobs.source-hygiene]',
+        '[targets.mmrl_android.jobs.strict-lint]',
+        '[targets.mmrl_android.workflows]',
+        'release-seal = [',
+        'metadata = { read_only = true',
+        'resource_class = "device-exclusive"',
+    ):
+        if needle not in devtool:
+            fail(f"Devtool X01 workflow contract is missing {needle}")
     platform = text("platform/build.gradle.kts")
     if 'ndkVersion = NDK_VERSION' not in platform:
         fail("platform NDK version must use the shared NDK_VERSION constant")
@@ -395,14 +417,27 @@ def check_source_hygiene() -> None:
     for needle in (".devtool/build-artifacts/", ".devtool/artifacts.d/", "*.apk", "*.aab", "build-logs/"):
         if needle not in gitignore:
             fail(f".gitignore is missing generated-output exclusion {needle}")
+    if any(line.strip() == "release/" for line in gitignore.splitlines()):
+        fail(".gitignore must not globally ignore release/; it hides Kotlin package directories used by final-seal tests. Use /release/ for root release output.")
+    if "/release/" not in gitignore.splitlines():
+        fail(".gitignore must root-anchor the generated release directory as /release/")
     pack = text("pack_repo.sh")
     if ".tar.zst" not in pack or "--zstd" not in pack:
         fail("pack_repo.sh must use matching .tar.zst naming with zstd compression")
     release = text("build-release-apk.sh")
-    if "build_variant \"$FLAVOR\" debug" not in release or "build_variant \"$FLAVOR\" release" not in release:
-        fail("build-release-apk.sh all mode must build personal-use debug and release variants")
+    for needle in (
+        'exec "$ROOT_DIR/devtoolw" release',
+        ":app:assembleOfficialDebug",
+        ":app:assembleOfficialRelease",
+        ":app:verifyReleaseArtifacts",
+    ):
+        if needle not in release:
+            fail(f"build-release-apk.sh canonical Devtool delegation is missing {needle}")
+    if "gradlew" in release:
+        fail("build-release-apk.sh must not bypass Devtool with raw Gradle")
     if "playstore" in release.lower():
         fail("build-release-apk.sh must not reference the removed Play Store variant")
+
 
     if (ROOT / ".git").is_dir():
         import subprocess
@@ -529,17 +564,24 @@ def check_authoritative_final_release_seal() -> None:
         fail("Termux final validation must not restore the high-pressure 1024 MiB heap profile")
 
     runner = text("scripts/run-mmrl-release-seal.sh")
-    for needle in (
-        "--memory-guard-mb 0",
-        "MMRL_GRADLE_HEAP_MB:-768",
-        "MMRL_LINT_HEAP_MB:-640",
-        "scripts/run-mmrl-device-validation.sh",
-    ):
+    for needle in ('devtoolw', 'release'):
         if needle not in runner:
-            fail(f"release runner is missing {needle}")
+            fail(f"release runner is missing canonical wrapper ingress: {needle}")
+    if "gradlew" in runner or "devtool --copy" in runner:
+        fail("release runner must not bypass devtoolw or use --copy as execution policy")
+
+    for path in ("build-android-app.sh", "build-release-apk.sh", "scripts/run-mmrl-release-seal.sh"):
+        body = text(path)
+        if "devtoolw" not in body:
+            fail(f"{path} must enter through the repository devtoolw contract")
+        if "gradlew" in body:
+            fail(f"{path} must not invoke raw Gradle")
+
+    if not (ROOT / "devtoolw").is_file() or not (ROOT / "devtoolw.cmd").is_file():
+        fail("canonical Devtool wrapper launchers are missing")
 
     device = text("scripts/run-mmrl-device-validation.sh")
-    for needle in ('MMRL_ADB_SERIAL', 'connectedOfficialDebugAndroidTest', 'su -c id', 'uid=0'):
+    for needle in ('MMRL_ADB_SERIAL', 'connectedOfficialDebugAndroidTest', 'su -c id', 'uid=0', 'MMRL-DT-X01 compatibility boundary'):
         if needle not in device:
             fail(f"device validation is missing {needle}")
 

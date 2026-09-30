@@ -13,7 +13,7 @@ signing.properties
 
 # Android Studio
 captures/
-release/
+/release/
 app/debug/*
 app/releaseCandidate/*
 app/beta/*
@@ -88,4 +88,6 @@ Thumbs.db
 # END repo-cleanup managed ignores
 
 # Devtool local runtime state
+.devtool/build-artifacts/
+.devtool/artifacts.d/
 .devtool/
