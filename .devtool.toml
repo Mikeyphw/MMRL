@@ -12,6 +12,14 @@ device_serial = ""
 # mise.toml remains a developer convenience surface, not an execution authority.
 manager = "none"
 
+[bootstrap]
+# G2 executes the Android authority natively in Termux. Reuse the canonical
+# Devtool bootstrap/cache and provision only missing components; do not let the
+# presence of chrootctl silently turn this target into discovery-only chroot mode.
+downloads = "missing"
+network = "allow"
+fail_on_missing_tools = true
+
 [targets.mmrl_android]
 root = "."
 execution_environment = "native-termux"
@@ -27,12 +35,11 @@ ndk_host_provider = "auto"
 cmake_version = "3.22.1"
 variant = "officialDebug"
 aapt2_provider = "termux"
-prefer_native_termux = false
+prefer_native_termux = true
 
-# X02 makes Devtool's AOPS02/AOPS03 device fabric authoritative. The default
-# release instrumentation remains optional when no device is present. Full AOPS04
-# release still requires a device while install_smoke=true; package-only callers
-# can explicitly disable smoke gates.
+# X02/G2 make Devtool's AOPS02/AOPS03 device fabric authoritative. Full AOPS04
+# release requires instrumentation and install smoke against one admitted device;
+# package-only callers must explicitly disable the device gates.
 [targets.mmrl_android.android.adb]
 provider = "auto"
 device_policy = "exactly-one"
@@ -57,7 +64,7 @@ variant = "officialRelease"
 module = "app"
 unit_tests = true
 lint = true
-device_tests = "when-device-present"
+device_tests = "required"
 install_smoke = true
 upgrade_smoke = true
 verify_signature = true
@@ -202,7 +209,7 @@ outputs = [".gradle/**", ".kotlin/**", ".devtool/reports/**", "build/**", "build
 metadata = { resource_class = "device-exclusive", global_reservations = ["mmrl-adb-device"], roadmap_id = "MMRL-DT-X02", device_authority = "devtool-aops02-aops03" }
 
 [targets.mmrl_android.workflows]
-validate = [
+repository-check = [
   { id = "source-hygiene", ref = "job:source-hygiene", depends_on = [] },
   { id = "static-gates", ref = "job:static-gates", depends_on = ["source-hygiene"] },
   { id = "unit-contracts", ref = "job:unit-contracts", depends_on = ["static-gates"] },
@@ -224,6 +231,9 @@ release-check = [
 ]
 
 [validation.phases]
+dependencies = false
+instrumentation = false
+finalize = true
 preflight = [
   "verifyStableToolchainBaseline",
   "verifyMmrlProductBoundary",
@@ -264,6 +274,7 @@ release-seal = [
 native = [":platform:testDebugUnitTest", ":platform:testNativeContracts"]
 
 [validation]
+resumable = true
 android_safe = true
 max_workers = 1
 cpu_limit = 1
@@ -421,6 +432,11 @@ description = "Package MMRL through Devtool"
 devtool = "package"
 target = "mmrl_android"
 allow_passthrough = true
+
+[wrapper.commands.repository-check]
+description = "Run the repository-owned EXO validation DAG without shadowing native Devtool validation"
+workflow = "repository-check"
+target = "mmrl_android"
 
 [wrapper.commands.release-check]
 description = "Run the repository-owned pre-release validation DAG"

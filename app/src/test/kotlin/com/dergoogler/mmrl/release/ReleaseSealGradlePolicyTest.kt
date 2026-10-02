@@ -117,6 +117,7 @@ class ReleaseSealGradlePolicyTest {
             "policy = \"release-required\"",
             "[targets.mmrl_android.android.release]",
             "variant = \"officialRelease\"",
+            "device_tests = \"required\"",
             "verify_signature = true",
             "verify_certificate_identity = true",
             "[targets.mmrl_android.jobs.device-native]",

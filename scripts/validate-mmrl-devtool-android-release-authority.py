@@ -99,6 +99,10 @@ def validate_config(exe: str, env: dict[str, str]) -> None:
     require(gradle.get("configuration_cache") == "off", f"Configuration Cache policy drifted: {gradle}")
     require(gradle.get("parallel") is False and gradle.get("no_daemon") is True, f"Termux Gradle safety drifted: {gradle}")
     require(validation.get("android_safe") is True and validation.get("split_gradle") is True, f"Android validation safety drifted: {validation}")
+    require(android.get("prefer_native_termux") is True, f"Android execution may silently auto-select chroot: {android}")
+    bootstrap = cfg.get("bootstrap", {})
+    require(bootstrap.get("downloads") == "missing" and bootstrap.get("network") == "allow",
+            f"native Termux bootstrap policy drifted: {bootstrap}")
 
     adb = android.get("adb", {})
     instr = android.get("instrumentation", {})
@@ -111,7 +115,7 @@ def validate_config(exe: str, env: dict[str, str]) -> None:
     require(release.get("variant") == "officialRelease", f"release variant drifted: {release}")
     for key in ("unit_tests", "lint", "install_smoke", "upgrade_smoke", "verify_signature", "verify_certificate_identity"):
         require(release.get(key) is True, f"release gate {key} is not enabled: {release}")
-    require(release.get("device_tests") == "when-device-present", f"release instrumentation policy drifted: {release}")
+    require(release.get("device_tests") == "required", f"release instrumentation policy drifted: {release}")
     require(release.get("package") == "com.mikeyphw.mmrl", f"release package drifted: {release}")
 
     tasks = target["tasks"]
@@ -129,6 +133,8 @@ def validate_config(exe: str, env: dict[str, str]) -> None:
     require("mmrl-adb-device" in metadata.get("global_reservations", []), f"device reservation missing: {metadata}")
 
     workflows = target["workflows"]
+    require("validate" not in workflows, "target-local workflow must not shadow Devtool's native Android validate action")
+    require("repository-check" in workflows, f"repository EXO validation DAG is missing: {workflows.keys()}")
     require("release-seal" not in workflows and "release-check" in workflows, f"pre-release workflow naming drifted: {workflows.keys()}")
     require(workflows["device"] == [{"id": "device-native", "ref": "job:device-native", "depends_on": []}], f"device workflow drifted: {workflows['device']}")
 
@@ -147,6 +153,9 @@ def validate_wrapper(exe: str, env: dict[str, str]) -> None:
 
     retry = run_json(base(exe) + ["wrapper", "resolve", "--json", "validate-session", "--retry-failed", "--complete"], env=env)["data"]
     require("--retry-failed" in retry["canonical_argv"], f"validate-session retry binding drifted: {retry}")
+
+    repository = run_json(base(exe) + ["wrapper", "resolve", "--json", "repository-check"], env=env)["data"]
+    require(repository.get("execution_kind") == "workflow" and repository.get("workflow_action") == "repository-check", f"repository-check wrapper drifted: {repository}")
 
     device = run_json(base(exe) + ["wrapper", "resolve", "--json", "device"], env=env)["data"]
     require(device.get("execution_kind") == "workflow" and device.get("workflow_action") == "device", f"device wrapper drifted: {device}")
@@ -199,7 +208,7 @@ def validate_release_planner() -> None:
     cfg = load_project_config(str(ROOT), None, target_name=TARGET)
     opts = release_options(cfg)
     require(opts.variant == "officialRelease", f"AOPS04 selected wrong release variant: {opts}")
-    require(opts.device_tests == "when-device-present", f"AOPS04 device-test policy drifted: {opts}")
+    require(opts.device_tests == "required", f"AOPS04 device-test policy drifted: {opts}")
     require(opts.install_smoke and opts.upgrade_smoke, f"AOPS04 smoke policy drifted: {opts}")
     require(opts.verify_signature and opts.verify_certificate_identity, f"AOPS04 signature policy drifted: {opts}")
 

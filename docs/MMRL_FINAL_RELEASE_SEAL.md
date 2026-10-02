@@ -28,7 +28,7 @@ The `officialRelease` lane is explicitly release-qualified. Devtool runs reposit
 
 The root Gradle `mmrlReleaseSeal` task remains a project-domain aggregate for compatibility and manual Gradle inspection; it is not the execution authority.
 
-Release signing remains project-owned through a complete `signing.properties`. Devtool declares `mode = "project"` with `policy = "release-required"`, so credentials stay out of Devtool config while produced artifacts are still verified with the canonical signing service.
+Release signing remains project-owned through `signing.properties`. Devtool declares `mode = "project"` with `policy = "release-required"`, so credentials stay out of Devtool config while produced artifacts are still verified with the canonical signing service. G2 prefers the developer's real ignored signer when present; if none is configured, the gate creates a disposable validation signer (matching the CI model) so qualification does not require production secrets on-device.
 
 ## Persistent validation
 
@@ -38,7 +38,7 @@ MMRL's configured validation phases are durable Devtool checkpoints. Use `./devt
 
 The canonical instrumentation lane is `officialDebug`. ADB provider/device selection comes from `[targets.mmrl_android.android.adb]`; instrumentation build/install/run/cleanup and logcat/screenshot failure evidence come from Devtool Android Operations. `./devtoolw device` runs the EXO `device-native` workflow.
 
-Release instrumentation is `when-device-present`, while the enabled install-smoke gate means a full release still requires an admitted device. Direct `./devtoolw device` instrumentation is `required`. `MMRL_ADB_SERIAL` may be supplied by the thin frontend and is projected to `ANDROID_SERIAL`; the repository no longer parses `adb devices` or invokes raw Gradle itself. The explicit package-only release mode disables device gates.
+Release instrumentation is `required`, matching the required install-smoke boundary: a full release must admit exactly one device and qualify instrumentation before shipping. Direct `./devtoolw device` instrumentation uses the same required policy. `MMRL_ADB_SERIAL` may be supplied by the thin frontend and is projected to `ANDROID_SERIAL`; the repository no longer parses `adb devices` or invokes raw Gradle itself. The explicit package-only release mode disables device gates.
 
 ## Evidence and hygiene
 
@@ -59,3 +59,8 @@ For long Termux qualification runs, use:
 ```
 
 Devtool checkpoints each Android validation phase under `.devtool/state/android-validation/`, preserves Gradle/build caches between phases, and can resume/retry failed phases without replaying already-qualified predecessors whose inputs remain valid. This validation session complements AOPS04 release evidence; it does not replace the canonical `devtool release` run.
+
+## Validation action ownership
+
+The canonical `validate` action is Devtool's native Android resumable pipeline. The repository-specific EXO DAG is separately named `repository-check`; this avoids action shadowing while retaining explicit EXO/TLJ coverage.
+
