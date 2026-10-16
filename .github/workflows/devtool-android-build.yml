@@ -1,0 +1,117 @@
+# MMRL debug candidate: GitHub executes; Devtool dispatches, observes and collects.
+# Release sealing, real-device instrumentation, upgrade smoke and production
+# signing remain exclusively under MMRL's existing Devtool AOPS04 authority.
+name: MMRL Devtool OfficialDebug
+on:
+  workflow_dispatch:
+    inputs:
+      project_dir:
+        description: 'Repository Gradle root'
+        type: choice
+        required: true
+        default: '.'
+        options: ['.']
+      module:
+        description: 'Only the MMRL Android application'
+        type: choice
+        required: true
+        default: app
+        options: [app]
+      variant:
+        description: 'Canonical official debug variant'
+        type: choice
+        required: true
+        default: officialDebug
+        options: [officialDebug]
+      format:
+        description: 'Installable debug APK only'
+        type: choice
+        required: true
+        default: apk
+        options: [apk]
+
+permissions:
+  contents: read
+concurrency:
+  group: mmrl-devtool-debug-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  debug-candidate:
+    name: Source-bound OfficialDebug candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - name: Checkout selected source (no retained Git credentials)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check ref, inputs, MMRL source and existing release authority
+        shell: bash
+        env:
+          DT_PROJECT: ${{ inputs.project_dir }}
+          DT_MODULE: ${{ inputs.module }}
+          DT_VARIANT: ${{ inputs.variant }}
+          DT_FORMAT: ${{ inputs.format }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$DT_PROJECT" = '.'
+          test "$DT_MODULE" = 'app'
+          test "$DT_VARIANT" = 'officialDebug'
+          test "$DT_FORMAT" = 'apk'
+          python3 scripts/verify-mmrl-github-actions.py --static
+          python3 scripts/validate-mmrl-source-hygiene.py
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Prepare Android SDK manager
+        uses: android-actions/setup-android@v3
+      - name: Install pinned Android toolchain (API 36, NDK r29, CMake)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'platform-tools' 'ndk;29.0.14206865' 'cmake;3.22.1'
+          test -f "$ANDROID_HOME/ndk/29.0.14206865/source.properties"
+      - name: Configure Gradle wrapper cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+      - name: Verify MMRL baseline, native contracts, unit tests, lint and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --max-workers=2 --build-cache --console=plain \
+            verifyStableToolchainBaseline verifyMmrlProductBoundary verifyRepositoryHygiene \
+            :platform:testNativeContracts :platform:testDebugUnitTest \
+            :app:testOfficialDebugUnitTest :app:lintOfficialDebug \
+            :app:compileOfficialDebugAndroidTestKotlin :app:assembleOfficialDebug
+      - name: Independently verify debug package, signature and source-bound receipt
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/mmrl-devtool-official-debug"
+          mkdir -p "$stage"
+          python3 scripts/verify-mmrl-github-actions.py --evidence "$stage"
+          echo "artifact_dir=$stage" >> "$GITHUB_OUTPUT"
+      - name: Upload verified OfficialDebug APK and receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmrl-official-debug-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.package.outputs.artifact_dir }}/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload test and lint reports (diagnostic only)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmrl-debug-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            **/build/test-results/**/*.xml
+            **/build/reports/tests/**
+            **/build/reports/lint-results-*.html
+          if-no-files-found: ignore
+          retention-days: 7

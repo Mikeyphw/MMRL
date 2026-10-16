@@ -229,6 +229,15 @@ release-check = [
   { id = "package-seal", ref = "job:package-seal", depends_on = ["strict-lint"] },
   { id = "device-native", ref = "job:device-native", depends_on = ["package-seal"] },
 ]
+ci-preflight = [
+  { id = "actions-contract", ref = "job:ci-actions-contract", depends_on = [] },
+  { id = "source-contract", ref = "job:ci-source-contract", depends_on = ["actions-contract"] },
+  { id = "source-hygiene", ref = "job:source-hygiene", depends_on = [] },
+]
+ci-source = [
+  { id = "actions-contract", ref = "job:ci-actions-contract", depends_on = [] },
+  { id = "source-contract", ref = "job:ci-source-contract", depends_on = ["actions-contract"] },
+]
 
 [validation.phases]
 dependencies = false
@@ -450,3 +459,36 @@ target = "mmrl_android"
 
 [workspace]
 default_target = "mmrl_android"
+
+[targets.mmrl_android.jobs.ci-actions-contract]
+runner = "command"
+command = ["python3", "scripts/devtool_actions_contract.py"]
+inputs = [".devtool.toml", ".github/workflows/*.yml", "scripts/devtool_actions_contract.py"]
+metadata = { read_only = true }
+
+[workspace.scheduler]
+parallel = true
+max_parallel_nodes = 2
+max_gradle_nodes = 1
+max_dotnet_nodes = 1
+
+[wrapper.commands.ci-preflight]
+description = "ci-preflight through canonical Devtool and EXO"
+workflow = "ci-preflight"
+target = "mmrl_android"
+
+[wrapper.commands.ci-local]
+description = "ci-local through canonical Devtool and EXO"
+workflow = "repository-check"
+target = "mmrl_android"
+
+[targets.mmrl_android.jobs.ci-source-contract]
+runner = "command"
+command = ["python3", "scripts/verify-mmrl-github-actions.py", "--static"]
+inputs = [".devtool.toml", "scripts/verify-mmrl-github-actions.py", ".github/workflows/*.yml"]
+metadata = { read_only = true }
+
+[wrapper.commands.ci-source]
+description = "Read-only project-specific source and CI contract with EXO evidence"
+workflow = "ci-source"
+target = "mmrl_android"
