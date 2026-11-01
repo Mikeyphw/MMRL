@@ -175,11 +175,19 @@ android {
 androidComponents {
     onVariants { variant ->
         variant.outputs.filterIsInstance<VariantOutputImpl>().forEach { output ->
-            output.outputFileName.set(
-                output.versionName.map { vName ->
-                    "MMRL-${vName}-${variant.buildType ?: variant.name}.apk"
-                }
-            )
+            // CI-only output pin for the upstream-based LSPosed integration branch.
+            // Normal upstream APK naming stays unchanged outside this opt-in property.
+            if (variant.name == "officialDebug" &&
+                providers.gradleProperty("mmrlLsposedHosted").orNull == "true"
+            ) {
+                output.outputFileName.set("MMRL-LSPosed-CI-OfficialDebug.apk")
+            } else {
+                output.outputFileName.set(
+                    output.versionName.map { vName ->
+                        "MMRL-${vName}-${variant.buildType ?: variant.name}.apk"
+                    }
+                )
+            }
         }
     }
     onVariants(selector().withBuildType("release")) {
