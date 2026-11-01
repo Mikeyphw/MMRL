@@ -11,11 +11,19 @@ runner = "android"
 platform = "android"
 execution_environment = "auto"
 
-[targets.mmrl_lsposed_ci.jobs.official_debug]
+# Independent APK and lint jobs in one immutable Devtool native DAG.
+# There is intentionally no dependency from APK on lint or vice versa.
+[targets.mmrl_lsposed_ci.jobs.assemble_debug]
 runner = "android"
-gradle_tasks = [":app:lintOfficialDebug", ":app:assembleOfficialDebug"]
+gradle_tasks = [":app:assembleOfficialDebug"]
 outputs = ["app/build/outputs/apk/official/debug/MMRL-LSPosed-CI-OfficialDebug.apk"]
 metadata = { ci_toolchain = "android-gradle", ci_android_java_version = "21", ci_android_project_dir = "", ci_android_debug_variant = "officialDebug", ci_android_sdk_packages = ["platforms;android-36", "build-tools;36.0.0", "platform-tools"], ci_android_wrapper_jar_sha256 = "d3b261c2820e9e3d8d639ed084900f11f4a86050a8f83342ade7b6bc9b0d2bdd", ci_android_expected_output = "app/build/outputs/apk/official/debug/MMRL-LSPosed-CI-OfficialDebug.apk" }
 
+[targets.mmrl_lsposed_ci.jobs.lint_debug]
+runner = "android"
+gradle_tasks = [":app:lintOfficialDebug"]
+outputs = []
+metadata = { ci_toolchain = "android-gradle", ci_android_java_version = "21", ci_android_project_dir = "", ci_android_debug_variant = "officialDebug", ci_android_sdk_packages = ["platforms;android-36", "build-tools;36.0.0", "platform-tools"], ci_android_wrapper_jar_sha256 = "d3b261c2820e9e3d8d639ed084900f11f4a86050a8f83342ade7b6bc9b0d2bdd" }
+
 [targets.mmrl_lsposed_ci.workflows]
-ci = ["job:official_debug"]
+ci = ["job:assemble_debug", "job:lint_debug"]

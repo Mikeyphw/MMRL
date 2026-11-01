@@ -18,7 +18,8 @@ TARGET = "mmrl_lsposed_ci"
 WORKFLOW = "ci"
 DEVTOOL_SHA = "246f168ebdef6d9b25c194268c810c877d099fa3"
 PROFILES = "ubuntu-24.04-x64"
-TASKS = [":app:lintOfficialDebug", ":app:assembleOfficialDebug"]
+TASKS_APK = [":app:assembleOfficialDebug"]
+TASKS_LINT = [":app:lintOfficialDebug"]
 OUTPUT = "app/build/outputs/apk/official/debug/MMRL-LSPosed-CI-OfficialDebug.apk"
 PACKAGE = "com.dergoogler.mmrl.debug"  # Phase 01 retains upstream's identity.
 
@@ -33,23 +34,28 @@ def checked_graph(root: Path) -> dict:
     graph = compile_graph(root, target=TARGET, workflow=WORKFLOW,
                           devtool_sha=DEVTOOL_SHA, host_profiles=PROFILES)
     nodes = graph["jobs"]
-    if len(nodes) != 1 or nodes[0]["id"] != "node-01":
-        raise ValueError("Only the single reviewed OfficialDebug DAG node is accepted")
-    node = nodes[0]
-    review = node.get("android_review") or {}
-    if (node["provider"] != "android-gradle"
-            or review.get("semantic_request") is not True
-            or review.get("project_dir") != ""
-            or review.get("variant") != "officialDebug"
-            or review.get("wrapper_version") != "9.1.0"
-            or review.get("java_version") != "21"
-            or review.get("tasks") != TASKS
-            or node["outputs"] != [OUTPUT]
-            or review.get("output_role") != "local-bytes-only"
-            or review.get("signer_authority") is not False
-            or review.get("release_qualified") is not False
-            or review.get("device_qualified") is not False):
-        raise ValueError("Native Android review did not match the upstream-only debug contract")
+    if [node["id"] for node in nodes] != ["node-01", "node-02"]:
+        raise ValueError("Expected the reviewed APK and lint DAG nodes in this order")
+    for node, expected_name, expected_tasks, expected_outputs in (
+        (nodes[0], "assemble_debug", TASKS_APK, [OUTPUT]),
+        (nodes[1], "lint_debug", TASKS_LINT, []),
+    ):
+        review = node.get("android_review") or {}
+        if (node["provider"] != "android-gradle"
+                or node["job"] != expected_name
+                or node.get("needs") != []
+                or review.get("semantic_request") is not True
+                or review.get("project_dir") != ""
+                or review.get("variant") != "officialDebug"
+                or review.get("wrapper_version") != "9.1.0"
+                or review.get("java_version") != "21"
+                or review.get("tasks") != expected_tasks
+                or node["outputs"] != expected_outputs
+                or review.get("output_role") != "local-bytes-only"
+                or review.get("signer_authority") is not False
+                or review.get("release_qualified") is not False
+                or review.get("device_qualified") is not False):
+            raise ValueError("Native Android review differs from split debug/lint contract: " + expected_name)
     source = (root / "app/build.gradle.kts").read_text(encoding="utf-8")
     if ("providers.gradleProperty(\"mmrlLsposedHosted\")" not in source
             or "MMRL-LSPosed-CI-OfficialDebug.apk" not in source
@@ -138,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("plan", "run", "verify"))
     parser.add_argument("--root", default=".")
+    parser.add_argument("--node", choices=("apk", "lint"))
     parser.add_argument("--inputs")
     parser.add_argument("--outputs")
     parser.add_argument("--evidence")
@@ -152,7 +159,9 @@ def main(argv: list[str] | None = None) -> int:
             "schema": "mmrl.lsposed.phase01.plan.v1",
             "status": "REVIEWED_UPSTREAM_OFFICIAL_DEBUG", "source_sha": source,
             "devtool_sha": DEVTOOL_SHA, "graph_sha256": graph["graph_sha256"],
-            "tasks": TASKS, "output": OUTPUT, "package": PACKAGE,
+            "tasks": {"apk": TASKS_APK, "lint": TASKS_LINT},
+            "node_ids": {"apk": "node-01", "lint": "node-02"},
+            "output": OUTPUT, "package": PACKAGE,
             "release_qualified": False, "device_qualified": False,
             "artifact_independently_authenticated": False,
         }
@@ -167,10 +176,12 @@ def main(argv: list[str] | None = None) -> int:
         outputs = Path(args.outputs)
         inputs = Path(args.inputs)
         if args.mode == "run":
+            if not args.node:
+                raise ValueError("Run requires explicit --node apk|lint")
             from devtool.actions_graph_export import run_node
             result = run_node(root, target=TARGET, workflow=WORKFLOW,
                               devtool_sha=DEVTOOL_SHA, graph_sha=graph["graph_sha256"],
-                              job_id="node-01", inputs=inputs, outputs=outputs,
+                              job_id=plan["node_ids"][args.node], inputs=inputs, outputs=outputs,
                               host_profiles=PROFILES)
             print(json.dumps(result, sort_keys=True))
             return 0

@@ -19,6 +19,18 @@ val appVersion = commitCount + 31320
 
 android {
     compileSdk = COMPILE_SDK
+
+    // Preserve complete Android Lint reports on the LSPosed hosted CI path.
+    // The source-controlled fingerprint baseline gate (not Gradle exit status)
+    // rejects all new errors/warnings and refuses missing or broken reports.
+    if (providers.gradleProperty("mmrlLsposedHosted").orNull == "true") {
+        lint {
+            abortOnError = false
+            xmlReport = true
+            htmlReport = true
+            textReport = true
+        }
+    }
     namespace = mmrlBaseApplicationId
 
     defaultConfig {

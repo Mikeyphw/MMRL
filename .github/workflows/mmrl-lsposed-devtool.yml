@@ -74,18 +74,25 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/devtool-venv"
           "$RUNNER_TEMP/devtool-venv/bin/python" -m pip install --disable-pip-version-check "$RUNNER_TEMP/devtool-source"
 
+      - name: Test the source-controlled lint regression gate (offline)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_mmrl_lsposed_lint_gate.py
+
       - name: Compile and check immutable native DAG plan
+        id: dag_plan
         shell: bash
         run: |
           set -euo pipefail
           "$RUNNER_TEMP/devtool-venv/bin/python" scripts/mmrl_lsposed_hosted.py plan \
             --root "$GITHUB_WORKSPACE" --evidence "$RUNNER_TEMP/mmrl-lsposed/plan.json"
 
-      - name: Execute Android Gradle tasks exclusively through Devtool DAG
+      - name: Execute APK node through Devtool DAG
         shell: bash
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/mmrl_lsposed_hosted.py run \
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/mmrl_lsposed_hosted.py run --node apk \
             --root "$GITHUB_WORKSPACE" \
             --inputs "$RUNNER_TEMP/mmrl-lsposed-inputs" \
             --outputs "$RUNNER_TEMP/mmrl-lsposed-outputs"
@@ -108,6 +115,46 @@ jobs:
           path: ${{ runner.temp }}/mmrl-lsposed-outputs/node-01/
           if-no-files-found: error
           retention-days: 14
+
+      # Lint is a distinct native DAG node and never blocks APK construction.
+      # Existing diagnostics require a source-controlled reviewed baseline;
+      # the first run intentionally fails that gate while publishing a candidate.
+      - name: Run Android lint through the independent Devtool DAG node
+        id: lint_dag
+        if: always() && steps.dag_plan.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/mmrl_lsposed_hosted.py run --node lint \
+            --root "$GITHUB_WORKSPACE" \
+            --inputs "$RUNNER_TEMP/mmrl-lsposed-inputs" \
+            --outputs "$RUNNER_TEMP/mmrl-lsposed-outputs"
+
+      - name: Evaluate source-controlled lint baseline
+        if: always()
+        shell: bash
+        env:
+          MMRL_LINT_DAG_OUTCOME: ${{ steps.lint_dag.outcome }}
+        run: |
+          set -euo pipefail
+          python3 scripts/mmrl_lsposed_lint_gate.py gate \
+            --root "$GITHUB_WORKSPACE" \
+            --report app/build/reports/lint-results-officialDebug.xml \
+            --baseline ci/mmrl-lsposed-lint-baseline.json \
+            --candidate "$RUNNER_TEMP/mmrl-lsposed/lint-candidate.json" \
+            --evidence "$RUNNER_TEMP/mmrl-lsposed/lint-gate.json"
+
+      - name: Upload full Android Lint reports
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6; Node 24
+        with:
+          name: mmrl-lsposed-lint-reports-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: |
+            app/build/reports/lint-results-officialDebug.*
+            platform/build/reports/lint-results-*
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Upload plan and verification evidence
         if: always()
