@@ -73,9 +73,14 @@ jobs:
         if: matrix.task-set == 'static'
         run: ./gradlew :platform:testDebugUnitTest :platform:testNativeContracts --build-cache --console=plain
 
-      - name: Official debug unit tests and full lint
+      # Keep both fatal checks independent so failing tests never hide Lint findings.
+      - name: Official debug unit tests
         if: matrix.task-set == 'debug'
-        run: ./gradlew :app:testOfficialDebugUnitTest :app:lintOfficialDebug -Pmmrl.fullLint=true --build-cache --console=plain
+        run: ./gradlew :app:testOfficialDebugUnitTest --build-cache --console=plain
+
+      - name: Official debug strict lint
+        if: ${{ !cancelled() && matrix.task-set == 'debug' }}
+        run: ./gradlew :app:lintOfficialDebug -Pmmrl.fullLint=true --build-cache --console=plain
 
       # Always preserve the full strict Lint report, including findings from
       # dependency modules. The Gradle console only prints its first failure.

@@ -3,6 +3,7 @@ package com.dergoogler.mmrl.lsposed
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -11,8 +12,13 @@ class LsposedScopeEditorContractTest {
     fun `scope writes are transaction guarded and backed up`() {
         val repository = source("app/src/main/kotlin/com/dergoogler/mmrl/lsposed/LsposedScopeRepository.kt")
 
-        assertTrue(repository.contains("beginTransaction()"))
-        assertTrue(repository.contains("setTransactionSuccessful()"))
+        assertTrue(repository.contains("import androidx.core.database.sqlite.transaction"))
+        assertTrue(repository.contains("db.transaction {"))
+        assertFalse(repository.contains("db.beginTransaction()"))
+        assertFalse(repository.contains("db.setTransactionSuccessful()"))
+        assertTrue(repository.contains("db.update(\"modules\""))
+        assertTrue(repository.contains("db.delete(\"scope\""))
+        assertTrue(repository.contains("db.insertWithOnConflict(\"scope\""))
         assertTrue(repository.contains("SQLiteDatabase.OPEN_READWRITE"))
         assertTrue(repository.contains("mmrl-bak-"))
         assertTrue(repository.contains("cp -p"))

@@ -7,7 +7,11 @@ POLICY = (ROOT / "platform/src/main/kotlin/com/dergoogler/mmrl/platform/file/Pri
 
 
 def test_strict_full_lint_cannot_be_skipped():
-    assert ":app:testOfficialDebugUnitTest :app:lintOfficialDebug -Pmmrl.fullLint=true" in WORKFLOW
+    assert "- name: Official debug unit tests" in WORKFLOW
+    assert "run: ./gradlew :app:testOfficialDebugUnitTest --build-cache --console=plain" in WORKFLOW
+    assert "- name: Official debug strict lint" in WORKFLOW
+    assert "if: ${{ !cancelled() && matrix.task-set == 'debug' }}" in WORKFLOW
+    assert "run: ./gradlew :app:lintOfficialDebug -Pmmrl.fullLint=true --build-cache --console=plain" in WORKFLOW
     assert "- name: Preserve strict Lint and unit-test reports" in WORKFLOW
     assert "if: ${{ always() && matrix.task-set == 'debug' }}" in WORKFLOW
     assert "app/build/intermediates/lint_intermediate_text_report/" in WORKFLOW
