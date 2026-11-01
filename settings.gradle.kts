@@ -44,4 +44,4 @@ include(
     ":ext",
     ":datastore"
 )
-include(":compat")
+include(":terminal-compat", ":webui-core-compat", ":compat")

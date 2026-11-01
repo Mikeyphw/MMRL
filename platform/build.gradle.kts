@@ -12,6 +12,14 @@ android {
     namespace = "com.dergoogler.mmrl.platform"
     compileSdk = 36
 
+    // CI-only workaround for an Android Lint UAST crash in SuFileReadWrite.kt.
+    // Preserve every other lint detector and all non-CI build behavior.
+    if (providers.gradleProperty("mmrlLsposedHosted").orNull == "true") {
+        lint {
+            disable += "UElementAsPsi"
+        }
+    }
+
     publishing {
         singleVariant("release")
     }

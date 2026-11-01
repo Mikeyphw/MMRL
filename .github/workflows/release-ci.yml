@@ -36,6 +36,7 @@ on:
 jobs:
   # Build step for both official & spoofed flavors
   build-release:
+    if: github.repository == 'MMRLApp/MMRL'
     runs-on: ubuntu-latest
     name: Build Matrix
     strategy:
@@ -63,7 +64,7 @@ jobs:
 
   # Release to Telegram
   release-telegram:
-    if: github.event.inputs.send_telegram == 'true'
+    if: github.repository == 'MMRLApp/MMRL' && github.event.inputs.send_telegram == 'true'
     name: Release to Telegram
     needs: build-release
     uses: ./.github/workflows/telegram.yml
@@ -71,7 +72,7 @@ jobs:
 
   # Release to GitHub
   release-github:
-    if: github.event.inputs.send_github == 'true'
+    if: github.repository == 'MMRLApp/MMRL' && github.event.inputs.send_github == 'true'
     name: Release to GitHub
     needs: build-release
     uses: ./.github/workflows/github.yml
@@ -79,7 +80,7 @@ jobs:
 
   # Release to Play Store
   release-playstore:
-    if: github.event.inputs.send_playstore == 'true'
+    if: github.repository == 'MMRLApp/MMRL' && github.event.inputs.send_playstore == 'true'
     name: Release to Play Store
     runs-on: ubuntu-latest
 

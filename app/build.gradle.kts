@@ -19,6 +19,18 @@ val appVersion = commitCount + 31320
 
 android {
     compileSdk = COMPILE_SDK
+
+    // Preserve complete Android Lint reports on the LSPosed hosted CI path.
+    // The source-controlled fingerprint baseline gate (not Gradle exit status)
+    // rejects all new errors/warnings and refuses missing or broken reports.
+    if (providers.gradleProperty("mmrlLsposedHosted").orNull == "true") {
+        lint {
+            abortOnError = false
+            xmlReport = true
+            htmlReport = true
+            textReport = true
+        }
+    }
     namespace = mmrlBaseApplicationId
 
     defaultConfig {
@@ -175,11 +187,19 @@ android {
 androidComponents {
     onVariants { variant ->
         variant.outputs.filterIsInstance<VariantOutputImpl>().forEach { output ->
-            output.outputFileName.set(
-                output.versionName.map { vName ->
-                    "MMRL-${vName}-${variant.buildType ?: variant.name}.apk"
-                }
-            )
+            // CI-only output pin for the upstream-based LSPosed integration branch.
+            // Normal upstream APK naming stays unchanged outside this opt-in property.
+            if (variant.name == "officialDebug" &&
+                providers.gradleProperty("mmrlLsposedHosted").orNull == "true"
+            ) {
+                output.outputFileName.set("MMRL-LSPosed-CI-OfficialDebug.apk")
+            } else {
+                output.outputFileName.set(
+                    output.versionName.map { vName ->
+                        "MMRL-${vName}-${variant.buildType ?: variant.name}.apk"
+                    }
+                )
+            }
         }
     }
     onVariants(selector().withBuildType("release")) {
@@ -271,8 +291,8 @@ dependencies {
     implementation(libs.square.moshi)
     ksp(libs.square.moshi.kotlin)
 
-    implementation(libs.mmrlx.terminal)
-    implementation(libs.mmrlx.webui.core)
+    implementation(project(":terminal-compat"))
+    implementation(project(":webui-core-compat"))
 
     implementation("dev.chrisbanes.haze:haze:1.6.10")
     implementation("dev.chrisbanes.haze:haze-materials:1.6.10")
