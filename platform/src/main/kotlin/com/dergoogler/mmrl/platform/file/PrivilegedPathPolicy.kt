@@ -25,6 +25,11 @@ object PrivilegedPathPolicy {
         val relative: Path get() = root.relativize(path)
     }
 
+    // A root-file-manager allowlist must recognize the user-supplied /sdcard alias
+    // literally. Environment.getExternalStorageDirectory() is not an equivalent
+    // filesystem boundary and must not expand or replace these approved roots.
+    // Only the two declarations below are exempt from SdCardPath Lint.
+    @Suppress("SdCardPath")
     private val readRoots = listOf(
         "/data/adb",
         "/data/user",
@@ -45,6 +50,7 @@ object PrivilegedPathPolicy {
         "/dev",
     ).map(Paths::get)
 
+    @Suppress("SdCardPath")
     private val mutationRoots = listOf(
         "/data/adb",
         "/data/user",

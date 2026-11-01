@@ -77,6 +77,33 @@ jobs:
         if: matrix.task-set == 'debug'
         run: ./gradlew :app:testOfficialDebugUnitTest :app:lintOfficialDebug -Pmmrl.fullLint=true --build-cache --console=plain
 
+      # Always preserve the full strict Lint report, including findings from
+      # dependency modules. The Gradle console only prints its first failure.
+      - name: Print complete OfficialDebug Lint findings
+        if: ${{ always() && matrix.task-set == 'debug' }}
+        shell: bash
+        run: |
+          report="app/build/intermediates/lint_intermediate_text_report/officialDebug/lintReportOfficialDebug/lint-results-officialDebug.txt"
+          if [[ -f "$report" ]]; then
+            echo '=== Full OfficialDebug Lint report ==='
+            cat "$report"
+          else
+            echo 'Lint text report not generated (the build may have failed before Lint).'
+          fi
+
+      - name: Preserve strict Lint and unit-test reports
+        if: ${{ always() && matrix.task-set == 'debug' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mmrl-strict-lint-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            app/build/intermediates/lint_intermediate_text_report/
+            app/build/reports/lint-results-*
+            app/build/reports/tests/testOfficialDebugUnitTest/
+            app/build/test-results/testOfficialDebugUnitTest/
+
       - name: Assemble official debug
         if: matrix.task-set == 'debug'
         run: ./gradlew :app:assembleOfficialDebug --build-cache --console=plain
