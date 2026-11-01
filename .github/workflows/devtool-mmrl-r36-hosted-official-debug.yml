@@ -1,0 +1,94 @@
+name: MMRL R36 native hosted OfficialDebug acceptance (non-release)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mmrl-r36-hosted-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  official-debug:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      DEVTOOL_SOURCE_SHA: 246f168ebdef6d9b25c194268c810c877d099fa3
+      ORG_GRADLE_PROJECT_mmrlR36HostedDebug: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout exact MMRL source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Python for immutable Devtool
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: JDK 21 for officialDebug
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Reviewed SDK tools
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
+      - name: Pinned MMRL NDK r29 and CMake
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'ndk;29.0.14206865' 'cmake;3.22.1'
+          test -f "$ANDROID_HOME/ndk/29.0.14206865/source.properties"
+      - name: Reviewed Gradle runtime
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a
+      - name: Acquire immutable R36 Devtool
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 scripts/validate-mmrl-source-hygiene.py
+          python3 scripts/verify-mmrl-github-actions.py --static
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/devtool-source"
+          git -C "$RUNNER_TEMP/devtool-source" checkout --detach "$DEVTOOL_SOURCE_SHA"
+          test "$(git -C "$RUNNER_TEMP/devtool-source" rev-parse HEAD)" = "$DEVTOOL_SOURCE_SHA"
+          python3 -m venv "$RUNNER_TEMP/devtool-venv"
+          "$RUNNER_TEMP/devtool-venv/bin/python" -m pip install --disable-pip-version-check "$RUNNER_TEMP/devtool-source"
+      - name: Source-bound named-variant provider review
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/mmrl_r36_hosted.py plan \
+            --root "$GITHUB_WORKSPACE" --evidence "$RUNNER_TEMP/mmrl-r36/plan.json"
+      - name: Run exact native Devtool DAG (no direct Gradle invocation)
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/mmrl_r36_hosted.py run \
+            --root "$GITHUB_WORKSPACE" \
+            --inputs "$RUNNER_TEMP/rm06-inputs" \
+            --outputs "$RUNNER_TEMP/rm06-output"
+      - name: Verify packaged OfficialDebug APK and signer
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/mmrl_r36_hosted.py verify \
+            --root "$GITHUB_WORKSPACE" \
+            --inputs "$RUNNER_TEMP/rm06-inputs" \
+            --outputs "$RUNNER_TEMP/rm06-output" \
+            --evidence "$RUNNER_TEMP/mmrl-r36/verification.json"
+      - name: Upload debug APK and native DAG receipt
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mmrl-r36-official-debug-native-dag-attempt${{ github.run_attempt }}
+          path: ${{ runner.temp }}/rm06-output/node-01/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload reviewed plan and independent package verification
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mmrl-r36-evidence-attempt${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mmrl-r36/
+          if-no-files-found: error
+          retention-days: 7

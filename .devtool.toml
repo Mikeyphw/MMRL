@@ -492,3 +492,19 @@ metadata = { read_only = true }
 description = "Read-only project-specific source and CI contract with EXO evidence"
 workflow = "ci-source"
 target = "mmrl_android"
+
+# R36: independent hosted debug-only native DAG consumer. Never replaces
+# mmrl_android's device, production-signing or release-seal authorities.
+[targets.mmrl_hosted_r36]
+runner = "android"
+root = "."
+execution_environment = "auto"
+
+[targets.mmrl_hosted_r36.jobs.official_debug]
+runner = "android"
+gradle_tasks = [":app:lintOfficialDebug", ":app:assembleOfficialDebug"]
+outputs = ["app/build/outputs/apk/official/debug/MMRL-R36-OfficialDebug.apk"]
+metadata = { ci_toolchain = "android-gradle", ci_android_java_version = "21", ci_android_project_dir = "", ci_android_debug_variant = "officialDebug", ci_android_sdk_packages = ["platforms;android-36", "build-tools;36.0.0", "platform-tools"], ci_android_wrapper_jar_sha256 = "d3b261c2820e9e3d8d639ed084900f11f4a86050a8f83342ade7b6bc9b0d2bdd", ci_android_expected_output = "app/build/outputs/apk/official/debug/MMRL-R36-OfficialDebug.apk" }
+
+[targets.mmrl_hosted_r36.workflows]
+ci = ["job:official_debug"]

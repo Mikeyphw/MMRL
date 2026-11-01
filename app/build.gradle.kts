@@ -219,14 +219,24 @@ if (releaseSigningProperties == null) {
 }
 
 
+// R36: exact debug-only output ownership for the hosted native DAG. The switch
+// is opt-in via GitHub Actions and never changes ordinary debug or release APKs.
+val r36HostedDebug = providers.gradleProperty("mmrlR36HostedDebug")
+    .map { it == "true" }
+    .getOrElse(false)
+
 androidComponents {
     onVariants { variant ->
         variant.outputs.filterIsInstance<VariantOutputImpl>().forEach { output ->
-            output.outputFileName.set(
-                output.versionName.map { vName ->
-                    "MMRL-Fork-${vName}-${variant.buildType ?: variant.name}.apk"
-                }
-            )
+            if (r36HostedDebug && variant.name == "officialDebug") {
+                output.outputFileName.set("MMRL-R36-OfficialDebug.apk")
+            } else {
+                output.outputFileName.set(
+                    output.versionName.map { vName ->
+                        "MMRL-Fork-${vName}-${variant.buildType ?: variant.name}.apk"
+                    }
+                )
+            }
         }
     }
     onVariants(selector().withBuildType("release")) {
