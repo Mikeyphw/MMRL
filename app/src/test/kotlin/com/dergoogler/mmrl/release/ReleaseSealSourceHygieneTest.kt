@@ -61,12 +61,23 @@ class ReleaseSealSourceHygieneTest {
     }
 
     @Test
-    fun `release packaging builds only personal use variants when all is requested`() {
+    fun `release packaging delegates only official variants to Devtool`() {
         val script = source("build-release-apk.sh")
-        assertTrue(script.contains("build_variant \"${'$'}FLAVOR\" debug"))
-        assertTrue(script.contains("build_variant \"${'$'}FLAVOR\" release"))
+        val dollar = '$'
+        assertTrue(script.contains("FLAVOR=\"${dollar}{1:-official}\""))
+        assertTrue(script.contains("BUILD_TYPE=\"${dollar}{2:-all}\""))
+        assertTrue(script.contains("if [[ \"${dollar}FLAVOR\" != \"official\" ]]"))
+        assertTrue(script.contains("case \"${dollar}BUILD_TYPE\" in"))
+        assertTrue(script.contains("all)\n    exec \"${dollar}ROOT_DIR/scripts/run-mmrl-release-seal.sh\""))
+        assertTrue(script.contains("debug)\n    exec \"${dollar}ROOT_DIR/devtoolw\" validate --task ':app:assembleOfficialDebug'"))
+        assertTrue(script.contains("release)\n    exec \"${dollar}ROOT_DIR/scripts/run-mmrl-release-seal.sh\""))
+        listOf("--no-unit-tests", "--no-lint", "--device-tests disabled",
+            "--no-install-smoke", "--no-upgrade-smoke").forEach {
+            assertTrue("missing explicit package-only release control $it", script.contains(it))
+        }
+        assertFalse(script.contains("gradlew"))
+        assertFalse(script.contains("build_variant"))
         assertFalse(script.contains("playstore", ignoreCase = true))
-        assertTrue(script.contains("if [[ \"${'$'}BUILD_TYPE\" == \"all\" ]]"))
     }
 
     @Test

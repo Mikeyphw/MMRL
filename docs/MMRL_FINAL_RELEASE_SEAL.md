@@ -26,6 +26,8 @@ scripts/run-mmrl-release-seal.sh
 
 The `officialRelease` lane is explicitly release-qualified. Devtool runs repository/toolchain/product hygiene, host native contracts, `:app:testOfficialReleaseUnitTest`, strict `:app:fullLintOfficialRelease`, `:app:assembleOfficialRelease`, signature verification, signer-identity verification, configured device instrumentation, install smoke, optional upgrade smoke, and immutable release-evidence sealing.
 
+The named repository source checks are `verifyStableToolchainBaseline`, `verifyMmrlProductBoundary`, and `verifyRepositoryHygiene`; these remain required checks, not independent release or device qualification. The existing GitHub static lane exercises these gates directly for CI compatibility.
+
 The root Gradle `mmrlReleaseSeal` task remains a project-domain aggregate for compatibility and manual Gradle inspection; it is not the execution authority.
 
 Release signing remains project-owned through `signing.properties`. Devtool declares `mode = "project"` with `policy = "release-required"`, so credentials stay out of Devtool config while produced artifacts are still verified with the canonical signing service. G2 prefers the developer's real ignored signer when present; if none is configured, the gate creates a disposable validation signer (matching the CI model) so qualification does not require production secrets on-device.
