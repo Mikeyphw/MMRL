@@ -69,6 +69,16 @@ class LintGateTests(unittest.TestCase):
         self.render([self.first, self.second, ('NewIssue', 'Warning', 'Fresh problem', 'app/src/main/themes.xml')])
         self.assertEqual(gate.gate(self.args('new-warning')), 2)
 
+    def test_hint_supported_and_new_hint_rejected(self):
+        hint = ('SimilarGradleDependency', 'Hint',
+                'Multiple dependency versions', 'app/src/main/themes.xml')
+        self.render([self.first, self.second, hint])
+        self.bootstrap()
+        self.assertEqual(gate.gate(self.args('approved-hint')), 0)
+        self.render([self.first, self.second, hint,
+                     ('AnotherHint', 'Hint', 'New hint', 'app/src/main/themes.xml')])
+        self.assertEqual(gate.gate(self.args('new-hint')), 2)
+
     def test_resolved_findings_pass(self):
         self.bootstrap()
         self.render([self.first])

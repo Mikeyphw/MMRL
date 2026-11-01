@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 SCHEMA = 'mmrl.lsposed.lint-baseline.v1'
 CANDIDATE_SCHEMA = 'mmrl.lsposed.lint-candidate.v1'
 EVIDENCE_SCHEMA = 'mmrl.lsposed.lint-gate.v1'
-SUPPORTED = {'Fatal', 'Error', 'Warning', 'Information', 'Ignore'}
+SUPPORTED = {'Fatal', 'Error', 'Warning', 'Information', 'Hint', 'Ignore'}
 FATAL_ISSUE_IDS = {'LintError', 'LintWarning'}
 
 
