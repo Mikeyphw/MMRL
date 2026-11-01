@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,11 +52,13 @@ import com.dergoogler.mmrl.ui.component.PageIndicator
 import com.dergoogler.mmrl.ui.component.TopAppBarEventIcon
 import com.dergoogler.mmrl.ui.component.scaffold.Scaffold
 import com.dergoogler.mmrl.ui.component.toolbar.BlurSearchToolbar
+import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.dergoogler.mmrl.ui.providable.LocalMainScreenInnerPaddings
 import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.dergoogler.mmrl.viewmodel.ModulesViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.LsposedDiscoveryScreenDestination
 
 @Destination<RootGraph>
 @Composable
@@ -181,6 +184,7 @@ private fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val width = currentScreenWidth()
+    val navigator = LocalDestinationsNavigator.current
 
     var currentQuery by remember { mutableStateOf(query) }
     DisposableEffect(isSearch) {
@@ -207,6 +211,14 @@ private fun TopBar(
             TopAppBarEventIcon()
         },
         actions = {
+            if (!isSearch) {
+                IconButton(onClick = { navigator.navigate(LsposedDiscoveryScreenDestination) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.keyframes),
+                        contentDescription = stringResource(R.string.lsposed_open_discovery),
+                    )
+                }
+            }
             if (!isSearch) {
                 IconButton(
                     onClick = onOpenSearch,
