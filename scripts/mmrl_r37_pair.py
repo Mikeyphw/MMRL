@@ -38,15 +38,21 @@ def file_sha(path: Path) -> str:
 
 def apk_info(path: Path, expected_package: str) -> dict:
     require(path.is_file() and not path.is_symlink() and 0 < path.stat().st_size < 160 * 1024 * 1024, 'Missing/unsafe APK')
-    signature = run_tool('apksigner', 'verify', '--verbose', '--print-certs', str(path))
-    certs = re.findall(r"(?im)^Signer #\d+ certificate SHA-256 digest:\s*([a-f0-9]{64})\s*$", signature)
-    require(len(certs) == 1 and HEX64.fullmatch(certs[0].lower()) is not None, 'APK signer is ambiguous or invalid')
+    # Reuse Devtool ACTIONS-05's fail-closed certificate authority. Its
+    # _fingerprint parser handles both 'Signer #1' and 'V3.0 Signer' Android
+    # Build Tools output and rejects multiple/conflicting signers. Avoid
+    # --verbose: the existing independently passing R36 verification invokes
+    # --print-certs without it, and verbose output varies across SDK versions.
+    from devtool.actions_android import _fingerprint
+    signature = run_tool('apksigner', 'verify', '--print-certs', str(path))
+    signer = _fingerprint(signature, source='apksigner')
+    require(HEX64.fullmatch(signer) is not None, 'APK signer is ambiguous or invalid')
     badging = run_tool('aapt', 'dump', 'badging', str(path))
     match = re.search(r"(?m)^package:\s+name='([^']+)'\s+versionCode='([^']+)'\s+versionName='([^']*)'", badging)
     require(match is not None and match[1] == expected_package, 'Unexpected Android APK package')
     return {'package': match[1], 'version_code': match[2], 'version_name': match[3],
             'sha256': file_sha(path), 'size': path.stat().st_size,
-            'signer_sha256': certs[0].lower(), 'signature_verified': True}
+            'signer_sha256': signer, 'signature_verified': True}
 
 
 def verify_pair(app: dict, test: dict, manifest: str, plan: dict, checked: dict,
