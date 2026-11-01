@@ -47,10 +47,17 @@ def apk_info(path: Path, expected_package: str) -> dict:
     signature = run_tool('apksigner', 'verify', '--print-certs', str(path))
     signer = _fingerprint(signature, source='apksigner')
     require(HEX64.fullmatch(signer) is not None, 'APK signer is ambiguous or invalid')
+    # ACTIONS-05 parses aapt package attributes independently of ordering and
+    # permits an empty versionCode only on instrumentation APKs. R37's old
+    # regex required a nonempty versionCode for both roles, rejecting valid
+    # AndroidTest packages after successful hosted APK assembly.
+    from devtool.actions_android import _apk_badging_identity
+    require(expected_package in (APP_PACKAGE, TEST_PACKAGE), 'Unsupported R37 APK role')
+    role = 'application' if expected_package == APP_PACKAGE else 'instrumentation'
     badging = run_tool('aapt', 'dump', 'badging', str(path))
-    match = re.search(r"(?m)^package:\s+name='([^']+)'\s+versionCode='([^']+)'\s+versionName='([^']*)'", badging)
-    require(match is not None and match[1] == expected_package, 'Unexpected Android APK package')
-    return {'package': match[1], 'version_code': match[2], 'version_name': match[3],
+    package, code, version = _apk_badging_identity(badging, role=role)
+    require(package == expected_package, 'Unexpected Android APK package')
+    return {'package': package, 'version_code': code, 'version_name': version,
             'sha256': file_sha(path), 'size': path.stat().st_size,
             'signer_sha256': signer, 'signature_verified': True}
 

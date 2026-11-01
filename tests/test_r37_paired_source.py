@@ -57,6 +57,7 @@ class R37SourceContracts(unittest.TestCase):
         fake_actions = types.ModuleType('devtool.actions_android')
         cert = 'a' * 64
         fake_actions._fingerprint = Mock(return_value=cert)
+        fake_actions._apk_badging_identity = Mock(return_value=(m.APP_PACKAGE,'1','1.0'))
         with tempfile.TemporaryDirectory() as tempdir:
             apk = Path(tempdir) / 'safe.apk'
             apk.write_bytes(b'signed-apk-fixture')
@@ -74,6 +75,7 @@ class R37SourceContracts(unittest.TestCase):
                              ('apksigner', 'verify', '--print-certs', str(apk)))
             fake_actions._fingerprint.assert_called_once_with(
                 'Signer #1 certificate SHA-256 digest: '+cert, source='apksigner')
+            fake_actions._apk_badging_identity.assert_called_once_with(fake_badging, role='application')
 
     def test_canonical_certificate_parser_rejection_is_not_bypassed(self):
         m = module()
@@ -89,6 +91,59 @@ class R37SourceContracts(unittest.TestCase):
                  patch.object(m, 'run_tool', return_value='ambiguous'):
                 with self.assertRaisesRegex(ValueError, 'conflicting digests'):
                     m.apk_info(apk, m.APP_PACKAGE)
+
+    def test_instrumentation_apk_empty_version_code_via_canonical_parser(self):
+        m = module()
+        # AAPT permits the test APK versionCode to be empty; the reviewed
+        # ACTIONS-05 package parser has a dedicated instrumentation role.
+        from unittest.mock import Mock
+        fake_package = types.ModuleType('devtool')
+        fake_package.__path__ = []
+        fake_actions = types.ModuleType('devtool.actions_android')
+        cert = 'b'*64
+        fake_actions._fingerprint = Mock(return_value=cert)
+        # The fake delegates to a strict, role-sensitive parser rather than
+        # accepting all test metadata. This also proves R37 requests the
+        # correct role and never manufactures an Android package identity.
+        def canonical_badging(dump, *, role):
+            self.assertEqual(role, 'instrumentation')
+            rows = [line for line in dump.splitlines() if line.startswith('package:')]
+            if len(rows) != 1:
+                raise ValueError('Badging is ambiguous')
+            attrs = dict(__import__('re').findall(r"(name|versionCode|versionName)='([^']*)'", rows[0]))
+            self.assertEqual(set(attrs), {'name','versionCode','versionName'})
+            return attrs['name'], attrs['versionCode'], attrs['versionName']
+        fake_actions._apk_badging_identity = Mock(side_effect=canonical_badging)
+        with tempfile.TemporaryDirectory() as tmp:
+            apk = Path(tmp)/'AndroidTest.apk'
+            apk.write_bytes(b'signed-app-test-fixture')
+            # Reordered AAPT fields and valid empty instrumentation version.
+            badging = ("package: versionName='' "
+                       "name='com.mikeyphw.mmrl.debug.test' versionCode=''\n")
+            with patch.dict(sys.modules, {'devtool':fake_package,
+                                          'devtool.actions_android':fake_actions}), \
+                 patch.object(m, 'run_tool', side_effect=['verified',badging]):
+                parsed = m.apk_info(apk,m.TEST_PACKAGE)
+            self.assertEqual(parsed['package'],m.TEST_PACKAGE)
+            self.assertEqual(parsed['version_code'],'')
+            self.assertEqual(parsed['version_name'],'')
+            fake_actions._apk_badging_identity.assert_called_once_with(badging,role='instrumentation')
+
+    def test_badging_must_still_match_exact_reviewed_package(self):
+        m = module()
+        fake_package = types.ModuleType('devtool')
+        fake_package.__path__ = []
+        fake_actions = types.ModuleType('devtool.actions_android')
+        fake_actions._fingerprint = Mock(return_value='b'*64)
+        fake_actions._apk_badging_identity = Mock(return_value=('incorrect.package','', ''))
+        with tempfile.TemporaryDirectory() as tmp:
+            apk = Path(tmp)/'AndroidTest.apk'
+            apk.write_bytes(b'fixture')
+            with patch.dict(sys.modules, {'devtool':fake_package,
+                                          'devtool.actions_android':fake_actions}), \
+                 patch.object(m, 'run_tool', side_effect=['verified','package: fixture']):
+                with self.assertRaisesRegex(ValueError,'Unexpected Android APK package'):
+                    m.apk_info(apk,m.TEST_PACKAGE)
 
     def test_reviewed_only_three_readonly_smoke_methods(self):
         source=(ROOT/'app/src/androidTest/kotlin/com/dergoogler/mmrl/acceptance/OfficialDebugAcceptanceTest.kt').read_text()
