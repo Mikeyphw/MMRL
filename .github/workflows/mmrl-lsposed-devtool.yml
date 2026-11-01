@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - lsposed-vector
-      - feature/lsposed-ci-baseline
   pull_request:
     branches:
       - lsposed-vector

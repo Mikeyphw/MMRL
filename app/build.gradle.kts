@@ -279,8 +279,8 @@ dependencies {
     implementation(libs.square.moshi)
     ksp(libs.square.moshi.kotlin)
 
-    implementation(libs.mmrlx.terminal)
-    implementation(libs.mmrlx.webui.core)
+    implementation(project(":terminal-compat"))
+    implementation(project(":webui-core-compat"))
 
     implementation("dev.chrisbanes.haze:haze:1.6.10")
     implementation("dev.chrisbanes.haze:haze-materials:1.6.10")
