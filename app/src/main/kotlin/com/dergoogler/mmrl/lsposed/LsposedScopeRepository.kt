@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.database.sqlite.SQLiteDatabase
+import androidx.core.database.sqlite.transaction
 import com.dergoogler.mmrl.utils.withNewRootShell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -66,8 +67,7 @@ class LsposedScopeRepository(private val context: Context) {
     private fun writePlanToCopy(file: File, plan: LsposedScopeEditPlan) {
         SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
             val hasAutoInclude = tableHasColumn(db, "modules", "auto_include")
-            db.beginTransaction()
-            try {
+            db.transaction {
                 val mid = findModuleId(db, plan.packageName) ?: error("LSPosed module ${plan.packageName} is not present in provider config")
                 val moduleValues = ContentValues().apply {
                     put("enabled", if (plan.enabled) 1 else 0)
@@ -83,9 +83,6 @@ class LsposedScopeRepository(private val context: Context) {
                     }
                     db.insertWithOnConflict("scope", null, values, SQLiteDatabase.CONFLICT_REPLACE)
                 }
-                db.setTransactionSuccessful()
-            } finally {
-                db.endTransaction()
             }
             db.rawQuery("PRAGMA wal_checkpoint(FULL)", emptyArray()).use { cursor ->
                 if (cursor.moveToFirst()) Unit

@@ -21,7 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.ext.expandedShape
@@ -61,7 +62,8 @@ fun BottomSheet(
 ) {
     val statusBarHeight =
         WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 28.dp
-    val maxHeight = LocalConfiguration.current.screenHeightDp.dp - statusBarHeight
+    val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+    val maxHeight = (windowHeight - statusBarHeight).coerceAtLeast(0.dp)
 
     Column(
         modifier =

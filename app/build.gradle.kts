@@ -187,6 +187,9 @@ android {
             "UnusedResources",
             "GradleDependency",
             "NewerVersionAvailable",
+            // Pinned Gradle 9.7.1 / AGP 9.3.2 are verified by source/toolchain gates.
+            // New version announcements are not release-blocking correctness errors.
+            "AndroidGradlePluginVersion",
             "PluralsCandidate",
         )
 

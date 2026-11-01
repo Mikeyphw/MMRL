@@ -206,9 +206,7 @@ object MediaStoreCompat {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
                 put(MediaStore.MediaColumns.RELATIVE_PATH, file.parent)
                 put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.IS_PENDING, if (pending) 1 else 0)
-                }
+                put(MediaStore.MediaColumns.IS_PENDING, if (pending) 1 else 0)
             }
 
         return contentResolver.insert(collection, entry) ?: throw IOException("Cannot insert $file")

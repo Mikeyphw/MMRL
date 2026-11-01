@@ -206,7 +206,7 @@ fun MainScreen(
                 ExpandedMainLayout(
                     updates = updates,
                         activityAttentionCount = activityAttentionCount,
-                    contentModifier = Modifier.hazeSource(hazeState),
+                    modifier = Modifier.hazeSource(hazeState),
                 )
             }
         }
@@ -218,7 +218,7 @@ fun MainScreen(
 private fun ExpandedMainLayout(
     updates: Int,
     activityAttentionCount: Int,
-    contentModifier: Modifier,
+    modifier: Modifier,
 ) {
     PermanentNavigationDrawer(
         drawerContent = {
@@ -256,7 +256,7 @@ private fun ExpandedMainLayout(
             CompositionLocalProvider(
                 LocalMainScreenInnerPaddings provides paddingValues,
             ) {
-                CurrentNavHost(modifier = contentModifier)
+                CurrentNavHost(modifier = modifier)
             }
         }
     }

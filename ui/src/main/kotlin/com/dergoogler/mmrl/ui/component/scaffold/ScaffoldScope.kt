@@ -10,7 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -57,8 +58,7 @@ internal object ScaffoldScopeInstance : ScaffoldScope {
 
     @Composable
     private fun calculateHorizontalPadding(maxContentWidth: Dp): Dp {
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
+        val screenWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
         val excess = screenWidth - maxContentWidth
         return if (excess > 0.dp) excess / 2 else 0.dp
     }

@@ -29,6 +29,8 @@ class EventPainterScope {
     internal val events = mutableListOf<EventResource>()
     internal lateinit var defaultPainter: Painter
 
+    // DSL builder members intentionally use lower camel case; renaming breaks their call sites.
+    @Suppress("ComposableNaming")
     @Composable
     fun eventResource(
         start: String,
@@ -44,6 +46,7 @@ class EventPainterScope {
         )
     }
 
+    @Suppress("ComposableNaming")
     @Composable
     fun defaultResource(@DrawableRes res: Int) {
         defaultPainter = painterResource(id = res)

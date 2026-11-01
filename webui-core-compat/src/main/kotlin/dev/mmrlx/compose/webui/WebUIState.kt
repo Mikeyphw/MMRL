@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.net.Uri
-import android.os.Build
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -144,9 +143,8 @@ class WebUIState internal constructor(
             mediaPlaybackRequiresUserGesture = false
             builtInZoomControls = false
             displayZoomControls = false
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                safeBrowsingEnabled = true
-            }
+            // This module supports API 26+, where safeBrowsingEnabled is available.
+            safeBrowsingEnabled = true
         }
     }
 
@@ -227,6 +225,8 @@ fun rememberWebUIState(
     return state
 }
 
+// Preserve the WebUIState.insets call-site DSL with a scoped naming exception.
+@Suppress("ComposableNaming")
 @Composable
 fun WebUIState.insets(paddingValues: PaddingValues) {
     val density = LocalDensity.current

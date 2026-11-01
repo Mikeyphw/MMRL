@@ -1,5 +1,6 @@
 package com.dergoogler.mmrl.installer
 
+import android.annotation.SuppressLint
 import android.content.Context
 import com.dergoogler.mmrl.model.local.LocalModule
 import com.dergoogler.mmrl.platform.file.SuFile
@@ -30,7 +31,7 @@ class UpdateRollbackStore @Inject constructor(
             runCatching {
                 storeGate.exclusive {
                     pruneLocked()
-                    require(root.usableSpace >= MIN_FREE_BYTES) { "Not enough free space for rollback backup" }
+                    require(hasImmediateFreeSpace(root)) { "Not enough free space for rollback backup" }
                     val source = module.id.requireOperational().moduleDir
                     require(source.exists() && source.isDirectory) { "Installed module directory is unavailable" }
                     val opDir = root.resolve(OperationStoragePolicy.safeOperationId(operationId))
@@ -108,6 +109,13 @@ class UpdateRollbackStore @Inject constructor(
             }
         }
     }
+
+    // These immutable artifact copies intentionally require *currently free* bytes.
+    // Counting reclaimable cache from StorageManager.getAllocatableBytes would
+    // change our fail-closed disk-safety contract and may require cache eviction.
+    @SuppressLint("UsableSpace")
+    private fun hasImmediateFreeSpace(directory: File): Boolean =
+        directory.usableSpace >= MIN_FREE_BYTES
 
     private fun pruneLocked() {
         val now = System.currentTimeMillis()

@@ -116,13 +116,13 @@ enum class BBCodeTag {
 @Composable
 fun BBCodeText(
     text: String,
+    modifier: Modifier = Modifier,
     prefix: String? = null,
     suffix: String? = null,
     bbEnabled: Boolean = true,
     disabledTags: Set<BBCodeTag> = emptySet(),
     iconContent: (@Composable (String) -> Unit)? = null,
     imageContent: (@Composable (String) -> Unit)? = null,
-    modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
     fontSize: TextUnit = TextUnit.Unspecified,
     fontStyle: FontStyle? = null,

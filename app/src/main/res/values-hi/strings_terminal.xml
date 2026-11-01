@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="service_is_not_available">सर्विस उपलब्ध नहीं है</string>
-    <string name="unable_to_gather_module_info_of_file">जानकारी अतिरिक्त करने में असमर्थ :</string>
+    <string name="unable_to_gather_module_info_of_file">फ़ाइल की मॉड्यूल जानकारी प्राप्त नहीं की जा सकी: %1$s</string>
 </resources>

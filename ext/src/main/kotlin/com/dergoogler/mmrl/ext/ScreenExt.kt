@@ -5,9 +5,9 @@ import android.os.Build
 import android.util.DisplayMetrics
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 
 data class ScreenWidth(
@@ -24,8 +24,8 @@ data class ScreenWidth(
  * configuration.screenWidthDp directly, especially on devices with high DPI settings.
  * 
  * Note: This function requires an Activity context for accurate measurements. In non-Activity
- * contexts (e.g., Compose Previews), it falls back to configuration.screenWidthDp which may
- * be less accurate with custom DPI settings.
+ * contexts (e.g., Compose Previews), it falls back to the Compose window container
+ * width, which reflects the current host window size.
  * 
  * @return ScreenWidth data class with boolean flags for small/medium/large classifications
  */
@@ -34,7 +34,7 @@ data class ScreenWidth(
 fun currentScreenWidth(): ScreenWidth {
     val context = LocalContext.current
     val density = LocalDensity.current
-    val configuration = LocalConfiguration.current
+    val windowWidth = LocalWindowInfo.current.containerSize.width
     
     // Get the actual window width in pixels, then convert to dp using density
     // This approach is more reliable than using configuration.screenWidthDp directly
@@ -55,10 +55,8 @@ fun currentScreenWidth(): ScreenWidth {
             with(density) { displayMetrics.widthPixels.toDp() }
         }
     } else {
-        // Fallback to configuration-based width when not in an Activity context
-        // This occurs in Compose Previews or other non-Activity contexts
-        // Note: This may be less accurate with custom DPI settings
-        configuration.screenWidthDp.dp
+        // Compose Previews and other non-Activity contexts use their actual container width.
+        with(density) { windowWidth.toDp() }
     }
     
     // Use Material 3 window size class breakpoints

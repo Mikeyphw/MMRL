@@ -1,5 +1,6 @@
 package com.dergoogler.mmrl.installer
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import androidx.core.net.toUri
@@ -31,7 +32,7 @@ class OperationStagingStore @Inject constructor(
             storeGate.exclusive {
                 val safeOperationId = OperationStoragePolicy.safeOperationId(operationId)
                 pruneLocked()
-                require(root.usableSpace >= MIN_FREE_BYTES) { "Not enough free space for a verified staging copy" }
+                require(hasImmediateFreeSpace(root)) { "Not enough free space for a verified staging copy" }
                 require(leasedOperationIds.add(safeOperationId)) { "Operation staging is already leased: $safeOperationId" }
                 val opDir = root.resolve(safeOperationId)
                 if (opDir.exists()) opDir.deleteRecursively()
@@ -94,6 +95,13 @@ class OperationStagingStore @Inject constructor(
             root.resolve(safeOperationId).deleteRecursively()
         }
     }
+
+    // These immutable artifact copies intentionally require *currently free* bytes.
+    // Counting reclaimable cache from StorageManager.getAllocatableBytes would
+    // change our fail-closed disk-safety contract and may require cache eviction.
+    @SuppressLint("UsableSpace")
+    private fun hasImmediateFreeSpace(directory: File): Boolean =
+        directory.usableSpace >= MIN_FREE_BYTES
 
     private fun pruneLocked() {
         if (!root.exists()) root.mkdirs()
