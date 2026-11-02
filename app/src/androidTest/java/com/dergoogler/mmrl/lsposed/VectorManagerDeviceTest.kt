@@ -32,7 +32,7 @@ class VectorManagerDeviceTest {
             val items = JSONArray()
             observed.modules.forEach { item ->
                 report.put("stage", "scope:" + item.packageName.take(180))
-                val scoped = VectorManager.scopes(item.packageName)
+                val scoped = VectorManager.scopes(context, item.packageName)
                 items.put(JSONObject()
                     .put("package", item.packageName)
                     .put("configured_enabled", item.enabled)

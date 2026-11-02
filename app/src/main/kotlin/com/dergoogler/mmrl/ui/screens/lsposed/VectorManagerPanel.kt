@@ -68,7 +68,7 @@ fun VectorManagerPanel() {
         currentScope = null
         coroutineScope.launch {
             val result = withContext(Dispatchers.IO) {
-                runCatching { VectorManager.scopes(modulePackage) }
+                runCatching { VectorManager.scopes(context, modulePackage) }
             }
             result.onSuccess { currentScope = it }.onFailure {
                 error = it.message ?: it.javaClass.simpleName

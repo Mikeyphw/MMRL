@@ -17,8 +17,8 @@ class Phase06Contracts(unittest.TestCase):
 
     def test_fixed_cli_and_no_global_operations(self):
         for anchor in ('"modules", "ls"', '"scope", "ls"', '"enable", "disable"',
-                       '"add", "rm"', 'TIMEOUT = 12L', 'MAX_BYTES = 131072',
-                       'ProcessBuilder("su", "-c", command)', 'Vector API 102'):
+                       '"add", "rm"', 'validScopePackage(pkg)',
+                       'VectorRootTransport.execute(context, operation, module, target)', 'Vector API 102'):
             self.assertIn(anchor,self.backend)
         for bad in ('"scope", "set"', '"db",', '"config",', 'reboot(', 'force-stop',
                     'Runtime.getRuntime(', 'ProcessBuilder("sh"', 'pm clear'):
@@ -27,8 +27,8 @@ class Phase06Contracts(unittest.TestCase):
 
     def test_read_back_stale_state_and_target_guard(self):
         for anchor in ('expectedEnabled','expectedScope','pre = inspect(context)',
-                       'originalScope = readScope(request.modulePackage)',
-                       'after = inspect(context)','newScope = readScope(request.modulePackage)',
+                       'originalScope = readScope(context, request.modulePackage)',
+                       'after = inspect(context)','newScope = readScope(context, request.modulePackage)',
                        'System, manager, and MMRL targets are excluded',
                        'ApplicationInfo.FLAG_SYSTEM', 'only', 'REFRESH AND VERIFY'):
             self.assertIn(anchor,self.backend)
@@ -44,7 +44,7 @@ class Phase06Contracts(unittest.TestCase):
 
     def test_instrumentation_read_only_and_separate_qualification(self):
         self.assertIn('VectorManager.inspect(context)',self.device)
-        self.assertIn('VectorManager.scopes(item.packageName)',self.device)
+        self.assertIn('VectorManager.scopes(context, item.packageName)',self.device)
         self.assertIn('PASS_READ_ONLY_INVENTORY',self.device)
         for bad in ('VectorManager.change(', 'scope add', 'modules enable'):
             self.assertNotIn(bad,self.device)

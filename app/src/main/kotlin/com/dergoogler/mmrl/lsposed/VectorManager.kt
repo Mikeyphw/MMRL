@@ -4,11 +4,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.util.concurrent.Callable
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 /**
  * Phase 06: human-confirmed Vector *configuration* manager. No claim about active hooks.
@@ -29,9 +25,6 @@ object VectorManager {
     )
     data class Result(val overview: Overview, val scope: List<Scope>, val detail: String)
 
-    private const val CLI = "/data/adb/modules/zygisk_vector/cli"
-    private const val MAX_BYTES = 131072
-    private const val TIMEOUT = 12L
     private val PKG = Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+")
 
     private fun valid(pkg: String) = pkg.length <= 180 && PKG.matches(pkg)
@@ -42,8 +35,8 @@ object VectorManager {
     private fun validScopePackage(pkg: String) =
         valid(pkg) || pkg == "android" || pkg == "system"
 
-    /** Bounded fixed executable + validated tokens; no user-provided shell syntax. */
-    private fun cli(vararg parts: String): JSONObject {
+    /** The libsu root process, not the Android app process, executes fixed Vector arguments. */
+    private fun cli(context: Context, vararg parts: String): JSONObject {
         val args = parts.toList()
         val permitted = when {
             args == listOf("status") || args == listOf("modules", "ls") -> true
@@ -54,41 +47,18 @@ object VectorManager {
             else -> false
         }
         if (!permitted) throw IllegalArgumentException("Vector operation is not allowlisted")
-        val command = "$CLI --json ${args.joinToString(" ")}" // strictly validated tokens
-        val process = ProcessBuilder("su", "-c", command).redirectErrorStream(true).start()
-        val worker = Executors.newSingleThreadExecutor { task ->
-            Thread(task, "mmrl-vector-cli").apply { isDaemon = true }
+        val operation = if (args.size == 1) args[0] else "${args[0]} ${args[1]}"
+        val module = args.getOrNull(2).orEmpty()
+        val target = args.getOrNull(3).orEmpty()
+        val response = VectorRootTransport.execute(context, operation, module, target)
+        if (!response.optBoolean("success", false)) {
+            throw IOException("Vector rejected operation: " + response.optString("error").take(150))
         }
-        try {
-            val read = worker.submit(Callable {
-                process.inputStream.use { stream ->
-                    val bytes = ByteArrayOutputStream()
-                    val chunk = ByteArray(4096)
-                    while (true) {
-                        val n = stream.read(chunk)
-                        if (n < 0) break
-                        if (bytes.size() + n > MAX_BYTES) throw IOException("Vector response is too large")
-                        bytes.write(chunk, 0, n)
-                    }
-                    bytes.toString(Charsets.UTF_8.name())
-                }
-            })
-            if (!process.waitFor(TIMEOUT, TimeUnit.SECONDS)) throw IOException("Vector CLI timed out")
-            val output = read.get(2L, TimeUnit.SECONDS).trim()
-            if (process.exitValue() != 0) throw IOException("Vector CLI failed or root denied")
-            val response = JSONObject(output)
-            if (!response.optBoolean("success", false)) {
-                throw IOException("Vector rejected operation: " + response.optString("error").take(150))
-            }
-            return response
-        } finally {
-            process.destroyForcibly()
-            worker.shutdownNow()
-        }
+        return response
     }
 
-    private fun supported(): Pair<String, Int> {
-        val data = cli("status").optJSONObject("data")
+    private fun supported(context: Context): Pair<String, Int> {
+        val data = cli(context, "status").optJSONObject("data")
             ?: throw IOException("Vector status missing")
         val api = data.optInt("API Version", 0)
         if (api < 102) throw IOException("Vector API 102 or higher required for this manager")
@@ -96,8 +66,8 @@ object VectorManager {
     }
 
     fun inspect(context: Context): Overview {
-        val (version, api) = supported()
-        val rows = cli("modules", "ls").optJSONArray("data")
+        val (version, api) = supported(context)
+        val rows = cli(context, "modules", "ls").optJSONArray("data")
             ?: throw IOException("Vector module inventory missing")
         if (rows.length() > 512) throw IOException("Vector inventory too large")
         val apks = LsposedDiscovery.scanInstalledApks(context.applicationContext)
@@ -118,14 +88,14 @@ object VectorManager {
         return Overview(found.sortedBy { it.packageName }, version, api)
     }
 
-    fun scopes(modulePackage: String): List<Scope> {
+    fun scopes(context: Context, modulePackage: String): List<Scope> {
         require(valid(modulePackage))
-        supported()
-        return readScope(modulePackage)
+        supported(context)
+        return readScope(context, modulePackage)
     }
 
-    private fun readScope(modulePackage: String): List<Scope> {
-        val data = cli("scope", "ls", modulePackage).optJSONArray("data")
+    private fun readScope(context: Context, modulePackage: String): List<Scope> {
+        val data = cli(context, "scope", "ls", modulePackage).optJSONArray("data")
             ?: throw IOException("Vector scope inventory missing")
         if (data.length() > 1000) throw IOException("Scope inventory too large")
         val entries = mutableListOf<Scope>()
@@ -170,7 +140,7 @@ object VectorManager {
         if (before.enabled != request.expectedEnabled) {
             throw IllegalStateException("Module configuration changed; refresh before editing")
         }
-        val originalScope = readScope(request.modulePackage)
+        val originalScope = readScope(context, request.modulePackage)
         if (request.expectedScope != null && originalScope != request.expectedScope) {
             throw IllegalStateException("Scope changed; refresh before editing")
         }
@@ -180,7 +150,7 @@ object VectorManager {
                 require(target == null) { "Unexpected target for module state change" }
                 val wanted = request.action == Action.ENABLE
                 if (before.enabled == wanted) throw IllegalArgumentException("Module already in requested state")
-                val data = cli("modules", if (wanted) "enable" else "disable", request.modulePackage)
+                val data = cli(context, "modules", if (wanted) "enable" else "disable", request.modulePackage)
                     .optJSONObject("data") ?: throw IOException("Missing Vector mutation acknowledgement")
                 val passed = data.optJSONArray(if (wanted) "Enabled" else "Disabled")
                     ?: throw IOException("Missing module change acknowledgement")
@@ -197,14 +167,14 @@ object VectorManager {
                 if (contains == (request.action == Action.ADD_SCOPE)) {
                     throw IllegalArgumentException("Target scope already in requested state")
                 }
-                cli("scope", if (request.action == Action.ADD_SCOPE) "add" else "rm",
+                cli(context, "scope", if (request.action == Action.ADD_SCOPE) "add" else "rm",
                     request.modulePackage, "$pkg/0")
             }
         }
         val after = inspect(context)
         val afterModule = after.modules.singleOrNull { it.packageName == request.modulePackage }
             ?: throw IOException("Module missing after operation; verify manually")
-        val newScope = readScope(request.modulePackage)
+        val newScope = readScope(context, request.modulePackage)
         val validResult = when (request.action) {
             Action.ENABLE -> afterModule.enabled && newScope == originalScope
             Action.DISABLE -> !afterModule.enabled && newScope == originalScope
