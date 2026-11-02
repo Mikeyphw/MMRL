@@ -1,5 +1,5 @@
 {
-  "digest": "d67d2e0b04142ae295bb9462b85e5128ad186e87ea5ebb1c3fd95bb208baf7e7",
+  "digest": "32fb905a721455d573828104cf46f2e97aa1b92cc0f8d711c880fe80b4528e01",
   "issues": [
     {
       "count": 1,
@@ -243,13 +243,6 @@
       "count": 1,
       "id": "GradleDependency",
       "message": "A newer version of androidx.test.espresso:espresso-core than 3.6.1 is available: 3.7.0",
-      "path": "gradle/libs.versions.toml",
-      "severity": "Warning"
-    },
-    {
-      "count": 1,
-      "id": "GradleDependency",
-      "message": "A newer version of androidx.test.ext:junit than 1.2.1 is available: 1.3.0",
       "path": "gradle/libs.versions.toml",
       "severity": "Warning"
     },
@@ -2433,7 +2426,7 @@
     {
       "count": 1,
       "id": "NewerVersionAvailable",
-      "message": "A newer version of dev.chrisbanes.haze:haze than 1.6.10 is available: 2.0.1",
+      "message": "A newer version of dev.chrisbanes.haze:haze than 1.6.10 is available: 2.1.0",
       "path": "app/build.gradle.kts",
       "severity": "Warning"
     },
@@ -3719,9 +3712,9 @@
       "severity": "Warning"
     }
   ],
-  "review_note": "Reviewed the 536 GitHub Actions lint findings as pre-existing upstream technical debt; 302 errors, 232 warnings, 2 hints. This is not a declaration of runtime safety, not a release approval, and does not waive newly introduced diagnostics. Prioritized NewApi, exception delegation, translation placeholders and locale handling for follow-up.",
+  "review_note": "Phase06 GitHub Actions run 41459271203: reviewed a one-fingerprint version-recommendation refresh for dev.chrisbanes.haze:haze 1.6.10 (2.0.1 to 2.1.0), alongside two resolved prior warnings (stale Haze 2.0.1 recommendation and androidx.test.ext:junit 1.2.1 to 1.3.0). No dependencies changed; strict fail-closed lint gate and all other issue fingerprints remain in force. Human acceptance is the source-controlled commit of this reviewed candidate.",
   "reviewed_by": "Mikeyphw",
   "schema": "mmrl.lsposed.lint-baseline.v1",
-  "source_sha": "6e3f062be8fdb2eca00ef9feb44b3aa88fe27b7b",
-  "total": 536
+  "source_sha": "ca44822af8d196debcc6060bd2a4ab7ee1110110",
+  "total": 535
 }
