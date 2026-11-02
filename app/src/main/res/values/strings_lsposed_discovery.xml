@@ -3,7 +3,7 @@
     <!-- Phase 02 English-only diagnostics. Do not produce false translation errors. -->
     <string name="lsposed_discovery_title" translatable="false">LSPosed / Vector</string>
     <string name="lsposed_back" translatable="false">Back</string>
-    <string name="lsposed_phase02_disclaimer" translatable="false">Read-only discovery. Installed APKs and root modules do not prove hooks are running. No scope or module settings are changed.</string>
+    <string name="lsposed_phase02_disclaimer" translatable="false">APK discovery is read-only. Separate Vector manager controls below can change saved module and scope configuration only after confirmation. Saved settings do not prove hooks are active.</string>
     <string name="lsposed_module_apks" translatable="false">Installed Xposed module APKs</string>
     <string name="lsposed_scanning" translatable="false">Scanning…</string>
     <string name="lsposed_no_apks" translatable="false">No recognizable module APKs found. Detection may be incomplete for hidden, split-only or inaccessible packages.</string>

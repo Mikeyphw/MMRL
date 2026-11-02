@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lsposed_manage_title" translatable="false">Vector configuration manager</string>
+    <string name="lsposed_manage_disclaimer" translatable="false">Explicit changes to saved Vector configuration only. Confirm every operation. Running hooks, target-process injection and legacy compatibility are not proven by an enabled switch. Scope edits are limited to installed non-system apps in user 0; staticScope restrictions remain enforced by Vector.</string>
+    <string name="lsposed_manage_refresh" translatable="false">Load / refresh Vector modules (root)</string>
+    <string name="lsposed_manage_working" translatable="false">Reading or verifying Vector configuration…</string>
+    <string name="lsposed_manage_framework" translatable="false">Vector %1$s • API %2$d</string>
+    <string name="lsposed_manage_empty" translatable="false">No modules were reported by Vector.</string>
+    <string name="lsposed_manage_enabled" translatable="false">Enabled in saved Vector configuration</string>
+    <string name="lsposed_manage_disabled" translatable="false">Disabled in saved Vector configuration</string>
+    <string name="lsposed_manage_enable" translatable="false">Enable</string>
+    <string name="lsposed_manage_disable" translatable="false">Disable</string>
+    <string name="lsposed_manage_scopes" translatable="false">Scopes</string>
+    <string name="lsposed_manage_no_scope" translatable="false">No configured targets</string>
+    <string name="lsposed_manage_remove" translatable="false">Remove</string>
+    <string name="lsposed_manage_target" translatable="false">Installed app package (primary user)</string>
+    <string name="lsposed_manage_add" translatable="false">Add application to scope</string>
+    <string name="lsposed_manage_confirm_title" translatable="false">Confirm Vector configuration change</string>
+    <string name="lsposed_manage_confirm_detail" translatable="false">Action: %1$s\nModule: %2$s\nTarget: %3$s\n\nThis saves configuration through Vector. The app may need restarting before the change takes effect. Do not interpret saved state as a verified hook.</string>
+    <string name="lsposed_manage_none" translatable="false">None</string>
+    <string name="lsposed_manage_confirm" translatable="false">Apply and verify</string>
+    <string name="lsposed_manage_cancel" translatable="false">Cancel</string>
+</resources>
