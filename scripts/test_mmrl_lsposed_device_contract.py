@@ -15,7 +15,11 @@ class DeviceContracts(unittest.TestCase):
         cls.runner = (ROOT/'scripts/mmrl_lsposed_device_runner.py').read_text()
 
     def test_instrumentation_target_and_dependencies(self):
-        self.assertIn('testApplicationId = "com.dergoogler.mmrl.debug.test"', self.gradle)
+        # Ordinary debug remains unchanged; only explicit Phase06 CI builds get
+        # a unique package identity, so they cannot overwrite the user's app.
+        self.assertIn('testApplicationId = phase06Id?.let { "$it.test" } ?: "com.dergoogler.mmrl.debug.test"', self.gradle)
+        self.assertIn('val phase06Tag = providers.gradleProperty("mmrlPhase06IsolatedTag").orNull', self.gradle)
+        self.assertIn('applicationIdSuffix = if (phase06Tag == null) ".debug" else ".phase06.$phase06Tag"', self.gradle)
         self.assertIn('testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"', self.gradle)
         self.assertIn('androidTestImplementation(libs.androidx.test.uiautomator)', self.gradle)
         for alias in ('androidx-test-runner', 'androidx-test-uiautomator'):
