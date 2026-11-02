@@ -60,7 +60,10 @@ runtimeAndroidVersion = "1.7.8"
 swiperefreshlayout = "1.1.0"
 composedestinations = "2.2.0"
 
+libxposedApi = "102.0.0"
+
 [libraries]
+libxposed-api = { module = "io.github.libxposed:api", version.ref = "libxposedApi" }
 composedestinations-ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "composedestinations" }
 composedestinations-core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "composedestinations" }
 apache-commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "apacheCommons" }

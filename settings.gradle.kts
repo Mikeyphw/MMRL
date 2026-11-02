@@ -45,3 +45,4 @@ include(
     ":datastore"
 )
 include(":terminal-compat", ":webui-core-compat", ":compat")
+include(":hook-lab-target", ":hook-lab-module")
