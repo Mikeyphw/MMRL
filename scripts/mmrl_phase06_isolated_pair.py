@@ -67,10 +67,10 @@ def main():
                                                   'android:name', RUNNER)):
         raise RuntimeError('Instrumentation target or runner mismatch')
     main_manifest = command(str(aapt), 'dump', 'xmltree', str(args.main_apk), 'AndroidManifest.xml')
-    if 'com.dergoogler.mmrl.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION' in main_manifest:
-        raise RuntimeError('Isolated test claims the original MMRL custom permission')
-    if f'{app_id}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION' not in main_manifest:
-        raise RuntimeError('Unique custom permission missing from isolated APK')
+    # Both custom receiver permission entries are deliberately removed
+    # during manifest merging. Neither should appear in the signed APK.
+    if 'DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION' in main_manifest:
+        raise RuntimeError('Unexpected custom receiver permission in isolated APK')
     source_commit = command('git', 'rev-parse', 'HEAD').strip()
     if source_commit != os.environ['GITHUB_SHA']:
         raise RuntimeError('CI source checkout mismatch')
