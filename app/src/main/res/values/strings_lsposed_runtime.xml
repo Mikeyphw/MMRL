@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Technical diagnostics are intentionally untranslated until localization review. -->
+    <string name="lsposed_runtime_title" translatable="false">Runtime diagnostics</string>
+    <string name="lsposed_runtime_inspect" translatable="false">Check Vector runtime (root)</string>
+    <string name="lsposed_runtime_running" translatable="false">Contacting installed Vector CLI…</string>
+    <string name="lsposed_runtime_unverified" translatable="false">Not verified. Installed/ENABLED module state is not evidence of injected hooks.</string>
+    <string name="lsposed_runtime_provider_failed" translatable="false">Runtime inspection unavailable: %1$s</string>
+    <string name="lsposed_runtime_installed" translatable="false">Vector installed: %1$s</string>
+    <string name="lsposed_runtime_boot_enabled" translatable="false">Module enabled for boot: %1$s</string>
+    <string name="lsposed_runtime_daemon" translatable="false">Vector CLI daemon responded: %1$s</string>
+    <string name="lsposed_runtime_version" translatable="false">Framework version: %1$s</string>
+    <string name="lsposed_runtime_version_code" translatable="false">Framework version code: %1$s</string>
+    <string name="lsposed_runtime_api" translatable="false">Xposed API version: %1$s</string>
+    <string name="lsposed_runtime_enabled_count" translatable="false">Configured enabled modules: %1$s</string>
+    <string name="lsposed_runtime_yes" translatable="false">Yes</string>
+    <string name="lsposed_runtime_no" translatable="false">No / not verified</string>
+    <string name="lsposed_runtime_enabled" translatable="false">Enabled in Vector config</string>
+    <string name="lsposed_runtime_disabled" translatable="false">Disabled in Vector config</string>
+    <string name="lsposed_runtime_details" translatable="false">%1$s</string>
+    <string name="lsposed_runtime_notice" translatable="false">Daemon response does not prove Zygisk loaded in a target process, system_server injection, or active hooks. Legacy LSPosed has no verified runtime API in this version. No changes are made.</string>
+</resources>

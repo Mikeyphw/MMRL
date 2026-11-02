@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.lsposed.LsposedDiscovery
+import com.dergoogler.mmrl.lsposed.LsposedRuntime
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.ui.providable.LocalDestinationsNavigator
 import com.ramcosta.composedestinations.annotation.Destination
@@ -54,6 +55,9 @@ fun LsposedDiscoveryScreen() {
     var providerError by remember { mutableStateOf<String?>(null) }
     var inspecting by remember { mutableStateOf(false) }
     var launchError by remember { mutableStateOf<String?>(null) }
+    var runtimeSnapshot by remember { mutableStateOf<LsposedRuntime.Snapshot?>(null) }
+    var runtimeError by remember { mutableStateOf<String?>(null) }
+    var checkingRuntime by remember { mutableStateOf(false) }
 
     // Package scan is not privileged. Never read root module state on screen entry.
     LaunchedEffect(context) {
@@ -170,6 +174,87 @@ fun LsposedDiscoveryScreen() {
                     title = module.name,
                     detail = "${module.family} • ${module.id} • ${module.version} • ${module.state}",
                 )
+            }
+            item {
+                Text(
+                    stringResource(R.string.lsposed_runtime_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+            item {
+                Text(
+                    stringResource(R.string.lsposed_runtime_notice),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            item {
+                Button(
+                    enabled = !checkingRuntime,
+                    onClick = {
+                        checkingRuntime = true
+                        runtimeSnapshot = null
+                        runtimeError = null
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                runCatching { LsposedRuntime.inspect() }
+                            }
+                            result.onSuccess { runtimeSnapshot = it }
+                                .onFailure { runtimeError = it.javaClass.simpleName }
+                            checkingRuntime = false
+                        }
+                    },
+                ) {
+                    Text(stringResource(R.string.lsposed_runtime_inspect))
+                }
+            }
+            if (checkingRuntime) {
+                item { Text(stringResource(R.string.lsposed_runtime_running)) }
+            }
+            if (runtimeError != null) {
+                item {
+                    Text(stringResource(R.string.lsposed_runtime_provider_failed, runtimeError.orEmpty()))
+                }
+            }
+            if (runtimeSnapshot == null && !checkingRuntime && runtimeError == null) {
+                item { Text(stringResource(R.string.lsposed_runtime_unverified)) }
+            }
+            runtimeSnapshot?.let { runtime ->
+                item {
+                    val yes = stringResource(R.string.lsposed_runtime_yes)
+                    val no = stringResource(R.string.lsposed_runtime_no)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(stringResource(R.string.lsposed_runtime_installed,
+                            if (runtime.vectorInstalled) yes else no))
+                        Text(stringResource(R.string.lsposed_runtime_boot_enabled,
+                            if (runtime.vectorEnabledAtNextBoot) yes else no))
+                        Text(stringResource(R.string.lsposed_runtime_daemon,
+                            if (runtime.daemonResponded) yes else no))
+                        runtime.frameworkVersion?.let {
+                            Text(stringResource(R.string.lsposed_runtime_version, it))
+                        }
+                        runtime.versionCode?.let {
+                            Text(stringResource(R.string.lsposed_runtime_version_code, it.toString()))
+                        }
+                        runtime.apiVersion?.let {
+                            Text(stringResource(R.string.lsposed_runtime_api, it.toString()))
+                        }
+                        runtime.reportedEnabledCount?.let {
+                            Text(stringResource(R.string.lsposed_runtime_enabled_count, it.toString()))
+                        }
+                        Text(stringResource(R.string.lsposed_runtime_details, runtime.detail),
+                            style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                items(runtime.modules.orEmpty(), key = { "configured:${it.packageName}" }) { module ->
+                    DiscoveryCard(
+                        title = module.packageName,
+                        detail = if (module.enabled) {
+                            stringResource(R.string.lsposed_runtime_enabled)
+                        } else {
+                            stringResource(R.string.lsposed_runtime_disabled)
+                        },
+                    )
+                }
             }
             item {
                 Text(
