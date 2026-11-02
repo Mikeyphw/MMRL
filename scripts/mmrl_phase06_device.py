@@ -37,6 +37,17 @@ def sha(file):
     return h.hexdigest()
 
 
+def installed_apk_sha(serial, package, destination):
+    locations = adb(serial, 'shell', 'pm', 'path', '--user', '0', package).splitlines()
+    if len(locations) != 1 or not locations[0].startswith('package:/data/app/') or not locations[0].endswith('.apk'):
+        raise RuntimeError('Expected one readable installed base.apk for exact package: ' + package)
+    source = locations[0].removeprefix('package:')
+    checked('adb', '-s', serial, 'pull', source, str(destination))
+    if not destination.is_file():
+        raise RuntimeError('Cannot hash installed APK')
+    return sha(destination)
+
+
 def sole_apk(directory):
     candidates = list(directory.rglob('*.apk'))
     if len(candidates) != 1:
@@ -49,6 +60,8 @@ def main():
     parser.add_argument('run_id', type=int)
     parser.add_argument('serial', help='Physical adb serial, e.g. localhost:5555')
     parser.add_argument('--out', type=Path, default=Path.home()/'.local/state/mmrl-phase06')
+    parser.add_argument('--reuse-installed', action='store_true',
+                        help='Never install; compare exact installed APK hashes to the attested GitHub pair')
     a = parser.parse_args()
     if not re.fullmatch(r'[A-Za-z0-9._:-]{1,100}', a.serial):
         raise RuntimeError('Explicit valid ADB serial required')
@@ -67,8 +80,24 @@ def main():
         raise RuntimeError('Invalid GitHub run attempt')
     app_id = f'{APP_PREFIX}.r{a.run_id}a{attempt}'
     test_id = app_id + '.test'
-    destination = a.out/f'run-{a.run_id}-attempt{attempt}'/a.serial
-    destination.mkdir(parents=True, exist_ok=False)
+    original_destination = a.out/f'run-{a.run_id}-attempt{attempt}'/a.serial
+    if a.reuse_installed:
+        resumes = original_destination/'resumes'
+        resumes.mkdir(parents=True, exist_ok=True)
+        destination = None
+        for number in range(1, 1001):
+            candidate = resumes/f'resume-{number:04d}'
+            try:
+                candidate.mkdir(parents=False, exist_ok=False)
+                destination = candidate
+                break
+            except FileExistsError:
+                continue
+        if destination is None:
+            raise RuntimeError('No free acceptance resume evidence directory')
+    else:
+        destination = original_destination
+        destination.mkdir(parents=True, exist_ok=False)
     app_dir = destination/'app'
     test_dir = destination/'test'
     # Never reuse the ordinary MMRL APK. Both APKs are a distinct, run-unique test installation.
@@ -90,13 +119,22 @@ def main():
         raise RuntimeError('APK pair receipt mismatch')
     if not re.fullmatch('[a-f0-9]{40}', receipt.get('source_commit', '')):
         raise RuntimeError('Missing CI checkout source identity')
-    # Never replace another installation, including an earlier isolated run.
-    for package in (app_id, test_id):
-        installed = adb(a.serial, 'shell', 'pm', 'list', 'packages', '--user', '0', package)
-        if f'package:{package}' in installed.splitlines():
-            raise RuntimeError('Isolated package already installed; refusing overwrite: ' + package)
-    adb(a.serial, 'install', str(app))
-    adb(a.serial, 'install', str(tests))
+    # Reuse is allowed ONLY if both exact CI-signed APK bytes match the installed
+    # base.apk images. Existing packages are never modified in this path.
+    if a.reuse_installed:
+        for package, expected_hash in ((app_id, sha(app)), (test_id, sha(tests))):
+            found = installed_apk_sha(a.serial, package,
+                                     destination/('installed-' + package + '.apk'))
+            if found != expected_hash:
+                raise RuntimeError('refusing unverified installed APK: ' + package)
+    if not a.reuse_installed:
+        # Never replace another installation, including an earlier isolated run.
+        for package in (app_id, test_id):
+            installed = adb(a.serial, 'shell', 'pm', 'list', 'packages', '--user', '0', package)
+            if f'package:{package}' in installed.splitlines():
+                raise RuntimeError('Isolated package already installed; refusing overwrite: ' + package)
+        adb(a.serial, 'install', str(app))
+        adb(a.serial, 'install', str(tests))
     registered = adb(a.serial, 'shell', 'pm', 'list', 'instrumentation')
     if f'{test_id}/{RUNNER} (target={app_id})' not in registered:
         raise RuntimeError('Instrumentation target mismatch')

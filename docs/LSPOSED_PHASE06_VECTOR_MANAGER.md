@@ -14,7 +14,7 @@ It intentionally does **not** support global scope replacement (`scope set`), sy
 
 ## Safety and limitations
 
-The app executes CLI commands through `su -c` from a user-initiated UI operation on an IO dispatcher; the command tokens are strictly validated and allowlisted. Each operation requires an exact confirm dialog, rereads the selected module and scope before writing, checks Vector's success response and performs independent module/scope readback. Unexpected changes demand a refresh. This does **not** provide a transaction across concurrent Vector clients and it does not claim a rollback it cannot prove. No writes occur when the panel mounts. Failure after a write must be manually reviewed in Vector or MMRL before trying again.
+The app invokes a narrowly allowlisted libsu `RootService` over Binder IPC from an IO dispatcher; the command tokens are strictly validated and allowlisted. Each operation requires an exact confirm dialog, rereads the selected module and scope before writing, checks Vector's success response and performs independent module/scope readback. Unexpected changes demand a refresh. This does **not** provide a transaction across concurrent Vector clients and it does not claim a rollback it cannot prove. No writes occur when the panel mounts. Failure after a write must be manually reviewed in Vector or MMRL before trying again.
 
 Module enabled status means **saved configuration**. A particular target process may still require restart, and true hook execution is not proven without a controlled target-specific test such as the Phase 05 hook lab.
 
@@ -38,3 +38,46 @@ The runner writes immutable JSON and an instrumentation log to `~/.local/state/m
 3. Physical device read-only manager inventory (`PASS_READ_ONLY_MANAGER_CONFIGURATION`).
 4. Manually observed scoped mutation/readback and restoration (not yet automated/qualified).
 5. Real hook execution through Phase 05 separate lab (already proven on one device; not proof for all installed modules).
+
+
+## R8 — verified reuse and reversible write acceptance (opt-in)
+
+The existing `mmrl_phase06_device.py` accepts `--reuse-installed` for an
+**already installed** exact GitHub APK pair. Both installed APK bytes must match
+the pair-receipt hashes after an ADB pull. The runner does not install, replace,
+clear or uninstall either package in reuse mode. Each run writes evidence under
+`resumes/resume-NNNN` without changing previous receipts.
+
+The separate `VectorManagerLabDeviceTest` is never invoked by ordinary read-only
+instrumentation. It requires explicit authorization and a one-time host-issued token placed
+in the isolated app **after** the host recovery journal is durably committed.
+The ticket is consumed before the first mutation. The test only uses
+`VectorManager.change` on `com.mikeyphw.mmrl.hooklab.module` and the single
+`com.mikeyphw.mmrl.hooklab.target/0` scope. Initial module state must be
+disabled and scope must be empty or exactly this one target. It exercises
+add/remove scope, enable/disable, verifies each read-back, and restores the
+exact lab baseline. It does not claim proof of actual injection.
+
+After a successful new R8 GitHub Actions run, perform the normal read-only
+acceptance on the new run's isolated app pair first. Then, and only after
+reviewing the lab changes, run:
+
+```zsh
+python3 scripts/mmrl_phase06_lab_write.py RUN_ID localhost:5555 --authorize-lab-changes
+```
+
+The host validates both same-run GitHub APK pairs, checks exact hashes of each
+already-installed MMRL APK, and installs **only missing** disposable lab APKs
+without overwriting any existing APK. If an installed lab APK differs, the test
+refuses. A fsynced host journal is committed before instrumentation, and host
+recovery independently checks/restores the disposable module state and scope.
+If the process is interrupted, use the printed journal location:
+
+```zsh
+python3 scripts/mmrl_phase06_lab_write.py RUN_ID localhost:5555 \
+  --authorize-lab-changes --recover PATH_TO_JOURNAL_JSON
+```
+
+Do not rerun acceptance while a journal is in `RECOVERY_REQUIRED` or an
+unknown partial state. No other installed Xposed modules are write targets.
+A successful build or read-only test is not write acceptance.
