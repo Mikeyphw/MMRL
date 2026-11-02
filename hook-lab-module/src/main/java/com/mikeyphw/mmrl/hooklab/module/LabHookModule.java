@@ -16,7 +16,7 @@ public final class LabHookModule extends XposedModule {
             Method method = klass.getDeclaredMethod("readValue");
             hook(method).intercept(chain -> "HOOKED_PHASE05");
         } catch (ReflectiveOperationException error) {
-            log("MMRL_HOOK_LAB_HOOK_REGISTRATION_FAILED: " + error.getClass().getSimpleName());
+            log(android.util.Log.ERROR, "MMRL_HOOK_LAB", "HOOK_REGISTRATION_FAILED: " + error.getClass().getSimpleName());
         }
     }
 }
