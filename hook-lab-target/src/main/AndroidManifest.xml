@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application android:label="MMRL Hook Lab Target" android:allowBackup="false" android:usesCleartextTraffic="false">
+    <!-- A harmless, deterministic, shell-readable probe. No data writes. -->
+    <provider
+      android:name=".ProbeProvider"
+      android:authorities="com.mikeyphw.mmrl.hooklab.target"
+      android:exported="true" />
+  </application>
+</manifest>
