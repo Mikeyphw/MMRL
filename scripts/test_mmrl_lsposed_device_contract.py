@@ -8,6 +8,7 @@ class DeviceContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.gradle = (ROOT/'app/build.gradle.kts').read_text()
+        cls.catalog = (ROOT/'gradle/libs.versions.toml').read_text()
         cls.workflow = (ROOT/'.github/workflows/mmrl-lsposed-devtool.yml').read_text()
         cls.test = (ROOT/'app/src/androidTest/java/com/dergoogler/mmrl/lsposed/LsposedDeviceAcceptanceTest.kt').read_text()
         cls.pair = (ROOT/'scripts/mmrl_lsposed_device_pair.py').read_text()
@@ -16,7 +17,10 @@ class DeviceContracts(unittest.TestCase):
     def test_instrumentation_target_and_dependencies(self):
         self.assertIn('testApplicationId = "com.dergoogler.mmrl.debug.test"', self.gradle)
         self.assertIn('testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"', self.gradle)
-        self.assertIn('androidTestImplementation("androidx.test.uiautomator:uiautomator:', self.gradle)
+        self.assertIn('androidTestImplementation(libs.androidx.test.uiautomator)', self.gradle)
+        for alias in ('androidx-test-runner', 'androidx-test-uiautomator'):
+            self.assertIn(alias + ' = {', self.catalog)
+        self.assertIn('junitVersion = "1.3.0"', self.catalog)
 
     def test_hosted_build_same_job_after_verified_apk(self):
         workflow = self.workflow

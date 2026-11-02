@@ -214,10 +214,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.process)
 
     // Built only in the same GitHub Actions job as the source-bound debug APK.
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
-    androidTestImplementation("junit:junit:4.13.2")
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(libs.junit)
     implementation(libs.androidx.swiperefreshlayout)
     compileOnly(projects.hiddenApi)
     implementation(projects.platform)
