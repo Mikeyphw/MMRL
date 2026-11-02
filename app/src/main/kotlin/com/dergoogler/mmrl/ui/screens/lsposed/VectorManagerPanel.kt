@@ -174,7 +174,7 @@ fun VectorManagerPanel() {
                                         Text("${entry.packageName}/${entry.userId}",
                                             modifier = Modifier.weight(1f),
                                             style = MaterialTheme.typography.bodySmall)
-                                        if (entry.userId == 0) {
+                                        if (entry.userId == 0 && entry.packageName !in setOf("android", "system")) {
                                             TextButton(enabled = !busy, onClick = {
                                                 propose(module, VectorManager.Action.REMOVE_SCOPE, entry.packageName)
                                             }) { Text(stringResource(R.string.lsposed_manage_remove)) }

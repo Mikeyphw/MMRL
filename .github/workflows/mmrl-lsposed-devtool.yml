@@ -83,6 +83,8 @@ jobs:
           python3 scripts/test_mmrl_lsposed_phase03_contract.py
           python3 scripts/test_mmrl_lsposed_device_contract.py
           python3 scripts/test_mmrl_phase06_contract.py
+          python3 scripts/test_mmrl_phase06_diagnostics_contract.py
+          python3 scripts/test_mmrl_phase06_scope_r4_contract.py
           python3 scripts/test_mmrl_phase05_contract.py
 
       - name: Compile and check immutable native DAG plan

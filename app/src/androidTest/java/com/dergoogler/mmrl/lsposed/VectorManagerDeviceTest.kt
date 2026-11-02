@@ -23,12 +23,15 @@ class VectorManagerDeviceTest {
             .put("scope_writes", 0)
             .put("hooks_verified", false)
             .put("injection_verified", false)
+            .put("stage", "preflight")
         try {
             assertTrue("Unexpected target package", context.packageName == "com.dergoogler.mmrl.debug" ||
                 context.packageName.matches(Regex("""com\.dergoogler\.mmrl\.phase06\.r[0-9]+a[0-9]+""")))
+            report.put("stage", "initial_inventory")
             val observed = VectorManager.inspect(context)
             val items = JSONArray()
             observed.modules.forEach { item ->
+                report.put("stage", "scope:" + item.packageName.take(180))
                 val scoped = VectorManager.scopes(item.packageName)
                 items.put(JSONObject()
                     .put("package", item.packageName)
@@ -38,6 +41,7 @@ class VectorManagerDeviceTest {
                         "${entry.packageName}/${entry.userId}"
                     })))
             }
+            report.put("stage", "inventory_recheck")
             val secondRead = VectorManager.inspect(context)
             report.put("framework_version", observed.frameworkVersion)
                 .put("api_version", observed.apiVersion)
@@ -49,6 +53,9 @@ class VectorManagerDeviceTest {
         } catch (exception: Exception) {
             report.put("status", "INCONCLUSIVE_MANAGER_UNAVAILABLE")
                 .put("error_type", exception.javaClass.simpleName)
+                // Keep a bounded exception message, never a stack trace, root output,
+                // full command log, or unbounded user/device data.
+                .put("error_detail", (exception.message ?: "No exception message").take(240))
         } finally {
             val committed = File(context.filesDir, "mmrl_vector_manager_device.json")
             val pending = File(context.filesDir, "mmrl_vector_manager_device.json.tmp")
@@ -57,5 +64,12 @@ class VectorManagerDeviceTest {
         }
         assertTrue("Unexpected evidence schema", report.optString("schema") ==
             "mmrl.lsposed.vector-manager-device.v1")
+        // The JSON is already committed, even on failure; JUnit must not pass
+        // when only an IOException was caught and labelled INCONCLUSIVE.
+        assertTrue(
+            "Phase06 acceptance failed at " + report.optString("stage") + ": " +
+                report.optString("error_type") + " / " + report.optString("error_detail"),
+            report.optString("status") == "PASS_READ_ONLY_INVENTORY"
+        )
     }
 }

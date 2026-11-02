@@ -36,6 +36,12 @@ object VectorManager {
 
     private fun valid(pkg: String) = pkg.length <= 180 && PKG.matches(pkg)
 
+    // Vector scope inventories can contain special single-segment identifiers
+    // "android" and "system". Preserve these as opaque read-only scope entries;
+    // never grant them target-write permission.
+    private fun validScopePackage(pkg: String) =
+        valid(pkg) || pkg == "android" || pkg == "system"
+
     /** Bounded fixed executable + validated tokens; no user-provided shell syntax. */
     private fun cli(vararg parts: String): JSONObject {
         val args = parts.toList()
@@ -127,7 +133,7 @@ object VectorManager {
             val row = data.optJSONObject(i) ?: throw IOException("Invalid scope row")
             val pkg = row.optString("APP_PACKAGE")
             val user = row.opt("USER_ID")
-            if (!valid(pkg) || user !is Number || user.toLong() < 0 || user.toLong() > Int.MAX_VALUE ||
+            if (!validScopePackage(pkg) || user !is Number || user.toLong() < 0 || user.toLong() > Int.MAX_VALUE ||
                 user.toDouble() != user.toLong().toDouble()) throw IOException("Invalid Vector scope")
             entries += Scope(pkg, user.toInt())
         }
