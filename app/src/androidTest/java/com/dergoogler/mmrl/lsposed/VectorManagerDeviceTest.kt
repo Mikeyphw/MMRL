@@ -24,7 +24,8 @@ class VectorManagerDeviceTest {
             .put("hooks_verified", false)
             .put("injection_verified", false)
         try {
-            assertEquals("com.dergoogler.mmrl.debug", context.packageName)
+            assertTrue("Unexpected target package", context.packageName == "com.dergoogler.mmrl.debug" ||
+                context.packageName.matches(Regex("""com\.dergoogler\.mmrl\.phase06\.r[0-9]+a[0-9]+""")))
             val observed = VectorManager.inspect(context)
             val items = JSONArray()
             observed.modules.forEach { item ->

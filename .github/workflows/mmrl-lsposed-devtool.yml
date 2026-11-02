@@ -248,3 +248,69 @@ jobs:
           path: ${{ runner.temp }}/mmrl-phase05-pair/
           if-no-files-found: error
           retention-days: 14
+
+  # Side-by-side CI test installation. Never replaces com.dergoogler.mmrl.debug.
+  # Its package identifier includes GitHub run ID and attempt, preventing future signer collisions.
+  phase06-isolated:
+    name: Build isolated Phase06 manager instrumentation APK pair
+    needs: debug-dag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 95
+    env:
+      ACTOR: ${{ github.actor }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MMRL_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact Phase06 source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Java 21 for isolated test
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK for isolated test
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
+
+      - name: Install native toolchain for isolated app
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'ndk;29.0.14206865' 'cmake;3.22.1'
+
+      - name: Validate Gradle wrapper for isolated test
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          validate-wrappers: true
+
+      - name: Build exact isolated app and instrumentation pair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 scripts/test_mmrl_phase06_isolated_contract.py
+          TAG="r${GITHUB_RUN_ID}a${GITHUB_RUN_ATTEMPT}"
+          ./gradlew --no-daemon \
+            -PmmrlPhase06IsolatedTag="$TAG" \
+            -PmmrlLsposedHosted=true \
+            :app:assembleOfficialDebug :app:assembleOfficialDebugAndroidTest
+          python3 scripts/mmrl_phase06_isolated_pair.py \
+            --main-apk app/build/outputs/apk/official/debug/MMRL-LSPosed-CI-OfficialDebug.apk \
+            --tests-directory app/build/outputs/apk/androidTest/official/debug \
+            --out "$RUNNER_TEMP/mmrl-phase06-isolated-pair"
+
+      - name: Upload verified isolated APK pair and receipt
+        if: success()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: mmrl-phase06-isolated-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mmrl-phase06-isolated-pair/
+          if-no-files-found: error
+          retention-days: 14

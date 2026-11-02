@@ -10,8 +10,7 @@ import subprocess
 import sys
 
 REPO = 'Mikeyphw/MMRL'
-APP = 'com.dergoogler.mmrl.debug'
-TEST = 'com.dergoogler.mmrl.debug.test'
+APP_PREFIX = 'com.dergoogler.mmrl.phase06'
 RUNNER = 'androidx.test.runner.AndroidJUnitRunner'
 
 
@@ -64,42 +63,58 @@ def main():
             or github.get('head_branch') not in ('feature/lsposed-phase06-vector-manager', 'lsposed-vector')):
         raise RuntimeError('Exact Phase06 hosted run has not passed')
     attempt = int(github.get('run_attempt', 0))
+    if attempt < 1:
+        raise RuntimeError('Invalid GitHub run attempt')
+    app_id = f'{APP_PREFIX}.r{a.run_id}a{attempt}'
+    test_id = app_id + '.test'
     destination = a.out/f'run-{a.run_id}-attempt{attempt}'/a.serial
     destination.mkdir(parents=True, exist_ok=False)
     app_dir = destination/'app'
     test_dir = destination/'test'
-    for path, name in ((app_dir, f'mmrl-lsposed-officialdebug-{a.run_id}-attempt{attempt}'),
-                       (test_dir, f'mmrl-lsposed-device-test-apk-{a.run_id}-attempt{attempt}')):
-        path.mkdir()
-        checked('gh', 'run', 'download', str(a.run_id), '-R', REPO, '-n', name, '-D', str(path))
-    app = sole_apk(app_dir)
-    tests = sole_apk(test_dir)
+    # Never reuse the ordinary MMRL APK. Both APKs are a distinct, run-unique test installation.
+    app_dir.mkdir()
+    checked('gh', 'run', 'download', str(a.run_id), '-R', REPO,
+            '-n', f'mmrl-phase06-isolated-{a.run_id}-attempt{attempt}', '-D', str(app_dir))
+    test_dir = app_dir
+    app = app_dir/'MMRL-Phase06-Isolated-App.apk'
+    tests = app_dir/'MMRL-Phase06-Isolated-Test.apk'
+    if not app.is_file() or not tests.is_file():
+        raise RuntimeError('Isolated signed app/test APKs missing')
     receipt = json.loads((test_dir/'pair-receipt.json').read_text())
-    expected = {'schema':'mmrl.lsposed.device-apk-pair.v1', 'run_id':a.run_id, 'attempt':attempt,
-                'main_package':APP, 'test_package':TEST, 'runner':RUNNER,
-                'main_sha256':sha(app), 'test_sha256':sha(tests), 'device_qualified':False}
+    expected = {'schema':'mmrl.lsposed.phase06.isolated-apk-pair.v1',
+                'run_id':a.run_id, 'attempt':attempt,
+                'main_package':app_id, 'test_package':test_id, 'runner':RUNNER,
+                'main_sha256':sha(app), 'test_sha256':sha(tests),
+                'head_sha':github['head_sha'], 'device_qualified':False}
     if any(receipt.get(k) != v for k,v in expected.items()):
         raise RuntimeError('APK pair receipt mismatch')
-    if receipt.get('source_commit') != github['head_sha']:
-        # PR workflow uses a synthetic test-merge commit; preserve and record it instead.
-        if not re.fullmatch('[a-f0-9]{40}', receipt.get('source_commit', '')):
-            raise RuntimeError('Source provenance missing')
-    adb(a.serial, 'install', '-r', str(app))
-    adb(a.serial, 'install', '-r', str(tests))
+    if not re.fullmatch('[a-f0-9]{40}', receipt.get('source_commit', '')):
+        raise RuntimeError('Missing CI checkout source identity')
+    # Never replace another installation, including an earlier isolated run.
+    for package in (app_id, test_id):
+        installed = adb(a.serial, 'shell', 'pm', 'list', 'packages', '--user', '0', package)
+        if f'package:{package}' in installed.splitlines():
+            raise RuntimeError('Isolated package already installed; refusing overwrite: ' + package)
+    adb(a.serial, 'install', str(app))
+    adb(a.serial, 'install', str(tests))
     registered = adb(a.serial, 'shell', 'pm', 'list', 'instrumentation')
-    if f'{TEST}/{RUNNER} (target={APP})' not in registered:
+    if f'{test_id}/{RUNNER} (target={app_id})' not in registered:
         raise RuntimeError('Instrumentation target mismatch')
     p = run('adb', '-s', a.serial, 'shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
-            'com.dergoogler.mmrl.lsposed.VectorManagerDeviceTest', f'{TEST}/{RUNNER}', timeout=240)
+            'com.dergoogler.mmrl.lsposed.VectorManagerDeviceTest', f'{test_id}/{RUNNER}', timeout=240)
     (destination/'instrumentation.log').write_text(p.stdout+'\n'+p.stderr)
-    evidence = json.loads(adb(a.serial, 'exec-out', 'run-as', APP, 'cat', 'files/mmrl_vector_manager_device.json'))
+    evidence = json.loads(adb(a.serial, 'exec-out', 'run-as', app_id, 'cat', 'files/mmrl_vector_manager_device.json'))
     (destination/'manager-readonly.json').write_text(json.dumps(evidence, indent=2, sort_keys=True)+'\n')
     result = {'schema':'mmrl.lsposed.phase06.device-host.v1', 'run_id':a.run_id,
+              'isolated_app_package':app_id, 'isolated_test_package':test_id,
               'source_commit':receipt['source_commit'], 'device':props, 'evidence':evidence,
               'instrumentation_completed':p.returncode == 0 and 'OK (1 test)' in p.stdout,
               'module_writes':0, 'scope_writes':0, 'hooks_verified':False,
               'qualification':'NOT_QUALIFIED'}
-    if result['instrumentation_completed'] and evidence.get('status') == 'PASS_READ_ONLY_INVENTORY':
+    if (result['instrumentation_completed'] and evidence.get('status') == 'PASS_READ_ONLY_INVENTORY'
+            and evidence.get('target_package') == app_id
+            and evidence.get('read_only') is True
+            and evidence.get('module_writes') == 0 and evidence.get('scope_writes') == 0):
         result['qualification'] = 'PASS_READ_ONLY_MANAGER_CONFIGURATION'
     (destination/'host-result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
     print(json.dumps(result,indent=2,sort_keys=True))
