@@ -13,7 +13,6 @@
     <string name="lsposed_runtime_version_code" translatable="false">Framework version code: %1$s</string>
     <string name="lsposed_runtime_api" translatable="false">Xposed API version: %1$s</string>
     <string name="lsposed_runtime_enabled_count" translatable="false">Configured enabled modules: %1$s</string>
-    <string name="lsposed_runtime_module_state" translatable="false">%1$s — %2$s</string>
     <string name="lsposed_runtime_yes" translatable="false">Yes</string>
     <string name="lsposed_runtime_no" translatable="false">No / not verified</string>
     <string name="lsposed_runtime_enabled" translatable="false">Enabled in Vector config</string>
