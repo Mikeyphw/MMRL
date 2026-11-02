@@ -81,6 +81,7 @@ jobs:
           python3 scripts/test_mmrl_lsposed_lint_gate.py
           python3 scripts/test_mmrl_lsposed_phase02_contract.py
           python3 scripts/test_mmrl_lsposed_phase03_contract.py
+          python3 scripts/test_mmrl_lsposed_device_contract.py
 
       - name: Compile and check immutable native DAG plan
         id: dag_plan
@@ -165,4 +166,27 @@ jobs:
           name: mmrl-lsposed-ci-evidence-${{ github.run_id }}-attempt${{ github.run_attempt }}
           path: ${{ runner.temp }}/mmrl-lsposed/
           if-no-files-found: warn
+          retention-days: 14
+
+      # A real device is required to execute these tests. Building the AndroidTest
+      # APK in the SAME job preserves the main APK signing certificate.
+      # This task must never be treated as on-device acceptance.
+      - name: Build paired Android instrumentation APK
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon :app:assembleOfficialDebugAndroidTest
+          python3 scripts/mmrl_lsposed_device_pair.py \
+            --main-apk "$RUNNER_TEMP/mmrl-lsposed-outputs/node-01/payload/app/build/outputs/apk/official/debug/MMRL-LSPosed-CI-OfficialDebug.apk" \
+            --tests-directory app/build/outputs/apk/androidTest/official/debug \
+            --out "$RUNNER_TEMP/mmrl-lsposed-device-pair"
+
+      - name: Upload signed instrumentation APK and pair receipt
+        if: success()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6; Node 24
+        with:
+          name: mmrl-lsposed-device-test-apk-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mmrl-lsposed-device-pair/
+          if-no-files-found: error
           retention-days: 14

@@ -37,6 +37,9 @@ android {
         applicationId = namespace
         versionName = "v$appVersion"
         versionCode = appVersion
+        // CI-built paired instrumentation; never installed by hosted workflow.
+        testApplicationId = "com.dergoogler.mmrl.debug.test"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         androidResources.localeFilters += arrayOf(
             "en",
@@ -209,6 +212,12 @@ androidComponents {
 
 dependencies {
     implementation(libs.androidx.lifecycle.process)
+
+    // Built only in the same GitHub Actions job as the source-bound debug APK.
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(libs.junit)
     implementation(libs.androidx.swiperefreshlayout)
     compileOnly(projects.hiddenApi)
     implementation(projects.platform)
