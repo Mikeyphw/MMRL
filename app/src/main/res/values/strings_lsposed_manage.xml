@@ -5,7 +5,7 @@
     <string name="lsposed_manage_refresh" translatable="false">Load / refresh Vector modules (root)</string>
     <string name="lsposed_manage_working" translatable="false">Reading or verifying Vector configuration…</string>
     <string name="lsposed_manage_root_bind_help" translatable="false">Check root authorization for this MMRL package in your root manager. Refresh and verify Vector state before retrying an edit; a failed request may still have changed saved configuration.</string>
-    <string name="lsposed_manage_module_count" translatable="false">Enabled: %1$d of %2$d modules</string>
+    <string name="lsposed_manage_module_count" translatable="false">Enabled: %1$d / Total: %2$d</string>
     <string name="lsposed_manage_search_modules" translatable="false">Search installed modules</string>
     <string name="lsposed_manage_no_matches" translatable="false">No modules match the search.</string>
     <string name="lsposed_manage_framework" translatable="false">Vector %1$s • API %2$d</string>
