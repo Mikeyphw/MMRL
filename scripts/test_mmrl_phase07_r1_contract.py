@@ -47,6 +47,15 @@ class Phase07R1Contract(unittest.TestCase):
                       'Vector read-back differs', 'if (request.action == Action.ADD_SCOPE && !before.enabled)'):
             self.assertIn(token, BACK)
         self.assertNotIn('"scope", "set"', BACK)
+    def test_phase07_device_runner_requires_verified_ci(self):
+        runner = (ROOT/'scripts/mmrl_phase06_device.py').read_text()
+        self.assertIn("'feature/lsposed-phase07-manager-ux'", runner)
+        self.assertIn("github.get('status') != 'completed'", runner)
+        self.assertIn("github.get('conclusion') != 'success'", runner)
+        self.assertIn("'main_sha256':sha(app)", runner)
+        self.assertIn("'test_sha256':sha(tests)", runner)
+        self.assertIn("'head_sha':github['head_sha']", runner)
+
     def test_hosted_ci_runs_contract(self):
         self.assertIn('python3 scripts/test_mmrl_phase07_r1_contract.py',FLOW)
 
