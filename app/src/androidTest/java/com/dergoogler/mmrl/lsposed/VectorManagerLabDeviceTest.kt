@@ -49,13 +49,13 @@ class VectorManagerLabDeviceTest {
         var error: Exception? = null
 
         try {
-            require(instrumentation.arguments.getString("mmrl_phase06_lab_authorization") == CONSENT) {
+            require(InstrumentationRegistry.getArguments().getString("mmrl_phase06_lab_authorization") == CONSENT) {
                 "Explicit disposable-lab consent missing"
             }
             require(context.packageName.matches(Regex("""com\.dergoogler\.mmrl\.phase06\.r[0-9]+a[0-9]+"""))) {
                 "Only CI-isolated Phase06 test package may change lab configuration"
             }
-            val nonce = instrumentation.arguments.getString("mmrl_phase06_lab_nonce").orEmpty()
+            val nonce = InstrumentationRegistry.getArguments().getString("mmrl_phase06_lab_nonce").orEmpty()
             require(nonce.matches(Regex("[a-f0-9]{48}"))) { "Host authorization nonce missing" }
             val ticket = File(context.filesDir, "mmrl_vector_manager_lab_authorization.token")
             val expectedTicket = "${context.packageName}:$nonce:$MODULE:$TARGET"
