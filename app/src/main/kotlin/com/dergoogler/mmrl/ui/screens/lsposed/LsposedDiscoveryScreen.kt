@@ -256,6 +256,7 @@ fun LsposedDiscoveryScreen() {
                     )
                 }
             }
+            item { VectorManagerPanel() }
             item {
                 Text(
                     stringResource(R.string.lsposed_runtime_unknown),

@@ -18,5 +18,5 @@
     <string name="lsposed_runtime_enabled" translatable="false">Enabled in Vector config</string>
     <string name="lsposed_runtime_disabled" translatable="false">Disabled in Vector config</string>
     <string name="lsposed_runtime_details" translatable="false">%1$s</string>
-    <string name="lsposed_runtime_notice" translatable="false">Daemon response does not prove Zygisk loaded in a target process, system_server injection, or active hooks. Legacy LSPosed has no verified runtime API in this version. No changes are made.</string>
+    <string name="lsposed_runtime_notice" translatable="false">Daemon response does not prove Zygisk loaded in a target process, system_server injection, or active hooks. Legacy LSPosed has no verified runtime API in this version. Runtime inspection itself makes no changes.</string>
 </resources>

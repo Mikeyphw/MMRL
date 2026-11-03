@@ -15,6 +15,15 @@ plugins {
 val baseAppName = "MMRL"
 val mmrlBaseApplicationId = "com.dergoogler.mmrl"
 
+// Disposable, GitHub-run-specific test identity. Never used by ordinary APK builds.
+val phase06Tag = providers.gradleProperty("mmrlPhase06IsolatedTag").orNull
+if (phase06Tag != null) {
+    require(Regex("r[1-9][0-9]{1,18}a[1-9][0-9]{0,4}").matches(phase06Tag)) {
+        "Invalid Phase06 isolated CI run tag"
+    }
+}
+val phase06Id = phase06Tag?.let { "$mmrlBaseApplicationId.phase06.$it" }
+
 val appVersion = commitCount + 31320
 
 android {
@@ -38,7 +47,7 @@ android {
         versionName = "v$appVersion"
         versionCode = appVersion
         // CI-built paired instrumentation; never installed by hosted workflow.
-        testApplicationId = "com.dergoogler.mmrl.debug.test"
+        testApplicationId = phase06Id?.let { "$it.test" } ?: "com.dergoogler.mmrl.debug.test"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         androidResources.localeFilters += arrayOf(
@@ -112,6 +121,7 @@ android {
             multiDexEnabled = true
 
             manifestPlaceholders["webuiPermissionId"] = mmrlBaseApplicationId
+            manifestPlaceholders["phase06DynamicPermissionId"] = mmrlBaseApplicationId
         }
 
         create("playstore") {
@@ -122,10 +132,10 @@ android {
         }
 
         debug {
-            resValue("string", "app_name", "$baseAppName Debug")
+            resValue("string", "app_name", if (phase06Tag == null) "$baseAppName Debug" else "MMRL Phase06 Isolated Test")
             buildConfigField("Boolean", "IS_DEV_VERSION", "true")
             buildConfigField("Boolean", "IS_GOOGLE_PLAY_BUILD", "false")
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = if (phase06Tag == null) ".debug" else ".phase06.$phase06Tag"
             versionNameSuffix = "-debug"
             isJniDebuggable = true
             isDebuggable = true
@@ -133,7 +143,8 @@ android {
             isMinifyEnabled = false
             multiDexEnabled = true
 
-            manifestPlaceholders["webuiPermissionId"] = "$mmrlBaseApplicationId.debug"
+            manifestPlaceholders["webuiPermissionId"] = phase06Id ?: "$mmrlBaseApplicationId.debug"
+            manifestPlaceholders["phase06DynamicPermissionId"] = phase06Id ?: mmrlBaseApplicationId
         }
 
         all {
