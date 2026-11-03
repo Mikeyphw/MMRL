@@ -84,32 +84,28 @@ class VectorManagerLabDeviceTest {
             commit() // On-device journal before first mutation; host journal is independent.
             authorizedToRestore = true
 
+            // Vector v2.2 implicitly ENABLES a module on scope add. Do not
+            // accidentally activate a disabled module through a scope edit.
+            // Only the disposable lab module is enabled, with host-journaled consent.
+            report.put("stage", "INTEND_ENABLE")
+                .put("module_writes_attempted", 1)
+            commit()
+            VectorManager.change(context, VectorManager.Change(
+                MODULE, VectorManager.Action.ENABLE, expectedEnabled = false,
+                expectedScope = original))
+
             val flip = if (original.isEmpty()) VectorManager.Action.ADD_SCOPE
                        else VectorManager.Action.REMOVE_SCOPE
             report.put("stage", "INTEND_FIRST_SCOPE_WRITE")
                 .put("scope_writes_attempted", 1)
             commit()
             VectorManager.change(context, VectorManager.Change(
-                MODULE, flip, expectedEnabled = false, expectedScope = original,
+                MODULE, flip, expectedEnabled = true, expectedScope = original,
                 targetPackage = TARGET))
             val flipped = VectorManager.scopes(context, MODULE)
             require(flipped == if (original.isEmpty()) listOf(labScope) else emptyList()) {
                 "First scope write did not match requested lab state"
             }
-
-            report.put("stage", "INTEND_ENABLE")
-                .put("module_writes_attempted", 1)
-            commit()
-            VectorManager.change(context, VectorManager.Change(
-                MODULE, VectorManager.Action.ENABLE, expectedEnabled = false,
-                expectedScope = flipped))
-
-            report.put("stage", "INTEND_DISABLE")
-                .put("module_writes_attempted", 2)
-            commit()
-            VectorManager.change(context, VectorManager.Change(
-                MODULE, VectorManager.Action.DISABLE, expectedEnabled = true,
-                expectedScope = flipped))
 
             val undo = if (original.isEmpty()) VectorManager.Action.REMOVE_SCOPE
                        else VectorManager.Action.ADD_SCOPE
@@ -117,8 +113,15 @@ class VectorManagerLabDeviceTest {
                 .put("scope_writes_attempted", 2)
             commit()
             VectorManager.change(context, VectorManager.Change(
-                MODULE, undo, expectedEnabled = false, expectedScope = flipped,
+                MODULE, undo, expectedEnabled = true, expectedScope = flipped,
                 targetPackage = TARGET))
+
+            report.put("stage", "INTEND_DISABLE")
+                .put("module_writes_attempted", 2)
+            commit()
+            VectorManager.change(context, VectorManager.Change(
+                MODULE, VectorManager.Action.DISABLE, expectedEnabled = true,
+                expectedScope = original))
         } catch (e: Exception) {
             error = e
             report.put("error_type", e.javaClass.simpleName)
@@ -136,21 +139,33 @@ class VectorManagerLabDeviceTest {
                     require(scope.isEmpty() || scope == listOf(labTarget)) {
                         "Unexpected lab scope; host recovery required"
                     }
-                    if (live.enabled) {
-                        report.put("module_writes_attempted", report.getInt("module_writes_attempted") + 1)
-                        commit()
-                        VectorManager.change(context, VectorManager.Change(
-                            MODULE, VectorManager.Action.DISABLE, expectedEnabled = true,
-                            expectedScope = scope))
-                    }
-                    val current = VectorManager.scopes(context, MODULE)
+                    // Restore scope before final disable. A scope ADD auto-enables
+                    // Vector v2.2 modules, so never add while assuming disabled.
+                    val current = scope
+                    var enabledForRestore = live.enabled
                     if (current != original) {
+                        if (!enabledForRestore && original == listOf(labTarget)) {
+                            report.put("module_writes_attempted", report.getInt("module_writes_attempted") + 1)
+                            commit()
+                            VectorManager.change(context, VectorManager.Change(
+                                MODULE, VectorManager.Action.ENABLE, expectedEnabled = false,
+                                expectedScope = current))
+                            enabledForRestore = true
+                        }
                         report.put("scope_writes_attempted", report.getInt("scope_writes_attempted") + 1)
                         commit()
                         VectorManager.change(context, VectorManager.Change(
                             MODULE, if (original.isEmpty()) VectorManager.Action.REMOVE_SCOPE
                                 else VectorManager.Action.ADD_SCOPE,
-                            expectedEnabled = false, expectedScope = current, targetPackage = TARGET))
+                            expectedEnabled = enabledForRestore, expectedScope = current,
+                            targetPackage = TARGET))
+                    }
+                    if (VectorManager.inspect(context).modules.single { it.packageName == MODULE }.enabled) {
+                        report.put("module_writes_attempted", report.getInt("module_writes_attempted") + 1)
+                        commit()
+                        VectorManager.change(context, VectorManager.Change(
+                            MODULE, VectorManager.Action.DISABLE, expectedEnabled = true,
+                            expectedScope = VectorManager.scopes(context, MODULE)))
                     }
                     val finalModule = VectorManager.inspect(context).modules.single { it.packageName == MODULE }
                     require(!finalModule.enabled && VectorManager.scopes(context, MODULE) == original) {

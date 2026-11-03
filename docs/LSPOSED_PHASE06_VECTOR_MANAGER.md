@@ -81,3 +81,21 @@ python3 scripts/mmrl_phase06_lab_write.py RUN_ID localhost:5555 \
 Do not rerun acceptance while a journal is in `RECOVERY_REQUIRED` or an
 unknown partial state. No other installed Xposed modules are write targets.
 A successful build or read-only test is not write acceptance.
+
+## R8.4 — Vector v2.2 implicit enable safety
+
+Vector v2.2's `scope add` calls `setModuleScope()`, which also calls
+`enableModule()`. Consequently, **adding a scope to a disabled module can
+silently enable it**. Phase 06 now refuses `ADD_SCOPE` on disabled modules:
+users must explicitly enable first through the normal confirmation dialog.
+The panel disables its Add control and explains this requirement.
+
+The disposable lab now performs explicit enable, scope flip/undo, explicit
+disable, all with read-back and journaling. On-device and host restoration
+restore scopes before the final disable, because a scope addition can enable
+a module. This does not change the protected set of allowed write targets,
+one-time authorization, source/receipt verification, or original-state
+restoration requirements.
+
+Source-only patch: device APKs must be rebuilt by GitHub Actions for R8.4.
+The prior `41551130290` APKs must NOT be used for R8.4 write qualification.

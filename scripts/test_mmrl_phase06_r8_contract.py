@@ -71,6 +71,22 @@ class R8Contract(unittest.TestCase):
         self.assertNotIn('VectorManager.change(', readonly)
         self.assertNotIn('VectorManagerLabDeviceTest', readonly)
 
+    def test_r84_vector_scope_add_implicit_enable_fenced(self):
+        backend = (ROOT/'app/src/main/kotlin/com/dergoogler/mmrl/lsposed/VectorManager.kt').read_text()
+        panel = (ROOT/'app/src/main/kotlin/com/dergoogler/mmrl/ui/screens/lsposed/VectorManagerPanel.kt').read_text()
+        self.assertIn('if (request.action == Action.ADD_SCOPE && !before.enabled)', backend)
+        self.assertIn('!busy && module.enabled && target.isNotBlank()', panel)
+        self.assertIn('lsposed_manage_scope_add_requires_enable', panel)
+        # Device must enable lab explicitly BEFORE its first scope mutation.
+        self.assertLess(self.device.index('report.put("stage", "INTEND_ENABLE")'),
+                        self.device.index('report.put("stage", "INTEND_FIRST_SCOPE_WRITE")'))
+        self.assertLess(self.device.index('report.put("stage", "INTEND_FINAL_SCOPE_WRITE")'),
+                        self.device.index('report.put("stage", "INTEND_DISABLE")'))
+        self.assertIn('flip, expectedEnabled = true', self.device)
+        self.assertIn('undo, expectedEnabled = true', self.device)
+        self.assertIn('if (!enabledForRestore && original == listOf(labTarget))', self.device)
+        self.assertIn("if lab.modules(serial) == 'enabled':", self.host)
+
 CONSENT = 'AUTHORIZE_DISPOSABLE_LAB_ONLY'
 
 if __name__ == '__main__':

@@ -145,6 +145,12 @@ object VectorManager {
             throw IllegalStateException("Scope changed; refresh before editing")
         }
         val target = request.targetPackage
+        // Vector v2.2 scope ADD implicitly enables the owning module. Never
+        // perform an unconfirmed module enable as a side effect of a scope edit.
+        if (request.action == Action.ADD_SCOPE && !before.enabled) {
+            throw IllegalStateException(
+                "Vector enables disabled modules when adding scope; explicitly enable this module first")
+        }
         when (request.action) {
             Action.ENABLE, Action.DISABLE -> {
                 require(target == null) { "Unexpected target for module state change" }

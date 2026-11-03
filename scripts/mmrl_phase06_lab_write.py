@@ -137,15 +137,22 @@ def download_verified(run_id, attempt, head_sha, parent):
 
 
 def installed_apk(serial, package, destination):
-    lines = adb(serial, 'shell', 'pm', 'path', '--user', '0', package).splitlines()
-    if not lines:
+    # The Android package manager may exit nonzero for `pm path` on an absent
+    # package. Check exact user-0 package presence first. A missing disposable
+    # hook-lab package is permitted; an unexpected ADB error is NOT.
+    installed = adb(serial, 'shell', 'pm', 'list', 'packages', '--user', '0', package).splitlines()
+    if f'package:{package}' not in installed:
         return False
+    lines = adb(serial, 'shell', 'pm', 'path', '--user', '0', package).splitlines()
     if len(lines) != 1 or not lines[0].startswith('package:/data/app/') or not lines[0].endswith('.apk'):
         raise RuntimeError('Cannot hash exact single installed APK for ' + package)
     path = lines[0].removeprefix('package:')
-    checked('adb', '-s', serial, 'pull', path, str(destination), timeout=90)
+    try:
+        checked('adb', '-s', serial, 'pull', path, str(destination), timeout=90)
+    except RuntimeError as exc:
+        raise RuntimeError('Cannot pull exact installed APK for ' + package + ': ' + str(exc)) from exc
     if not destination.is_file():
-        raise RuntimeError('ADB could not retrieve installed package for hashing')
+        raise RuntimeError('ADB could not retrieve installed package for hashing: ' + package)
     return True
 
 
@@ -197,17 +204,19 @@ def recover(serial, journal_path, journal):
     persist(journal_path, journal)
     now = lab.modules(serial)
     scopes = lab.scope(serial)
-    if scopes not in ([], [EXPECTED_SCOPE]):
-        raise RuntimeError('Lab scope has unexpected entries; refusing unsafe restoration')
-    if now == 'enabled':
-        lab.cli(serial, 'modules', 'disable', LAB_MODULE)
-        if lab.modules(serial) != 'disabled':
-            raise RuntimeError('Lab module disable was not acknowledged')
+    if now not in ('enabled', 'disabled') or scopes not in ([], [EXPECTED_SCOPE]):
+        raise RuntimeError('Lab state or scope is unexpected; refusing unsafe restoration')
+    # A scope ADD implicitly enables the module in Vector v2.2. Restore scope
+    # first; ALWAYS perform final explicit disable and independently verify it.
     if scopes != journal['original_scope']:
         if journal['original_scope'] == []:
             lab.cli(serial, 'scope', 'rm', LAB_MODULE, EXPECTED_SCOPE)
         else:
             lab.cli(serial, 'scope', 'add', LAB_MODULE, EXPECTED_SCOPE)
+    if lab.modules(serial) == 'enabled':
+        lab.cli(serial, 'modules', 'disable', LAB_MODULE)
+        if lab.modules(serial) != 'disabled':
+            raise RuntimeError('Lab module disable was not acknowledged')
     restored = lab.modules(serial) == 'disabled' and lab.scope(serial) == journal['original_scope']
     if not restored:
         raise RuntimeError('Lab baseline did not restore')

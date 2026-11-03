@@ -15,6 +15,7 @@
     <string name="lsposed_manage_remove" translatable="false">Remove</string>
     <string name="lsposed_manage_target" translatable="false">Installed app package (primary user)</string>
     <string name="lsposed_manage_add" translatable="false">Add application to scope</string>
+    <string name="lsposed_manage_scope_add_requires_enable" translatable="false">Enable this module explicitly before adding scope. Vector automatically enables modules on scope additions.</string>
     <string name="lsposed_manage_confirm_title" translatable="false">Confirm Vector configuration change</string>
     <string name="lsposed_manage_confirm_detail" translatable="false">Action: %1$s\nModule: %2$s\nTarget: %3$s\n\nThis saves configuration through Vector. The app may need restarting before the change takes effect. Do not interpret saved state as a verified hook.</string>
     <string name="lsposed_manage_none" translatable="false">None</string>

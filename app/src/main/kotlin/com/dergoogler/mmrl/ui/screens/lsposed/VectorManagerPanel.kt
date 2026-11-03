@@ -187,7 +187,11 @@ fun VectorManagerPanel() {
                                     modifier = Modifier.fillMaxWidth(), singleLine = true,
                                     enabled = !busy,
                                 )
-                                OutlinedButton(enabled = !busy && target.isNotBlank(), onClick = {
+                                if (!module.enabled) {
+                                    Text(stringResource(R.string.lsposed_manage_scope_add_requires_enable),
+                                        style = MaterialTheme.typography.bodySmall)
+                                }
+                                OutlinedButton(enabled = !busy && module.enabled && target.isNotBlank(), onClick = {
                                     propose(module, VectorManager.Action.ADD_SCOPE, target.trim())
                                 }) { Text(stringResource(R.string.lsposed_manage_add)) }
                             }

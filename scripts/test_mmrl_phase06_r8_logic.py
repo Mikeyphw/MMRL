@@ -35,6 +35,8 @@ class R8Logic(unittest.TestCase):
                 state['scopes']=[]
             elif cmd==('scope','add',r8.LAB_MODULE,r8.EXPECTED_SCOPE):
                 state['scopes']=[r8.EXPECTED_SCOPE]
+                # Vector v2.2 implicitly enables modules when a scope is added.
+                state['enabled']='enabled'
             else:
                 raise AssertionError('Unsafe recovery command: '+str(cmd))
         with tempfile.TemporaryDirectory() as td:
@@ -53,13 +55,18 @@ class R8Logic(unittest.TestCase):
 
     def test_recover_disable_then_remove_lab_target_only(self):
         self.assertEqual(self.recover_with_state([],True,[r8.EXPECTED_SCOPE]),[
-            ('modules','disable',r8.LAB_MODULE),
-            ('scope','rm',r8.LAB_MODULE,r8.EXPECTED_SCOPE)])
+            ('scope','rm',r8.LAB_MODULE,r8.EXPECTED_SCOPE),
+            ('modules','disable',r8.LAB_MODULE)])
 
     def test_recover_disable_then_add_lab_target_only(self):
         self.assertEqual(self.recover_with_state([r8.EXPECTED_SCOPE],True,[]),[
-            ('modules','disable',r8.LAB_MODULE),
-            ('scope','add',r8.LAB_MODULE,r8.EXPECTED_SCOPE)])
+            ('scope','add',r8.LAB_MODULE,r8.EXPECTED_SCOPE),
+            ('modules','disable',r8.LAB_MODULE)])
+
+    def test_recover_scope_add_auto_enable_even_from_disabled(self):
+        self.assertEqual(self.recover_with_state([r8.EXPECTED_SCOPE],False,[]),[
+            ('scope','add',r8.LAB_MODULE,r8.EXPECTED_SCOPE),
+            ('modules','disable',r8.LAB_MODULE)])
 
     def test_recover_noop_when_baseline_unchanged(self):
         self.assertEqual(self.recover_with_state([],False,[]),[])
@@ -72,7 +79,7 @@ class R8Logic(unittest.TestCase):
             with patch.object(r8.lab,'modules',return_value='enabled'), \
                  patch.object(r8.lab,'scope',return_value=['com.unrelated.app/0']), \
                  patch.object(r8.lab,'cli') as command:
-                with self.assertRaisesRegex(RuntimeError,'unexpected entries'):
+                with self.assertRaisesRegex(RuntimeError, 'Lab state or scope is unexpected; refusing unsafe restoration'):
                     r8.recover('localhost:5555',path,doc)
                 command.assert_not_called()
 
@@ -84,6 +91,55 @@ class R8Logic(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError,'does not authorize'):
                     r8.recover('localhost:5555',Path(td)/'journal.json',doc)
                 command.assert_not_called()
+
+    def test_missing_lab_package_does_not_query_pm_path(self):
+        with patch.object(r8, 'adb', return_value='') as adb_call, \
+             patch.object(r8, 'checked') as pull:
+            self.assertFalse(r8.installed_apk('localhost:5555', r8.LAB_MODULE, Path('/not-created')))
+            adb_call.assert_called_once_with(
+                'localhost:5555', 'shell', 'pm', 'list', 'packages', '--user', '0', r8.LAB_MODULE)
+            pull.assert_not_called()
+
+    def test_package_filter_must_match_exact_name(self):
+        with patch.object(r8, 'adb', return_value='package:' + r8.LAB_MODULE + '.other') as adb_call:
+            self.assertFalse(r8.installed_apk('localhost:5555', r8.LAB_MODULE, Path('/not-created')))
+            self.assertEqual(adb_call.call_count, 1)
+
+    def test_listed_package_missing_path_fails_closed(self):
+        def call(serial, *args):
+            if 'list' in args:
+                return 'package:' + r8.LAB_MODULE
+            if 'path' in args:
+                return ''
+            raise AssertionError('Unexpected ADB command: ' + str(args))
+        with patch.object(r8, 'adb', side_effect=call), \
+             patch.object(r8, 'checked') as pull:
+            with self.assertRaisesRegex(RuntimeError, 'Cannot hash exact single installed APK'):
+                r8.installed_apk('localhost:5555', r8.LAB_MODULE, Path('/not-created'))
+            pull.assert_not_called()
+
+    def test_installed_package_requires_single_hashable_apk(self):
+        with tempfile.TemporaryDirectory() as td:
+            destination = Path(td) / 'base.apk'
+            def call(serial, *args):
+                if 'list' in args:
+                    return 'package:' + r8.LAB_MODULE
+                if 'path' in args:
+                    return 'package:/data/app/synthetic/base.apk'
+                raise AssertionError('Unexpected ADB command: ' + str(args))
+            def pull(*args, **kwargs):
+                self.assertEqual(args[:3], ('adb', '-s', 'localhost:5555'))
+                self.assertEqual(args[3], 'pull')
+                destination.write_bytes(b'synthetic APK bytes')
+                return ''
+            with patch.object(r8, 'adb', side_effect=call), \
+                 patch.object(r8, 'checked', side_effect=pull):
+                self.assertTrue(r8.installed_apk('localhost:5555', r8.LAB_MODULE, destination))
+
+    def test_package_listing_error_not_treated_as_absence(self):
+        with patch.object(r8, 'adb', side_effect=RuntimeError('ADB unavailable')):
+            with self.assertRaisesRegex(RuntimeError, 'ADB unavailable'):
+                r8.installed_apk('localhost:5555', r8.LAB_MODULE, Path('/not-created'))
 
     def test_existing_apk_mismatch_refuses_before_any_lab_install(self):
         with tempfile.TemporaryDirectory() as td:
