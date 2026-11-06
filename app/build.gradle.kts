@@ -291,6 +291,9 @@ dependencies {
 
     implementation(project(":terminal-compat"))
     implementation(project(":webui-core-compat"))
+    // N05C: first-party metadata policy only; generic module downloading stays unchanged.
+    implementation(project(":shared-contracts"))
+    testImplementation(libs.junit)
 
     implementation("dev.chrisbanes.haze:haze:1.6.10")
     implementation("dev.chrisbanes.haze:haze-materials:1.6.10")
