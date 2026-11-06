@@ -1,0 +1,137 @@
+name: N03 MMRL Next Native Devtool Android CI
+
+on:
+  push:
+    branches: [next]
+  pull_request:
+    branches: [next]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: n03-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-devtool:
+    name: Native Android APK, lint, JVM tests and receipts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    env:
+      DEVTOOL_SHA: bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c
+      MMRL_NEXT_DEVTOOL: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout exact next source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify non-Gradle N03 source contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest scripts/test_n03_source_contract.py scripts/test_n03_lint_baseline.py -v
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK without obsolete tools package
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0 platform-tools'
+
+      - name: Validate Gradle wrapper and enable hosted cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
+      - name: Install exact Devtool source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/devtool-src"
+          git -C "$RUNNER_TEMP/devtool-src" checkout --detach "$DEVTOOL_SHA"
+          test "$(git -C "$RUNNER_TEMP/devtool-src" rev-parse HEAD)" = "$DEVTOOL_SHA"
+          python3 -m venv "$RUNNER_TEMP/devtool-venv"
+          "$RUNNER_TEMP/devtool-venv/bin/python" -m pip install --disable-pip-version-check "$RUNNER_TEMP/devtool-src"
+
+      - name: Compile reviewed native Devtool graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/hosted_devtool_next.py plan \
+            --root "$GITHUB_WORKSPACE" --evidence "$RUNNER_TEMP/n03/plan.json"
+
+      - name: Execute native Devtool APK node
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/hosted_devtool_next.py run --node apk \
+            --root "$GITHUB_WORKSPACE" --inputs "$RUNNER_TEMP/n03/inputs" \
+            --outputs "$RUNNER_TEMP/n03/outputs"
+
+      - name: Verify native debug APK and immutable Devtool receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/hosted_devtool_next.py verify \
+            --root "$GITHUB_WORKSPACE" --outputs "$RUNNER_TEMP/n03/outputs" \
+            --inputs "$RUNNER_TEMP/n03/inputs" \
+            --evidence "$RUNNER_TEMP/n03/verified.json"
+
+      - name: Execute independent native Devtool lint node
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/hosted_devtool_next.py run --node lint \
+            --root "$GITHUB_WORKSPACE" --inputs "$RUNNER_TEMP/n03/inputs" \
+            --outputs "$RUNNER_TEMP/n03/outputs"
+
+      - name: Execute independent native Devtool JVM test node
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/devtool-venv/bin/python" scripts/hosted_devtool_next.py run --node test \
+            --root "$GITHUB_WORKSPACE" --inputs "$RUNNER_TEMP/n03/inputs" \
+            --outputs "$RUNNER_TEMP/n03/outputs"
+
+      - name: Publish verified debug-only APK and Devtool receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmrl-next-n03-native-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/n03/plan.json
+            ${{ runner.temp }}/n03/verified.json
+            ${{ runner.temp }}/n03/outputs/node-01/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish hosted JVM test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmrl-next-n03-tests-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: app/build/test-results/testOfficialDebugUnitTest/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Publish hosted lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmrl-next-n03-lint-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: app/build/reports/lint-results-officialDebug.*
+          if-no-files-found: warn
+          retention-days: 7
