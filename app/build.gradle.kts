@@ -175,11 +175,19 @@ android {
 androidComponents {
     onVariants { variant ->
         variant.outputs.filterIsInstance<VariantOutputImpl>().forEach { output ->
-            output.outputFileName.set(
-                output.versionName.map { vName ->
-                    "MMRL-${vName}-${variant.buildType ?: variant.name}.apk"
-                }
-            )
+            // Stable filename only for the pinned GitHub-hosted native Devtool job.
+            if (variant.name == "officialDebug" &&
+                    System.getenv("MMRL_NEXT_DEVTOOL") == "1" &&
+                    System.getenv("GITHUB_ACTIONS") == "true" &&
+                    System.getenv("GITHUB_REPOSITORY") == "Mikeyphw/MMRL") {
+                output.outputFileName.set("MMRL-Next-CI-OfficialDebug.apk")
+            } else {
+                output.outputFileName.set(
+                    output.versionName.map { vName ->
+                        "MMRL-${vName}-${variant.buildType ?: variant.name}.apk"
+                    }
+                )
+            }
         }
     }
     onVariants(selector().withBuildType("release")) {
