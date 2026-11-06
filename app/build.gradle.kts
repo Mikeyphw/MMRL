@@ -21,6 +21,16 @@ android {
     compileSdk = COMPILE_SDK
     namespace = mmrlBaseApplicationId
 
+    // HF02: Existing MMRL issues from a reviewed N03 run; new errors remain fatal.
+    // Only native hosted Devtool CI uses the historical baseline.
+    if (System.getenv("MMRL_NEXT_DEVTOOL") == "1" &&
+        System.getenv("GITHUB_ACTIONS") == "true" &&
+        System.getenv("GITHUB_REPOSITORY") == "Mikeyphw/MMRL") {
+        lint {
+            baseline = file("lint-baseline.xml")
+        }
+    }
+
     defaultConfig {
         applicationId = namespace
         versionName = "v$appVersion"
