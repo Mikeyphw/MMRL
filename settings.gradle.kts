@@ -45,3 +45,7 @@ include(
     ":datastore"
 )
 include(":terminal-compat", ":webui-core-compat", ":compat")
+
+// N05C: source-locked, non-privileged Kotlin contracts; not an upstream/LSPosed merge.
+include(":shared-contracts")
+project(":shared-contracts").projectDir = file("integration/shared-contracts")

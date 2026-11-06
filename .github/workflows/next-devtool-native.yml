@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          submodules: recursive
           fetch-depth: 0
 
       - name: Set up Python 3.12
@@ -39,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          python3 -m unittest scripts/test_n03_source_contract.py scripts/test_n03_lint_baseline.py -v
+          python3 -m unittest scripts/test_n03_source_contract.py scripts/test_n03_lint_baseline.py scripts/test_n05c_shared_source.py -v
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
