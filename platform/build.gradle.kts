@@ -12,20 +12,6 @@ android {
     namespace = "com.dergoogler.mmrl.platform"
     compileSdk = 36
 
-    // Hosted CI installs NDK 29 explicitly. Keep non-hosted/native developer builds unchanged.
-    // Prevent AGP from implicitly downloading its different default NDK 28 in CI.
-    if (providers.gradleProperty("mmrlLsposedHosted").orNull == "true") {
-        ndkVersion = "29.0.14206865"
-    }
-
-    // CI-only workaround for an Android Lint UAST crash in SuFileReadWrite.kt.
-    // Preserve every other lint detector and all non-CI build behavior.
-    if (providers.gradleProperty("mmrlLsposedHosted").orNull == "true") {
-        lint {
-            disable += "UElementAsPsi"
-        }
-    }
-
     publishing {
         singleVariant("release")
     }

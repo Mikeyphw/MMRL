@@ -26,12 +26,12 @@
         android:maxSdkVersion="29" />
 
     <permission
-        android:name="${phase06DynamicPermissionId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:name="${__packageName__}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature"
         tools:node="remove" />
 
     <uses-permission
-        android:name="${phase06DynamicPermissionId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:name="${__packageName__}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         tools:node="remove" />
 
     <queries>
