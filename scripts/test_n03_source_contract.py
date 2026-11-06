@@ -67,6 +67,15 @@ class N03SourceContract(unittest.TestCase):
         for value in ("Lsposed", "VectorManager", "hook-lab", "LSPosed"):
             self.assertNotIn(value, (ROOT / ".devtool.toml").read_text())
 
+    def test_n03_lint_crash_exception_is_limited_to_hosted_devtool(self):
+        platform = (ROOT / "platform/build.gradle.kts").read_text()
+        self.assertIn('System.getenv("MMRL_NEXT_DEVTOOL") == "1"', platform)
+        self.assertIn('System.getenv("GITHUB_ACTIONS") == "true"', platform)
+        self.assertIn('System.getenv("GITHUB_REPOSITORY") == "Mikeyphw/MMRL"', platform)
+        self.assertEqual(platform.count('disable += "UElementAsPsi"'), 1)
+        self.assertNotIn('abortOnError = false', platform)
+
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,16 @@ android {
     namespace = "com.dergoogler.mmrl.platform"
     compileSdk = 36
 
+    // AGP Lint's UElementAsPsi detector crashes on SuFileReadWrite.kt in hosted N03.
+    // Keep all other detectors enabled; ordinary upstream/local builds are unchanged.
+    if (System.getenv("MMRL_NEXT_DEVTOOL") == "1" &&
+        System.getenv("GITHUB_ACTIONS") == "true" &&
+        System.getenv("GITHUB_REPOSITORY") == "Mikeyphw/MMRL") {
+        lint {
+            disable += "UElementAsPsi"
+        }
+    }
+
     publishing {
         singleVariant("release")
     }
