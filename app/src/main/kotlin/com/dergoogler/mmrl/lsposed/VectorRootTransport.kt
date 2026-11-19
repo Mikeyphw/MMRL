@@ -96,14 +96,26 @@ internal object VectorRootTransport {
                 ready.countDown()
             }
         }
-        if (!scheduled || !ready.await(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+        if (!scheduled) {
             main.post { runCatching { RootService.unbind(conn) } }
-            throw IOException("Vector root service bind timed out or unavailable")
+            throw IOException("Vector root IPC [BIND_DISPATCH_FAILED]: main looper rejected binding")
+        }
+        val signalled = try {
+            ready.await(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            main.post { runCatching { RootService.unbind(conn) } }
+            throw IOException("Vector root IPC [BIND_INTERRUPTED]: service binding interrupted", e)
+        }
+        if (!signalled) {
+            main.post { runCatching { RootService.unbind(conn) } }
+            throw IOException("Vector root IPC [BIND_TIMEOUT]: service did not connect within 20 seconds")
         }
         val bound = service.get()
         if (bound == null || !bound.asBinder().isBinderAlive) {
             main.post { runCatching { RootService.unbind(conn) } }
-            throw IOException(problem.get() ?: "Vector root service did not connect")
+            throw IOException("Vector root IPC [BIND_FAILED]: " +
+                (problem.get() ?: "service returned no live binder"))
         }
         binding = conn
         connected = bound

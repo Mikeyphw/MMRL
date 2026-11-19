@@ -89,6 +89,7 @@ jobs:
           python3 scripts/test_mmrl_phase06_root_transport_contract.py
           python3 scripts/test_mmrl_phase06_r8_contract.py
           python3 scripts/test_mmrl_phase06_r8_logic.py
+          python3 scripts/test_mmrl_phase07_r1_contract.py
           python3 scripts/test_mmrl_phase06_native_toolchain.py
           python3 scripts/test_mmrl_phase05_contract.py
 

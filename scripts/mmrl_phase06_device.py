@@ -73,7 +73,10 @@ def main():
         raise RuntimeError('Physical Android device required')
     github = json.loads(checked('gh', 'api', f'repos/{REPO}/actions/runs/{a.run_id}'))
     if (github.get('status') != 'completed' or github.get('conclusion') != 'success'
-            or github.get('head_branch') not in ('feature/lsposed-phase06-vector-manager', 'lsposed-vector')):
+            or github.get('head_branch') not in (
+                'feature/lsposed-phase06-vector-manager',
+                'feature/lsposed-phase07-manager-ux',
+                'lsposed-vector')):
         raise RuntimeError('Exact Phase06 hosted run has not passed')
     attempt = int(github.get('run_attempt', 0))
     if attempt < 1:

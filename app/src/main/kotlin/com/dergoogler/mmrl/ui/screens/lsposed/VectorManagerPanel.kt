@@ -38,6 +38,7 @@ fun VectorManagerPanel() {
     var selected by remember { mutableStateOf<String?>(null) }
     var currentScope by remember { mutableStateOf<List<VectorManager.Scope>?>(null) }
     var target by remember { mutableStateOf("") }
+    var moduleQuery by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
@@ -50,6 +51,7 @@ fun VectorManagerPanel() {
         notice = null
         selected = null
         currentScope = null
+        target = ""
         coroutineScope.launch {
             val result = withContext(Dispatchers.IO) { runCatching { VectorManager.inspect(context) } }
             result.onSuccess { overview = it }.onFailure {
@@ -66,6 +68,7 @@ fun VectorManagerPanel() {
         error = null
         selected = modulePackage
         currentScope = null
+        target = ""
         coroutineScope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching { VectorManager.scopes(context, modulePackage) }
@@ -136,13 +139,36 @@ fun VectorManagerPanel() {
             Text(stringResource(R.string.lsposed_manage_refresh))
         }
         if (busy) Text(stringResource(R.string.lsposed_manage_working))
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        error?.let { failure ->
+            Text(failure, color = MaterialTheme.colorScheme.error)
+            if (failure.contains("[BIND_")) {
+                Text(stringResource(R.string.lsposed_manage_root_bind_help),
+                    style = MaterialTheme.typography.bodySmall)
+            }
+        }
         notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         overview?.let { data ->
             Text(stringResource(R.string.lsposed_manage_framework, data.frameworkVersion, data.apiVersion),
                 style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.lsposed_manage_module_count,
+                data.modules.count { it.enabled }, data.modules.size),
+                style = MaterialTheme.typography.bodySmall)
+            OutlinedTextField(
+                value = moduleQuery,
+                onValueChange = { moduleQuery = it.take(80) },
+                label = { Text(stringResource(R.string.lsposed_manage_search_modules)) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !busy,
+                singleLine = true,
+            )
+            val term = moduleQuery.trim()
+            val visibleModules = data.modules.filter { module ->
+                term.isEmpty() || module.label.contains(term, ignoreCase = true) ||
+                    module.packageName.contains(term, ignoreCase = true)
+            }
             if (data.modules.isEmpty()) Text(stringResource(R.string.lsposed_manage_empty))
-            data.modules.forEach { module ->
+            else if (visibleModules.isEmpty()) Text(stringResource(R.string.lsposed_manage_no_matches))
+            visibleModules.forEach { module ->
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(module.label, style = MaterialTheme.typography.titleSmall)
@@ -161,6 +187,7 @@ fun VectorManagerPanel() {
                                 if (selected == module.packageName) {
                                     selected = null
                                     currentScope = null
+                                    target = ""
                                 } else inspectScope(module.packageName)
                             }) {
                                 Text(stringResource(R.string.lsposed_manage_scopes))
