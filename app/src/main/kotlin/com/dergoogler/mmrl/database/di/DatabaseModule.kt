@@ -2,6 +2,7 @@ package com.dergoogler.mmrl.database.di
 
 import android.content.Context
 import com.dergoogler.mmrl.database.AppDatabase
+import com.dergoogler.mmrl.database.activity.ActivityHistoryDao
 import com.dergoogler.mmrl.database.dao.BlacklistDao
 import com.dergoogler.mmrl.database.dao.JoinDao
 import com.dergoogler.mmrl.database.dao.LocalDao
@@ -47,4 +48,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun providesBlacklistDao(db: AppDatabase): BlacklistDao = db.blacklistDao()
+
+    @Provides
+    @Singleton
+    fun providesActivityHistoryDao(db: AppDatabase): ActivityHistoryDao = db.activityHistoryDao()
 }
