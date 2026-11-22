@@ -471,4 +471,7 @@
     <string name="settings_umount_modules_default_desc">アプリプロファイルの「モジュールのアンマウント」のグローバルデフォルト値です。有効化すると、プロファイルが設定されていないアプリのシステムへのすべてのモジュール変更が削除されます。</string>
     <string name="meta_modules">メタモジュール</string>
     <string name="menu_show_stars">スターを表示する</string>
+    <string name="activity_history">操作履歴</string>
+    <string name="activity_empty">まだ操作は記録されていません</string>
+    <string name="activity_scope">ローカル操作の状態は閲覧専用です。自動再試行は行いません</string>
 </resources>

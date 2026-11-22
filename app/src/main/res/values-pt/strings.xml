@@ -446,4 +446,7 @@
     <string name="empty">Vazio</string>
     <string name="settings_disable_su">Desativar compatibilidade com su</string>
     <string name="settings_disable_su_desc">Desative temporariamente a capacidade de qualquer app obter privilégios root via o comando ⁠su (Processos root existentes não serão afetados).</string>
+    <string name="activity_history">Histórico de atividades</string>
+    <string name="activity_empty">Nenhuma operação registrada até agora</string>
+    <string name="activity_scope">Estado das operações locais somente para leitura; sem novas tentativas automáticas</string>
 </resources>

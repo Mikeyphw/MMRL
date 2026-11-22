@@ -446,4 +446,7 @@
     <string name="empty">Leer</string>
     <string name="settings_disable_su">su-Kompatibilität deaktivieren</string>
     <string name="settings_disable_su_desc">Deaktiviert vorübergehend die Möglichkeit für Apps, über den Befehl su Root-Rechte zu erlangen (bestehende Root-Prozesse sind nicht betroffen).</string>
+    <string name="activity_history">Aktivitätsverlauf</string>
+    <string name="activity_empty">Noch keine Vorgänge aufgezeichnet</string>
+    <string name="activity_scope">Lokaler Vorgangsstatus nur zur Ansicht; keine automatische Wiederholung</string>
 </resources>

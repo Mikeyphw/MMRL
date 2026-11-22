@@ -470,4 +470,7 @@
     <string name="menu_show_stars">Показать звёзды</string>
     <string name="profile_custom">Свой вариант</string>
     <string name="profile_namespace_inherited">Унаследовано</string>
+    <string name="activity_history">История действий</string>
+    <string name="activity_empty">Операции пока не зарегистрированы</string>
+    <string name="activity_scope">Состояние локальных операций только для просмотра; без автоматических повторных попыток</string>
 </resources>

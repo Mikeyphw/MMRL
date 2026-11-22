@@ -446,4 +446,7 @@
     <string name="empty">காலி</string>
     <string name="settings_disable_su">su இணக்கத்தன்மையை முடக்கு</string>
     <string name="settings_disable_su_desc">எந்தவொரு பயன்பாடும் su கட்டளை வழியாக ரூட் சலுகைகளைப் பெறும் திறனைத் தற்காலிகமாக முடக்கவும் (ஏற்கனவே இயங்கும் ரூட் செயல்முறைகள் பாதிக்கப்படாது).</string>
+    <string name="activity_history">செயல்பாட்டு வரலாறு</string>
+    <string name="activity_empty">இதுவரை எந்தச் செயல்பாடும் பதிவு செய்யப்படவில்லை</string>
+    <string name="activity_scope">உள்ளூர் செயல்பாடுகளின் நிலையைப் பார்க்க மட்டுமே முடியும்; தானியங்கி மறுமுயற்சி இல்லை</string>
 </resources>

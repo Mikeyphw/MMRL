@@ -471,4 +471,7 @@
     <string name="empty">空</string>
     <string name="settings_disable_su">停用 su 相容性</string>
     <string name="settings_disable_su_desc">暫時停用任何應用程式透過 ⁠su 指令取得 Root 權限的能力（不影響現有的 Root 程序）。</string>
+    <string name="activity_history">活動紀錄</string>
+    <string name="activity_empty">尚未記錄任何操作</string>
+    <string name="activity_scope">本機操作狀態僅供檢視；不會自動重試</string>
 </resources>

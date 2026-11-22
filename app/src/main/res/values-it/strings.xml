@@ -161,4 +161,7 @@
     <string name="empty">Vuoto</string>
     <string name="learn_more">Saperne di più</string>
     <string name="settings_developer_mode">Modalità sviluppatore</string>
+    <string name="activity_history">Cronologia attività</string>
+    <string name="activity_empty">Nessuna operazione registrata</string>
+    <string name="activity_scope">Stato delle operazioni locali in sola lettura; nessun nuovo tentativo automatico</string>
 </resources>

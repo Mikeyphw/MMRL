@@ -446,4 +446,7 @@
     <string name="empty">Gol</string>
     <string name="settings_disable_su">Dezactivează compatibilitatea su</string>
     <string name="settings_disable_su_desc">Dezactivează temporar capacitatea oricărei aplicații de a obține privilegii root prin comanda su (procesele root existente nu vor fi afectate).</string>
+    <string name="activity_history">Istoricul activității</string>
+    <string name="activity_empty">Nicio operație înregistrată încă</string>
+    <string name="activity_scope">Starea operațiilor locale este doar pentru citire; fără reîncercare automată</string>
 </resources>

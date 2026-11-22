@@ -446,4 +446,7 @@
     <string name="settings_disable_su_desc">غیرفعال کردن موقت توانایی هر برنامه برای کسب امتیازات ریشه از طریق دستور su (فرآیندهای ریشه موجود تحت تأثیر قرار نمی‌گیرند).</string>
     <string name="menu_show_stars">نمایش ستاره‌ها</string>
     <string name="meta_modules">ماژول های متا</string>
+    <string name="activity_history">تاریخچه فعالیت</string>
+    <string name="activity_empty">هنوز عملیاتی ثبت نشده است</string>
+    <string name="activity_scope">وضعیت عملیات محلی فقط برای مشاهده است؛ تلاش مجدد خودکار انجام نمی‌شود</string>
 </resources>
