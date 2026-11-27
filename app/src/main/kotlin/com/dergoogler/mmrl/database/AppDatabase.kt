@@ -6,6 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.dergoogler.mmrl.database.activity.ActivityHistoryDao
+import com.dergoogler.mmrl.database.activity.ActivityDiagnosticEntity
+import com.dergoogler.mmrl.database.activity.ActivityHistoryLogMigration
 import com.dergoogler.mmrl.database.activity.ActivityHistoryMigration
 import com.dergoogler.mmrl.database.activity.ActivityOperationEntity
 import com.dergoogler.mmrl.database.dao.BlacklistDao
@@ -31,8 +33,9 @@ import dev.dergoogler.mmrl.compat.Converters
         LocalModuleEntity::class,
         BlacklistEntity::class,
         ActivityOperationEntity::class,
+        ActivityDiagnosticEntity::class,
     ],
-    version = 16,
+    version = 17,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -60,8 +63,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context,
                     AppDatabase::class.java,
                     "mmrl_v2",
-                ).addMigrations(ActivityHistoryMigration)
-                .fallbackToDestructiveMigration()
+                ).addMigrations(ActivityHistoryMigration, ActivityHistoryLogMigration)
                 .build()
     }
 }

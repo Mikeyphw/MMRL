@@ -32,9 +32,8 @@ class App : Application() {
         NetworkUtils.setCacheDir(cacheDir)
 
         // App process restart: never infer completion or automatically retry an operation.
-        val cutoff = System.currentTimeMillis()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            runCatching { activityHistoryRepository.recoverAtProcessStart(cutoff) }
+            runCatching { activityHistoryRepository.recoverAtProcessStart() }
                 .onFailure { android.util.Log.w("MMRLActivity", "Activity recovery unavailable") }
         }
     }

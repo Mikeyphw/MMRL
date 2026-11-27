@@ -36,7 +36,7 @@ open class APatchModuleManager : BaseModuleManager() {
         callback: IModuleOpsCallback,
     ) {
         val dir = id.moduleDir
-        if (!dir.exists()) callback.onFailure(id, null)
+        if (!dir.exists()) return callback.onFailure(id, null)
 
         if (useShell) {
             "apd module enable $id".submit {

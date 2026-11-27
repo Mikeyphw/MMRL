@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "repository": "Mikeyphw/MMRL",
+  "base_branch": "next",
+  "event": "pull_request",
+  "release_qualification": "separate",
+  "required_workflows": [
+    {
+      "name": "MMRL Next - Android source build (no release)",
+      "workflow_id": 423386652
+    },
+    {
+      "name": "N03 MMRL Next Native Devtool Android CI",
+      "workflow_id": 423386651
+    }
+  ]
+}

@@ -13,6 +13,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.database.activity.ModuleActivityCoordinator
+import io.github.mikeyphw.mmrl.shared.OperationKind
 import com.dergoogler.mmrl.database.entity.Repo
 import com.dergoogler.mmrl.database.entity.Repo.Companion.UPDATE_JSON
 import com.dergoogler.mmrl.database.entity.Repo.Companion.toRepo
@@ -28,7 +30,6 @@ import com.dergoogler.mmrl.model.state.OnlineState
 import com.dergoogler.mmrl.model.state.OnlineState.Companion.createState
 import com.dergoogler.mmrl.platform.PlatformManager
 import com.dergoogler.mmrl.platform.model.ModId
-import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.service.DownloadService
@@ -61,6 +62,7 @@ class ModuleViewModel
         localRepository: LocalRepository,
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
+        private val moduleActivityCoordinator: ModuleActivityCoordinator,
         application: Application,
     ) : MMRLViewModel(
             localRepository = localRepository,
@@ -278,74 +280,57 @@ class ModuleViewModel
             return progress
         }
 
-        private val opsTasks = mutableStateListOf<ModId>()
-        private val opsCallback =
-            object : IModuleOpsCallback.Stub() {
-                override fun onSuccess(id: ModId) {
-                    viewModelScope.launch {
-                        modulesRepository.getLocal(id)
-                        opsTasks.remove(id)
-                    }
-                }
-
-                override fun onFailure(
-                    id: ModId,
-                    msg: String?,
-                ) {
-                    opsTasks.remove(id)
-                    Timber.w("$id: $msg")
-                }
-            }
-
         fun createModuleOps(
             useShell: Boolean,
             module: LocalModule,
         ) = when (module.state) {
             State.ENABLE ->
                 ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
+                    isOpsRunning = moduleActivityCoordinator.isRunning(module.id),
                     toggle = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.disable(module.id, useShell, opsCallback)
+                        moduleActivityCoordinator.run(module.id, OperationKind.DISABLE) {
+                            PlatformManager.moduleManager.disable(module.id, useShell, it)
+                        }
                     },
                     change = {
                         Timber.d("Pressed ENABLE")
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.remove(module.id, useShell, opsCallback)
-                        local = local?.copy(state = State.REMOVE)
+                        moduleActivityCoordinator.run(module.id, OperationKind.REMOVE) {
+                            PlatformManager.moduleManager.remove(module.id, useShell, it)
+                        }
                     },
                 )
 
             State.DISABLE ->
                 ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
+                    isOpsRunning = moduleActivityCoordinator.isRunning(module.id),
                     toggle = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.enable(module.id, useShell, opsCallback)
+                        moduleActivityCoordinator.run(module.id, OperationKind.ENABLE) {
+                            PlatformManager.moduleManager.enable(module.id, useShell, it)
+                        }
                     },
                     change = {
                         Timber.d("Pressed DISABLE")
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.remove(module.id, useShell, opsCallback)
-                        local = local?.copy(state = State.REMOVE)
+                        moduleActivityCoordinator.run(module.id, OperationKind.REMOVE) {
+                            PlatformManager.moduleManager.remove(module.id, useShell, it)
+                        }
                     },
                 )
 
             State.REMOVE ->
                 ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
+                    isOpsRunning = moduleActivityCoordinator.isRunning(module.id),
                     toggle = {},
                     change = {
                         Timber.d("Pressed REMOVE")
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager.enable(module.id, useShell, opsCallback)
-                        local = local?.copy(state = State.ENABLE)
+                        moduleActivityCoordinator.run(module.id, OperationKind.ENABLE) {
+                            PlatformManager.moduleManager.enable(module.id, useShell, it)
+                        }
                     },
                 )
 
             State.UPDATE ->
                 ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
+                    isOpsRunning = moduleActivityCoordinator.isRunning(module.id),
                     toggle = {},
                     change = {},
                 )

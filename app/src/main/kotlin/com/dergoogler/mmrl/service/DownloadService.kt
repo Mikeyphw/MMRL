@@ -143,9 +143,12 @@ class DownloadService : LifecycleService() {
                         )
                     checkNotNull(contentResolver.openOutputStream(uri))
                 } catch (e: Throwable) {
-                    listener.onFailure(e)
-                    runCatching { activityHistoryRepository.failed(activityId) }
+                    val failureSaved = runCatching {
+                        activityHistoryRepository.failed(activityId, "DOWNLOAD_FAILED")
+                    }.isSuccess
                     activeOperationIds.remove(item)
+                    listener.onFailure(if (failureSaved) e
+                        else java.io.IOException("Activity failure persistence unavailable", e))
                     return@launch
                 }
 
@@ -156,13 +159,19 @@ class DownloadService : LifecycleService() {
                     output = output,
                     onProgress = listener::getProgress,
                 ).onSuccess {
-                    runCatching { activityHistoryRepository.success(activityId) }
+                    val activitySaved = runCatching {
+                        activityHistoryRepository.success(activityId)
+                    }.isSuccess
                     activeOperationIds.remove(item)
-                    listener.onSuccess()
+                    if (activitySaved) listener.onSuccess()
+                    else listener.onFailure(java.io.IOException("Activity persistence failed; result needs review"))
                 }.onFailure {
-                    runCatching { activityHistoryRepository.failed(activityId) }
+                    val failureSaved = runCatching {
+                        activityHistoryRepository.failed(activityId, "DOWNLOAD_FAILED")
+                    }.isSuccess
                     activeOperationIds.remove(item)
-                    listener.onFailure(it)
+                    listener.onFailure(if (failureSaved) it
+                        else java.io.IOException("Activity failure persistence unavailable", it))
                 }
         }
         return super.onStartCommand(intent, flags, startId)

@@ -62,7 +62,7 @@ open class KernelSUModuleManager : BaseModuleManager() {
         callback: IModuleOpsCallback,
     ) {
         val dir = id.moduleDir
-        if (!dir.exists()) callback.onFailure(id, null)
+        if (!dir.exists()) return callback.onFailure(id, null)
 
         if (useShell) {
             "ksud module enable $id".submit {
