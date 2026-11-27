@@ -34,3 +34,4 @@ app/playstore/*
 
 # MacOS
 .DS_Store
+ # Devtool runtime state /.devtool/
