@@ -471,4 +471,7 @@
     <string name="empty">فارغ</string>
     <string name="settings_disable_su">تعطيل توافق su</string>
     <string name="settings_disable_su_desc">تعطيل قدرة أي تطبيق مؤقتًا على الحصول على صلاحيات الجذر عبر أمر su (لن تتأثر عمليات الجذر الحالية).</string>
+    <string name="activity_history">سجل النشاط</string>
+    <string name="activity_empty">لم يتم تسجيل أي عمليات بعد</string>
+    <string name="activity_scope">حالة العمليات المحلية للعرض فقط؛ دون إعادة محاولة تلقائية</string>
 </resources>

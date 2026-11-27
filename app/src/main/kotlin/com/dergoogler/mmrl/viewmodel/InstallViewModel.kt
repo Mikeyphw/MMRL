@@ -4,6 +4,8 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.BuildConfig
+import com.dergoogler.mmrl.database.activity.ActivityHistoryRepository
+import io.github.mikeyphw.mmrl.shared.OperationKind
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Const.CLEAR_CMD
 import com.dergoogler.mmrl.app.Event
@@ -42,6 +44,7 @@ constructor(
     localRepository: LocalRepository,
     modulesRepository: ModulesRepository,
     userPreferencesRepository: UserPreferencesRepository,
+    private val activityHistoryRepository: ActivityHistoryRepository,
 ) : TerminalViewModel(application, localRepository, modulesRepository, userPreferencesRepository) {
     val logfile get() = "Install_${LocalDateTime.now()}.log"
 
@@ -162,7 +165,19 @@ constructor(
                 log(CLEAR_CMD)
             }
 
-            val result = loadAndInstallModule(uri, validBulkModules)
+            // Persist the operation *before* invoking the privileged installer.
+            // Installer shell exit alone does not establish independently verified module state.
+            val operationId = activityHistoryRepository.beginOperation(OperationKind.INSTALL)
+            val result = try {
+                loadAndInstallModule(uri, validBulkModules)
+            } catch (failure: Exception) {
+                withContext(kotlinx.coroutines.NonCancellable) {
+                    runCatching { activityHistoryRepository.needsReconciliation(operationId) }
+                        .onFailure { failure.addSuppressed(it) }
+                }
+                throw failure
+            }
+            activityHistoryRepository.needsReconciliation(operationId)
             if (!result) {
                 allSucceeded = false
                 withContext(Dispatchers.Main) {

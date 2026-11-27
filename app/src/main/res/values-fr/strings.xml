@@ -446,4 +446,7 @@
     <string name="profile_namespace">Espace de noms de montage</string>
     <string name="profile_namespace_inherited">Hérité</string>
     <string name="settings_disable_su">Désactiver la compatibilité su</string>
+    <string name="activity_history">Historique des activités</string>
+    <string name="activity_empty">Aucune opération enregistrée pour le moment</string>
+    <string name="activity_scope">État des opérations locales en lecture seule ; aucune relance automatique</string>
 </resources>

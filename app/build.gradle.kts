@@ -35,6 +35,7 @@ android {
         applicationId = namespace
         versionName = "v$appVersion"
         versionCode = appVersion
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         androidResources.localeFilters += arrayOf(
             "en",
@@ -294,6 +295,8 @@ dependencies {
     // N05C: first-party metadata policy only; generic module downloading stays unchanged.
     implementation(project(":shared-contracts"))
     testImplementation(libs.junit)
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
 
     implementation("dev.chrisbanes.haze:haze:1.6.10")
     implementation("dev.chrisbanes.haze:haze-materials:1.6.10")

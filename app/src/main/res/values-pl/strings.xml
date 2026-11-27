@@ -447,4 +447,7 @@
     <string name="settings_disable_su_desc">Tymczasowo wyłącz możliwość uzyskania uprawnień roota przez dowolną aplikację za pomocą polecenia ⁠su (istniejące procesy roota nie zostaną naruszone).</string>
     <string name="meta_modules">Moduły meta</string>
     <string name="menu_show_stars">Pokaż gwiazdki</string>
+    <string name="activity_history">Historia aktywności</string>
+    <string name="activity_empty">Nie zarejestrowano jeszcze żadnych operacji</string>
+    <string name="activity_scope">Stan operacji lokalnych tylko do odczytu; bez automatycznego ponawiania</string>
 </resources>

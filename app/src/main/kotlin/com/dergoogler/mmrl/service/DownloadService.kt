@@ -13,6 +13,7 @@ import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.database.activity.ActivityHistoryRepository
 import com.dergoogler.mmrl.app.Const
 import com.dergoogler.mmrl.app.utils.NotificationUtils
 import com.dergoogler.mmrl.compat.MediaStoreCompat.createDownloadUri
@@ -44,6 +45,8 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class DownloadService : LifecycleService() {
     @Inject lateinit var userPreferencesRepository: UserPreferencesRepository
+    @Inject lateinit var activityHistoryRepository: ActivityHistoryRepository
+    private val activeOperationIds = mutableMapOf<TaskItem, String>()
 
     private val tasks = mutableListOf<TaskItem>()
 
@@ -98,6 +101,14 @@ class DownloadService : LifecycleService() {
                 return@launch
             }
 
+            // Persist an app-owned Activity record before opening the transfer output.
+            val activityId = try { activityHistoryRepository.beginDownload() }
+                catch (_: Exception) {
+                    onDownloadFailed(item, "Activity storage unavailable")
+                    return@launch
+                }
+            activeOperationIds[item] = activityId
+
             val listener =
                 object : IDownloadListener {
                     override fun getProgress(value: Float) {
@@ -132,7 +143,12 @@ class DownloadService : LifecycleService() {
                         )
                     checkNotNull(contentResolver.openOutputStream(uri))
                 } catch (e: Throwable) {
-                    listener.onFailure(e)
+                    val failureSaved = runCatching {
+                        activityHistoryRepository.failed(activityId, "DOWNLOAD_FAILED")
+                    }.isSuccess
+                    activeOperationIds.remove(item)
+                    listener.onFailure(if (failureSaved) e
+                        else java.io.IOException("Activity failure persistence unavailable", e))
                     return@launch
                 }
 
@@ -143,9 +159,19 @@ class DownloadService : LifecycleService() {
                     output = output,
                     onProgress = listener::getProgress,
                 ).onSuccess {
-                    listener.onSuccess()
+                    val activitySaved = runCatching {
+                        activityHistoryRepository.success(activityId)
+                    }.isSuccess
+                    activeOperationIds.remove(item)
+                    if (activitySaved) listener.onSuccess()
+                    else listener.onFailure(java.io.IOException("Activity persistence failed; result needs review"))
                 }.onFailure {
-                    listener.onFailure(it)
+                    val failureSaved = runCatching {
+                        activityHistoryRepository.failed(activityId, "DOWNLOAD_FAILED")
+                    }.isSuccess
+                    activeOperationIds.remove(item)
+                    listener.onFailure(if (failureSaved) it
+                        else java.io.IOException("Activity failure persistence unavailable", it))
                 }
         }
         return super.onStartCommand(intent, flags, startId)
@@ -165,6 +191,9 @@ class DownloadService : LifecycleService() {
                 .setProgress(100, (progress * 100).toInt(), false)
                 .build()
 
+        activeOperationIds[item]?.let { id ->
+            lifecycleScope.launch { runCatching { activityHistoryRepository.progress(id, (progress * 100).toInt()) } }
+        }
         notify(item.key, notification)
     }
 

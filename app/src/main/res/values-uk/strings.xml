@@ -446,4 +446,7 @@
     <string name="empty">Порожньо</string>
     <string name="settings_disable_su">Вимкнути сумісність із su</string>
     <string name="settings_disable_su_desc">Тимчасово вимкнути можливість будь-якого застосунку отримати root-привілеї за допомогою команди su (наявні root-процеси не будуть порушені).</string>
+    <string name="activity_history">Історія дій</string>
+    <string name="activity_empty">Операцій ще не зареєстровано</string>
+    <string name="activity_scope">Стан локальних операцій лише для перегляду; без автоматичних повторних спроб</string>
 </resources>

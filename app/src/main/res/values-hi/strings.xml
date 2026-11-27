@@ -446,4 +446,7 @@
     <string name="empty">खाली</string>
     <string name="settings_disable_su">su संगतता अक्षम करें</string>
     <string name="settings_disable_su_desc">किसी भी ऐप की su कमांड के माध्यम से रूट विशेषाधिकार प्राप्त करने की क्षमता को अस्थायी रूप से अक्षम करें (मौजूदा रूट प्रक्रियाएँ प्रभावित नहीं होंगी)।</string>
+    <string name="activity_history">गतिविधि इतिहास</string>
+    <string name="activity_empty">अभी तक कोई कार्रवाई दर्ज नहीं की गई है</string>
+    <string name="activity_scope">स्थानीय कार्रवाइयों की स्थिति केवल पढ़ने के लिए है; स्वतः दोबारा प्रयास नहीं होगा</string>
 </resources>

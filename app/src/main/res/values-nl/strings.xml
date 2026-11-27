@@ -446,4 +446,7 @@
     <string name="empty">Leeg</string>
     <string name="settings_disable_su">su-compatibiliteit uitschakelen</string>
     <string name="settings_disable_su_desc">Schakelt tijdelijk de mogelijkheid uit voor apps om rootrechten te verkrijgen via het ⁠su-commando (bestaande rootprocessen worden niet beïnvloed).</string>
+    <string name="activity_history">Activiteitgeschiedenis</string>
+    <string name="activity_empty">Nog geen bewerkingen vastgelegd</string>
+    <string name="activity_scope">Status van lokale bewerkingen is alleen-lezen; geen automatische nieuwe poging</string>
 </resources>

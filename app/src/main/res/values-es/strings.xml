@@ -446,4 +446,7 @@
     <string name="settings_disable_su">Desabilitar compatibilidad con su</string>
     <string name="meta_modules">Metamódulos</string>
     <string name="menu_show_stars">Mostrar estrellas</string>
+    <string name="activity_history">Historial de actividad</string>
+    <string name="activity_empty">Aún no hay operaciones registradas</string>
+    <string name="activity_scope">Estado de las operaciones locales de solo lectura; sin reintentos automáticos</string>
 </resources>

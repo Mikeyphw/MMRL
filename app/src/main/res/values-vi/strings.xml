@@ -446,4 +446,7 @@
     <string name="stack_trace_truncated">%s\n… %d nhiều hơn nữa</string>
     <string name="selinux_status_enforcing">Bắt buộc</string>
     <string name="selinux_status_permissive">Cho phép</string>
+    <string name="activity_history">Lịch sử hoạt động</string>
+    <string name="activity_empty">Chưa có thao tác nào được ghi nhận</string>
+    <string name="activity_scope">Trạng thái thao tác cục bộ chỉ đọc; không tự động thử lại</string>
 </resources>

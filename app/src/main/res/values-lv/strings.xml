@@ -446,4 +446,7 @@
     <string name="empty">Tukšs</string>
     <string name="settings_disable_su">Atspējot su saderību</string>
     <string name="settings_disable_su_desc">Uz laiku atspējot jebkuras lietotnes iespēju iegūt root tiesības, izmantojot su komandu (esošie root procesi netiks ietekmēti).</string>
+    <string name="activity_history">Darbību vēsture</string>
+    <string name="activity_empty">Pagaidām nav reģistrētu darbību</string>
+    <string name="activity_scope">Vietējo darbību statuss tikai skatīšanai; bez automātiskiem atkārtotiem mēģinājumiem</string>
 </resources>

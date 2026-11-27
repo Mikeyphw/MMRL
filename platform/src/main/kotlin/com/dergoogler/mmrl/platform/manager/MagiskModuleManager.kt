@@ -27,7 +27,7 @@ open class MagiskModuleManager : BaseModuleManager() {
         callback: IModuleOpsCallback,
     ) {
         val dir = id.moduleDir
-        if (!dir.exists()) callback.onFailure(id, null)
+        if (!dir.exists()) return callback.onFailure(id, null)
 
         runCatching {
             id.removeFile.apply { if (exists()) delete() }

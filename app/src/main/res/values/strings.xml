@@ -472,4 +472,7 @@
     <string name="empty">Empty</string>
     <string name="settings_disable_su">Disable su compatibility</string>
     <string name="settings_disable_su_desc">Temporarily disable the ability of any app to gain root privileges via the ⁠su command (Existing root processes won\'t be affected).</string>
+    <string name="activity_history">Activity history</string>
+    <string name="activity_empty">No recorded operations yet</string>
+    <string name="activity_scope">Read-only local operation status; no automatic retry</string>
 </resources>

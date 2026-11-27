@@ -32,6 +32,7 @@ import com.dergoogler.mmrl.ui.providable.LocalUserPreferences
 import com.jakewharton.processphoenix.ProcessPhoenix
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ActivityHistoryScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AppearanceScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.BlacklistScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ChangelogScreenDestination
@@ -87,6 +88,13 @@ fun SettingsScreen() {
                 icon = R.drawable.color_swatch,
                 title = R.string.settings_appearance,
                 desc = R.string.settings_appearance_desc,
+            )
+
+            NavButton(
+                route = ActivityHistoryScreenDestination,
+                icon = R.drawable.logs,
+                title = R.string.activity_history,
+                desc = R.string.activity_scope,
             )
 
             NavButton(

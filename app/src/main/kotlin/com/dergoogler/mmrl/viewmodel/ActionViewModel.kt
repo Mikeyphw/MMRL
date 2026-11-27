@@ -4,6 +4,8 @@ import android.app.Application
 import android.os.Build
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.BuildConfig
+import com.dergoogler.mmrl.database.activity.ActivityHistoryRepository
+import io.github.mikeyphw.mmrl.shared.OperationKind
 import com.dergoogler.mmrl.R
 import com.dergoogler.mmrl.app.Event
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
@@ -33,6 +35,7 @@ constructor(
     localRepository: LocalRepository,
     modulesRepository: ModulesRepository,
     userPreferencesRepository: UserPreferencesRepository,
+    private val activityHistoryRepository: ActivityHistoryRepository,
 ) : TerminalViewModel(application, localRepository, modulesRepository, userPreferencesRepository) {
     val logfile get() = "Action_${LocalDateTime.now()}.log"
 
@@ -97,8 +100,18 @@ constructor(
                 return@withContext
             }
 
-            val success = executeAction(modId, userPreferences.useShellForModuleAction)
-
+            // Do not run a root action without its durable, opaque Activity operation ID.
+            val operationId = activityHistoryRepository.beginOperation(OperationKind.ACTION)
+            val success = try {
+                executeAction(modId, userPreferences.useShellForModuleAction)
+            } catch (failure: Exception) {
+                withContext(kotlinx.coroutines.NonCancellable) {
+                    runCatching { activityHistoryRepository.needsReconciliation(operationId) }
+                        .onFailure { failure.addSuppressed(it) }
+                }
+                throw failure
+            }
+            activityHistoryRepository.needsReconciliation(operationId)
             event = if (success) Event.SUCCEEDED else Event.FAILED
         }
 

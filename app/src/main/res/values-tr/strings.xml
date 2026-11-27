@@ -472,4 +472,7 @@
     <string name="settings_disable_su_desc">Herhangi bir uygulamanın ⁠su komutuyla kök ayrıcalıkları elde etme yeteneğini geçici olarak devre dışı bırakın (Mevcut kök işlemleri etkilenmeyecektir).</string>
     <string name="meta_modules">Meta Modülleri</string>
     <string name="menu_show_stars">Yıldızları Göster</string>
+    <string name="activity_history">Etkinlik geçmişi</string>
+    <string name="activity_empty">Henüz kaydedilmiş işlem yok</string>
+    <string name="activity_scope">Yerel işlem durumu yalnızca görüntülenebilir; otomatik yeniden deneme yok</string>
 </resources>

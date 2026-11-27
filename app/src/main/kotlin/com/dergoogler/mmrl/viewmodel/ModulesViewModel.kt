@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.dergoogler.mmrl.R
+import com.dergoogler.mmrl.database.activity.ModuleActivityCoordinator
+import io.github.mikeyphw.mmrl.shared.OperationKind
 import com.dergoogler.mmrl.datastore.UserPreferencesRepository
 import com.dergoogler.mmrl.datastore.model.ModulesMenu
 import com.dergoogler.mmrl.datastore.model.Option
@@ -28,7 +29,6 @@ import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasAction
 import com.dergoogler.mmrl.platform.content.LocalModule.Companion.hasWebUI
 import com.dergoogler.mmrl.platform.content.ModuleCompatibility
 import com.dergoogler.mmrl.platform.model.ModId
-import com.dergoogler.mmrl.platform.stub.IModuleOpsCallback
 import com.dergoogler.mmrl.repository.LocalRepository
 import com.dergoogler.mmrl.repository.ModulesRepository
 import com.dergoogler.mmrl.service.DownloadService
@@ -63,6 +63,7 @@ class ModulesViewModel
         localRepository: LocalRepository,
         modulesRepository: ModulesRepository,
         userPreferencesRepository: UserPreferencesRepository,
+        private val moduleActivityCoordinator: ModuleActivityCoordinator,
         application: Application,
     ) : MMRLViewModel(
             application = application,
@@ -111,25 +112,6 @@ class ModulesViewModel
         }
 
         private val versionItemCache = mutableStateMapOf<ModId, VersionItem?>()
-
-        private val opsTasks = mutableStateListOf<ModId>()
-        private val opsCallback =
-            object : IModuleOpsCallback.Stub() {
-                override fun onSuccess(id: ModId) {
-                    viewModelScope.launch {
-                        modulesRepository.getLocal(id)
-                        opsTasks.remove(id)
-                    }
-                }
-
-                override fun onFailure(
-                    id: ModId,
-                    msg: String?,
-                ) {
-                    opsTasks.remove(id)
-                    Timber.w("$id: $msg")
-                }
-            }
 
         init {
             Timber.d("ModulesViewModel init")
@@ -281,48 +263,48 @@ class ModulesViewModel
         ) = when (module.state) {
             State.ENABLE ->
                 ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
+                    isOpsRunning = moduleActivityCoordinator.isRunning(module.id),
                     toggle = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .disable(module.id, useShell, opsCallback)
+                        moduleActivityCoordinator.run(module.id, OperationKind.DISABLE) {
+                            PlatformManager.moduleManager.disable(module.id, useShell, it)
+                        }
                     },
                     change = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .remove(module.id, useShell, opsCallback)
+                        moduleActivityCoordinator.run(module.id, OperationKind.REMOVE) {
+                            PlatformManager.moduleManager.remove(module.id, useShell, it)
+                        }
                     },
                 )
 
             State.DISABLE ->
                 ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
+                    isOpsRunning = moduleActivityCoordinator.isRunning(module.id),
                     toggle = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .enable(module.id, useShell, opsCallback)
+                        moduleActivityCoordinator.run(module.id, OperationKind.ENABLE) {
+                            PlatformManager.moduleManager.enable(module.id, useShell, it)
+                        }
                     },
                     change = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .remove(module.id, useShell, opsCallback)
+                        moduleActivityCoordinator.run(module.id, OperationKind.REMOVE) {
+                            PlatformManager.moduleManager.remove(module.id, useShell, it)
+                        }
                     },
                 )
 
             State.REMOVE ->
                 ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
+                    isOpsRunning = moduleActivityCoordinator.isRunning(module.id),
                     toggle = {},
                     change = {
-                        opsTasks.add(module.id)
-                        PlatformManager.moduleManager
-                            .enable(module.id, useShell, opsCallback)
+                        moduleActivityCoordinator.run(module.id, OperationKind.ENABLE) {
+                            PlatformManager.moduleManager.enable(module.id, useShell, it)
+                        }
                     },
                 )
 
             State.UPDATE ->
                 ModuleOps(
-                    isOpsRunning = opsTasks.contains(module.id),
+                    isOpsRunning = moduleActivityCoordinator.isRunning(module.id),
                     toggle = {},
                     change = {},
                 )
